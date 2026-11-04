@@ -106,12 +106,48 @@ ok('finishing the test shows the type', /^[EI][SN][TF][JP]$/.test(await m.$eval(
 await a.click('[data-back]'); await a.waitForTimeout(300); await a.click('[data-team]'); await a.waitForSelector('.personRow');
 ok('the team’s mix now counts her type', /Personality — 1 person/.test(await text(a)));
 
-/* ---------- 6. Khmer ---------- */
+/* ---------- 6. the life plan and tasks ---------- */
+await m.click('nav.bottom button[data-tab="plan"]');
+ok('the Plan tab opens the life plan', /My life plan/.test(await text(m)) && /Only you see your plan/.test(await text(m)));
+await m.click('#whyEdit'); await m.fill('#whyIn', 'To care for people the way Jesus did'); await m.click('#whySave'); await m.waitForTimeout(400);
+ok('my why is saved', /care for people the way Jesus did/.test(await text(m)));
+await m.click('#newGoal');
+await m.click('#goalSave'); await m.waitForTimeout(200);
+ok('a goal needs a part of life', /Choose a part of life/.test(await m.$eval('#msg', e => e.textContent)));
+await m.click('[data-garea="study"]');
+await m.fill('#gTitle', 'Finish grade 12 with good marks'); await m.fill('#gMeasure', 'Pass the exam with a B');
+await m.click('#goalSave'); await m.waitForSelector('#stepIn');
+ok('a saved goal opens with this quarter marked Now', /Finish grade 12/.test(await text(m)) && !!(await m.$('.qCard.now')));
+await m.fill('#stepIn', 'Make a study timetable'); await m.click('#stepAdd'); await m.waitForSelector('[data-step]');
+const qOpt = await m.$eval('#stepWhen optgroup:nth-child(2) option', o => o.value);
+await m.fill('#stepIn', 'Finish all maths past papers'); await m.selectOption('#stepWhen', qOpt); await m.click('#stepAdd');
+await m.waitForFunction(() => document.querySelectorAll('[data-step]').length === 2);
+ok('a monthly and a quarterly step', /study timetable/.test(await text(m)) && /past papers/.test(await text(m)));
+await m.click('nav.bottom button[data-tab="home"]');
+ok('Home shows the steps for now', /Steps for now/.test(await text(m)) && /study timetable/.test(await text(m)));
+await m.click('[data-step]'); await m.waitForTimeout(500);
+await m.click('nav.bottom button[data-tab="plan"]');
+ok('the goal’s bar moves when a step is ticked', (await m.$eval('.goalRow .miniTrack div', e => e.style.width)) === '50%');
+await m.fill('#taskIn', 'Buy a notebook'); await m.click('#taskAdd'); await m.waitForSelector('[data-task]');
+await m.click('[data-task]'); await m.waitForTimeout(400);
+ok('my own task is added and ticked', /Done \(1\)/.test(await text(m)));
+
+await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(300); await a.click('[data-team]'); await a.waitForSelector('#tmIn');
+await a.fill('#tmIn', 'Read Mark 5 before Friday'); await a.click('#tmAdd'); await a.waitForSelector('[data-tmtick]');
+ok('a leader sets a team task, and sees it counted', /0 of 2 done/.test(await text(a)));
+await m.click('nav.bottom button[data-tab="home"]'); await m.waitForTimeout(600);
+ok('the member sees it on Home with the team’s name', /Read Mark 5/.test(await text(m)) && /Siem Reap Youth/.test(await text(m)));
+await m.click('[data-ttick]'); await m.waitForTimeout(800);
+await a.click('[data-back]'); await a.waitForTimeout(300); await a.click('[data-team]'); await a.waitForSelector('[data-tmtick]');
+ok('… ticks it, and the leader sees 1 of 2 done', /1 of 2 done/.test(await text(a)));
+ok('the leader sees her plan as counts, not words', await (async () => { await a.click('.personRow:not(:first-child)'); await a.waitForTimeout(600); const tx = await text(a); await a.click('[data-back]'); await a.waitForSelector('.personRow'); return /life goals/.test(tx) && !/grade 12|timetable/.test(tx); })());
+
+/* ---------- 7. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
 
-/* ---------- 7. the page fits a phone ---------- */
+/* ---------- 8. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

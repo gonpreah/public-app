@@ -289,3 +289,36 @@ select { width:100%; font:inherit; font-size:15px; padding:11px 12px; border:1.5
 .emojiRow button { width:44px; height:44px; border-radius:12px; border:1.5px solid var(--border2); background:var(--surface); font-size:22px; cursor:pointer; }
 .emojiRow button.on { border-color:var(--accent); background:var(--accentSoft); }
 .confettiBit { position:fixed; width:8px; height:8px; border-radius:2px; pointer-events:none; z-index:100; }
+
+/* ---------- the life plan ---------- */
+.lockNote { white-space:nowrap; font-size:12.5px; }
+.whyText { margin:0 0 4px; font-size:16px; line-height:1.55; font-style:italic; color:var(--ink); }
+.goalRow { display:flex; align-items:center; gap:12px; width:100%; cursor:pointer; font:inherit; color:var(--ink); text-align:left; }
+.goalRow.reached { opacity:.8; }
+.goalIc { flex:0 0 auto; width:42px; height:42px; border-radius:12px; background:var(--accentSoft); display:grid; place-items:center; font-size:21px; }
+.goalIc.big { width:60px; height:60px; border-radius:16px; font-size:30px; margin:0 auto 6px; }
+.miniTrack { height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:7px; }
+.miniTrack div { height:100%; background:var(--good); border-radius:999px; transition:width .3s var(--ease, ease); }
+.miniTrack.big { height:8px; margin:12px auto 0; max-width:280px; }
+.goalHero { text-align:center; padding:6px 0 14px; }
+.smartRow { display:flex; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:14.5px; line-height:1.45; }
+.smartRow:first-child { border-top:0; padding-top:0; }
+.smartRow > span { flex:0 0 auto; font-size:17px; }
+.smartL { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:6px; background:var(--accent); color:var(--accentInk); font-size:11.5px; font-weight:900; margin-right:4px; vertical-align:1px; }
+.qCard.now { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+.qCard.past { opacity:.85; }
+.qHead { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px; font-size:15px; }
+.nowTag { font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--accentInk); background:var(--accent); border-radius:999px; padding:2px 8px; }
+.mHead { font-size:12.5px; font-weight:800; color:var(--muted); margin:10px 0 2px; text-transform:uppercase; letter-spacing:.04em; }
+.stepRow { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+.stepRow:first-child, .qHead + .stepRow, .mHead + .stepRow { border-top:0; }
+.stepTx { flex:1; min-width:0; font-size:14.5px; line-height:1.4; padding-top:3px; overflow-wrap:anywhere; }
+.stepRow.done .stepTx { text-decoration:line-through; color:var(--muted); }
+.tick { flex:0 0 auto; width:26px; height:26px; border-radius:8px; border:2px solid var(--border2); background:var(--surface); color:var(--onDark, #fff); font-weight:900; font-size:14px; line-height:1; cursor:pointer; display:grid; place-items:center; padding:0; font-family:inherit; }
+.tick.on { background:var(--good); border-color:var(--good); color:#fff; }
+.tick.ghost { cursor:default; opacity:.5; color:var(--good); }
+.xBtn { flex:0 0 auto; background:none; border:0; color:var(--faint); font-size:20px; line-height:1; padding:2px 4px; cursor:pointer; font-family:inherit; }
+.lateTag { font-size:11px; font-weight:700; color:var(--amberInk, var(--muted)); background:var(--warm, var(--surface2)); border-radius:999px; padding:1px 7px; white-space:nowrap; }
+.pmeta.late { color:var(--bad); }
+.atRow select, .atRow input[type=date] { flex:1 1 0; min-width:0; }
+textarea { width:100%; box-sizing:border-box; }

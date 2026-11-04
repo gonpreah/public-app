@@ -6,7 +6,8 @@
 
     Screens (S.view):
       signin · signup            — Google, then a username, name and birth year
-      home                       — today: streak, habits, this week's goals, invites
+      home                       — today: streak, habits, steps for now, this week's goals, invites
+      plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       teams · team · person      — your teams, a team's people and its mix, someone's card
       find · newteam             — search people (adults only see adults), make a team
       me                         — profile, photo, what others see, the tests
@@ -33,7 +34,8 @@ function gpTap(){ try { if(navigator.vibrate && !matchMedia('(prefers-reduced-mo
 var S = {
   view: 'signin', back: [], me: null, teams: [], today: '', busy: false,
   photos: {}, team: null, person: null, find: { q:'', people:null }, google: null,
-  signup: null, ptest: null, gtest: null, habitDraft: null, weekEdit: false
+  signup: null, ptest: null, gtest: null, habitDraft: null, weekEdit: false,
+  teamTasks: [], goalId: null, goalDraft: null, whyEdit: false, showDone: false, showReached: false
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -55,10 +57,12 @@ function failMsg(d){
   var E={ offline:'No connection — try again.', taken:'That username is taken.', username:'Usernames are 3–20 letters, numbers, _ or .',
     too_young:'You need to be 13 or older to use GonPreah.', code:'That code didn’t work — check it with your leader.', adult_only:'Only someone 18 or older can do this.',
     full:'That team is full.', too_many:'You’re in as many teams as you can be.', last_leader:'Make someone else a leader first.', google:'Google sign-in didn’t work — try again.',
-    name:'Please write your name.', birthYear:'Please choose the year you were born.', photo:'That photo couldn’t be used.' };
+    name:'Please write your name.', birthYear:'Please choose the year you were born.', photo:'That photo couldn’t be used.',
+    title:'Write what you want to do.', area:'Choose a part of life.', by:'Choose a month that hasn’t passed yet.', text:'Write something first.',
+    not_leader:'Only a leader can do this.', none:'That isn’t here any more.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.today) S.today=d.today; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -92,7 +96,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { plan:'plan', goal:'plan', goaledit:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -119,6 +123,9 @@ function render(){
     else if(V==='gtest') h=gtestHtml();
     else if(V==='gstr') h=gstrHtml();
     else if(V==='habitpick') h=habitPickHtml();
+    else if(V==='plan') h=planHtml();
+    else if(V==='goal') h=goalHtml();
+    else if(V==='goaledit') h=goalEditHtml();
     else { S.view='home'; h=homeHtml(); }
     m.innerHTML=h;
     navHtml_();
@@ -134,7 +141,7 @@ function navHtml_(){
   if(!AUTH || !S.me){ n.hidden=true; return; }
   n.hidden=false;
   var on=VIEWS_TABS[S.view]||'home';
-  n.innerHTML=[['home','🏠','Home'],['teams','👥','Teams'],['me','🙂','Me']].map(function(x){
+  n.innerHTML=[['home','🏠','Home'],['plan','🎯','Plan'],['teams','👥','Teams'],['me','🙂','Me']].map(function(x){
     return '<button data-tab="'+x[0]+'" class="'+(on===x[0]?'on':'')+'"><span class="ic">'+x[1]+'</span>'+esc(t(x[2]))+'</button>';
   }).join('');
 }
@@ -256,7 +263,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=habitsCardHtml()+weekCardHtml();
+  h+=habitsCardHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -346,6 +353,7 @@ function teamHtml(){
       '<div class="btnRow"><button class="btn small" id="shareCode" data-link="'+esc(link)+'">'+esc(t('Share the link'))+'</button><button class="btn small ghost" id="newCode">'+esc(t('New code'))+'</button></div>'+
       '<div class="hint">'+esc(t('Anyone with the code can join. Make a new one if it gets passed around.'))+'</div></div>';
   }
+  h+=teamTasksHtml(T);
   h+=teamMixHtml(T.people);
   h+='<h3>'+esc(t('People'))+'</h3><div class="card list">';
   T.people.slice().sort(function(a,b){ return (b.leader-a.leader) || String(a.name).localeCompare(String(b.name)); }).forEach(function(p){ h+=personRowHtml(p); });
@@ -382,6 +390,9 @@ function personHtml(){
   if(p.streak!=null) tiles+='<div><b>'+p.streak+'</b><span>🔥 '+esc(t('day streak'))+'</span></div>';
   if(p.best) tiles+='<div><b>'+p.best+'</b><span>🏆 '+esc(t('best streak'))+'</span></div>';
   if(p.week!=null) tiles+='<div><b>'+p.week+'%</b><span>🗒️ '+esc(t('this week'))+'</span></div>';
+  if(p.plan){ if(p.plan.goals) tiles+='<div><b>'+p.plan.goals+'</b><span>🎯 '+esc(t('life goals'))+'</span></div>';
+    if(p.plan.steps) tiles+='<div><b>'+p.plan.steps+'</b><span>🪜 '+esc(t('steps this month'))+'</span></div>';
+    if(p.plan.reached) tiles+='<div><b>'+p.plan.reached+'</b><span>🏆 '+esc(t('goals reached'))+'</span></div>'; }
   if(tiles) h+='<div class="card statTiles">'+tiles+'</div>';
   if(p.type && GP_PTYPES[p.type]){ var g=gpPGroupOf(p.type);
     h+='<h3>🧭 '+esc(t('Personality'))+'</h3><button class="card pEntry" id="seePType"><span class="pEntryArt">'+gpPAvatar(p.type,p.sex||'',64)+'</span><span style="flex:1"><div class="pCode" style="color:'+g.ink+'">'+esc(p.type)+'</div><div style="font-size:16px;font-weight:800">'+esc(pTheName(p.type))+'</div><div class="pmeta">'+esc(gpT('How to work well with {name}',{name:firstName_(p.name)}))+'</div></span><span class="chev">›</span></button>'; }
@@ -424,7 +435,7 @@ function meHtml(){
 
   h+='<h3>👁 '+esc(t('What others see'))+'</h3><div class="card">'+
     '<p class="sub" style="margin:0 0 8px">'+esc(t('People see your progress, never the details: not your goals, your habits or your answers.'))+'</p>';
-  [['type','Your personality type'],['strengths','Your top 5 strengths'],['streak','Your streak'],['week','This week’s %'],['teams','How many teams you’re in']].forEach(function(x){
+  [['type','Your personality type'],['strengths','Your top 5 strengths'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['teams','How many teams you’re in']].forEach(function(x){
     h+='<label class="switchRow"><span>'+esc(t(x[1]))+'</span><input type="checkbox" data-share="'+x[0]+'"'+(sh[x[0]]!==false?' checked':'')+'></label>';
   });
   h+=(me.minor?'<div class="hint">🔒 '+esc(t('You’re under 18, so only people in your teams can see you, by your first name.'))+'</div>':'')+'</div>';
@@ -448,6 +459,174 @@ function shrinkPhoto_(file, cb){
     cb(c.toDataURL('image/jpeg', .82));
   }; img.onerror=function(){ cb(null); }; img.src=r.result; };
   r.onerror=function(){ cb(null); }; r.readAsDataURL(file);
+}
+
+/* ---------------- the life plan ---------------- */
+/* Six areas of life (the 1-on-1s will use the same six). */
+var AREAS = [['faith','🙏','Faith'],['family','🏠','Family & friends'],['study','🎓','Study & work'],['health','💪','Health'],['money','💵','Money'],['serve','🤝','Serving others']];
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var MAX_LIFE_GOALS = 8;
+function areaOf(id){ var a=AREAS.filter(function(x){ return x[0]===id; })[0]||AREAS[0]; return { id:a[0], icon:a[1], name:t(a[2]) }; }
+function monthKey(iso){ return iso.slice(0,7); }
+function quarterKey(iso){ return iso.slice(0,4)+'-Q'+(Math.floor((Number(iso.slice(5,7))-1)/3)+1); }
+function monthLabel(ym){ return t(MONTHS[Number(ym.slice(5,7))-1])+' '+ym.slice(0,4); }
+function quarterLabel(q){ var n=Number(q.slice(-1)), y=q.slice(0,4); return t(MONTHS[(n-1)*3])+'–'+t(MONTHS[(n-1)*3+2])+' '+y; }
+function addMonths(ym, n){ var y=Number(ym.slice(0,4)), m=Number(ym.slice(5,7))-1+n; y+=Math.floor(m/12); m=((m%12)+12)%12; return y+'-'+(m<9?'0':'')+(m+1); }
+function dayLabel(iso){ return Number(iso.slice(8,10))+' '+t(MONTHS[Number(iso.slice(5,7))-1]); }
+function planOf(){ var p=(S.me && S.me.plan)||{}; return { why:p.why||'', goals:p.goals||[] }; }
+function goalById(id){ return planOf().goals.filter(function(g){ return g.id===id; })[0]||null; }
+/* Steps due now: this month's, and this quarter's. */
+function isNow_(when){ var d=todayStr(); return when===monthKey(d) || when===quarterKey(d); }
+function isPast_(when){ var d=todayStr(); return /Q/.test(when) ? when<quarterKey(d) : when<monthKey(d); }
+function goalPct(g){ var s=g.steps||[]; if(g.done) return 100; if(!s.length) return 0; return Math.round(s.filter(function(x){ return x.done; }).length/s.length*100); }
+function checkHtml(attr, on, label){ return '<button class="tick'+(on?' on':'')+'" '+attr+' role="checkbox" aria-checked="'+on+'" aria-label="'+esc(label)+'">'+(on?'✓':'')+'</button>'; }
+
+function planHtml(){
+  var P=planOf(), active=P.goals.filter(function(g){ return !g.done; }), reached=P.goals.filter(function(g){ return g.done; });
+  var h='<h2>'+esc(t('My life plan'))+'</h2><p class="sub">'+esc(t('Small steps toward the person God made you to be.'))+' <span class="lockNote">🔒 '+esc(t('Only you see your plan.'))+'</span></p>';
+  h+='<h3>✦ '+esc(t('My why'))+'</h3><div class="card">';
+  if(S.whyEdit) h+='<textarea id="whyIn" maxlength="300" rows="3" placeholder="'+esc(t('e.g. To care for people the way Jesus did.'))+'">'+esc(P.why)+'</textarea>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="whySave">'+esc(t('Save'))+'</button><button class="btn small ghost" id="whyCancel">'+esc(t('Cancel'))+'</button></div>';
+  else if(P.why) h+='<p class="whyText">“'+esc(P.why)+'”</p><button class="linkbtn" id="whyEdit">'+esc(t('Change'))+'</button>';
+  else h+='<p class="sub" style="margin:0 0 6px">'+esc(t('What do you think God made you for? Write a sentence or two — you can change it any time.'))+'</p><button class="btn ghost" id="whyEdit">'+esc(t('Write my why'))+'</button>';
+  h+='</div>';
+  h+='<h3>🎯 '+esc(t('Life goals'))+'</h3>';
+  if(!active.length) h+='<div class="card"><p class="sub" style="margin:0">'+esc(t('A life goal is something big you want to reach in the next months or years. Make it clear, something you can measure, and give it a date.'))+'</p></div>';
+  active.forEach(function(g){ h+=goalRowHtml(g); });
+  if(active.length<MAX_LIFE_GOALS) h+='<button class="btn ghost" id="newGoal">＋ '+esc(t('New life goal'))+'</button>';
+  if(reached.length){
+    h+='<button class="linkbtn" id="toggleReached">'+esc(gpT('🏆 Goals you reached ({n})',{n:reached.length}))+' '+(S.showReached?'▴':'▾')+'</button>';
+    if(S.showReached) reached.forEach(function(g){ h+=goalRowHtml(g); });
+  }
+  h+=tasksCardHtml();
+  return h;
+}
+function goalRowHtml(g){
+  var a=areaOf(g.area), pct=goalPct(g), now=(g.steps||[]).filter(function(s){ return isNow_(s.when) && !s.done; }).length;
+  var meta=g.done ? gpT('Reached {d}',{d:dayLabel(g.done)}) : gpT('By {m}',{m:monthLabel(g.by)})+(now?' · '+gpT('{n} steps for now',{n:now}):'');
+  return '<button class="card goalRow'+(g.done?' reached':'')+'" data-goal="'+esc(g.id)+'"><span class="goalIc">'+(g.done?'🏆':a.icon)+'</span><span style="flex:1;min-width:0;text-align:left">'+
+    '<b>'+esc(g.title)+'</b><div class="pmeta">'+esc(a.name)+' · '+esc(meta)+'</div>'+
+    '<div class="miniTrack"><div style="width:'+pct+'%"></div></div></span><span class="chev">›</span></button>';
+}
+function goalHtml(){
+  var g=goalById(S.goalId);
+  if(!g) return backBtn(t('My life plan'))+'<p class="sub">'+esc(t('That goal isn’t here any more.'))+'</p>';
+  var a=areaOf(g.area), d=todayStr();
+  var h=backBtn(t('My life plan'))+'<div class="goalHero"><span class="goalIc big">'+(g.done?'🏆':a.icon)+'</span><div class="pmeta">'+esc(a.name)+'</div><h2 style="margin:4px 0">'+esc(g.title)+'</h2>'+
+    '<div class="pmeta">'+esc(g.done?gpT('Reached {d}',{d:dayLabel(g.done)}):gpT('By {m}',{m:monthLabel(g.by)}))+'</div>'+
+    '<div class="miniTrack big"><div style="width:'+goalPct(g)+'%"></div></div></div>';
+  var rows=[['📏',t('How I’ll know I’ve done it'),g.measure],['🤝',t('What will help me'),g.help],['❤️',t('Why it matters to me'),g.why]].filter(function(r){ return r[2]; });
+  if(rows.length) h+='<div class="card">'+rows.map(function(r){ return '<div class="smartRow"><span>'+r[0]+'</span><div><div class="pmeta">'+esc(r[1])+'</div>'+esc(r[2])+'</div></div>'; }).join('')+'</div>';
+  /* steps: by quarter, then each month in it */
+  var steps=g.steps||[], qs={};
+  qs[quarterKey(d)]=1;
+  steps.forEach(function(s){ qs[/Q/.test(s.when)?s.when:quarterKey(s.when+'-01')]=1; });
+  h+='<h3>🪜 '+esc(t('Steps'))+'</h3>';
+  if(!steps.length) h+='<p class="sub">'+esc(t('Break your goal into steps: a few bigger ones for each quarter (three months), and small ones for each month.'))+'</p>';
+  Object.keys(qs).sort().forEach(function(q){
+    var inQ=steps.filter(function(s){ return s.when===q; }), months={};
+    steps.forEach(function(s){ if(!/Q/.test(s.when) && quarterKey(s.when+'-01')===q) months[s.when]=1; });
+    if(q===quarterKey(d)) months[monthKey(d)]=1;
+    var nowQ=q===quarterKey(d), pastQ=q<quarterKey(d);
+    h+='<div class="card qCard'+(nowQ?' now':'')+(pastQ?' past':'')+'"><div class="qHead"><b>'+esc(quarterLabel(q))+'</b>'+(nowQ?'<span class="nowTag">'+esc(t('Now'))+'</span>':'')+'</div>';
+    inQ.forEach(function(s){ h+=stepRowHtml(g,s); });
+    Object.keys(months).sort().forEach(function(m){
+      var inM=steps.filter(function(s){ return s.when===m; });
+      h+='<div class="mHead">'+esc(monthLabel(m))+(m===monthKey(d)?' · '+esc(t('this month')):'')+'</div>';
+      if(!inM.length) h+='<div class="pmeta" style="padding:2px 0 4px">'+esc(t('No steps yet this month.'))+'</div>';
+      inM.forEach(function(s){ h+=stepRowHtml(g,s); });
+    });
+    h+='</div>';
+  });
+  if(!g.done){
+    var opts='<optgroup label="'+esc(t('A month'))+'">', cur=monthKey(d), last=g.by>cur?g.by:cur;
+    for(var i=0;i<24;i++){ var m=addMonths(cur,i); if(m>last && i>2) break; opts+='<option value="'+m+'"'+(i===0?' selected':'')+'>'+esc(monthLabel(m))+'</option>'; }
+    opts+='</optgroup><optgroup label="'+esc(t('A quarter (three months)'))+'">';
+    for(var j=0;j<8;j++){ var q=quarterKey(addMonths(cur,j*3)+'-01'); if(q>quarterKey(last+'-01') && j>1) break; opts+='<option value="'+q+'">'+esc(quarterLabel(q))+'</option>'; }
+    opts+='</optgroup>';
+    h+='<div class="card"><label class="f" for="stepIn">'+esc(t('Add a step'))+'</label><input type="text" id="stepIn" maxlength="100" placeholder="'+esc(t('e.g. Make a study timetable'))+'">'+
+      '<div class="atRow" style="margin-top:8px"><select id="stepWhen" aria-label="'+esc(t('When'))+'">'+opts+'</select><button class="btn small" id="stepAdd">'+esc(t('Add'))+'</button></div></div>';
+  }
+  h+='<div class="btnRow">'+(g.done?'<button class="btn ghost" id="goalUnreach">'+esc(t('Not reached yet'))+'</button>':'<button class="btn" id="goalReach">🎉 '+esc(t('I reached this goal'))+'</button>')+
+    '<button class="btn ghost" id="goalEdit">'+esc(t('Edit'))+'</button></div>';
+  return h;
+}
+function stepRowHtml(g, s){
+  var late=!s.done && isPast_(s.when);
+  return '<div class="stepRow'+(s.done?' done':'')+'">'+checkHtml('data-step="'+esc(g.id)+'|'+esc(s.id)+'"', !!s.done, s.text)+
+    '<span class="stepTx">'+esc(s.text)+(late?' <span class="lateTag">'+esc(t('from before'))+'</span>':'')+'</span>'+
+    '<button class="xBtn" data-dropstep="'+esc(g.id)+'|'+esc(s.id)+'" aria-label="'+esc(t('Delete'))+'">×</button></div>';
+}
+function goalEditHtml(){
+  var F=S.goalDraft, d=todayStr();
+  var h=backBtn(t('Back'))+'<h2>'+esc(F.id?t('Edit the goal'):t('New life goal'))+'</h2><p class="sub">'+esc(t('A good goal is SMART: Specific, Measurable, Achievable, Relevant and Time-bound.'))+'</p><div class="card">'+
+    '<label class="f">'+esc(t('Which part of life?'))+'</label><div class="catChips">'+AREAS.map(function(a){ return '<button class="catChip'+(F.area===a[0]?' on':'')+'" data-garea="'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</button>'; }).join('')+'</div>'+
+    smartField_('gTitle','S',t('What exactly do you want to do?'),t('e.g. Finish grade 12 with good marks'),F.title,100)+
+    smartField_('gMeasure','M',t('How will you know you’ve done it?'),t('e.g. I pass the exam with a B or better'),F.measure,160)+
+    smartField_('gHelp','A',t('What or who will help you get there?'),t('e.g. A study group, my teacher, two hours a day'),F.help,160)+
+    smartField_('gWhy','R',t('Why does it matter to you?'),t('e.g. So I can study nursing and care for people'),F.why,200)+
+    '<label class="f" for="gBy"><span class="smartL">T</span> '+esc(t('By when?'))+'</label><input type="month" id="gBy" min="'+(F.id?'':monthKey(d))+'" value="'+esc(F.by)+'">'+
+    '<button class="btn" id="goalSave">'+esc(t('Save'))+'</button>'+
+    (F.id?'<button class="linkbtn" id="goalDelete" style="color:var(--bad)">'+esc(t('Delete this goal'))+'</button>':'')+'</div>';
+  return h;
+}
+function smartField_(id, L, label, ph, v, max){
+  return '<label class="f" for="'+id+'"><span class="smartL">'+L+'</span> '+esc(label)+'</label><input type="text" id="'+id+'" maxlength="'+max+'" placeholder="'+esc(ph)+'" value="'+esc(v||'')+'">';
+}
+function keepGoal_(){ var F=S.goalDraft; if(!F || !$('gTitle')) return; F.title=$('gTitle').value; F.measure=$('gMeasure').value; F.help=$('gHelp').value; F.why=$('gWhy').value; F.by=$('gBy').value; }
+/* Tasks: what your teams asked of you, then your own. */
+function tasksCardHtml(){
+  var mine=(S.me.tasks||[]), open=mine.filter(function(k){ return !k.done; }), done=mine.filter(function(k){ return k.done; }), tt=S.teamTasks||[], d=todayStr();
+  var h='<h3>✅ '+esc(t('Tasks'))+'</h3><div class="card">';
+  tt.forEach(function(k){
+    h+='<div class="stepRow">'+checkHtml('data-ttick="'+esc(k.team)+'|'+esc(k.id)+'"', false, k.text)+'<span class="stepTx">'+esc(k.text)+
+      '<div class="pmeta">'+esc(k.emoji+' '+k.teamName)+(k.due?' · '+esc(dueLabel_(k.due)):'')+'</div></span></div>';
+  });
+  open.sort(function(a,b){ return (a.due||'9')<(b.due||'9')?-1:1; }).forEach(function(k){
+    h+='<div class="stepRow">'+checkHtml('data-task="'+esc(k.id)+'"', false, k.text)+'<span class="stepTx">'+esc(k.text)+(k.due?'<div class="pmeta'+(k.due<d?' late':'')+'">'+esc(dueLabel_(k.due))+'</div>':'')+'</span>'+
+      '<button class="xBtn" data-droptask="'+esc(k.id)+'" aria-label="'+esc(t('Delete'))+'">×</button></div>';
+  });
+  if(!tt.length && !open.length) h+='<p class="sub" style="margin:0 0 6px">'+esc(t('Nothing to do yet. Add something below.'))+'</p>';
+  h+='<div class="atRow" style="margin-top:8px"><input type="text" id="taskIn" maxlength="120" placeholder="'+esc(t('Add a task'))+'"><input type="date" id="taskDue" aria-label="'+esc(t('Due'))+'" min="'+d+'"><button class="btn small" id="taskAdd">'+esc(t('Add'))+'</button></div>';
+  if(done.length){
+    h+='<button class="linkbtn" id="toggleDone">'+esc(gpT('Done ({n})',{n:done.length}))+' '+(S.showDone?'▴':'▾')+'</button>';
+    if(S.showDone) done.forEach(function(k){ h+='<div class="stepRow done">'+checkHtml('data-task="'+esc(k.id)+'"', true, k.text)+'<span class="stepTx">'+esc(k.text)+'</span><button class="xBtn" data-droptask="'+esc(k.id)+'" aria-label="'+esc(t('Delete'))+'">×</button></div>'; });
+  }
+  return h+'</div>';
+}
+function dueLabel_(iso){ var d=todayStr(); if(iso===d) return t('Today'); if(iso===addDays(d,1)) return t('Tomorrow'); return (iso<d?t('Was due')+' ':t('Due')+' ')+dayLabel(iso); }
+/* Home: this month's and this quarter's steps, and what your teams asked of you. */
+function planHomeHtml(){
+  var P=planOf(), active=P.goals.filter(function(g){ return !g.done; });
+  if(!active.length) return '<h3>🎯 '+esc(t('My life plan'))+'</h3>'+entryCardHtml('goPlan','🎯',t('Make your life plan'),t('Your why, a few big goals, and small steps for each month.'));
+  var items=[];
+  active.forEach(function(g){ (g.steps||[]).forEach(function(s){ if(!s.done && (isNow_(s.when) || isPast_(s.when))) items.push([g,s]); }); });
+  var tt=S.teamTasks||[];
+  var h='<h3>🎯 '+esc(t('Steps for now'))+'</h3><div class="card">';
+  if(!items.length && !tt.length) h+='<p class="sub" style="margin:0 0 4px">'+esc(t('No steps for this month yet.'))+'</p>';
+  items.slice(0,5).forEach(function(x){ h+='<div class="stepRow">'+checkHtml('data-step="'+esc(x[0].id)+'|'+esc(x[1].id)+'"', false, x[1].text)+'<span class="stepTx">'+esc(x[1].text)+'<div class="pmeta">'+esc(areaOf(x[0].area).icon+' '+x[0].title)+'</div></span></div>'; });
+  tt.slice(0,3).forEach(function(k){ h+='<div class="stepRow">'+checkHtml('data-ttick="'+esc(k.team)+'|'+esc(k.id)+'"', false, k.text)+'<span class="stepTx">'+esc(k.text)+'<div class="pmeta">'+esc(k.emoji+' '+k.teamName)+(k.due?' · '+esc(dueLabel_(k.due)):'')+'</div></span></div>'; });
+  return h+'<button class="linkbtn" id="goPlan">'+esc(t('Open my plan'))+' ›</button></div>';
+}
+/* A team's tasks: leaders set them; everyone in the team sees them all. */
+function teamTasksHtml(T){
+  var tasks=T.tasks||[], d=todayStr();
+  if(!tasks.length && !T.leader) return '';
+  var h='<h3>📋 '+esc(t('Team tasks'))+'</h3><div class="card">';
+  if(!tasks.length) h+='<p class="sub" style="margin:0 0 6px">'+esc(t('Give the team something to do — for everyone, or for one person.'))+'</p>';
+  tasks.forEach(function(k){
+    var meta=(k.who?gpT('For {name}',{name:k.whoName||'?'}):t('For everyone'))+(k.of>1?' · '+gpT('{n} of {total} done',{n:k.n,total:k.of}):(k.n?' · '+t('done'):''))+(k.due?' · '+dueLabel_(k.due):'');
+    h+='<div class="stepRow'+(k.mine?' done':'')+'">'+(k.forMe?checkHtml('data-tmtick="'+esc(k.id)+'"', k.mine, k.text):'<span class="tick ghost">'+(k.n?'✓':'')+'</span>')+
+      '<span class="stepTx">'+esc(k.text)+'<div class="pmeta">'+esc(meta)+'</div></span>'+(T.leader?'<button class="xBtn" data-tmdrop="'+esc(k.id)+'" aria-label="'+esc(t('Delete'))+'">×</button>':'')+'</div>';
+  });
+  if(T.leader){
+    h+='<label class="f" for="tmIn">'+esc(t('New team task'))+'</label><input type="text" id="tmIn" maxlength="120" placeholder="'+esc(t('e.g. Read Mark 5 before Friday'))+'">'+
+      '<div class="atRow" style="margin-top:8px"><select id="tmWho" aria-label="'+esc(t('For'))+'"><option value="">'+esc(t('For everyone'))+'</option>'+
+      T.people.filter(function(p){ return p.id!==S.me.id; }).map(function(p){ return '<option value="'+esc(p.id)+'">'+esc(gpT('For {name}',{name:p.name}))+'</option>'; }).join('')+'</select>'+
+      '<input type="date" id="tmDue" min="'+d+'" aria-label="'+esc(t('Due'))+'"><button class="btn small" id="tmAdd">'+esc(t('Add'))+'</button></div>'+
+      '<div class="hint">'+esc(t('Everyone in the team can see every team task.'))+'</div>';
+  }
+  return h+'</div>';
 }
 
 /* ---------------- personality (the Impact app's screens, for this app) ---------------- */
@@ -579,7 +758,7 @@ function busyOnce_(fn){ return function(){ if(S.busy) return; S.busy=true; var r
 
 function bind(){
   on('langBtn', function(){ setLang_(LANG==='km'?'en':'km'); });
-  all('[data-tab]', function(b){ S.back=[]; S.view=b.getAttribute('data-tab'); if(S.view==='teams') refresh_(); render(); window.scrollTo(0,0); });
+  all('[data-tab]', function(b){ S.back=[]; S.view=b.getAttribute('data-tab'); if(S.view!=='me') refresh_(); render(); window.scrollTo(0,0); });
   all('[data-back]', function(){ goBack(); });
   on('googleBtn', function(){ if(!S.busy) signIn_(); });
   bindSignup_();
@@ -621,6 +800,48 @@ function bind(){
   on('hOwnAdd', function(){ var v=$('hOwn').value.trim(); if(!v) return; if(S.habitDraft.length>=MAX_HABITS){ showMsg(gpT('Up to {n} habits.',{n:MAX_HABITS})); return; }
     S.habitDraft.push({ id:'c_'+Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'a'), label:v.slice(0,40), icon:'⭐' }); render(); });
   on('hSave', busyOnce_(function(){ return call('saveHabits', S.habitDraft).then(function(d){ if(d && d.ok){ S.me=d.me; S.habitDraft=null; goBack('home'); } else failMsg(d); }); }));
+
+  /* the life plan */
+  on('goPlan', function(){ S.back=[]; go('plan', true); });
+  on('whyEdit', function(){ S.whyEdit=true; render(); var w=$('whyIn'); if(w) w.focus(); });
+  on('whyCancel', function(){ S.whyEdit=false; render(); });
+  on('whySave', busyOnce_(function(){ return call('savePlanWhy', $('whyIn').value).then(function(d){ if(d && d.ok){ S.me=d.me; S.whyEdit=false; render(); } else failMsg(d); }); }));
+  on('newGoal', function(){ S.goalDraft={ area:'', title:'', measure:'', help:'', why:'', by:addMonths(monthKey(todayStr()), 12) }; go('goaledit'); });
+  on('toggleReached', function(){ S.showReached=!S.showReached; render(); });
+  on('toggleDone', function(){ S.showDone=!S.showDone; render(); });
+  all('[data-goal]', function(b){ S.goalId=b.getAttribute('data-goal'); go('goal'); });
+  all('[data-garea]', function(b){ keepGoal_(); S.goalDraft.area=b.getAttribute('data-garea'); render(); });
+  on('goalSave', busyOnce_(function(){ keepGoal_(); var F=S.goalDraft;
+    if(!F.area){ showMsg(t('Choose a part of life.')); return; }
+    return call('saveGoal', F).then(function(d){ if(d && d.ok){ S.me=d.me; S.goalDraft=null; S.goalId=d.id;
+      if(F.id) goBack('goal'); else { S.back=['plan']; S.view='goal'; render(); window.scrollTo(0,0); } } else failMsg(d); }); }));
+  on('goalEdit', function(){ var g=goalById(S.goalId); if(!g) return; S.goalDraft={ id:g.id, area:g.area, title:g.title, measure:g.measure, help:g.help, why:g.why, by:g.by }; go('goaledit'); });
+  on('goalDelete', busyOnce_(function(){ if(!confirm(t('Delete this goal and all its steps?'))) return;
+    return call('goalAct', S.goalDraft.id, 'delete').then(function(d){ if(d && d.ok){ S.me=d.me; S.goalDraft=null; S.goalId=null; S.back=[]; S.view='plan'; render(); window.scrollTo(0,0); } else failMsg(d); }); }));
+  on('goalReach', busyOnce_(function(){ var el=$('goalReach'); return call('goalAct', S.goalId, 'reach', { done:true }).then(function(d){ if(d && d.ok){ confettiAt_(el); S.me=d.me; showMsg(t('Well done! Thank God for it.')); render(); } else failMsg(d); }); }));
+  on('goalUnreach', busyOnce_(function(){ return call('goalAct', S.goalId, 'reach', { done:false }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
+  on('stepAdd', busyOnce_(function(){ var v=$('stepIn').value.trim(); if(!v){ showMsg(t('Write something first.')); return; }
+    return call('goalAct', S.goalId, 'addStep', { text:v, when:$('stepWhen').value }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); var i=$('stepIn'); if(i) i.focus(); } else failMsg(d); }); }));
+  all('[data-step]', function(b){ var p=b.getAttribute('data-step').split('|'), g=goalById(p[0]), s=g && (g.steps||[]).filter(function(x){ return x.id===p[1]; })[0]; if(!s) return;
+    var now=!s.done; s.done=now?todayStr():''; gpTap(); if(now) confettiAt_(b); render();
+    call('goalAct', p[0], 'tickStep', { id:p[1], done:now }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else { failMsg(d); refresh_(); } }); });
+  all('[data-dropstep]', function(b){ var p=b.getAttribute('data-dropstep').split('|'); if(!confirm(t('Delete this step?'))) return;
+    call('goalAct', p[0], 'dropStep', { id:p[1] }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); });
+  on('taskAdd', busyOnce_(function(){ var v=$('taskIn').value.trim(); if(!v){ showMsg(t('Write something first.')); return; }
+    return call('myTask', 'add', { text:v, due:$('taskDue').value }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); var i=$('taskIn'); if(i) i.focus(); } else failMsg(d); }); }));
+  all('[data-task]', function(b){ var id=b.getAttribute('data-task'), k=(S.me.tasks||[]).filter(function(x){ return x.id===id; })[0]; if(!k) return;
+    var now=!k.done; k.done=now?todayStr():''; gpTap(); render();
+    call('myTask', 'tick', { id:id, done:now }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else { failMsg(d); refresh_(); } }); });
+  all('[data-droptask]', function(b){ call('myTask', 'drop', { id:b.getAttribute('data-droptask') }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); });
+  all('[data-ttick]', function(b){ var p=b.getAttribute('data-ttick').split('|'); gpTap();
+    S.teamTasks=(S.teamTasks||[]).filter(function(k){ return !(k.team===p[0] && k.id===p[1]); }); confettiAt_(b); render();
+    call('teamTask', p[0], 'tick', { id:p[1], done:true }).then(function(d){ if(!(d && d.ok)) failMsg(d); refresh_(); }); });
+  all('[data-tmtick]', function(b){ var id=b.getAttribute('data-tmtick'), k=(S.team.tasks||[]).filter(function(x){ return x.id===id; })[0]; if(!k) return; gpTap();
+    call('teamTask', S.team.id, 'tick', { id:id, done:!k.mine }).then(function(d){ if(d && d.ok){ S.team=d.team; render(); refresh_(); } else failMsg(d); }); });
+  all('[data-tmdrop]', function(b){ if(!confirm(t('Delete this team task?'))) return;
+    call('teamTask', S.team.id, 'drop', { id:b.getAttribute('data-tmdrop') }).then(function(d){ if(d && d.ok){ S.team=d.team; render(); } else failMsg(d); }); });
+  on('tmAdd', busyOnce_(function(){ var v=$('tmIn').value.trim(); if(!v){ showMsg(t('Write something first.')); return; }
+    return call('teamTask', S.team.id, 'add', { text:v, who:$('tmWho').value, due:$('tmDue').value }).then(function(d){ if(d && d.ok){ S.team=d.team; render(); refresh_(); } else failMsg(d); }); }));
 
   /* teams */
   all('[data-team]', function(b){ openTeam_(b.getAttribute('data-team')); });

@@ -76,3 +76,11 @@ The session's GitHub connection is the account **swizzylee1599**, which could re
 repo but not push (new org repos don't give members write automatically). Fix: the repo's
 Settings → Collaborators and teams → add that account with Write — or connect Claude to
 the account that owns the repo.
+
+## Second session (4 Nov 2026)
+- This session could push: the first version went up on the branch `first-version`.
+- Built step 1, **the life plan**: a Plan tab with "my why", up to 8 SMART life goals in six
+  areas of life (faith, family & friends, study & work, health, money, serving others), steps
+  for each quarter and month, my own tasks, and team tasks set by leaders. Home shows the steps
+  for now. Others see counts only, behind a new switch. Khmer drafts added (unreviewed).
+  Tests: 93 server checks, 35 in the browser.

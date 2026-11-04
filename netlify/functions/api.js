@@ -6,16 +6,16 @@
     ("gpa"), its own accounts. Nobody's staff account is in here.
 
     Storage (Netlify Blobs, store "gpa", strong reads):
-      u:<id>          one person: profile, tests, habits, weekly goals, teams, device tokens
+      u:<id>          one person: profile, tests, habits, weekly goals, life plan, tasks, teams, device tokens
       ph:<id>         their photo (a small JPEG data URI), read separately so lists stay light
       gsub:<sub>      Google account id → person id
       uname:<name>    username → person id (usernames are unique, lower case)
       people          the search index: [{id, username, name, minor}] — no photos, no birth years
-      t:<id>          a team: name, emoji, join code, leaders, members
+      t:<id>          a team: name, emoji, join code, leaders, members, team tasks
       tcode:<code>    join code → team id
 
     Who sees what (tests/test-api.mjs holds every line of this):
-      · a person's goals, habit names, notes and answers stay theirs. Others see
+      · a person's goals, life plan, tasks, habit names, notes and answers stay theirs. Others see
         progress only — a streak, a week's %, "took the strengths test" — and each
         of those has its own switch (share.*);
       · UNDER 18 (worked out from the birth year, cautiously: anyone who could
@@ -154,7 +154,7 @@ function cleanUsername_(v) {
 }
 
 /* ---------------- what each person may show ---------------- */
-const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams'];
+const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan'];
 function shareOf_(u) {
   const s = (u && u.share) || {}; const o = {};
   SHARE_KEYS.forEach(function (k) { o[k] = s[k] !== false; });
@@ -280,7 +280,8 @@ function selfOut_(u) {
     lang: u.lang || 'km', sex: u.sex || '', bio: u.bio || '', share: shareOf_(u),
     personality: u.personality || null, gstrengths: u.gstrengths || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
-    teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto
+    teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
+    plan: planOf_(u), tasks: u.tasks || []
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -292,6 +293,7 @@ function cardOut_(u, close) {
   if (sh.streak) { o.streak = st.streak; o.best = st.best; }
   if (sh.week && st.week !== null) o.week = st.week;
   if (sh.teams && close) o.teamCount = (u.teams || []).length;
+  if (sh.plan) { const ps = planStats_(u); if (ps.goals || ps.reached) o.plan = ps; }   // counts, never the words
   o.tests = st.tests;
   if (!minor && u.bio) o.bio = u.bio;
   return o;
@@ -362,12 +364,14 @@ async function boot(uid, tok) {
   const u = await auth_(uid, tok);
   if (!u) return { ok: false, err: 'auth' };
   if (u.seen !== today_()) await mutate_('u:' + uid, null, function (r) { if (r) r.seen = today_(); return { ok: true }; });
-  const teams = [];
+  const teams = [], teamTasks = [];
   for (const tid of (u.teams || [])) {
     const t = await readJSON('t:' + tid, null);
-    if (t) teams.push(teamBrief_(t, uid));
+    if (!t) continue;
+    teams.push(teamBrief_(t, uid));
+    teamTasksOut_(t, uid, {}).forEach(function (k) { if (k.forMe && !k.mine) teamTasks.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, k)); });
   }
-  return { ok: true, me: selfOut_(u), teams: teams, today: today_() };
+  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -502,6 +506,120 @@ async function saveWeek(uid, tok, week, goals) {
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 
+/* ---------------- the life plan ----------------
+   A sentence about why ("what God made me for"), up to MAX_LIFE_GOALS SMART goals
+   (what exactly · how I'll know · what will help · why it matters · by when),
+   each broken into steps for a quarter ('2027-Q1') or a month ('2027-01'), and
+   a person's own tasks. All of it is theirs alone: others see counts (cardOut_). */
+const AREAS = ['faith', 'family', 'study', 'health', 'money', 'serve'];
+const MAX_LIFE_GOALS = 8, MAX_KEPT_GOALS = 30, MAX_STEPS = 40, MAX_TASKS = 60, KEEP_DONE_TASKS = 30;
+function monthOf_(iso) { return iso.slice(0, 7); }
+function quarterOf_(iso) { return iso.slice(0, 4) + '-Q' + (Math.floor((Number(iso.slice(5, 7)) - 1) / 3) + 1); }
+function isMonth_(s) { return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s); }
+function isQuarter_(s) { return typeof s === 'string' && /^\d{4}-Q[1-4]$/.test(s); }
+function inYears_(s) { const y = Number(String(s).slice(0, 4)); return y >= thisYear_() - 1 && y <= thisYear_() + 10; }
+function planOf_(u) { const p = (u && u.plan) || {}; return { why: p.why || '', goals: Array.isArray(p.goals) ? p.goals : [] }; }
+function activeGoals_(u) { return planOf_(u).goals.filter(function (g) { return !g.done; }); }
+function planStats_(u) {
+  const goals = planOf_(u).goals, m = monthOf_(today_());
+  let steps = 0;
+  goals.forEach(function (g) { (g.steps || []).forEach(function (s) { if (s.done && monthOf_(s.done) === m) steps++; }); });
+  return { goals: goals.filter(function (g) { return !g.done; }).length, reached: goals.filter(function (g) { return g.done; }).length, steps: steps };
+}
+
+async function savePlanWhy(uid, tok, text) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  await mutate_('u:' + uid, null, function (u) { if (u) { u.plan = planOf_(u); u.plan.why = str_(text, 300); } return { ok: true }; });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* A new goal (no id) or changes to one. */
+async function saveGoal(uid, tok, g) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  g = g && typeof g === 'object' ? g : {};
+  const title = str_(g.title, 100);
+  if (title.length < 2) return { ok: false, err: 'title' };
+  if (AREAS.indexOf(g.area) === -1) return { ok: false, err: 'area' };
+  if (!isMonth_(g.by) || !inYears_(g.by)) return { ok: false, err: 'by' };
+  const fields = { area: g.area, title: title, measure: str_(g.measure, 160), help: str_(g.help, 160), why: str_(g.why, 200), by: g.by };
+  let gid = null;
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.plan = planOf_(u);
+    if (g.id) {
+      const cur = u.plan.goals.filter(function (x) { return x.id === g.id; })[0];
+      if (!cur) return { abort: true, ok: false, err: 'none' };
+      Object.assign(cur, fields); gid = cur.id;
+      return { ok: true };
+    }
+    if (fields.by < monthOf_(today_())) return { abort: true, ok: false, err: 'by' };
+    if (activeGoals_(u).length >= MAX_LIFE_GOALS) return { abort: true, ok: false, err: 'too_many' };
+    gid = 'g' + crypto.randomBytes(6).toString('hex');
+    u.plan.goals.push(Object.assign({ id: gid, made: today_(), done: '', steps: [] }, fields));
+    const reached = u.plan.goals.filter(function (x) { return x.done; });
+    if (u.plan.goals.length > MAX_KEPT_GOALS && reached.length) {   // the oldest reached goals go first
+      const drop = reached.sort(function (a, b) { return a.done < b.done ? -1 : 1; }).slice(0, u.plan.goals.length - MAX_KEPT_GOALS).map(function (x) { return x.id; });
+      u.plan.goals = u.plan.goals.filter(function (x) { return drop.indexOf(x.id) === -1; });
+    }
+    return { ok: true };
+  });
+  if (!res.ok) return res;
+  return { ok: true, id: gid, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* One goal: add / tick / drop a step, mark it reached (or not), or delete it. */
+async function goalAct(uid, tok, gid, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.plan = planOf_(u);
+    const g = u.plan.goals.filter(function (x) { return x.id === gid; })[0];
+    if (!g) return { abort: true, ok: false, err: 'none' };
+    g.steps = Array.isArray(g.steps) ? g.steps : [];
+    if (act === 'delete') { u.plan.goals = u.plan.goals.filter(function (x) { return x.id !== gid; }); return { ok: true }; }
+    if (act === 'reach') { g.done = a.done ? today_() : ''; return { ok: true }; }
+    if (act === 'addStep') {
+      const text = str_(a.text, 100);
+      if (!text) return { abort: true, ok: false, err: 'text' };
+      if (!(isMonth_(a.when) || isQuarter_(a.when)) || !inYears_(a.when)) return { abort: true, ok: false, err: 'when' };
+      if (g.steps.length >= MAX_STEPS) return { abort: true, ok: false, err: 'too_many' };
+      g.steps.push({ id: 's' + crypto.randomBytes(5).toString('hex'), text: text, when: a.when, done: '' });
+      return { ok: true };
+    }
+    const s = g.steps.filter(function (x) { return x.id === a.id; })[0];
+    if (!s) return { abort: true, ok: false, err: 'none' };
+    if (act === 'tickStep') { s.done = a.done ? today_() : ''; return { ok: true }; }
+    if (act === 'dropStep') { g.steps = g.steps.filter(function (x) { return x.id !== a.id; }); return { ok: true }; }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* A person's own tasks: add / tick / drop. Done ones are kept KEEP_DONE_TASKS days. */
+async function myTask(uid, tok, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.tasks = Array.isArray(u.tasks) ? u.tasks : [];
+    const cut = addDays_(today_(), -KEEP_DONE_TASKS);
+    u.tasks = u.tasks.filter(function (x) { return !x.done || x.done >= cut; });
+    if (act === 'add') {
+      const text = str_(a.text, 120);
+      if (!text) return { abort: true, ok: false, err: 'text' };
+      if (u.tasks.filter(function (x) { return !x.done; }).length >= MAX_TASKS) return { abort: true, ok: false, err: 'too_many' };
+      u.tasks.push({ id: 'k' + crypto.randomBytes(5).toString('hex'), text: text, due: isDay_(a.due) ? a.due : '', done: '' });
+      return { ok: true };
+    }
+    const k = u.tasks.filter(function (x) { return x.id === a.id; })[0];
+    if (!k) return { abort: true, ok: false, err: 'none' };
+    if (act === 'tick') { k.done = a.done ? today_() : ''; return { ok: true }; }
+    if (act === 'drop') { u.tasks = u.tasks.filter(function (x) { return x.id !== a.id; }); return { ok: true }; }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+
 /* ---------------- people ---------------- */
 /* The search: names and usernames; never anyone under 18, never yourself. */
 async function searchPeople(uid, tok, q) {
@@ -601,6 +719,8 @@ async function team(uid, tok, tid) {
     if (u && !u.closed) { const c = cardOut_(u, true); c.leader = t.leaders.indexOf(id) > -1; people.push(c); }
   }
   const out = teamBrief_(t, uid); out.about = t.about || ''; out.people = people;
+  const names = {}; people.forEach(function (p) { names[p.id] = p.name; });
+  out.tasks = teamTasksOut_(t, uid, names);
   return { ok: true, team: out };
 }
 async function leaveTeam(uid, tok, tid) {
@@ -665,6 +785,60 @@ async function answerInvite(uid, tok, tid, yes) {
   return boot(uid, tok);
 }
 
+/* ---------------- team tasks ----------------
+   A leader (always an adult) sets a task for everyone or for one member; each
+   person ticks their own. Everyone in the team sees every team task — there is
+   no private channel here, on purpose (see CLAUDE.md, safety). */
+const MAX_TEAM_TASKS = 40, KEEP_TEAM_TASK_DAYS = 60;
+function teamTasksOut_(t, uid, names) {
+  const members = t.members || [];
+  return (t.tasks || []).filter(function (k) { return !k.who || members.indexOf(k.who) > -1; }).map(function (k) {
+    const done = k.done || {};
+    const of = k.who ? [k.who] : members;
+    return { id: k.id, text: k.text, due: k.due || '', who: k.who || '', whoName: k.who ? (names[k.who] || '') : '',
+      forMe: !k.who || k.who === uid, mine: !!done[uid], n: of.filter(function (m) { return done[m]; }).length, of: of.length, made: k.made };
+  });
+}
+async function teamTask(uid, tok, tid, act, a) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (typeof tid !== 'string' || (me.teams || []).indexOf(tid) === -1) return { ok: false, err: 'none' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('t:' + tid, null, function (t) {
+    if (!t || t.members.indexOf(uid) === -1) return { abort: true, ok: false, err: 'none' };
+    const lead = t.leaders.indexOf(uid) > -1;
+    t.tasks = Array.isArray(t.tasks) ? t.tasks : [];
+    const cut = addDays_(today_(), -KEEP_TEAM_TASK_DAYS);
+    t.tasks = t.tasks.filter(function (k) { return (k.due || k.made) >= cut; });
+    if (act === 'add') {
+      if (!lead) return { abort: true, ok: false, err: 'not_leader' };
+      const text = str_(a.text, 120);
+      if (!text) return { abort: true, ok: false, err: 'text' };
+      const who = typeof a.who === 'string' && a.who ? a.who : '';
+      if (who && t.members.indexOf(who) === -1) return { abort: true, ok: false, err: 'none' };
+      if (t.tasks.length >= MAX_TEAM_TASKS) return { abort: true, ok: false, err: 'too_many' };
+      t.tasks.push({ id: 'k' + crypto.randomBytes(5).toString('hex'), text: text, who: who, due: isDay_(a.due) ? a.due : '', by: uid, made: today_(), done: {} });
+      return { ok: true };
+    }
+    const k = t.tasks.filter(function (x) { return x.id === a.id; })[0];
+    if (!k) return { abort: true, ok: false, err: 'none' };
+    if (act === 'tick') {
+      if (k.who && k.who !== uid) return { abort: true, ok: false, err: 'none' };
+      k.done = k.done || {};
+      if (a.done) k.done[uid] = today_(); else delete k.done[uid];
+      return { ok: true };
+    }
+    if (act === 'drop') {
+      if (!lead) return { abort: true, ok: false, err: 'not_leader' };
+      t.tasks = t.tasks.filter(function (x) { return x.id !== a.id; });
+      return { ok: true };
+    }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return team(uid, tok, tid);
+}
+
 async function signOut(uid, tok) {
   if (!(await auth_(uid, tok))) return { ok: true };
   const h = sha_(tok);
@@ -675,9 +849,10 @@ async function signOut(uid, tok) {
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveHabits, tickHabit, saveWeek,
+  savePlanWhy, saveGoal, goalAct, myTask, teamTask,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
-export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_ };
+export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };
 
 export default async function (req) {
   const J = function (o, s) { return new Response(JSON.stringify(o), { status: s || 200, headers: { 'Content-Type': 'application/json' } }); };

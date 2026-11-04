@@ -39,8 +39,11 @@ Held by tests/test-api.mjs against the real handlers.
   can add or invite them — they join with a leader's code; they can't start a team or be a
   leader (a leader holds the code). **Under 13 can't make an account.**
 - **Progress, not details** (`cardOut_`): others see a streak, the week's %, type, Top 5,
-  team count — each behind its own switch (`share.*`). Never goals, habit names, answers,
-  scores, birth year or email.
+  team count, and the life plan as counts (goals, steps this month, goals reached) — each
+  behind its own switch (`share.*`). Never goals, the why, steps, tasks, habit names,
+  answers, scores, birth year or email.
+- **Team tasks** are set only by leaders (adults) and every member sees every one — no
+  private channel between two people, on purpose. Members tick only tasks for everyone or for them.
 - The page sends test answers; the server scores strengths (`gsScore_`) and refuses
   personality bars that disagree with the letters (`cleanPScores_`).
 - No comments or private messages yet: with under-18s on the app, those need reporting,
@@ -57,8 +60,14 @@ Push to `main` → Netlify builds and goes live. CI (`.github/workflows/tests.ym
 tests on every PR. Run them locally before pushing: `node tests/test-api.mjs` and
 `node tests/test-app-ui.mjs` (needs `npm install --no-save playwright`).
 
+## The life plan (Plan tab)
+`u.plan` = `{why, goals:[{id, area, title, measure, help, why, by:'YYYY-MM', done, steps:[{id, text,
+when:'YYYY-MM'|'YYYY-Qn', done}]}]}`; `u.tasks` = a person's own tasks; `t.tasks` = team tasks
+(`done` is a map of who ticked). Six areas of life (`AREAS`, the same six the 1-on-1s will use).
+Up to 8 goals at once; Home shows this month's and this quarter's open steps and team tasks.
+
 ## Planned, in order
-1. Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).
+1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. 1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).
 3. Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).
 4. A Strava-like feed with 👏, reminders on the phone, Telegram sign-in, reporting and blocking.

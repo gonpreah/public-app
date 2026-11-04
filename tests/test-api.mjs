@@ -116,7 +116,60 @@ ok('a photo saves', (await H.savePhoto(M.uid, M.token, jpg)).me.hasPhoto);
 ok('a teammate gets an under-18’s photo', (await H.photos(A.uid, A.token, [M.uid])).photos[M.uid] === jpg);
 ok('a stranger does not', !(await H.photos(F.uid, F.token, [M.uid])).photos[M.uid]);
 
-/* ---------- 7. the door ---------- */
+/* ---------- 7. the life plan ---------- */
+const mon = __test.monthOf_(today), qtr = __test.quarterOf_(today);
+ok('a quarter key is worked out from a date', __test.quarterOf_('2027-05-14') === '2027-Q2' && __test.quarterOf_('2027-12-31') === '2027-Q4');
+ok('a goal needs a title', (await H.saveGoal(M.uid, M.token, { area: 'study', title: '', by: mon })).err === 'title');
+ok('a goal needs an area', (await H.saveGoal(M.uid, M.token, { area: 'nope', title: 'Finish school', by: mon })).err === 'area');
+ok('a goal needs a month', (await H.saveGoal(M.uid, M.token, { area: 'study', title: 'Finish school', by: '2027-13' })).err === 'by');
+ok('a new goal cannot end in the past', (await H.saveGoal(M.uid, M.token, { area: 'study', title: 'Finish school', by: (Y - 1) + '-01' })).err === 'by');
+r = await H.saveGoal(M.uid, M.token, { area: 'study', title: 'Finish grade 12 with good marks', measure: 'Pass the exam with a B', help: 'Study group on Tuesdays', why: 'To study nursing', by: (Y + 1) + '-08' });
+ok('a SMART goal saves', r.ok && r.me.plan.goals.length === 1 && r.me.plan.goals[0].measure === 'Pass the exam with a B');
+const gid = r.id;
+ok('a step needs a month or a quarter', (await H.goalAct(M.uid, M.token, gid, 'addStep', { text: 'Make a timetable', when: 'soon' })).err === 'when');
+await H.goalAct(M.uid, M.token, gid, 'addStep', { text: 'Finish all past papers for maths', when: qtr });
+r = await H.goalAct(M.uid, M.token, gid, 'addStep', { text: 'Make a study timetable', when: mon });
+ok('quarterly and monthly steps save', r.ok && r.me.plan.goals[0].steps.length === 2 && r.me.plan.goals[0].steps[0].when === qtr);
+const sid = r.me.plan.goals[0].steps[1].id;
+r = await H.goalAct(M.uid, M.token, gid, 'tickStep', { id: sid, done: true });
+ok('a step can be ticked', r.ok && r.me.plan.goals[0].steps[1].done === today);
+await H.savePlanWhy(M.uid, M.token, 'To care for sick people like Jesus did');
+await H.saveProfile(M.uid, M.token, { share: { streak: true } });
+const c4 = (await H.team(A.uid, A.token, T.team.id)).team.people.find(p => p.id === M.uid);
+ok('teammates see the plan as counts', c4.plan && c4.plan.goals === 1 && c4.plan.steps === 1);
+ok('… never the goal, the steps or the why', !/grade 12|timetable|past papers|nursing|sick people|measure|"why"/.test(JSON.stringify(c4)), JSON.stringify(c4));
+await H.saveProfile(M.uid, M.token, { share: { plan: false } });
+ok('switching the plan off hides it', !(await H.team(A.uid, A.token, T.team.id)).team.people.find(p => p.id === M.uid).plan);
+r = await H.goalAct(M.uid, M.token, gid, 'reach', { done: true });
+ok('a goal can be reached', r.ok && r.me.plan.goals[0].done === today);
+ok('someone else’s goal can’t be touched', (await H.goalAct(A.uid, A.token, gid, 'delete')).err === 'none');
+for (let i = 0; i < 8; i++) await H.saveGoal(A.uid, A.token, { area: 'faith', title: 'Goal ' + i, by: mon });
+ok('at most eight life goals at once', (await H.saveGoal(A.uid, A.token, { area: 'faith', title: 'One too many', by: mon })).err === 'too_many');
+
+/* ---------- 8. tasks ---------- */
+r = await H.myTask(M.uid, M.token, 'add', { text: 'Buy a new notebook', due: today });
+ok('a task saves', r.ok && r.me.tasks.length === 1 && r.me.tasks[0].due === today);
+r = await H.myTask(M.uid, M.token, 'tick', { id: r.me.tasks[0].id, done: true });
+ok('a task can be ticked', r.me.tasks[0].done === today);
+ok('an empty task is refused', (await H.myTask(M.uid, M.token, 'add', { text: '  ' })).err === 'text');
+ok('a member who isn’t a leader can’t set a team task', (await H.teamTask(M.uid, M.token, T.team.id, 'add', { text: 'Bring snacks' })).err === 'not_leader');
+r = await H.teamTask(A.uid, A.token, T.team.id, 'add', { text: 'Read Mark 5 before Friday' });
+ok('a leader sets a task for everyone', r.ok && r.team.tasks.length === 1 && r.team.tasks[0].of === 2 && r.team.tasks[0].n === 0);
+r = await H.teamTask(A.uid, A.token, T.team.id, 'add', { text: 'Bring the guitar', who: M.uid });
+ok('… or for one person, by name', r.ok && r.team.tasks[1].whoName === 'Mina' && r.team.tasks[1].of === 1);
+ok('a leader can’t set a task for someone outside the team', (await H.teamTask(A.uid, A.token, T.team.id, 'add', { text: 'x', who: F.uid })).err === 'none');
+const mb = await H.boot(M.uid, M.token);
+ok('the member sees both tasks waiting on Home', mb.teamTasks.length === 2 && mb.teamTasks[0].teamName === 'Siem Reap Youth');
+const k1 = r.team.tasks[0].id, k2 = r.team.tasks[1].id;
+r = await H.teamTask(M.uid, M.token, T.team.id, 'tick', { id: k1, done: true });
+ok('the member ticks theirs', r.ok && r.team.tasks[0].mine && r.team.tasks[0].n === 1);
+ok('a task for someone else can’t be ticked', (await H.teamTask(A.uid, A.token, T.team.id, 'tick', { id: k2, done: true })).err === 'none');
+ok('a stranger can’t see or tick team tasks', (await H.teamTask(F.uid, F.token, T.team.id, 'tick', { id: k1, done: true })).err === 'none');
+ok('a member can’t delete a team task', (await H.teamTask(M.uid, M.token, T.team.id, 'drop', { id: k1 })).err === 'not_leader');
+r = await H.teamTask(A.uid, A.token, T.team.id, 'drop', { id: k1 });
+ok('a leader can delete one', r.ok && r.team.tasks.length === 1);
+
+/* ---------- 9. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

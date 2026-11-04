@@ -8,6 +8,7 @@
       signin · signup            — Google, then a username, name and birth year
       home                       — today: streak, habits, steps for now, this week's goals, invites
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
+      coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       teams · team · person      — your teams, a team's people and its mix, someone's card
       find · newteam             — search people (adults only see adults), make a team
       me                         — profile, photo, what others see, the tests
@@ -35,7 +36,8 @@ var S = {
   view: 'signin', back: [], me: null, teams: [], today: '', busy: false,
   photos: {}, team: null, person: null, find: { q:'', people:null }, google: null,
   signup: null, ptest: null, gtest: null, habitDraft: null, weekEdit: false,
-  teamTasks: [], goalId: null, goalDraft: null, whyEdit: false, showDone: false, showReached: false
+  teamTasks: [], goalId: null, goalDraft: null, whyEdit: false, showDone: false, showReached: false,
+  coach: [], coaching: null, meetId: null, meetDraft: null, showEnded: false
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -59,10 +61,11 @@ function failMsg(d){
     full:'That team is full.', too_many:'You’re in as many teams as you can be.', last_leader:'Make someone else a leader first.', google:'Google sign-in didn’t work — try again.',
     name:'Please write your name.', birthYear:'Please choose the year you were born.', photo:'That photo couldn’t be used.',
     title:'Write what you want to do.', area:'Choose a part of life.', by:'Choose a month that hasn’t passed yet.', text:'Write something first.',
-    not_leader:'Only a leader can do this.', none:'That isn’t here any more.' };
+    not_leader:'Only a leader can do this.', none:'That isn’t here any more.',
+    second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.today) S.today=d.today; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -96,7 +99,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { plan:'plan', goal:'plan', goaledit:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -126,6 +129,8 @@ function render(){
     else if(V==='plan') h=planHtml();
     else if(V==='goal') h=goalHtml();
     else if(V==='goaledit') h=goalEditHtml();
+    else if(V==='coach') h=coachHtml();
+    else if(V==='meet') h=meetHtml();
     else { S.view='home'; h=homeHtml(); }
     m.innerHTML=h;
     navHtml_();
@@ -246,7 +251,10 @@ function bootNow_(){
     render();
   });
 }
-function refresh_(){ return call('boot').then(function(d){ if(d && d.ok){ adopt_(d); render(); } }); }
+/* A fresh copy from the server. It doesn't redraw under someone who is typing — that
+   would wipe what they've typed; the next redraw shows it. */
+function typing_(){ var e=document.activeElement; return !!(e && /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName) && e.type!=='checkbox' && e.closest && e.closest('#main')); }
+function refresh_(){ return call('boot').then(function(d){ if(d && d.ok){ adopt_(d); if(!typing_()) render(); } }); }
 
 /* ---------------- Home ---------------- */
 function homeHtml(){
@@ -263,7 +271,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=habitsCardHtml()+planHomeHtml()+weekCardHtml();
+  h+=habitsCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -403,11 +411,23 @@ function personHtml(){
       (!p.minor?'<button class="btn small ghost" id="makeLeader">'+esc(t('Make a leader'))+'</button>':'')+
       '<button class="btn small ghost" id="removeMember" style="color:var(--bad);border-color:var(--bad)">'+esc(t('Remove from team'))+'</button></div></div>';
   }
+  if(p.id!==S.me.id) h+=coachAskHtml_(p);
   if(!p.minor && p.id!==S.me.id){
     var mine=(S.teams||[]).filter(function(tm){ return tm.leader && !(p.sharedTeams||[]).some(function(x){ return x.id===tm.id; }); });
     if(mine.length) h+='<div class="card"><label class="f">'+esc(t('Ask them to join a team you lead'))+'</label>'+mine.map(function(tm){ return '<button class="btn small ghost" data-inviteto="'+esc(tm.id)+'" style="margin:4px 6px 0 0">'+esc(tm.emoji+' '+tm.name)+'</button>'; }).join('')+'</div>';
   }
   return h;
+}
+/* On someone's card: ask a leader to be my coach, or offer to coach someone in a team I lead. */
+function coachAskHtml_(p){
+  if((S.coach||[]).some(function(c){ return c.status!=='ended' && c.role!=='leader' && c.other.id===p.id; })) return '';
+  var sh=p.sharedTeams||[], ask=null, offer=null;
+  sh.forEach(function(x){ if(!ask && x.theyLead && !p.minor && (!S.me.minor || x.leaders>1)) ask=x; if(!offer && x.iLead && !S.me.minor && (!p.minor || x.leaders>1)) offer=x; });
+  if(!ask && !offer) return '';
+  var h='<div class="card"><label class="f">🤝 '+esc(t('1-on-1s'))+'</label>';
+  if(ask) h+='<button class="btn small ghost" data-coachask="'+esc(ask.id)+'|mentee" style="margin:4px 6px 0 0">'+esc(gpT('Ask {name} to be my coach',{name:firstName_(p.name)}))+'</button>';
+  if(offer) h+='<button class="btn small ghost" data-coachask="'+esc(offer.id)+'|coach" style="margin:4px 6px 0 0">'+esc(gpT('Offer to coach {name}',{name:firstName_(p.name)}))+'</button>';
+  return h+'<div class="hint">'+esc(t('They’ll be asked first. A coach meets with you to talk about how you’re doing and what’s next.'))+'</div></div>';
 }
 function findHtml(){
   var F=S.find;
@@ -499,6 +519,7 @@ function planHtml(){
     if(S.showReached) reached.forEach(function(g){ h+=goalRowHtml(g); });
   }
   h+=tasksCardHtml();
+  h+=coachSectionHtml();
   return h;
 }
 function goalRowHtml(g){
@@ -628,6 +649,143 @@ function teamTasksHtml(T){
   }
   return h+'</div>';
 }
+
+/* ---------------- 1-on-1s with a coach or mentor ---------------- */
+/* S.coach: my coachings (from boot). S.coaching: the one open. S.meetId: the 1-on-1 open.
+   The server decides who may read or write (api.js, "1-on-1s"); this only draws it. */
+var RATES = [[1,'😟','Hard'],[2,'😕','Not great'],[3,'😐','OK'],[4,'🙂','Good'],[5,'😄','Great']];
+function coachRoleLine_(c){
+  if(c.role==='mentee') return gpT('{name} is your coach',{name:c.other.name});
+  if(c.role==='coach') return gpT('You coach {name}',{name:c.other.name});
+  return gpT('{coach} coaches {name}',{coach:c.coachName||'?', name:c.other.name});
+}
+function coachMeta_(c){
+  if(c.status==='asked') return c.askedByMe ? t('Waiting for an answer') : (c.role==='mentee' ? t('Offers to be your coach') : t('Asks you to be their coach'));
+  if(c.status==='ended') return t('Ended');
+  if(!c.live) return t('Paused');
+  if(c.next) return gpT('Next 1-on-1: {d}',{d:dueDay_(c.next)});
+  return c.last ? gpT('Last 1-on-1: {d}',{d:dayLabel(c.last)}) : t('No 1-on-1s yet');
+}
+function dueDay_(iso){ var d=todayStr(); return iso===d ? t('Today') : iso===addDays(d,1) ? t('Tomorrow') : dayLabel(iso); }
+function coachRowHtml(c){
+  var h='<div class="card coachRow"><button class="coachOpen" data-coach="'+esc(c.id)+'"'+(c.status==='asked'?' disabled':'')+'>'+faceHtml(c.other,44)+
+    '<span style="flex:1;min-width:0;text-align:left"><b>'+esc(coachRoleLine_(c))+'</b><div class="pmeta">'+esc(coachMeta_(c))+(c.team?' · '+esc(c.team.emoji+' '+c.team.name):'')+'</div>'+
+    (c.myFollow?'<div class="pmeta">'+esc(c.myFollow===1?t('1 follow-up for you'):gpT('{n} follow-ups for you',{n:c.myFollow}))+'</div>':'')+'</span>'+(c.status==='asked'?'':'<span class="chev">›</span>')+'</button>';
+  if(c.status==='asked' && !c.askedByMe) h+='<div class="btnRow" style="margin-top:10px"><button class="btn small" data-coachyes="'+esc(c.id)+'|1">'+esc(t('Yes'))+'</button><button class="btn small ghost" data-coachyes="'+esc(c.id)+'|0">'+esc(t('No thanks'))+'</button></div>';
+  return h+'</div>';
+}
+function coachSectionHtml(){
+  var list=(S.coach||[]).filter(function(c){ return c.status!=='ended'; }), ended=(S.coach||[]).filter(function(c){ return c.status==='ended'; });
+  var h='<h3>🤝 '+esc(t('1-on-1s'))+'</h3>';
+  if(!list.length) h+='<div class="card"><p class="sub" style="margin:0">'+esc(t('Meet with a coach or mentor — a leader in one of your teams — to talk about how you’re doing and what’s next. Open a leader’s card in your team to ask them.'))+'</p></div>';
+  list.forEach(function(c){ h+=coachRowHtml(c); });
+  if(ended.length) h+='<button class="linkbtn" id="toggleEnded">'+esc(gpT('Ended ({n})',{n:ended.length}))+' '+(S.showEnded?'▴':'▾')+'</button>'+(S.showEnded?ended.map(coachRowHtml).join(''):'');
+  return h;
+}
+/* Home: answers waiting from me, and the next 1-on-1. */
+function coachHomeHtml(){
+  var h='', asks=(S.coach||[]).filter(function(c){ return c.status==='asked' && !c.askedByMe; });
+  asks.forEach(function(c){ h+=coachRowHtml(c); });
+  var soon=(S.coach||[]).filter(function(c){ return c.status==='active' && c.live && c.role!=='leader' && (c.next || c.myFollow); })
+    .sort(function(a,b){ return (a.next||'9')<(b.next||'9')?-1:1; }).slice(0,2);
+  soon.forEach(function(c){ h+=coachRowHtml(c); });
+  return h ? '<h3>🤝 '+esc(t('1-on-1s'))+'</h3>'+h : '';
+}
+function coachHtml(){
+  var C=S.coaching;
+  if(!C) return backBtn(t('Back'))+'<p class="sub">'+esc(t('Loading…'))+'</p>';
+  var write=(C.role==='coach'||C.role==='mentee') && C.status==='active' && C.live, other=C.other, team=C.team||{ name:'', emoji:'' };
+  var h=backBtn(t('Back'))+'<div class="personHero">'+faceHtml(other,72)+'<h2 style="margin-top:8px">'+esc(coachRoleLine_(C))+'</h2><div class="pmeta">'+esc(team.emoji+' '+team.name)+'</div></div>';
+  if(C.minor){
+    var msg = C.role==='mentee' ? gpT('Because you’re under 18, the other leaders of {team} can read your 1-on-1s too. That keeps everyone safe.',{team:team.name})
+      : C.role==='coach' ? gpT('{name} is under 18, so the other leaders of {team} can read these 1-on-1s too — not your own notes.',{name:other.name, team:team.name})
+      : gpT('You can read this because {name} is under 18 and you lead {team}. Only the two of them can write here.',{name:other.name, team:team.name});
+    h+='<div class="banner">🔒 '+esc(msg)+'</div>';
+  }
+  if(C.status==='ended') h+='<div class="banner">'+esc(t('This coaching has ended. You can still read it.'))+'</div>';
+  else if(!C.live) h+='<div class="banner">'+esc(t('This coaching is paused: your coach no longer leads the team, or one of you left it.'))+'</div>';
+  if(write){
+    h+='<div class="card"><label class="f" for="coachNext">'+esc(t('Next 1-on-1'))+'</label><input type="date" id="coachNext" min="'+todayStr()+'" value="'+esc(C.next||'')+'">';
+    if(C.role==='mentee') h+='<label class="switchRow"><span>'+esc(t('Let my coach see my life plan'))+'</span><input type="checkbox" id="coachSharePlan"'+(C.sharePlan?' checked':'')+'></label>';
+    h+='</div>';
+  }
+  if(C.plan) h+=menteePlanHtml_(C);
+  h+=checkinTrendHtml_(C);
+  /* follow-ups still open, from every 1-on-1 */
+  var open=[]; (C.meetings||[]).forEach(function(m){ (m.follow||[]).forEach(function(f){ if(!f.done) open.push([m,f]); }); });
+  if(open.length){
+    h+='<h3>➡️ '+esc(t('Follow-ups'))+'</h3><div class="card">';
+    open.forEach(function(x){ h+=followRowHtml_(C, x[0], x[1], write); });
+    h+='</div>';
+  }
+  h+='<h3>🗓️ '+esc(t('1-on-1s'))+'</h3>';
+  if(write) h+='<button class="btn" id="meetNew">＋ '+esc(t('Start a 1-on-1'))+'</button>';
+  if(!(C.meetings||[]).length) h+='<p class="sub">'+esc(t('No 1-on-1s yet. Start one when you meet — or before, to fill in the check-in.'))+'</p>';
+  else h+='<div class="card list">'+C.meetings.map(function(m){ var avg=checkinAvg_(m.checkin);
+    return '<button class="personRow" data-meet="'+esc(m.id)+'"><span class="meetDay"><b>'+Number(m.date.slice(8,10))+'</b>'+esc(t(MONTHS[Number(m.date.slice(5,7))-1]))+'</span><span style="flex:1;min-width:0;text-align:left"><b>'+esc(dayLabel(m.date)+' '+m.date.slice(0,4))+'</b>'+
+      '<div class="pmeta">'+(avg?esc(gpT('Check-in {n}/5',{n:avg})):esc(t('No check-in')))+((m.follow||[]).length?' · '+esc(m.follow.length===1?t('1 follow-up'):gpT('{n} follow-ups',{n:m.follow.length})):'')+'</div></span><span class="chev">›</span></button>'; }).join('')+'</div>';
+  if(C.status!=='ended' && C.role!=='leader') h+='<button class="linkbtn" id="coachEnd" style="color:var(--bad)">'+esc(t('End this coaching'))+'</button>';
+  return h;
+}
+function checkinAvg_(ci){ var v=AREAS.map(function(a){ return (ci||{})[a[0]]; }).filter(Boolean); if(!v.length) return 0; return Math.round(v.reduce(function(x,y){ return x+y; },0)/v.length*10)/10; }
+/* The last check-in, area by area, with how it moved since the one before. */
+function checkinTrendHtml_(C){
+  var ms=(C.meetings||[]).filter(function(m){ return m.checkin && Object.keys(m.checkin).length; });
+  if(!ms.length) return '';
+  var last=ms[0].checkin, prev=ms[1] ? ms[1].checkin : {};
+  var h='<h3>📊 '+esc(t('How life is going'))+'</h3><div class="card"><div class="pmeta" style="margin-bottom:6px">'+esc(gpT('Check-in on {d}',{d:dayLabel(ms[0].date)}))+'</div>';
+  AREAS.forEach(function(a){ var v=last[a[0]]; if(!v) return; var p=prev[a[0]], arrow=!p?'':v>p?' ↑':v<p?' ↓':'';
+    h+='<div class="pBar"><div class="pBarTop"><span>'+a[1]+' '+esc(t(a[2]))+'</span><span><b>'+RATES[v-1][1]+' '+v+'</b>'+(arrow?'<span class="'+(arrow===' ↑'?'up':'down')+'">'+arrow+'</span>':'')+'</span></div><div class="pTrack"><div class="pFill" style="left:0;width:'+(v*20)+'%;background:var(--accent)"></div></div></div>'; });
+  return h+'</div>';
+}
+function menteePlanHtml_(C){
+  var P=C.plan, goals=(P.goals||[]).filter(function(g){ return !g.done; });
+  var h='<h3>🎯 '+esc(gpT('{name}’s life plan',{name:firstName_(C.other.name)}))+'</h3><div class="card">'+(P.why?'<p class="whyText">“'+esc(P.why)+'”</p>':'');
+  if(!goals.length) h+='<p class="sub" style="margin:0">'+esc(t('No life goals yet.'))+'</p>';
+  goals.forEach(function(g){ var now=(g.steps||[]).filter(function(s){ return isNow_(s.when); });
+    h+='<div class="smartRow"><span>'+areaOf(g.area).icon+'</span><div style="flex:1"><b>'+esc(g.title)+'</b><div class="pmeta">'+esc(gpT('By {m}',{m:monthLabel(g.by)}))+'</div><div class="miniTrack"><div style="width:'+goalPct(g)+'%"></div></div>'+
+      now.map(function(s){ return '<div class="pmeta">'+(s.done?'✓ ':'○ ')+esc(s.text)+'</div>'; }).join('')+'</div></div>'; });
+  return h+'</div>';
+}
+function followRowHtml_(C, m, f, write){
+  var forName = f.who==='coach' ? (C.role==='coach'?t('you'):C.role==='mentee'?C.other.name:(C.coachName||'')) : (C.role==='mentee'?t('you'):C.other.name);
+  var mineToTick = write;
+  return '<div class="stepRow'+(f.done?' done':'')+'">'+(mineToTick?checkHtml('data-follow="'+esc(m.id)+'|'+esc(f.id)+'"', !!f.done, f.text):'<span class="tick ghost">'+(f.done?'✓':'')+'</span>')+
+    '<span class="stepTx">'+esc(f.text)+'<div class="pmeta">'+esc(gpT('For {name}',{name:forName}))+'</div></span>'+
+    (write?'<button class="xBtn" data-dropfollow="'+esc(m.id)+'|'+esc(f.id)+'" aria-label="'+esc(t('Delete'))+'">×</button>':'')+'</div>';
+}
+function meetHtml(){
+  var C=S.coaching, m=C && (C.meetings||[]).filter(function(x){ return x.id===S.meetId; })[0];
+  if(!m) return backBtn(t('Back'))+'<p class="sub">'+esc(t('That isn’t here any more.'))+'</p>';
+  var write=(C.role==='coach'||C.role==='mentee') && C.status==='active' && C.live, D=S.meetDraft||(S.meetDraft={ checkin:Object.assign({}, m.checkin||{}) });
+  var ro=write?'':' disabled';
+  var h=backBtn(t('Back'))+'<h2>'+esc(gpT('1-on-1 · {d}',{d:dayLabel(m.date)+' '+m.date.slice(0,4)}))+'</h2><p class="sub">'+esc(coachRoleLine_(C))+'</p>';
+  if(C.minor) h+='<div class="banner">🔒 '+esc(C.role==='mentee'?gpT('The other leaders of {team} can read this too.',{team:(C.team||{}).name||''}):gpT('Other leaders of {team} can read this too — not your own notes.',{team:(C.team||{}).name||''}))+'</div>';
+  h+='<h3>📊 '+esc(t('Check-in'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(C.role==='mentee'?t('How is each part of your life going right now?'):gpT('How is each part of {name}’s life going right now?',{name:firstName_(C.other.name)}))+'</p>';
+  AREAS.forEach(function(a){ var v=D.checkin[a[0]];
+    h+='<div class="rateRow"><div class="rateLb">'+a[1]+' '+esc(t(a[2]))+'</div><div class="rateBtns" role="radiogroup" aria-label="'+esc(t(a[2]))+'">'+
+      RATES.map(function(r){ return '<button class="rateBtn'+(v===r[0]?' on':'')+'" data-rate="'+a[0]+'|'+r[0]+'" role="radio" aria-checked="'+(v===r[0])+'" aria-label="'+esc(t(r[2]))+'"'+ro+'>'+r[1]+'</button>'; }).join('')+'</div></div>'; });
+  h+='</div>';
+  var box=function(id, label, val, hint){ var k={mGood:'good',mHard:'hard',mNotes:'notes',mPriv:'priv'}[id]; if(D[k]!==undefined) val=D[k]; return '<label class="f" for="'+id+'">'+esc(label)+'</label><textarea id="'+id+'" rows="3" maxlength="1200"'+ro+'>'+esc(val||'')+'</textarea>'+(hint?'<div class="hint">'+esc(hint)+'</div>':''); };
+  h+='<div class="card">'+box('mGood', t('What’s going well?'), m.good)+box('mHard', t('What’s hard right now?'), m.hard)+box('mNotes', t('Notes from our talk'), m.notes)+
+    (C.role==='coach'?box('mPriv', t('My own notes'), m.priv, '🔒 '+t('Only you see these.')):'')+
+    (write?'<button class="btn" id="meetSave">'+esc(t('Save'))+'</button>':'')+'</div>';
+  h+='<h3>➡️ '+esc(t('Follow-ups'))+'</h3><div class="card">';
+  if(!(m.follow||[]).length) h+='<p class="sub" style="margin:0 0 6px">'+esc(t('What will each of you do before you meet again?'))+'</p>';
+  (m.follow||[]).forEach(function(f){ h+=followRowHtml_(C, m, f, write); });
+  if(write){
+    var me=C.role, coachWho=me==='coach'?t('Me'):C.other.name, menteeWho=me==='mentee'?t('Me'):C.other.name;
+    h+='<input type="text" id="fIn" maxlength="140" placeholder="'+esc(t('e.g. Read Psalm 23 each morning'))+'" style="margin-top:8px">'+
+      '<div class="atRow" style="margin-top:8px"><select id="fWho" aria-label="'+esc(t('For'))+'"><option value="mentee">'+esc(gpT('For {name}',{name:menteeWho}))+'</option><option value="coach">'+esc(gpT('For {name}',{name:coachWho}))+'</option></select><button class="btn small" id="fAdd">'+esc(t('Add'))+'</button></div>';
+  }
+  h+='</div>';
+  if(write) h+='<button class="linkbtn" id="meetDelete" style="color:var(--bad)">'+esc(t('Delete this 1-on-1'))+'</button>';
+  return h;
+}
+function openCoach_(id, keep){ if(!keep) S.back.push(S.view); S.coaching=null; S.view='coach'; render(); window.scrollTo(0,0);
+  call('coaching', id).then(function(d){ if(d && d.ok){ S.coaching=d.coaching; render(); loadPhotos_([S.coaching.other]); } else { failMsg(d); goBack('plan'); } }); }
+function coachAct_(act, a, then){ return call('coachAct', S.coaching.id, act, a||{}).then(function(d){ if(d && d.ok){ S.coaching=d.coaching; if(then) then(d); render(); } else failMsg(d); return d; }); }
+function keepMeet_(){ var D=S.meetDraft; if(!D || !$('mGood')) return; D.good=$('mGood').value; D.hard=$('mHard').value; D.notes=$('mNotes').value; if($('mPriv')) D.priv=$('mPriv').value; }
 
 /* ---------------- personality (the Impact app's screens, for this app) ---------------- */
 var P_PAGE=5, P_DRAFT='gpa-ptest';
@@ -842,6 +1000,28 @@ function bind(){
     call('teamTask', S.team.id, 'drop', { id:b.getAttribute('data-tmdrop') }).then(function(d){ if(d && d.ok){ S.team=d.team; render(); } else failMsg(d); }); });
   on('tmAdd', busyOnce_(function(){ var v=$('tmIn').value.trim(); if(!v){ showMsg(t('Write something first.')); return; }
     return call('teamTask', S.team.id, 'add', { text:v, who:$('tmWho').value, due:$('tmDue').value }).then(function(d){ if(d && d.ok){ S.team=d.team; render(); refresh_(); } else failMsg(d); }); }));
+
+  /* 1-on-1s */
+  all('[data-coach]', function(b){ openCoach_(b.getAttribute('data-coach')); });
+  all('[data-coachyes]', busyOnce_(function(b){ var p=b.getAttribute('data-coachyes').split('|');
+    return call('coachAnswer', p[0], p[1]==='1').then(function(d){ if(d && d.ok){ showMsg(p[1]==='1'?t('Done.'):t('Saved.')); refresh_(); } else failMsg(d); }); }));
+  all('[data-coachask]', busyOnce_(function(b){ var p=b.getAttribute('data-coachask').split('|');
+    return call('coachAsk', S.person.id, p[0], p[1]).then(function(d){ if(d && d.ok){ showMsg(t('Asked. They’ll see it on their Home screen.')); refresh_(); } else failMsg(d); }); }));
+  on('toggleEnded', function(){ S.showEnded=!S.showEnded; render(); });
+  var cn=$('coachNext'); if(cn) cn.onchange=function(){ coachAct_('next', { date:cn.value }, function(){ refresh_(); showMsg(t('Saved.')); }); };
+  var csp=$('coachSharePlan'); if(csp) csp.onchange=function(){ coachAct_('sharePlan', { on:csp.checked }); };
+  on('meetNew', busyOnce_(function(){ return coachAct_('new', { date:todayStr() }, function(d){ S.meetId=d.mid; S.meetDraft=null; S.back.push('coach'); S.view='meet'; window.scrollTo(0,0); }); }));
+  all('[data-meet]', function(b){ S.meetId=b.getAttribute('data-meet'); S.meetDraft=null; go('meet'); });
+  all('[data-rate]', function(b){ var p=b.getAttribute('data-rate').split('|'); keepMeet_(); S.meetDraft.checkin[p[0]]=Number(p[1]); gpTap(); render(); });
+  on('meetSave', busyOnce_(function(){ keepMeet_(); var D=S.meetDraft, a={ mid:S.meetId, checkin:D.checkin, good:D.good, hard:D.hard, notes:D.notes }; if(D.priv!==undefined) a.priv=D.priv;
+    return coachAct_('save', a, function(){ S.meetDraft=null; showMsg(t('Saved.')); refresh_(); }); }));
+  on('fAdd', busyOnce_(function(){ var v=$('fIn').value.trim(); if(!v){ showMsg(t('Write something first.')); return; } keepMeet_();
+    return coachAct_('addFollow', { mid:S.meetId, text:v, who:$('fWho').value }, function(){ refresh_(); }); }));
+  all('[data-follow]', function(b){ var p=b.getAttribute('data-follow').split('|'), f=null; (S.coaching.meetings||[]).forEach(function(m){ if(m.id===p[0]) (m.follow||[]).forEach(function(x){ if(x.id===p[1]) f=x; }); }); if(!f) return;
+    keepMeet_(); gpTap(); coachAct_('tickFollow', { mid:p[0], fid:p[1], done:!f.done }, function(){ refresh_(); }); });
+  all('[data-dropfollow]', function(b){ var p=b.getAttribute('data-dropfollow').split('|'); if(!confirm(t('Delete this follow-up?'))) return; keepMeet_(); coachAct_('dropFollow', { mid:p[0], fid:p[1] }); });
+  on('meetDelete', busyOnce_(function(){ if(!confirm(t('Delete this 1-on-1?'))) return; return coachAct_('delete', { mid:S.meetId }, function(){ S.meetDraft=null; S.view=S.back.pop()||'coach'; }); }));
+  on('coachEnd', busyOnce_(function(){ if(!confirm(t('End this coaching? You can both still read it.'))) return; return coachAct_('end', {}, function(){ refresh_(); }); }));
 
   /* teams */
   all('[data-team]', function(b){ openTeam_(b.getAttribute('data-team')); });

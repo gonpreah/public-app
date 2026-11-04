@@ -169,7 +169,58 @@ ok('a member can’t delete a team task', (await H.teamTask(M.uid, M.token, T.te
 r = await H.teamTask(A.uid, A.token, T.team.id, 'drop', { id: k1 });
 ok('a leader can delete one', r.ok && r.team.tasks.length === 1);
 
-/* ---------- 9. the door ---------- */
+/* ---------- 9. 1-on-1s ---------- */
+ok('an under-18 can’t be coached while the team has one leader', (await H.coachAsk(M.uid, M.token, A.uid, T.team.id, 'mentee')).err === 'second_leader');
+await H.joinTeam(B.uid, B.token, nc.team.code);
+await H.teamManage(A.uid, A.token, T.team.id, 'lead', B.uid);
+ok('nobody under 18 can be a coach', (await H.coachAsk(A.uid, A.token, M.uid, T.team.id, 'mentee')).err === 'not_leader');
+ok('only a leader of the team can coach', (await H.coachAsk(M.uid, M.token, F.uid, T.team.id, 'mentee')).err === 'none');
+let co = await H.coachAsk(M.uid, M.token, A.uid, T.team.id, 'mentee');
+ok('with two leaders, she asks a leader to be her coach', co.ok);
+const cid = co.id;
+ok('… and can’t ask the same person twice', (await H.coachAsk(M.uid, M.token, A.uid, T.team.id, 'mentee')).err === 'already');
+ok('she can’t say yes to her own ask', (await H.coachAnswer(M.uid, M.token, cid, true)).err === 'none');
+ok('another leader can’t see an ask that isn’t answered yet', (await H.coaching(B.uid, B.token, cid)).err === 'none');
+ok('the coach says yes', (await H.coachAnswer(A.uid, A.token, cid, true)).ok);
+const ab = await H.boot(A.uid, A.token);
+ok('the coach sees it on start-up', ab.coach.some(c => c.id === cid && c.role === 'coach' && c.status === 'active' && c.other.name === 'Mina'));
+co = await H.coachAct(M.uid, M.token, cid, 'new', { date: today });
+ok('a 1-on-1 starts', co.ok && co.mid && co.coaching.meetings.length === 1);
+const mid = co.mid;
+co = await H.coachAct(M.uid, M.token, cid, 'save', { mid, checkin: { faith: 4, family: 2, study: 9, money: 'x' }, good: 'Passed my test', hard: 'Arguing at home' });
+ok('her check-in keeps only real answers (1–5)', co.ok && JSON.stringify(co.coaching.meetings[0].checkin) === '{"faith":4,"family":2}');
+ok('she can’t write the coach’s own notes', (await H.coachAct(M.uid, M.token, cid, 'save', { mid, priv: 'x' })).err === 'none');
+await H.coachAct(A.uid, A.token, cid, 'save', { mid, notes: 'Talked about home. Pray together next time.', priv: 'Check in with her mum?' });
+await H.coachAct(A.uid, A.token, cid, 'addFollow', { mid, text: 'Read Psalm 23 each morning', who: 'mentee' });
+co = await H.coachAct(A.uid, A.token, cid, 'next', { date: __test.today_() });
+ok('the coach sees their own notes and sets the next date', co.coaching.meetings[0].priv === 'Check in with her mum?' && co.coaching.next === today);
+const mv = (await H.coaching(M.uid, M.token, cid)).coaching;
+ok('she sees the shared notes and her follow-up, not the coach’s own notes', mv.meetings[0].notes.startsWith('Talked') && mv.myFollow === 1 && !('priv' in mv.meetings[0]));
+ok('… and is told it isn’t private between two people', mv.minor === true);
+const bv = await H.coaching(B.uid, B.token, cid);
+ok('another leader of the team can read an under-18’s 1-on-1s', bv.ok && bv.coaching.role === 'leader' && bv.coaching.meetings[0].good === 'Passed my test');
+ok('… but not the coach’s own notes', !/mum/.test(JSON.stringify(bv)));
+ok('… and lists them', (await H.coachings(B.uid, B.token)).coachings.some(c => c.id === cid && c.role === 'leader'));
+ok('… but can’t write in them', (await H.coachAct(B.uid, B.token, cid, 'save', { mid, notes: 'x' })).err === 'none');
+ok('a stranger can’t see them', (await H.coaching(E.uid, E.token, cid)).err === 'none' && (await H.coaching(F.uid, F.token, cid)).err === 'none');
+ok('the coach can’t see her life plan until she shares it', !(await H.coaching(A.uid, A.token, cid)).coaching.plan);
+ok('only she can share it', (await H.coachAct(A.uid, A.token, cid, 'sharePlan', { on: true })).err === 'none');
+await H.coachAct(M.uid, M.token, cid, 'sharePlan', { on: true });
+ok('once shared, the coach sees her plan', (await H.coaching(A.uid, A.token, cid)).coaching.plan.goals.length === 1);
+ok('… other leaders still don’t', !(await H.coaching(B.uid, B.token, cid)).coaching.plan);
+const fid = (await H.coaching(M.uid, M.token, cid)).coaching.meetings[0].follow[0].id;
+ok('she ticks her follow-up', (await H.coachAct(M.uid, M.token, cid, 'tickFollow', { mid, fid, done: true })).coaching.myFollow === 0);
+co = await H.coachAsk(B.uid, B.token, M.uid, T.team.id, 'coach');
+ok('a leader can offer to coach', co.ok && (await H.coachAnswer(M.uid, M.token, co.id, true)).ok);
+const cid2 = co.id;
+await H.coachAct(B.uid, B.token, cid2, 'new', {});
+await H.teamManage(A.uid, A.token, T.team.id, 'remove', B.uid);
+ok('a coach who leaves the team loses access at once', (await H.coaching(B.uid, B.token, cid2)).err === 'none');
+const kept = await H.coaching(M.uid, M.token, cid2);
+ok('… she keeps her history, but nothing more can be added', kept.ok && kept.coaching.meetings.length === 1 && !kept.coaching.live && (await H.coachAct(M.uid, M.token, cid2, 'new', {})).err === 'none');
+ok('either of them can end it', (await H.coachAct(M.uid, M.token, cid, 'end')).coaching.status === 'ended');
+
+/* ---------- 10. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

@@ -46,6 +46,11 @@ Held by tests/test-api.mjs against the real handlers.
   private channel between two people, on purpose. Members tick only tasks for everyone or for them.
 - The page sends test answers; the server scores strengths (`gsScore_`) and refuses
   personality bars that disagree with the letters (`cleanPScores_`).
+- **1-on-1s** are the one place two people write to each other. A coach is an adult who
+  leads a team both are in, and both agree. With an **under-18**, it is never private between
+  two people: every leader of that team can read it (not the coach's own notes), the team must
+  have a second leader before anyone can coach them, and the screens say so. If the coach stops
+  leading the team or either leaves it, the coach loses access at once; the mentee keeps history.
 - No comments or private messages yet: with under-18s on the app, those need reporting,
   blocking and a safeguarding contact first.
 
@@ -66,9 +71,16 @@ when:'YYYY-MM'|'YYYY-Qn', done}]}]}`; `u.tasks` = a person's own tasks; `t.tasks
 (`done` is a map of who ticked). Six areas of life (`AREAS`, the same six the 1-on-1s will use).
 Up to 8 goals at once; Home shows this month's and this quarter's open steps and team tasks.
 
+## 1-on-1s (in the Plan tab)
+`c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan
+(the mentee lets the coach see their life plan), meetings (a check-in 1–5 on the six areas,
+going well, hard, shared notes, the coach's own notes `priv`, follow-ups). Asked from a
+person's card ("Ask … to be my coach" / "Offer to coach …"); answered on Home. Roles come
+from `coachRole_`: coach, mentee, leader (read-only, under-18s only).
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
-2. 1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).
+2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.
 3. Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).
 4. A Strava-like feed with 👏, reminders on the phone, Telegram sign-in, reporting and blocking.
 5. A daily Bible verse and more Christian content (Uriah: later).

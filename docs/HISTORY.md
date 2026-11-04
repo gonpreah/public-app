@@ -84,3 +84,10 @@ the account that owns the repo.
   for each quarter and month, my own tasks, and team tasks set by leaders. Home shows the steps
   for now. Others see counts only, behind a new switch. Khmer drafts added (unreviewed).
   Tests: 93 server checks, 35 in the browser.
+- Merged `first-version` into `main` (PR #1, tests green on GitHub). From here: one branch
+  and one pull request per feature.
+- Built step 2, **1-on-1s**, on the branch `one-on-ones`: ask a leader to be your coach (or
+  offer to coach), a check-in on the six areas of life with 😟–😄, notes, the coach's own
+  notes, follow-ups, the next date, and the mentee can let the coach see their life plan.
+  For under-18s the team needs two leaders, and the other leaders can read (not write) the
+  1-on-1s. Tests: 122 server checks, 48 in the browser.

@@ -11,7 +11,8 @@
       gsub:<sub>      Google account id → person id
       uname:<name>    username → person id (usernames are unique, lower case)
       people          the search index: [{id, username, name, minor}] — no photos, no birth years
-      t:<id>          a team: name, emoji, join code, leaders, members, team tasks
+      t:<id>          a team: name, emoji, join code, leaders, members, team tasks, its coachings' ids
+      c:<id>          a coaching (1-on-1s): coach, mentee, the team, its meetings — see "1-on-1s" below
       tcode:<code>    join code → team id
 
     Who sees what (tests/test-api.mjs holds every line of this):
@@ -371,7 +372,8 @@ async function boot(uid, tok) {
     teams.push(teamBrief_(t, uid));
     teamTasksOut_(t, uid, {}).forEach(function (k) { if (k.forMe && !k.mine) teamTasks.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, k)); });
   }
-  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, today: today_() };
+  const co = await coachings(uid, tok);
+  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -650,7 +652,7 @@ async function person(uid, tok, id) {
   const card = cardOut_(u, close);
   const shared = [];
   if (close) for (const tid of (me.teams || [])) {
-    if ((u.teams || []).indexOf(tid) > -1) { const t = await readJSON('t:' + tid, null); if (t) shared.push({ id: t.id, name: t.name, emoji: t.emoji }); }
+    if ((u.teams || []).indexOf(tid) > -1) { const t = await readJSON('t:' + tid, null); if (t) shared.push({ id: t.id, name: t.name, emoji: t.emoji, theyLead: t.leaders.indexOf(id) > -1, iLead: t.leaders.indexOf(uid) > -1, leaders: t.leaders.length }); }
   }
   card.sharedTeams = shared;
   return { ok: true, person: card };
@@ -785,6 +787,198 @@ async function answerInvite(uid, tok, tid, yes) {
   return boot(uid, tok);
 }
 
+/* ---------------- 1-on-1s with a coach or mentor ----------------
+   c:<id> = { id, coach, mentee, team, status: 'asked'|'active'|'ended', askedBy, made,
+              next (the next meeting's date), sharePlan (the mentee lets the coach see
+              their life plan), meetings: [{ id, date, checkin:{area:1–5}, good, hard,
+              notes (the coach's summary, both see it), priv (the coach's own notes),
+              follow:[{id, text, who:'coach'|'mentee', done}] }] }
+
+   Safety (tests/test-api.mjs holds these):
+     · a coach is an adult and a leader of a team both of them are in, and both agree;
+     · a 1-on-1 is the one place two people write to each other, so with someone
+       UNDER 18 it is never private between two people: every leader of that team can
+       read it (not the coach's own notes), the team must have a second leader before
+       anyone can coach them, and they're told so on the screen;
+     · if the coach stops leading the team or either of them leaves it, the coach and
+       the other leaders lose access at once; the mentee keeps their history. */
+const MAX_COACHES = 3, MAX_MENTEES = 40, MAX_MEETINGS = 120, MAX_FOLLOW = 20;
+const RATE_AREAS = AREAS;   // the same six areas of life as the life plan
+/* Who is looking: 'coach' | 'mentee' | 'leader' (another leader, for an under-18) | null. */
+/* Live = the coach still leads the team and both are still in it. */
+async function coachLive_(c) {
+  const t = c ? await readJSON('t:' + c.team, null) : null;
+  if (!t) return false;
+  const inTeam = function (id) { return (t.members || []).indexOf(id) > -1; };
+  return inTeam(c.coach) && inTeam(c.mentee) && (t.leaders || []).indexOf(c.coach) > -1;
+}
+async function coachRole_(c, uid) {
+  if (!c) return null;
+  if (c.mentee === uid) return 'mentee';   // the mentee always keeps their own history
+  if (c.status === 'ended' && c.coach !== uid) return null;
+  if (!(await coachLive_(c))) return null;
+  const t = await readJSON('t:' + c.team, null);
+  if (c.coach === uid) return 'coach';
+  if ((t.leaders || []).indexOf(uid) > -1 && c.status !== 'asked') {
+    const m = await readJSON('u:' + c.mentee, null);
+    if (m && isMinor_(m)) return 'leader';
+  }
+  return null;
+}
+function personBrief_(u) {
+  if (!u) return { id: '', name: '?', username: '' };
+  const sh = shareOf_(u), o = { id: u.id, username: u.username, name: isMinor_(u) ? firstName_(u.name) : u.name, hasPhoto: !!u.hasPhoto, minor: isMinor_(u) };
+  if (sh.type && u.personality && u.personality.share !== false) { o.type = u.personality.type; o.sex = u.sex || ''; }
+  return o;
+}
+function openFollow_(c, who) {
+  let n = 0;
+  (c.meetings || []).forEach(function (m) { (m.follow || []).forEach(function (f) { if (!f.done && (!who || f.who === who)) n++; }); });
+  return n;
+}
+async function coachSummary_(c, uid, role) {
+  const otherId = role === 'mentee' ? c.coach : c.mentee;
+  const other = await readJSON('u:' + otherId, null), t = await readJSON('t:' + c.team, null);
+  const last = (c.meetings || []).map(function (m) { return m.date; }).sort().pop() || '';
+  const o = { id: c.id, role: role, status: c.status, live: await coachLive_(c), askedByMe: c.askedBy === uid, next: c.next || '', last: last, meetings: (c.meetings || []).length,
+    other: personBrief_(other), team: t ? { id: t.id, name: t.name, emoji: t.emoji || '✦' } : null,
+    myFollow: role === 'leader' ? 0 : openFollow_(c, role), minor: !!(role === 'coach' ? other && isMinor_(other) : false) };
+  if (role === 'leader') { const co = await readJSON('u:' + c.coach, null); o.coachName = co ? co.name : ''; }
+  return o;
+}
+/* Ask someone to be my coach (as: 'mentee'), or offer to coach them (as: 'coach'). */
+async function coachAsk(uid, tok, otherId, tid, as) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (as !== 'coach' && as !== 'mentee') return { ok: false, err: 'act' };
+  const other = typeof otherId === 'string' && /^u[a-f0-9]{18}$/.test(otherId) && otherId !== uid ? await readJSON('u:' + otherId, null) : null;
+  const t = typeof tid === 'string' && (me.teams || []).indexOf(tid) > -1 ? await readJSON('t:' + tid, null) : null;
+  if (!other || other.closed || !t || t.members.indexOf(uid) === -1 || t.members.indexOf(otherId) === -1) return { ok: false, err: 'none' };
+  const coach = as === 'coach' ? me : other, mentee = as === 'coach' ? other : me;
+  if (isMinor_(coach) || t.leaders.indexOf(coach.id) === -1) return { ok: false, err: 'not_leader' };
+  if (isMinor_(mentee) && t.leaders.length < 2) return { ok: false, err: 'second_leader' };
+  const mine = [];
+  for (const cid of (me.coaching || [])) { const c = await readJSON('c:' + cid, null); if (c && c.status !== 'ended') mine.push(c); }
+  if (mine.some(function (c) { return (c.coach === coach.id && c.mentee === mentee.id) || (c.coach === mentee.id && c.mentee === coach.id); })) return { ok: false, err: 'already' };
+  const count = async function (u, field) { let n = 0; for (const cid of (u.coaching || [])) { const c = await readJSON('c:' + cid, null); if (c && c.status !== 'ended' && c[field] === u.id) n++; } return n; };
+  if (await count(mentee, 'mentee') >= MAX_COACHES) return { ok: false, err: 'too_many' };
+  if (await count(coach, 'coach') >= MAX_MENTEES) return { ok: false, err: 'too_many' };
+  const c = { id: 'c' + crypto.randomBytes(8).toString('hex'), coach: coach.id, mentee: mentee.id, team: tid, status: 'asked', askedBy: uid,
+    made: today_(), next: '', sharePlan: false, meetings: [] };
+  await writeJSON('c:' + c.id, c);
+  for (const id of [coach.id, mentee.id]) await mutate_('u:' + id, null, function (u) { if (u) u.coaching = (u.coaching || []).concat([c.id]).slice(-60); return { ok: true }; });
+  await mutate_('t:' + tid, null, function (x) { if (x) x.coachings = (x.coachings || []).concat([c.id]).slice(-400); return { ok: true }; });
+  return { ok: true, id: c.id };
+}
+/* The other person says yes or no. */
+async function coachAnswer(uid, tok, cid, yes) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  const c0 = await readJSON('c:' + cid, null);
+  const role = await coachRole_(c0, uid);
+  if (!c0 || c0.status !== 'asked' || c0.askedBy === uid || (role !== 'coach' && role !== 'mentee') || !(await coachLive_(c0))) return { ok: false, err: 'none' };
+  await mutate_('c:' + cid, null, function (c) { if (c) c.status = yes ? 'active' : 'ended'; return { ok: true }; });
+  return { ok: true };
+}
+/* All of mine: as a coach, as someone coached, and (as a leader) under-18s' in my teams. */
+async function coachings(uid, tok) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const out = [], seen = {};
+  for (const cid of (me.coaching || [])) {
+    const c = await readJSON('c:' + cid, null), role = await coachRole_(c, uid);
+    if (!role || seen[cid]) continue; seen[cid] = 1;
+    if (c.status === 'ended' && !(c.meetings || []).length) continue;
+    out.push(await coachSummary_(c, uid, role));
+  }
+  for (const tid of (me.teams || [])) {
+    const t = await readJSON('t:' + tid, null);
+    if (!t || (t.leaders || []).indexOf(uid) === -1) continue;
+    for (const cid of (t.coachings || [])) {
+      if (seen[cid]) continue;
+      const c = await readJSON('c:' + cid, null);
+      if (!c || c.status !== 'active' || (await coachRole_(c, uid)) !== 'leader') continue;
+      seen[cid] = 1; out.push(await coachSummary_(c, uid, 'leader'));
+    }
+  }
+  return { ok: true, coachings: out };
+}
+/* One coaching, with its 1-on-1s. The coach's own notes go only to the coach. */
+async function coaching(uid, tok, cid) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  const c = typeof cid === 'string' ? await readJSON('c:' + cid, null) : null;
+  const role = await coachRole_(c, uid);
+  if (!role) return { ok: false, err: 'none' };
+  const o = await coachSummary_(c, uid, role);
+  o.sharePlan = !!c.sharePlan;
+  o.meetings = (c.meetings || []).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (m) {
+    const x = Object.assign({}, m); if (role !== 'coach') delete x.priv; return x;
+  });
+  if (role === 'coach' && c.status === 'active' && c.sharePlan) { const m = await readJSON('u:' + c.mentee, null); if (m) o.plan = planOf_(m); }
+  if (role === 'mentee' && o.other) { const co = await readJSON('u:' + c.coach, null); o.otherIsMinor = co ? isMinor_(co) : false; }
+  if (role !== 'mentee') { const m = await readJSON('u:' + c.mentee, null); o.minor = !!(m && isMinor_(m)); }
+  else o.minor = isMinor_(await readJSON('u:' + uid, null));
+  return { ok: true, coaching: o };
+}
+/* Changes to a coaching: a new 1-on-1, saving one, follow-ups, the next date, sharing
+   the plan, ending it. Only the coach and the mentee write; other leaders only read. */
+function cleanCheckin_(v) {
+  if (!v || typeof v !== 'object') return null;
+  const o = {};
+  RATE_AREAS.forEach(function (a) { const n = Number(v[a]); if ([1, 2, 3, 4, 5].indexOf(n) > -1) o[a] = n; });
+  return o;
+}
+async function coachAct(uid, tok, cid, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const c0 = typeof cid === 'string' ? await readJSON('c:' + cid, null) : null;
+  const role = await coachRole_(c0, uid);
+  if (role !== 'coach' && role !== 'mentee') return { ok: false, err: 'none' };
+  if (act !== 'end' && (c0.status !== 'active' || !(await coachLive_(c0)))) return { ok: false, err: 'none' };
+  const res = await mutate_('c:' + cid, null, function (c) {
+    if (!c) return { abort: true, ok: false, err: 'none' };
+    c.meetings = Array.isArray(c.meetings) ? c.meetings : [];
+    if (act === 'end') { c.status = 'ended'; c.next = ''; return { ok: true }; }
+    if (act === 'next') { c.next = isDay_(a.date) ? a.date : ''; return { ok: true }; }
+    if (act === 'sharePlan') { if (role !== 'mentee') return { abort: true, ok: false, err: 'none' }; c.sharePlan = !!a.on; return { ok: true }; }
+    if (act === 'new') {
+      if (c.meetings.length >= MAX_MEETINGS) c.meetings.sort(function (x, y) { return x.date < y.date ? -1 : 1; }).shift();
+      const date = isDay_(a.date) ? a.date : today_();
+      const m = { id: 'm' + crypto.randomBytes(5).toString('hex'), date: date, checkin: {}, good: '', hard: '', notes: '', priv: '', follow: [] };
+      c.meetings.push(m); if (c.next && c.next <= date) c.next = '';
+      return { ok: true, mid: m.id };
+    }
+    const m = c.meetings.filter(function (x) { return x.id === a.mid; })[0];
+    if (!m) return { abort: true, ok: false, err: 'none' };
+    m.follow = Array.isArray(m.follow) ? m.follow : [];
+    if (act === 'save') {
+      if (isDay_(a.date)) m.date = a.date;
+      if (a.checkin !== undefined) { const ci = cleanCheckin_(a.checkin); if (ci) m.checkin = ci; }
+      if (a.good !== undefined) m.good = str_(a.good, 600);
+      if (a.hard !== undefined) m.hard = str_(a.hard, 600);
+      if (a.notes !== undefined) m.notes = str_(a.notes, 1200);
+      if (a.priv !== undefined) { if (role !== 'coach') return { abort: true, ok: false, err: 'none' }; m.priv = str_(a.priv, 1200); }
+      return { ok: true };
+    }
+    if (act === 'delete') { c.meetings = c.meetings.filter(function (x) { return x.id !== a.mid; }); return { ok: true }; }
+    if (act === 'addFollow') {
+      const text = str_(a.text, 140);
+      if (!text) return { abort: true, ok: false, err: 'text' };
+      if (m.follow.length >= MAX_FOLLOW) return { abort: true, ok: false, err: 'too_many' };
+      m.follow.push({ id: 'f' + crypto.randomBytes(5).toString('hex'), text: text, who: a.who === 'coach' ? 'coach' : 'mentee', done: '' });
+      return { ok: true };
+    }
+    const f = m.follow.filter(function (x) { return x.id === a.fid; })[0];
+    if (!f) return { abort: true, ok: false, err: 'none' };
+    if (act === 'tickFollow') { f.done = a.done ? today_() : ''; return { ok: true }; }
+    if (act === 'dropFollow') { m.follow = m.follow.filter(function (x) { return x.id !== a.fid; }); return { ok: true }; }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  const out = await coaching(uid, tok, cid);
+  if (res.mid && out.ok) out.mid = res.mid;
+  return out;
+}
+
 /* ---------------- team tasks ----------------
    A leader (always an adult) sets a task for everyone or for one member; each
    person ticks their own. Everyone in the team sees every team task — there is
@@ -850,6 +1044,7 @@ export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask,
+  coachAsk, coachAnswer, coachings, coaching, coachAct,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };

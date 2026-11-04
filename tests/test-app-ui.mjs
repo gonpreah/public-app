@@ -142,12 +142,53 @@ await a.click('[data-back]'); await a.waitForTimeout(300); await a.click('[data-
 ok('… ticks it, and the leader sees 1 of 2 done', /1 of 2 done/.test(await text(a)));
 ok('the leader sees her plan as counts, not words', await (async () => { await a.click('.personRow:not(:first-child)'); await a.waitForTimeout(600); const tx = await text(a); await a.click('[data-back]'); await a.waitForSelector('.personRow'); return /life goals/.test(tx) && !/grade 12|timetable/.test(tx); })());
 
-/* ---------- 7. Khmer ---------- */
+/* ---------- 7. 1-on-1s ---------- */
+async function openTeamPerson(page, who) {
+  await page.click('nav.bottom button[data-tab="teams"]'); await page.waitForTimeout(400);
+  await page.click('[data-team]'); await page.waitForSelector('.personRow');
+  await page.click('.personRow:has-text("' + who + '")'); await page.waitForTimeout(600);
+}
+await openTeamPerson(m, 'Sokha');
+ok('an under-18 can’t ask for a coach while the team has one leader', !(await m.$('[data-coachask]')));
+await d.click('nav.bottom button[data-tab="teams"]'); await d.fill('#joinCode', code); await d.click('#joinGo'); await d.waitForSelector('.personRow');
+await openTeamPerson(a, 'Dara'); await a.click('#makeLeader'); await a.waitForTimeout(500);
+await openTeamPerson(m, 'Sokha');
+ok('with a second leader, she can ask', !!(await m.$('[data-coachask$="|mentee"]')));
+await m.click('[data-coachask$="|mentee"]'); await m.waitForTimeout(500);
+ok('she’s told they’ll be asked', /They’ll see it on their Home/.test(await m.$eval('#msg', e => e.textContent)));
+await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('[data-coachyes]');
+ok('the leader sees the ask on Home', /Asks you to be their coach/.test(await text(a)));
+await a.click('[data-coachyes$="|1"]'); await a.waitForTimeout(800);
+await a.click('nav.bottom button[data-tab="plan"]'); await a.waitForTimeout(500);
+await a.click('[data-coach]'); await a.waitForSelector('#meetNew');
+ok('the coach is told other leaders can read it', /other leaders of Siem Reap Youth can read/.test(await text(a)));
+await a.click('#meetNew'); await a.waitForSelector('[data-rate]');
+await a.click('[data-rate="faith|4"]'); await a.click('[data-rate="family|2"]');
+await a.fill('#mNotes', 'Talked about home. Pray together next time.'); await a.fill('#mPriv', 'Check in with her mum?');
+await a.click('#meetSave'); await a.waitForTimeout(500);
+await a.fill('#fIn', 'Read Psalm 23 each morning'); await a.click('#fAdd'); await a.waitForSelector('[data-follow]');
+ok('a 1-on-1 with a check-in, notes and a follow-up', (await a.$$('.rateBtn.on')).length === 2 && /Psalm 23/.test(await text(a)));
+await m.click('nav.bottom button[data-tab="home"]'); await m.waitForTimeout(700);
+ok('she sees her follow-up waiting on Home', /1 follow-up for you/.test(await text(m)));
+await m.click('[data-coach]'); await m.waitForSelector('[data-meet]');
+ok('… and is told the other leaders can read it', /Because you’re under 18/.test(await text(m)));
+await m.click('[data-meet]'); await m.waitForSelector('#mNotes');
+ok('she reads the shared notes, not the coach’s own', (await m.inputValue('#mNotes')).startsWith('Talked') && !(await m.$('#mPriv')) && !/her mum/.test(await m.content()));
+await m.click('[data-follow]'); await m.waitForTimeout(500);
+ok('she ticks her follow-up', !!(await m.$('.stepRow.done')));
+await d.click('nav.bottom button[data-tab="plan"]'); await d.waitForTimeout(700);
+ok('the other leader sees it listed', /Sokha Chan coaches Mina/.test(await text(d)));
+await d.click('[data-coach]'); await d.waitForSelector('[data-meet]');
+ok('… can read it but not write in it', !(await d.$('#meetNew')) && /Only the two of them can write here/.test(await text(d)));
+await d.click('[data-meet]'); await d.waitForSelector('#mNotes');
+ok('… and never sees the coach’s own notes', !(await d.$('#mPriv')) && !/her mum/.test(await d.content()) && await d.$eval('#mNotes', e => e.disabled));
+
+/* ---------- 8. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
 
-/* ---------- 8. the page fits a phone ---------- */
+/* ---------- 9. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

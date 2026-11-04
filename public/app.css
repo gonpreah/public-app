@@ -322,3 +322,18 @@ select { width:100%; font:inherit; font-size:15px; padding:11px 12px; border:1.5
 .pmeta.late { color:var(--bad); }
 .atRow select, .atRow input[type=date] { flex:1 1 0; min-width:0; }
 textarea { width:100%; box-sizing:border-box; }
+
+/* ---------- 1-on-1s ---------- */
+.coachOpen { display:flex; align-items:center; gap:12px; width:100%; background:none; border:0; padding:0; font:inherit; color:var(--ink); cursor:pointer; text-align:left; }
+.coachOpen:disabled { cursor:default; opacity:1; }
+.meetDay { flex:0 0 auto; width:44px; height:44px; border-radius:12px; background:var(--accentSoft); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10.5px; color:var(--muted); line-height:1.1; }
+.meetDay b { font-size:17px; color:var(--ink); }
+.rateRow { padding:8px 0; border-top:1px solid var(--line); }
+.rateRow:first-of-type { border-top:0; }
+.rateLb { font-size:14px; font-weight:700; margin-bottom:6px; }
+.rateBtns { display:flex; gap:6px; }
+.rateBtn { flex:1; min-width:0; height:42px; border-radius:12px; border:1.5px solid var(--border2); background:var(--surface); font-size:21px; cursor:pointer; padding:0; filter:grayscale(.7); opacity:.75; }
+.rateBtn.on { border-color:var(--accent); background:var(--accentSoft); filter:none; opacity:1; box-shadow:0 0 0 1px var(--accent) inset; }
+.rateBtn:disabled { cursor:default; }
+.up { color:var(--good); font-weight:900; }
+.down { color:var(--bad); font-weight:900; }

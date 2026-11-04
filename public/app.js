@@ -9,6 +9,8 @@
       home                       — today: streak, habits, steps for now, this week's goals, invites
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
+      grow · library · learn     — the Learn tab: the Library (library-app.js) and Learn Khmer /
+                                   English (learn.js), both copied from the Impact app
       teams · team · person      — your teams, a team's people and its mix, someone's card
       find · newteam             — search people (adults only see adults), make a team
       me                         — profile, photo, what others see, the tests
@@ -99,7 +101,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -131,7 +133,11 @@ function render(){
     else if(V==='goaledit') h=goalEditHtml();
     else if(V==='coach') h=coachHtml();
     else if(V==='meet') h=meetHtml();
+    else if(V==='grow') h=growHtml();
+    else if(V==='library') h=libraryHtml();
+    else if(V==='learn') h=khmerHtml_();
     else { S.view='home'; h=homeHtml(); }
+    document.body.classList.toggle('libReading', V==='library' && !!S.libBook && S.libStep!=null);
     m.innerHTML=h;
     navHtml_();
     bind();
@@ -146,7 +152,7 @@ function navHtml_(){
   if(!AUTH || !S.me){ n.hidden=true; return; }
   n.hidden=false;
   var on=VIEWS_TABS[S.view]||'home';
-  n.innerHTML=[['home','🏠','Home'],['plan','🎯','Plan'],['teams','👥','Teams'],['me','🙂','Me']].map(function(x){
+  n.innerHTML=[['home','🏠','Home'],['plan','🎯','Plan'],['grow','📚','Learn'],['teams','👥','Teams'],['me','🙂','Me']].map(function(x){
     return '<button data-tab="'+x[0]+'" class="'+(on===x[0]?'on':'')+'"><span class="ic">'+x[1]+'</span>'+esc(t(x[2]))+'</button>';
   }).join('');
 }
@@ -1063,6 +1069,10 @@ function bind(){
   on('seeMyGs', function(){ S.gsOther=null; go('gstr'); });
 
   bindPTest_(); bindGTest_();
+  on('goLibrary', function(){ S.back=[]; libOpen_(); });
+  on('goLearn', function(){ S.back=[]; khOpen_(); });
+  if(S.view==='library') bindLibrary_();
+  bindKhmer_();
   if(S.view==='team' && S.team) loadPhotos_(S.team.people);
   if(S.view==='person' && S.person) loadPhotos_([S.person]);
   if(S.me && S.me.hasPhoto) loadPhotos_([S.me]);
@@ -1107,6 +1117,21 @@ function bindGTest_(){
   on('gsRetake', function(){ lsDel(GS_DRAFT); S.gtest={ stage:'intro', answers:{}, page:0 }; S.view='gtest'; render(); window.scrollTo(0,0); });
 }
 
+/* ---------------- the Learn tab ---------------- */
+/* Two doors: the Library and Learn Khmer / English. What each knows is on this phone. */
+function growHtml(){
+  var read=0, total=0, going=null;
+  try { read=Object.keys(libRead_()).length; if(typeof GP_LIBRARY!=='undefined'){ total=GP_LIBRARY.books.length; var pr=libProg_(), rd=libRead_(); going=GP_LIBRARY.books.filter(function(b){ return pr[b.id] && !rd[b.id]; })[0]||null; } } catch(e){}
+  var G=null, streak=0; try { G=khGame_(); streak=khDayStreak_(); } catch(e){}
+  var today=G ? (G.days[khToday_()]||0) : 0;
+  var h='<h2>'+esc(t('Learn'))+'</h2><p class="sub">'+esc(t('Grow a little every day: read a great book in ten minutes, and practise Khmer or English.'))+'</p>';
+  h+=entryCardHtml('goLibrary','📚',t('Library'), going ? gpT('Continue: {title}',{title:libTitle_(going)}) : (total ? gpT('{n} of {total} books read',{n:read,total:total}) : t('Ten-minute reads of great books on faith, habits, friendships, money and leading.')));
+  h+=entryCardHtml('goLearn','🔤',t('Learn Khmer / English'), G && G.xp ? gpT('{xp} XP today · 🔥 {n} days',{xp:today,n:streak}) : t('Flashcards, quizzes, a matching game and grammar — like a language app.'));
+  return h;
+}
+function fmtD(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }   // learn.js
+function gpConfetti(el){ confettiAt_(el); }   // learn.js and library-app.js call it by the Impact app's name
+
 /* a little burst when a goal reaches 100% (not under reduced motion) */
 function confettiAt_(el){
   try {
@@ -1119,4 +1144,6 @@ function confettiAt_(el){
 
 /* ---------------- start ---------------- */
 if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.serviceWorker.register('sw.js').catch(function(){}); } catch(e){}
-if(AUTH) bootNow_(); else render();
+/* Start once every script is in (library-app.js and learn.js load after this file and use S). */
+function start_(){ if(AUTH) bootNow_(); else render(); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();

@@ -10,7 +10,10 @@ It is a separate app from the YWAM GP Impact app (`gonpreah/YWAM-gp-impact`, the
 staff app at impact.gonpreah.org): its own repo, Netlify site, Blobs store ("gpa")
 and accounts. Some files are copied from Impact and kept in step by hand:
 `logo.js`, `fonts/`, `personality.js`, `gpstrengths.js`, `km.js`, the theme tokens
-in index.html's head and the core of `app.css`. Fix a bug there in both apps.
+in index.html's head and the core of `app.css` — and, since Nov 2026, `learn.js` (Impact's
+teams/15-khmer.js), `khmer-vocab.js`, `khmer-grammar.js`, `library-app.js` (Impact's Library
+code from teams/03-library-org.js) and their styles at the end of app.css. Fix a bug there in
+both apps. The Library's BOOKS (`library.js`, `library-km.js`) are this app's own (below).
 
 ## The name
 On screen it is **GonPreah** / **កូនព្រះ**. "YWAM GP" rules from the Impact app don't
@@ -61,9 +64,10 @@ string must have Khmer; check before shipping a new screen. Have a native speake
 km-app.js, the privacy promises first.
 
 ## Deploy
-Push to `main` → Netlify builds and goes live. CI (`.github/workflows/tests.yml`) runs both
-tests on every PR. Run them locally before pushing: `node tests/test-api.mjs` and
-`node tests/test-app-ui.mjs` (needs `npm install --no-save playwright`).
+Push to `main` → Netlify builds and goes live. Work on a branch and open a pull request; CI
+(`.github/workflows/tests.yml`) runs the tests on every PR. Run them locally first:
+`node tests/test-api.mjs`, `node tests/test-library.mjs` and `node tests/test-app-ui.mjs`
+(needs `npm install --no-save playwright`).
 
 ## The life plan (Plan tab)
 `u.plan` = `{why, goals:[{id, area, title, measure, help, why, by:'YYYY-MM', done, steps:[{id, text,
@@ -78,9 +82,24 @@ going well, hard, shared notes, the coach's own notes `priv`, follow-ups). Asked
 person's card ("Ask … to be my coach" / "Offer to coach …"); answered on Home. Roles come
 from `coachRole_`: coach, mentee, leader (read-only, under-18s only).
 
+## The Learn tab (📚, view `grow`)
+Two doors: the **Library** (`library-app.js`, view `library`) and **Learn Khmer / English**
+(`learn.js`, view `learn`), both copied from the Impact app with small changes listed at the
+top of each file. Both load their data only when opened (`libLoad_`, `khLoad_`); index.html
+loads `library-app.js` and `learn.js` AFTER app.js (they use `S`), and app.js starts on
+DOMContentLoaded. What you've read, where you are in a book, XP, badges and the level test
+stay on the phone (localStorage `gpa-lib-*`, `gpa-kh-*`); nothing goes to the server. 🔊 is the
+phone's own voice; the 🎧 book player stays off (`LIB_AUDIO_ON`).
+- **The books** (Uriah: "focused on the Cambodian young people angle rather than YWAM GP"): 37
+  of the Impact Library's 58, on five shelves (faith, habits, people, work, lead), Start here
+  ten. Each summary is the Impact one with its "For us at YWAM GP" rewritten as **"For you"**
+  (`forUs`, English and Khmer) for a young Cambodian, and lines that spoke to staff or a base
+  changed. The staff and business books and the Made-at-YWAM-GP guides were left out. Drafts
+  by Claude; tests/test-library.mjs checks the shape, the Khmer and that no staff wording is left.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.
-3. Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).
+3. ~~Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).~~ Done Nov 2026.
 4. A Strava-like feed with 👏, reminders on the phone, Telegram sign-in, reporting and blocking.
 5. A daily Bible verse and more Christian content (Uriah: later).

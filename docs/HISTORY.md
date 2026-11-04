@@ -99,3 +99,8 @@ the account that owns the repo.
 - Uriah: "Leave out ywam stuff." The header's YWAM GP logo became the GonPreah seal; the
   "YWAM life" word list left Learn Khmer; the faith books' 20 YWAM sentences (and their Khmer)
   were rewritten without the name. The books themselves stay.
+- Uriah: no safeguarding contact needed — "limit direct messaging"; he is the admin. Built
+  (branch `feed-safety`): the 👏 feed of the team's moments (no words of anyone's own), cheers
+  on Home, report a person or a team, block (both ways), leaders remove a member's photo, and
+  the admin's Reports page (remove a photo or line, suspend, close a team). The under-18 rules
+  stay as they were. The admin is set by GPA_ADMIN_EMAILS in Netlify.

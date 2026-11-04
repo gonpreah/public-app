@@ -184,7 +184,35 @@ ok('… can read it but not write in it', !(await d.$('#meetNew')) && /Only the 
 await d.click('[data-meet]'); await d.waitForSelector('#mNotes');
 ok('… and never sees the coach’s own notes', !(await d.$('#mPriv')) && !/her mum/.test(await d.content()) && await d.$eval('#mNotes', e => e.disabled));
 
-/* ---------- 8. the Learn tab: the Library and Learn Khmer / English ---------- */
+/* ---------- 8. the feed, 👏, report, block, the admin ---------- */
+process.env.GPA_ADMIN_EMAILS = 'sokha@example.com';   // the server runs in this process
+await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForSelector('[data-clap]');
+ok('Teams shows what the team is up to', /Mina found their personality type/.test(await text(a)));
+await a.click('.feedRow:has-text("Mina found their personality type") [data-clap]'); await a.waitForTimeout(500);
+ok('👏 a teammate', !!(await a.$('.feedRow:has-text("Mina found") .clapBtn.on')));
+await m.click('nav.bottom button[data-tab="home"]'); await m.waitForTimeout(900);
+ok('… who sees the cheer on Home', /Sokha Chan cheered your personality type/.test(await text(m)));
+await openTeamPerson(m, 'Dara');
+await m.click('#reportPerson'); await m.waitForSelector('#repSend');
+await m.click('#repSend'); await m.waitForTimeout(200);
+ok('a report needs a reason chosen', /Choose what is wrong/.test(await m.$eval('#msg', e => e.textContent)));
+await m.check('input[name="repWhat"][value="other"]'); await m.fill('#repWhy', 'Testing the report');
+await m.click('#repSend'); await m.waitForTimeout(500);
+ok('… and is sent', /admin will look at it/.test(await m.$eval('#msg', e => e.textContent)));
+ok('only the admin has Reports on Me', await (async () => { await m.click('nav.bottom button[data-tab="me"]'); return !(await m.$('#goAdmin')); })());
+await a.click('nav.bottom button[data-tab="me"]'); await a.click('#goAdmin'); await a.waitForSelector('[data-admin]');
+ok('the admin sees the report, who it’s about and why', /Dara Keo/.test(await text(a)) && /Testing the report/.test(await text(a)) && /Reported by Mina/.test(await text(a)));
+await a.click('[data-admin$="|dismiss"]'); await a.waitForTimeout(600);
+ok('… and leaves it as it is', /No reports waiting/.test(await text(a)));
+await openTeamPerson(m, 'Dara');
+await m.click('#blockPerson'); await m.waitForTimeout(800);
+ok('she blocks someone, and they leave her team list', await (async () => { await m.click('[data-team]'); await m.waitForSelector('.personRow'); return !/Dara/.test(await text(m)); })());
+await m.click('nav.bottom button[data-tab="me"]'); await m.click('#goBlocked'); await m.waitForSelector('[data-unblock]');
+await m.click('[data-unblock]'); await m.waitForTimeout(500);
+ok('… and can unblock them', /Nobody/.test(await text(m)));
+delete process.env.GPA_ADMIN_EMAILS;
+
+/* ---------- 9. the Learn tab: the Library and Learn Khmer / English ---------- */
 ok('the books aren’t loaded until the Library opens', await m.evaluate(() => typeof GP_LIBRARY === 'undefined' && typeof GP_KHMER_VOCAB === 'undefined'));
 await m.click('nav.bottom button[data-tab="grow"]');
 ok('the Learn tab has the Library and Learn Khmer / English', /Library/.test(await text(m)) && /Learn Khmer \/ English/.test(await text(m)));
@@ -215,7 +243,7 @@ ok('a quiz answer goes green', !!(await m.$('.khOpt.right')));
 await m.evaluate(() => { S.view = 'grow'; render(); });
 ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
 
-/* ---------- 9. Khmer ---------- */
+/* ---------- 10. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -226,7 +254,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 10. the page fits a phone ---------- */
+/* ---------- 11. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

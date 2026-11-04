@@ -1,0 +1,10 @@
+{
+  "name": "gonpreah-public-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "GonPreah — the public app at app.gonpreah.org. Netlify Functions + Blobs.",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.12"
+  }
+}

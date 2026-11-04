@@ -1,0 +1,19 @@
+/* GonPreah's service worker: network first, always — a push to main is live at
+   once — with the kept copy only when the network fails or takes over 4 s.
+   Same-origin GETs only: the API (a POST) and Google are never touched.
+   Bump SHELL when PRECACHE changes. */
+var SHELL = 'gpa-shell-v1', NET_WAIT_MS = 4000;
+var PRECACHE = ['/', 'index.html', 'app.css', 'app.js', 'logo.js', 'km.js', 'km-app.js', 'personality.js', 'gpstrengths.js', 'manifest.json',
+  'fonts/kantumruy-latin.woff2', 'fonts/kantumruy-khmer.woff2', 'fonts/kantumruy-latin-ext.woff2', 'fonts/koulen-latin.woff2', 'fonts/koulen-khmer.woff2', 'icon-180.png', 'icon-512.png'];
+self.addEventListener('install', function(e){ e.waitUntil(caches.open(SHELL).then(function(c){ return c.addAll(PRECACHE).catch(function(){}); }).then(function(){ return self.skipWaiting(); })); });
+self.addEventListener('activate', function(e){ e.waitUntil(caches.keys().then(function(ks){ return Promise.all(ks.filter(function(k){ return k !== SHELL; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); })); });
+self.addEventListener('fetch', function(e){
+  var r = e.request, u = new URL(r.url);
+  if (r.method !== 'GET' || u.origin !== location.origin || u.pathname.indexOf('/.netlify/') === 0) return;
+  e.respondWith(new Promise(function(resolve){
+    var done = false, finish = function(res){ if (!done && res) { done = true; resolve(res); } };
+    var net = fetch(r).then(function(res){ if (res && res.ok) { var cp = res.clone(); caches.open(SHELL).then(function(c){ c.put(r, cp); }); } finish(res); return res; })
+      .catch(function(){ caches.match(r, { ignoreSearch: true }).then(function(m){ finish(m || Response.error()); }); });
+    setTimeout(function(){ caches.match(r, { ignoreSearch: true }).then(function(m){ if (m) finish(m); }); }, NET_WAIT_MS);
+  }));
+});

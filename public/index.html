@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GonPreah</title>
+<meta name="description" content="Find out how God made you, build a life plan, and grow with your team.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GonPreah">
+<meta name="theme-color" content="#17150F" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0B09" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="manifest" href="manifest.json">
+<!-- The fonts are the app's own (fonts/, SIL Open Font License), so nothing waits on a font CDN. -->
+<link rel="preload" href="fonts/kantumruy-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/koulen-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/koulen-khmer.woff2" as="font" type="font/woff2" crossorigin>
+<script>try { if (localStorage.getItem('gpa-lang') !== 'en') document.write('<link rel="preload" href="fonts/kantumruy-khmer.woff2" as="font" type="font/woff2" crossorigin>'); } catch (e) {}</script>
+<style>
+@font-face { font-family:'Kantumruy Pro'; font-style:normal; font-weight:400 700; font-display:block; src:url(fonts/kantumruy-khmer.woff2) format('woff2'); unicode-range:U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC; }
+@font-face { font-family:'Kantumruy Pro'; font-style:normal; font-weight:400 700; font-display:block; src:url(fonts/kantumruy-latin-ext.woff2) format('woff2'); unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family:'Kantumruy Pro'; font-style:normal; font-weight:400 700; font-display:block; src:url(fonts/kantumruy-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family:'Koulen'; font-style:normal; font-weight:400; font-display:block; src:url(fonts/koulen-khmer.woff2) format('woff2'); unicode-range:U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC; }
+@font-face { font-family:'Koulen'; font-style:normal; font-weight:400; font-display:block; src:url(fonts/koulen-latin.woff2) format('woff2'); unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+</style>
+<script>
+/* The saved theme, before anything paints. No attribute = follow the phone. */
+(function(){ try { var t = localStorage.getItem('gpa-theme'); if(t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch(e){} })();
+</script>
+<style>
+/* ==================== THEME TOKENS ====================
+   Copied from the YWAM GP Impact app (teams.html), so GonPreah has the same colours.
+   It is read in <head> before anything paints, or the app flashes the wrong colours.
+
+   Three states, which is what a phone actually has:
+     no attribute  -> follow the system (prefers-color-scheme)
+     data-theme="light" / "dark" -> the reader chose, and their choice wins both ways
+   That is why the media query is guarded with :not([data-theme="light"]) — without
+   it, a reader who picks light on a dark phone gets ignored.
+
+   Two pairs must never be collapsed into one token, because they diverge between
+   themes and a blind find-and-replace inverts them:
+     --ink (body text) vs --headerBg (the black header, hero and coin, which stay
+       dark in BOTH themes — this is the brand, not the background)
+     --surface (cards) vs --onDark (text sitting on that black header)
+   The brand marks in logo.js are white and drawn for the black header, so anything
+   showing them needs --headerBg behind it in either theme or they vanish. */
+:root {
+  --pInk:#17150F;          /* personality hero text — fixed: the hero sits on a fixed light tint in both themes */
+  --pInk2:#3B372E;
+  --pAgree:#1F8A6F;        /* the agree side of the seven circles */
+  --pDisagree:#7B4FA0;     /* the disagree side */
+  --pAgreeInk:#1B7A62;     /* the same, as small text */
+  --pDisagreeInk:#6E4592;
+  --pGood:#1F8A6F;         /* strengths ✓ */
+  --pBad:#B3261E;          /* watch out for ! */
+  --pOnMark:#fff;          /* the glyph inside those marks */
+  --bg:#FAF6F0;            /* page */
+  --surface:#fff;          /* cards */
+  --surface2:#F0EADF;      /* tracks, subtle fills */
+  --ink:#17150F;           /* body text */
+  --muted:#6B6557;         /* secondary text */
+  --faint:#6F6A5A;         /* tertiary text */
+  --line:#F0EADF;          /* hairlines */
+  --border:#E4DDD0;        /* card borders */
+  --border2:#C9C3B6;       /* input borders */
+  --accent:#1F44FF;        /* cobalt */
+  --accent2:#5B7BFF;       /* gradient partner */
+  --accentInk:#fff;        /* text on cobalt */
+  --accentSoft:#E8ECFF;    /* cobalt tint fill */
+  --accentSoftBorder:#B9C4FF;
+  --amber:#FFB323;
+  --amberInk:#17150F;      /* text on amber */
+  --amberDeep:#96650A;     /* amber as TEXT, so darker than --amber */
+  --good:#0A7D3C;
+  --goodInk:#fff;          /* text on a solid --good fill */
+  --goodSoft:#E3F6EA;
+  --bad:#B3261E;
+  --badSoft:#FBE6E6;
+  --warm:#A84E1C;       /* 'just started' on the goal rings */
+  --banner:#FFF1D6;
+  --bannerBorder:#FFD98A;
+  --bannerInk:#5C4A1E;
+  --headerBg:#17150F;      /* header, hero, black cards, loading coin */
+  --onDark:#FAF6F0;        /* text on --headerBg */
+  --onDarkFaint:#9A9384;   /* tertiary text on --headerBg, which is dark in BOTH themes */
+  --onDarkBorder:#4A463D;  /* outlined buttons in the header */
+  --navBg:var(--surface);  /* bottom tab bar — a card-like surface in light, but
+    flush with --headerBg in dark (see the dark blocks below): a visibly lighter
+    grey bar was the one thing standing out against an otherwise black shell
+    while the rest of the page was still loading. */
+  --shadow:rgba(31,68,255,.28);
+  --shadowSoft:rgba(31,68,255,.12);
+  --scrim:rgba(23,21,15,.45);
+  /* the finance charts (Oct 2026) — checked with the dataviz validator on these card
+     surfaces: income vs spending as two series, and how old staff debt is as one
+     ordered ramp (newest lightest; in dark, newest nearest the surface) */
+  --vizIn:#2a78d6;         /* money coming in */
+  --vizOut:#eb6834;        /* money going out */
+  --vizInSoft:#cde2fb;     /* the track behind a coming-in meter */
+  --vizAge1:#86b6ef; --vizAge2:#5598e7; --vizAge3:#2a78d6; --vizAge4:#1c5cab; --vizAge5:#0d366b;
+  color-scheme:light;
+}
+/* Dark: warm greys rather than pure black, so the paper-and-ink feel survives.
+   Cobalt is lifted to #6C86FF — #1F44FF on a dark ground fails contrast — and the
+   text that sits on cobalt goes dark to match. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pAgreeInk:#5CC9A8;
+    --pDisagreeInk:#C3A2E0;
+    --bg:#121110;
+    --surface:#1C1A17;
+    --surface2:#26231D;
+    --ink:#F2EDE4;
+    --muted:#A8A192;
+    --faint:#8A8474;
+    --line:#2A261F;
+    --border:#332E26;
+    --border2:#463F34;
+    --accent:#6C86FF;
+    --accent2:#8EA0FF;
+    --accentInk:#0B0A08;
+    --accentSoft:#1B2145;
+    --accentSoftBorder:#2F3872;
+    --amber:#FFC352;
+    --amberInk:#17150F;
+    --amberDeep:#E9AE3A;
+    --good:#4CC98A;
+    --goodInk:#0B0A08;
+    --goodSoft:#12301F;
+    --bad:#FF7A6B;
+    --badSoft:#38191A;
+    --warm:#FF9E6B;
+    --banner:#2A2313;
+    --bannerBorder:#4C3D18;
+    --bannerInk:#F0DFB4;
+    --headerBg:#0C0B09;
+    --onDark:#F2EDE4;
+    --onDarkFaint:#9A9384;
+    --onDarkBorder:#3A352B;
+    --navBg:var(--headerBg);
+    --shadow:rgba(108,134,255,.30);
+    --shadowSoft:rgba(108,134,255,.14);
+    --scrim:rgba(0,0,0,.62);
+    --vizIn:#3987e5; --vizOut:#d95926; --vizInSoft:#1c2f4d;
+    --vizAge1:#184f95; --vizAge2:#256abf; --vizAge3:#3987e5; --vizAge4:#6da7ec; --vizAge5:#b7d3f6;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"] {
+  --pAgreeInk:#5CC9A8;
+  --pDisagreeInk:#C3A2E0;
+  --bg:#121110;
+  --surface:#1C1A17;
+  --surface2:#26231D;
+  --ink:#F2EDE4;
+  --muted:#A8A192;
+  --faint:#8A8474;
+  --line:#2A261F;
+  --border:#332E26;
+  --border2:#463F34;
+  --accent:#6C86FF;
+  --accent2:#8EA0FF;
+  --accentInk:#0B0A08;
+  --accentSoft:#1B2145;
+  --accentSoftBorder:#2F3872;
+  --amber:#FFC352;
+  --amberInk:#17150F;
+  --amberDeep:#E9AE3A;
+  --good:#4CC98A;
+  --goodInk:#0B0A08;
+  --goodSoft:#12301F;
+  --bad:#FF7A6B;
+  --badSoft:#38191A;
+  --warm:#FF9E6B;
+  --banner:#2A2313;
+  --bannerBorder:#4C3D18;
+  --bannerInk:#F0DFB4;
+  --headerBg:#0C0B09;
+  --onDark:#F2EDE4;
+  --onDarkFaint:#9A9384;
+  --onDarkBorder:#3A352B;
+  --navBg:var(--headerBg);
+  --shadow:rgba(108,134,255,.30);
+  --shadowSoft:rgba(108,134,255,.14);
+  --scrim:rgba(0,0,0,.62);
+  --vizIn:#3987e5; --vizOut:#d95926; --vizInSoft:#1c2f4d;
+  --vizAge1:#184f95; --vizAge2:#256abf; --vizAge3:#3987e5; --vizAge4:#6da7ec; --vizAge5:#b7d3f6;
+  color-scheme:dark;
+}
+/* Motion: one spring, used everywhere something appears or grows. The overshoot
+   is what separates "an app" from "a web page"; honoured only when the reader has
+   not asked for less motion. */
+:root { --spring:cubic-bezier(.34,1.56,.64,1); --ease:cubic-bezier(.4,0,.2,1);
+        --r:18px; --rSm:12px; --rLg:22px; }
+@media (prefers-reduced-motion: reduce) { :root { --spring:linear; --ease:linear; } }
+
+/* ---- progress rings, shared ----
+   Driven by gpRingHtml()/gpRingVars() in rollup.js. One element, no SVG: the
+   conic-gradient is the sweep and the ::after punches the middle out, so the ring
+   inherits whatever background it is sitting on. */
+.gRing { flex:0 0 auto; width:42px; height:42px; border-radius:50%; position:relative;
+  background:conic-gradient(var(--gc) calc(var(--p) * 1%), var(--surface2) 0);
+  display:grid; place-items:center; transition:background .3s var(--ease); }
+.gRing::after { content:''; position:absolute; inset:4px; border-radius:50%; background:var(--surface); }
+.gRing span { position:relative; z-index:1; font-family:'Koulen',sans-serif; font-size:12.5px;
+  color:var(--gc); letter-spacing:-.2px; }
+.gRing.sm { width:34px; height:34px; }
+.gRing.sm span { font-size:10.5px; }
+.gRing.sm::after { inset:3px; }
+.gRing.lg { width:58px; height:58px; }
+.gRing.lg span { font-size:16px; }
+.gRing.lg::after { inset:5px; }
+/* On the black hero the punched-out middle has to match the hero, not a card. */
+.hero .gRing::after, .focusCard .gRing::after { background:var(--headerBg); }
+.hero .gRing, .focusCard .gRing { background:conic-gradient(var(--gc) calc(var(--p) * 1%), var(--onDarkBorder) 0); }
+/* ...and the digits go to plain light text there. The paper-mode versions of those
+   colours are chosen to be readable ON PAPER, so they are far too dark to sit on
+   the hero; the sweep still carries the colour, which is where it reads anyway. */
+.hero .gRing span, .focusCard .gRing span { color:var(--onDark); }
+
+/* ---- a number that has just landed ----
+   Pairs with gpAnimateCounts(): the value climbs and the element settles into
+   place, so a figure reads as arriving rather than simply being there. */
+@keyframes gpPop { 0%{transform:scale(.88);opacity:.55} 100%{transform:scale(1);opacity:1} }
+[data-count] { display:inline-block; animation:gpPop .42s var(--spring) both; }
+@media (prefers-reduced-motion: reduce) { [data-count] { animation:none } }
+</style>
+
+<style>
+* { box-sizing:border-box; margin:0; }
+/* Locked to the phone's edges: viewport-fit=cover hands the page the notch and the
+   home-indicator strip, so everything pads by the safe-area insets (the Impact app's
+   lesson: without it the chrome shifts every time iOS re-reports them). */
+html { overflow-x:hidden; background:var(--headerBg); }
+body { background:var(--bg); color:var(--ink); font-family:'Kantumruy Pro',system-ui,sans-serif;
+  min-height:100vh; min-height:100dvh; padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  padding-left:env(safe-area-inset-left); padding-right:env(safe-area-inset-right);
+  overflow-x:hidden; overflow-x:clip; -webkit-text-size-adjust:100%; }
+</style>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<style>
+#splash { position:fixed; inset:0; z-index:9999; background:var(--headerBg); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:22px; transition:opacity .34s ease; }
+#splash.gone { opacity:0; pointer-events:none; }
+.spCoin { width:104px; height:104px; border-radius:50%; position:relative; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 0 4px rgba(31,68,255,.16), 0 14px 40px rgba(31,68,255,.34); }
+.spCoin::before { content:''; position:absolute; inset:-9px; border-radius:50%;
+  background:conic-gradient(from 0deg, rgba(31,68,255,0) 0deg, rgba(31,68,255,.15) 200deg, var(--accent) 340deg, var(--accent2) 360deg);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px)); animation:spSpin 1s linear infinite; }
+.spCoin img { width:74px; height:auto; opacity:0; transition:opacity .3s ease; animation:spSpin 1.4s linear infinite; }
+.spCoin img[src] { opacity:1; }
+.spWord { font-family:'Koulen',system-ui,sans-serif; font-size:22px; letter-spacing:2px; color:var(--onDark); }
+@keyframes spSpin { to { transform:rotate(360deg) } }
+@media (prefers-reduced-motion: reduce){ .spCoin::before, .spCoin img { animation:none } }
+</style>
+<div id="splash"><div class="spCoin"><img id="splashLogo" alt=""></div><div class="spWord">កូនព្រះ</div></div>
+<script>
+/* Down when the app draws, and on its own after 8 s so nothing can trap the page behind it. */
+window.gpSplashDone = function(){ var s=document.getElementById('splash'); if(!s || s.className==='gone') return; s.className='gone'; setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); }, 420); };
+setTimeout(function(){ window.gpSplashDone(); }, 8000);
+</script>
+<header>
+  <div class="brandRow">
+    <img id="brandLogo" alt="GonPreah" class="logoImg">
+    <div class="brand"><div class="brandKh">កូនព្រះ</div><div class="brandEn">GONPREAH</div></div>
+  </div>
+  <div class="hbtns" id="hbtns"></div>
+</header>
+<main id="main"></main>
+<nav class="bottom" id="bottomNav" hidden></nav>
+<div class="msg" id="msg" role="status" aria-live="polite"></div>
+<script>
+/* A failed core script shows a way out instead of a blank page. */
+window.addEventListener('error', function(e){
+  var el = e && e.target;
+  if(el && el.tagName === 'SCRIPT' && !el.hasAttribute('data-optional')){
+    var m=document.getElementById('main'); if(m) m.innerHTML='<div class="card" style="margin-top:30px"><b>The app could not load.</b><p class="sub" style="margin:8px 0 0">Check your connection, then try again.</p><button class="btn" onclick="location.reload()">Try again</button></div>';
+    if(window.gpSplashDone) window.gpSplashDone();
+  }
+}, true);
+</script>
+<script src="logo.js"></script>
+<script src="km.js" data-optional></script>
+<script src="km-app.js" data-optional></script>
+<script src="personality.js"></script>
+<script src="gpstrengths.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

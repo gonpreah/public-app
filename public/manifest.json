@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "GonPreah",
+  "short_name": "GonPreah",
+  "description": "Find out how God made you, build a life plan, and grow with your team.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#17150F",
+  "theme_color": "#17150F",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

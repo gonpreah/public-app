@@ -276,5 +276,28 @@ var APP_KM = {
   "Good": "ល្អ",
   "Great": "ល្អណាស់",
   "1 follow-up for you": "កិច្ចការបន្ត ១ សម្រាប់អ្នក",
-  "1 follow-up": "កិច្ចការបន្ត ១"
+  "1 follow-up": "កិច្ចការបន្ត ១",
+  /* the Learn tab, the Library, Learn Khmer / English */
+  "Learn": "រៀន",
+  "Grow a little every day: read a great book in ten minutes, and practise Khmer or English.": "រីកចម្រើនបន្តិចម្តងៗរៀងរាល់ថ្ងៃ៖ អានសៀវភៅល្អមួយក្នុងរយៈពេលដប់នាទី ហើយហាត់ភាសាខ្មែរ ឬអង់គ្លេស។",
+  "Continue: {title}": "បន្ត៖ {title}",
+  "{n} of {total} books read": "បានអាន {n} ក្នុងចំណោម {total} ក្បាល",
+  "Ten-minute reads of great books on faith, habits, friendships, money and leading.": "ការអានដប់នាទី នៃសៀវភៅល្អៗអំពីជំនឿ ទម្លាប់ មិត្តភាព លុយកាក់ និងការដឹកនាំ។",
+  "{xp} XP today · 🔥 {n} days": "{xp} XP ថ្ងៃនេះ · 🔥 {n} ថ្ងៃ",
+  "Flashcards, quizzes, a matching game and grammar — like a language app.": "កាតពាក្យ សំណួរ ល្បែងផ្គូផ្គង និងវេយ្យាករណ៍ — ដូចកម្មវិធីរៀនភាសា។",
+  "Ten-minute reads of great books on faith, habits, friendships, money and leading — the big ideas, made for young people in Cambodia.": "ការអានដប់នាទី នៃសៀវភៅល្អៗអំពីជំនឿ ទម្លាប់ មិត្តភាព លុយកាក់ និងការដឹកនាំ — គំនិតធំៗ ដែលរៀបចំសម្រាប់យុវជននៅកម្ពុជា។",
+  "{n} books to start with: hearing God, habits, friendships, money and growing as a leader.": "សៀវភៅ {n} ក្បាលសម្រាប់ចាប់ផ្តើម៖ ការស្តាប់ព្រះ ទម្លាប់ មិត្តភាព លុយកាក់ និងការលូតលាស់ជាអ្នកដឹកនាំ។",
+  "Summaries written in our own words — not by the authors or publishers. Love one? Read the whole book.": "សេចក្តីសង្ខេបដែលសរសេរដោយពាក្យរបស់យើងផ្ទាល់ — មិនមែនដោយអ្នកនិពន្ធ ឬអ្នកបោះពុម្ពទេ។ ចូលចិត្តមួយណា? សូមអានសៀវភៅទាំងមូល។",
+  "For you": "សម្រាប់អ្នក",
+  "An original guide written for GonPreah — not a published book. Every person is different: use it to start conversations, not to put people in boxes.": "មគ្គុទ្ទេសក៍ដើមដែលសរសេរសម្រាប់ កូនព្រះ — មិនមែនជាសៀវភៅដែលបានបោះពុម្ពទេ។ មនុស្សម្នាក់ៗខុសៗគ្នា៖ ប្រើវាដើម្បីចាប់ផ្តើមការសន្ទនា មិនមែនដើម្បីដាក់មនុស្សក្នុងប្រអប់ទេ។",
+  "Summary written in our own words — not by the author or publisher.": "សេចក្តីសង្ខេបដែលសរសេរដោយពាក្យរបស់យើងផ្ទាល់ — មិនមែនដោយអ្នកនិពន្ធ ឬអ្នកបោះពុម្ពទេ។",
+  "Your level stays on this phone. Nobody else sees it.": "កម្រិតរបស់អ្នកនៅតែលើទូរស័ព្ទនេះ។ គ្មាននរណាម្នាក់ផ្សេងទៀតឃើញវាទេ។",
+  /* the Library's shelves (library.js) */
+  "Faith & God’s heart": "ជំនឿ និងព្រះហឫទ័យរបស់ព្រះ",
+  "Habits & goals": "ទម្លាប់ និងគោលដៅ",
+  "Friends, family & feelings": "មិត្តភក្តិ គ្រួសារ និងអារម្មណ៍",
+  "Study, money & work": "ការសិក្សា លុយកាក់ និងការងារ",
+  "Lead & serve": "ដឹកនាំ និងបម្រើ",
+  /* Learn Khmer: level 2 without the YWAM list */
+  "Home, the market, the city, the classroom, the restaurant, the hospital.": "ផ្ទះ ផ្សារ ទីក្រុង ថ្នាក់រៀន ភោជនីយដ្ឋាន មន្ទីរពេទ្យ។"
 };

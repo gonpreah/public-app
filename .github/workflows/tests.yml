@@ -13,6 +13,7 @@ jobs:
         with: { node-version: 22 }
       - run: npm install
       - run: node tests/test-api.mjs
+      - run: node tests/test-library.mjs
   browser:
     name: browser tests
     runs-on: ubuntu-latest

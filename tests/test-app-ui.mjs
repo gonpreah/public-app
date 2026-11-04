@@ -44,6 +44,7 @@ await a.selectOption('#suYear', '2000');
 await a.click('#suGo');
 await a.waitForSelector('nav.bottom button[data-tab="home"]');
 ok('signed up, Home says hello', /Sokha/.test(await text(a)) && /day streak/.test(await text(a)));
+ok('the header shows the GonPreah seal, not the YWAM GP mark', await a.evaluate(() => document.getElementById('brandLogo').src === GP_LOGO));
 ok('the session is kept on the phone', await a.evaluate(() => !!JSON.parse(localStorage.getItem('gpa-auth') || 'null')));
 
 await a.click('#habitPick');
@@ -183,12 +184,49 @@ ok('… can read it but not write in it', !(await d.$('#meetNew')) && /Only the 
 await d.click('[data-meet]'); await d.waitForSelector('#mNotes');
 ok('… and never sees the coach’s own notes', !(await d.$('#mPriv')) && !/her mum/.test(await d.content()) && await d.$eval('#mNotes', e => e.disabled));
 
-/* ---------- 8. Khmer ---------- */
+/* ---------- 8. the Learn tab: the Library and Learn Khmer / English ---------- */
+ok('the books aren’t loaded until the Library opens', await m.evaluate(() => typeof GP_LIBRARY === 'undefined' && typeof GP_KHMER_VOCAB === 'undefined'));
+await m.click('nav.bottom button[data-tab="grow"]');
+ok('the Learn tab has the Library and Learn Khmer / English', /Library/.test(await text(m)) && /Learn Khmer \/ English/.test(await text(m)));
+await m.click('#goLibrary'); await m.waitForSelector('.libRow');
+const rows = await m.$$eval('.libRow', rs => rs.length);
+ok('the Library: Start here and five shelves', rows === 6 && /Start here/.test(await text(m)) && /Friends, family & feelings/.test(await text(m)));
+ok('… for young people, not YWAM GP', !/YWAM GP/.test(await text(m)));
+await m.click('[data-libbook="atomic-habits"]'); await m.waitForSelector('#libStart');
+ok('a book page with "For you"', /For you/i.test(await text(m)) && !/For us at YWAM GP/.test(await text(m)));
+await m.click('#libStart'); await m.waitForTimeout(300);
+ok('the reader opens full screen, the tabs hidden', await m.evaluate(() => document.body.classList.contains('libReading')) && !(await m.isVisible('nav.bottom')));
+await m.click('#libNext'); await m.waitForTimeout(300);
+ok('… and turns the page', await m.evaluate(() => S.libStep === 1));
+await m.click('#libClose, #libBack').catch(() => {}); await m.waitForTimeout(200);
+await m.evaluate(() => { S.libBook = null; S.libStep = null; S.view = 'grow'; render(); });
+await m.click('#goLearn'); await m.waitForSelector('[data-khlevel]');
+ok('Learn Khmer opens on its levels', /Learn Khmer/.test(await text(m)));
+await m.click('[data-khlevel="1"]'); await m.waitForTimeout(300);
+await m.click('[data-khcat="colors"]'); await m.waitForTimeout(300);
+await m.click('[data-khmode="cards"]'); await m.waitForSelector('#khFlip');
+await m.click('#khFlip'); await m.waitForTimeout(200); await m.click('#khYes'); await m.waitForTimeout(300);
+ok('flashcards: flip, "Got it", and XP', await m.evaluate(() => khGame_().xp > 0));
+await m.click('#khBack'); await m.waitForTimeout(300);
+await m.click('[data-khmode="quiz"]'); await m.waitForSelector('[data-khopt]');
+const right = await m.evaluate(() => S.kh.q.options.indexOf(S.kh.q.w));
+await m.click('[data-khopt="' + right + '"]'); await m.waitForTimeout(200);
+ok('a quiz answer goes green', !!(await m.$('.khOpt.right')));
+await m.evaluate(() => { S.view = 'grow'; render(); });
+ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
+
+/* ---------- 9. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
+ok('five tabs fit on one line in Khmer', await a.$$eval('nav.bottom button', bs => bs.every(b => b.scrollWidth <= b.clientWidth + 1) && new Set(bs.map(b => Math.round(b.getBoundingClientRect().top))).size === 1));
+await a.click('nav.bottom button[data-tab="grow"]'); await a.click('#goLibrary');
+await a.waitForFunction(() => typeof GP_LIBRARY_KM !== 'undefined', null, { timeout: 15000 });
+await a.waitForTimeout(400);
+await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
+ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 9. the page fits a phone ---------- */
+/* ---------- 10. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

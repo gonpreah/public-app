@@ -91,3 +91,11 @@ the account that owns the repo.
   notes, follow-ups, the next date, and the mentee can let the coach see their life plan.
   For under-18s the team needs two leaders, and the other leaders can read (not write) the
   1-on-1s. Tests: 122 server checks, 48 in the browser.
+- Merged the 1-on-1s (PR #2). Built step 3 on the branch `learn-library`: a **Learn** tab with
+  the Impact app's Library reader and its Learn Khmer / English game. The Library is 37 of the
+  Impact's 58 books, chosen for Cambodian young people, each "For us at YWAM GP" rewritten as
+  "For you" in English and Khmer (six helpers wrote the rewrites in parallel). The game came
+  across as it is; its level test stays on the phone. km.js brought up to date from Impact.
+- Uriah: "Leave out ywam stuff." The header's YWAM GP logo became the GonPreah seal; the
+  "YWAM life" word list left Learn Khmer; the faith books' 20 YWAM sentences (and their Khmer)
+  were rewritten without the name. The books themselves stay.

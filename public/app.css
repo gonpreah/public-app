@@ -6,7 +6,7 @@ input:focus, select:focus, button:focus-visible { outline:3px solid var(--accent
 header { background:var(--headerBg); color:var(--onDark); display:flex; justify-content:space-between; align-items:center;
   padding:calc(16px + env(safe-area-inset-top)) 16px 16px; }
 .brandRow { display:flex; align-items:center; gap:10px; min-width:0; }
-.logoImg { height:30px; width:auto; flex-shrink:0; display:block; }
+.logoImg { height:34px; width:auto; flex-shrink:0; display:block; }
 .brand { display:flex; flex-direction:column; padding-left:10px; border-left:1px solid var(--onDarkBorder); }
 .brandKh { font-family:'Koulen',sans-serif; font-size:22px; letter-spacing:1px; line-height:1;  white-space:nowrap; }
 .brandEn { font-size:9px; letter-spacing:2px; color:var(--amber); font-weight:700; white-space:nowrap; }   /* "MY YWAM GP" on one line, down to 320px */

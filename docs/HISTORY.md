@@ -96,3 +96,6 @@ the account that owns the repo.
   Impact's 58 books, chosen for Cambodian young people, each "For us at YWAM GP" rewritten as
   "For you" in English and Khmer (six helpers wrote the rewrites in parallel). The game came
   across as it is; its level test stays on the phone. km.js brought up to date from Impact.
+- Uriah: "Leave out ywam stuff." The header's YWAM GP logo became the GonPreah seal; the
+  "YWAM life" word list left Learn Khmer; the faith books' 20 YWAM sentences (and their Khmer)
+  were rewritten without the name. The books themselves stay.

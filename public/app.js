@@ -109,7 +109,7 @@ function backBtn(label){ return '<button class="linkbtn backLink" data-back>← 
 function render(){
   var m=document.getElementById('main');
   var logo=document.getElementById('brandLogo'), sl=document.getElementById('splashLogo');
-  if(typeof GP_LOGO_WIDE==='string' && logo && !logo.src) logo.src=GP_LOGO_WIDE;
+  if(typeof GP_LOGO==='string' && logo && !logo.src) logo.src=GP_LOGO;   // the GonPreah seal; not the wide YWAM GP mark (Uriah: "leave out ywam stuff")
   if(typeof GP_LOGO==='string' && sl && !sl.src) sl.src=GP_LOGO;
   document.documentElement.lang = LANG==='km' ? 'km' : 'en';
   document.getElementById('hbtns').innerHTML='<button class="hbtn" id="langBtn">'+(LANG==='km'?'English':'ខ្មែរ')+'</button>';

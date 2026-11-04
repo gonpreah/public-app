@@ -297,5 +297,7 @@ var APP_KM = {
   "Habits & goals": "ទម្លាប់ និងគោលដៅ",
   "Friends, family & feelings": "មិត្តភក្តិ គ្រួសារ និងអារម្មណ៍",
   "Study, money & work": "ការសិក្សា លុយកាក់ និងការងារ",
-  "Lead & serve": "ដឹកនាំ និងបម្រើ"
+  "Lead & serve": "ដឹកនាំ និងបម្រើ",
+  /* Learn Khmer: level 2 without the YWAM list */
+  "Home, the market, the city, the classroom, the restaurant, the hospital.": "ផ្ទះ ផ្សារ ទីក្រុង ថ្នាក់រៀន ភោជនីយដ្ឋាន មន្ទីរពេទ្យ។"
 };

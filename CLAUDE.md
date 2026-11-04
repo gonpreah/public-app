@@ -15,9 +15,14 @@ teams/15-khmer.js), `khmer-vocab.js`, `khmer-grammar.js`, `library-app.js` (Impa
 code from teams/03-library-org.js) and their styles at the end of app.css. Fix a bug there in
 both apps. The Library's BOOKS (`library.js`, `library-km.js`) are this app's own (below).
 
-## The name
-On screen it is **GonPreah** / **កូនព្រះ**. "YWAM GP" rules from the Impact app don't
-apply here, except that the shared personality and strengths files say "YWAM GP's own".
+## The name — and no YWAM
+On screen it is **GonPreah** / **កូនព្រះ**. **Nothing on screen says YWAM** (Uriah, Nov 2026:
+"leave out ywam stuff"): the header shows the round GonPreah seal (`GP_LOGO`), not the wide
+"YWAM Gon Preah" mark (`GP_LOGO_WIDE`, kept in logo.js only because the file is shared); the
+Library's books name no YWAM (the faith shelf's authors are "who started a worldwide mission
+for young people" and the like); Learn Khmer leaves out the KBC book's "YWAM life" list.
+tests/test-library.mjs and test-app-ui.mjs hold this. Comments in the code may still say where
+a file came from.
 
 ## Files
 - `public/index.html` — the page: head, fonts, theme tokens, splash, header, scripts.

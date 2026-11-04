@@ -44,6 +44,7 @@ await a.selectOption('#suYear', '2000');
 await a.click('#suGo');
 await a.waitForSelector('nav.bottom button[data-tab="home"]');
 ok('signed up, Home says hello', /Sokha/.test(await text(a)) && /day streak/.test(await text(a)));
+ok('the header shows the GonPreah seal, not the YWAM GP mark', await a.evaluate(() => document.getElementById('brandLogo').src === GP_LOGO));
 ok('the session is kept on the phone', await a.evaluate(() => !!JSON.parse(localStorage.getItem('gpa-auth') || 'null')));
 
 await a.click('#habitPick');

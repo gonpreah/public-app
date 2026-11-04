@@ -1,4 +1,5 @@
-/* Learn Khmer — the words of "KBC Vocabulary" by Phy Chum and Andrew Potter, as the app's flashcards.
+/*  GonPreah: the KBC book's "YWAM life" list is left out here (Uriah, Nov 2026: "leave out ywam stuff").
+ Learn Khmer — the words of "KBC Vocabulary" by Phy Chum and Andrew Potter, as the app's flashcards.
    Loaded on demand by the Learn Khmer page (teams/15-khmer.js), like library.js.
    Three levels (the book's three sections), each a set of word lists; a word is [english, khmer]
    or [english, khmer, note]. Keep the book's order inside a list. */
@@ -6,7 +7,7 @@ var GP_KHMER_VOCAB = {
   levels: [
     { id: 0, name: 'The script', blurb: 'The 33 consonants in their two series, the vowels and the independent vowels — the letters before the words.' },
     { id: 1, name: 'Essentials', blurb: 'Numbers, time, family, the verbs you use every day — the words everything else is built on.' },
-    { id: 2, name: 'Daily life', blurb: 'Home, the market, the city, YWAM life, the restaurant, the hospital.' },
+    { id: 2, name: 'Daily life', blurb: 'Home, the market, the city, the classroom, the restaurant, the hospital.' },
     { id: 3, name: 'Deeper talk', blurb: 'Small talk that goes somewhere — work, weather, faith, history — and the words of the Bible.' }
   ],
   cats: [
@@ -221,40 +222,6 @@ var GP_KHMER_VOCAB = {
       ['Car', 'ឡាន', '', 'lan'], ['Drive', 'បើក', '', 'baeuk'], ['Supermarket', 'ផ្សារទំនើប', '', 'phsa-tum-neup'], ['Turn right', 'បត់ស្តាំ', '', 'bat-stam'],
       ['Moto mechanic', 'ជាងម៉ូតូ', '', 'chieng-moto'], ['Restaurant', 'ហាងបាយ', '', 'hang bai'], ['Farm', 'ចម្ការ', '', 'cham-ka'],
       ['Gas station', 'កន្លែងចាក់សាំង', '', 'kan-laeng-chak-samng'], ['Fill it up', 'ចាក់ឱ្យពេញ', '', 'chak-ao-yo-penh']
-    ] },
-    { id: 'ywam', level: 2, name: 'YWAM life', words: [
-      ['Staff', 'បុគ្គលិក', '', 'bokkolik'], ['Meeting', 'ប្រជុំ', '', 'pro-chum'], ['Class', 'ថ្នាក់រៀន', '', 'thnak rien'], ['Bible', 'ព្រះគម្ពីរ', '', 'preah kompi'],
-      ['Campus', 'ទីស្នាក់ការ', '', 'ti-snak-ka'], ['Church planting', 'ដាំដុះក្រុមជំនុំ', '', 'dam-doh-krom chumnum'], ['Church (the building)', 'ព្រះវិហារ', '', 'preah vihie'],
-      ['Church (the people)', 'ក្រុមជំនុំ', '', 'krom chumnum'], ['Community night', 'រាត្រីសហគមន៍', '', 'rie-trey-sah-kom-no'], ['Base', 'មូលដ្ឋាន', '', 'mul-dthan'],
-      ['Ministry', 'ព័ន្ធកិច្ច', '', 'poan kech'], ['Mercy ministry', 'ព័ន្ធកិច្ចមេត្តាករុណា', '', 'poan kech-met-tak-ru-na'], ['School', 'សាលារៀន', '', 'sala rien'],
-      ['Director', 'នាយកសាលា', '', 'niey-ka-sa-lie'], ['Department', 'នាយកដ្ឋាន', '', 'niey-kat-than'], ['Director team', 'ក្រុមនាយក', '', 'krom-niey-ka'],
-      ['Elder team', 'ក្រុមចាស់ទុំ', '', 'krom-chah-tum'], ['Leader', 'អ្នកដឹកនាំ', '', 'neak doek noam'], ['Worship', 'ថ្វាយបង្គំ', '', 'thvay bangkum'],
-      ['Intercession', 'អធិស្ឋានទូលអង្វរ', '', 'athisthan-tul-ang-ro'], ['Work duties', 'ការងារប្រចាំថ្ងៃ', '', 'ka ngie-pra-cham-thngai'],
-      ['Jesus', 'ព្រះយេស៊ូវ', '', 'preah yesu'], ['God', 'ព្រះអង្គ', '', 'preah ang'], ['Holy Spirit', 'ព្រះវិញ្ញាណបរិសុទ្ធ', '', 'preah vinhnhean borisot'],
-      ['Lead', 'ដឹកនាំ', '', 'doek-noam'], ['Discuss', 'ពិភាក្សា', '', 'pi-phiek-sa'], ['Announcements', 'សេចក្តីប្រកាស', '', 'seich-kteyp-kah'],
-      ['Classroom', 'ថ្នាក់រៀន', '', 'thnak rien'], ['Map', 'ផែនទី', '', 'phaen-ti'], ['Pioneer', 'ការត្រួសត្រាយ', '', 'ka-truoh-tray'], ['Student', 'សិស្ស', '', 'seh'],
-      ['Are you ready?', 'ត្រៀមខ្លួននៅ?', '', 'triem-khluon-nov?'], ['On time', 'ទាន់ពេល', '', 'tien-pel'], ['Certificate', 'សញ្ញាប័ត្រ', '', 'sanhnhabat'],
-      ['Graduation', 'ទទួលសញ្ញាប័ត្រ', '', 'to-tuol-sanhnhabat'], ['DTS', 'សាលាបណ្តុះបណ្តាលភាពជាសាវ័ក', '', 'sa-liep-ntohp-ntal-phiep-chie-sa-voak'],
-      ['SBS', 'សាលាសិក្សាព្រះគម្ពីរ', '', 'sa-lie-sek-sa-preah kompi'], ['SOMD', 'សាលាបណ្តុះបណ្តាលខ្លួនសម្រាប់ព័ន្ធកិច្ច', '', 'sa-liep-ntohp-ntal-khluon-sam-riep-poan kech'],
-      ['Titus', 'សាលាបង្រៀនព្រះគម្ពីរ', '', 'sa-liep-ngrien-preah kompi'], ['Small group', 'ក្រុមតូច', '', 'krom-touch'], ['One on one', 'មួយទល់មួយ', '', 'muoy-tol-muoy'],
-      ['Morning chores', 'ការងារពេលព្រឹក', '', 'ka ngie-pel-pruek'], ['Continue on', 'បន្តទៀត', '', 'ban-tiet'], ['Grow', 'លូតលាស់', '', 'lut-lieh'], ['Meet', 'ជួប', '', 'chuop'],
-      ['Snack', 'អាហារសំរន់', '', 'a-ha-sam-no'], ['Rest', 'សម្រាក', '', 'sam-riek'], ['Program', 'កម្មវិធី', '', 'kam-vi-thi'], ['Join in', 'ចូលរួម', '', 'choul-ruom'],
-      ['Unity', 'ការរួបរួម', '', 'ka-ruop-ruom'], ['Prayer room', 'បន្ទប់អធិស្ឋាន', '', 'ban-ba-athisthan'], ['Believe', 'ជឿ', '', 'chuea'],
-      ['Faith', 'សេចក្តីជំនឿ', '', 'sechkdei chumnuea'], ['Society', 'សង្គម', '', 'sangkum'], ['Cafeteria', 'កន្លែងញ៉ាំបាយ', '', 'kan-laeng-nham-bai'],
-      ['Hut', 'ខ្ទម', '', 'khtom'], ['Soccer field', 'កន្លែងលេងបាល់', '', 'kan-laeng-leng-bal'], ['Finish', 'ចប់', '', 'chap'], ['Stage', 'ឆាក', '', 'chhak'],
-      ['Media', 'ប្រព័ន្ធផ្សព្វផ្សាយ', '', 'pra-poan-phsap-phsay'], ['New sound', 'សំលេងថ្មី', '', 'sam-leng-thmey'], ['Party', 'ជប់លៀង', '', 'chop-lieng'],
-      ['Interrupt', 'រំខាន', '', 'rum-khan'], ['Family circle', 'រង្វង់គ្រួសារ', '', 'rong-ngok-ruo-sa'], ['Home circle', 'រង្វង់គ្រួសារ', '', 'rong-ngok-ruo-sa'],
-      ['Office', 'ការិយាល័យ', '', 'ka-ri-yie-loay'], ['Gateway circle', 'ច្រកចេញចូល', '', 'chrak-cheinh-choul'], ['Community life', 'ជីវិតសហគមន៍', '', 'chi-vit-sah-kom-no'],
-      ['Community', 'សហគមន៍', '', 'sah-kom-no'], ['Security', 'សន្តិសុខ', '', 'san-te-sok'], ['Influence', 'ជះឥទ្ធិពល', '', 'cheah-e-tthip-lo'],
-      ['Outreach', 'បេសកកម្ម', '', 'be-sak-kam'], ['Missionary', 'បេសកជន', '', 'beih-kach-no'], ['Evangelism', 'ផ្សាយដំណឹងល្អ', '', 'phsay-dam-noeng-la-or'],
-      ['Bring (people)', 'នាំ', '', 'noam'], ['Conference', 'សន្និសីទ', '', 'san-ni-seyt'], ['International', 'អន្តរជាតិ', '', 'an-ro-chie-te'], ['Global', 'សកល', '', 'sak-lo'],
-      ['Foreigner', 'ជនបរទេស', '', 'chon-ba-teh'], ['Out of something', 'អស់', '', 'ah'], ['Out of money', 'អស់លុយហើយ', '', 'ah-luy-haeuy'], ['Finances', 'ថវិកា', '', 'tha-vi-ka'],
-      ['Culture', 'វប្បធម៌', '', 'vop-thom'], ['Fundraising', 'រៃអង្គាសថវិកា', '', 'rey-ngkieh-tha-vi-ka'], ['Volunteer', 'អ្នកស្ម័គ្រចិត្ត', '', 'neak-smak-chet'],
-      ['Religion', 'សាសនា', '', 'sah-nie'], ['Try it out', 'សាកល្បង', '', 'sak-lbang'], ['Christian', 'គ្រីស្ទាន', '', 'kri-stien'], ['Topic', 'ប្រធានបទ', '', 'pra-thien-bat'],
-      ['Explain', 'ពន្យល់', '', 'pon-lo'], ['Story', 'រឿង', '', 'reuang'], ['Achieve', 'សម្រេច', '', 'sam-rech'], ['Process', 'ដំណើរការ', '', 'dam-naeu-ka'],
-      ['Through', 'តាមរយៈ', '', 'tam-ro-yeak'], ['Busy', 'រវល់', '', 'rov-lo'], ['Problem', 'បញ្ហា', '', 'banh-ha'], ['Tired', 'អស់កម្លាំង', '', 'ah-kam-loamng'],
-      ['Times (how many times)', 'ដង', '', 'dang'], ['Really?', 'មែន?', '', 'maen?'], ['Last night', 'យប់មិញ', '', 'yop-minh'], ['This morning', 'ព្រឹកមិញ', '', 'pruek-minh'],
-      ['Enter', 'ចូល', '', 'choul'], ['Exit', 'ចេញ', '', 'cheinh'], ['What did you do?', 'ធ្វើអ្វី?', '', 'thveu-avei?']
     ] },
     { id: 'classroom', level: 2, name: 'In the classroom', words: [
       ['Chair', 'កៅអី', '', 'kau-ey'], ['Table', 'តុ', '', 'to'], ['Marker', 'ហ្វឺត', '', 'hvoet'], ['Whiteboard', 'ក្តារខៀន', '', 'kta-khien'], ['Book', 'សៀវភៅ', '', 'siev-phov'],

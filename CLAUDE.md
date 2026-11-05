@@ -59,8 +59,17 @@ Held by tests/test-api.mjs against the real handlers.
   two people: every leader of that team can read it (not the coach's own notes), the team must
   have a second leader before anyone can coach them, and the screens say so. If the coach stops
   leading the team or either leaves it, the coach loses access at once; the mentee keeps history.
-- No comments or private messages yet: with under-18s on the app, those need reporting,
-  blocking and a safeguarding contact first.
+- **No direct messages and no comments** (Uriah, Nov 2026: "limit direct messaging"). The feed
+  is 👏 only, and its moments carry no one's own words (`addPost_`: a streak milestone, a goal
+  reached, a test taken, a week at 100%, joining a team), each behind the person's matching
+  switch and their `share.feed`. Only people in a team with you see your moments or can 👏.
+- **Report and block.** Anyone can report a person they can see (photo, name, the line about
+  them, something else) or a team they're in; reports wait in `reports` for the **admin** —
+  whoever's Google email is in `GPA_ADMIN_EMAILS` (Netlify env; accounts keep only its hash,
+  `eh`; Uriah is the admin). The admin can remove a photo or the line, suspend an account
+  (signed out, hidden everywhere, can't sign in) or close a team. A team's leaders can remove a
+  member's photo. Blocking works both ways (`blocked_`): neither sees the other's card, photo or
+  moments, nor can 👏, coach or invite; a leader still sees every member of their own team.
 
 ## Khmer
 `km.js` (copied from Impact: REVIEWED_KM read by native speakers, PENDING_KM not) wins;
@@ -102,9 +111,15 @@ phone's own voice; the 🎧 book player stays off (`LIB_AUDIO_ON`).
   changed. The staff and business books and the Made-at-YWAM-GP guides were left out. Drafts
   by Claude; tests/test-library.mjs checks the shape, the Khmer and that no staff wording is left.
 
+## The feed (Teams tab) and cheers (Home)
+`feed` — the moments of everyone in my teams over 14 days, newest first; `clap` toggles a 👏
+(never on your own); Home shows who cheered you this week (`cheers` from boot). The admin's
+page is Me → Reports (`adminReports`, `adminAct`); Me → People you've blocked (`blockedList`).
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.
 3. ~~Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).~~ Done Nov 2026.
-4. A Strava-like feed with 👏, reminders on the phone, Telegram sign-in, reporting and blocking.
+4. ~~A Strava-like feed with 👏, reporting and blocking~~ Done Nov 2026. Still to do: reminders
+   on the phone (web push), Telegram sign-in (needs a bot from @BotFather).
 5. A daily Bible verse and more Christian content (Uriah: later).

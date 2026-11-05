@@ -13,6 +13,7 @@
       people          the search index: [{id, username, name, minor}] — no photos, no birth years
       t:<id>          a team: name, emoji, join code, leaders, members, team tasks, its coachings' ids
       c:<id>          a coaching (1-on-1s): coach, mentee, the team, its meetings — see "1-on-1s" below
+      reports         what people reported (a photo, a name, a line about them, a team), for the admin
       tcode:<code>    join code → team id
 
     Who sees what (tests/test-api.mjs holds every line of this):
@@ -140,10 +141,20 @@ function addToken_(u) {
 async function auth_(uid, tok) {
   if (typeof uid !== 'string' || !/^u[a-f0-9]{18}$/.test(uid) || typeof tok !== 'string' || !/^[a-f0-9]{48}$/.test(tok)) return null;
   const u = await readJSON('u:' + uid, null);
-  if (!u || u.closed) return null;
+  if (!u || u.closed || u.suspended) return null;   // a suspended account is signed out everywhere
   const h = sha_(tok);
   return (u.tokens || []).some(function (t) { return t && safeEq_(t.h, h); }) ? u : null;
 }
+
+/* ---------------- the admin ----------------
+   Whoever's Google email is in GPA_ADMIN_EMAILS (Netlify env, comma-separated) is an admin:
+   they see reports and can remove a photo or a line, suspend an account or close a team.
+   The account keeps only a hash of its Google email (eh), so the list can change any time. */
+function adminHashes_() { return String(process.env.GPA_ADMIN_EMAILS || '').toLowerCase().split(/[\s,;]+/).filter(Boolean).map(sha_); }
+function isAdmin_(u) { return !!(u && u.eh && adminHashes_().indexOf(u.eh) > -1); }
+/* Blocking works both ways: neither sees the other. */
+function blocked_(a, b) { return !!(a && b && (((a.blocked || []).indexOf(b.id) > -1) || ((b.blocked || []).indexOf(a.id) > -1))); }
+function gone_(u) { return !u || u.closed || u.suspended; }
 
 /* ---------------- usernames ---------------- */
 const RESERVED = ['admin', 'gonpreah', 'ywam', 'support', 'help', 'team', 'teams', 'me', 'you', 'leader', 'staff', 'official', 'jesus', 'god'];
@@ -155,7 +166,7 @@ function cleanUsername_(v) {
 }
 
 /* ---------------- what each person may show ---------------- */
-const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan'];
+const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan', 'feed'];
 function shareOf_(u) {
   const s = (u && u.share) || {}; const o = {};
   SHARE_KEYS.forEach(function (k) { o[k] = s[k] !== false; });
@@ -273,6 +284,29 @@ function statsOf_(u) {
   };
 }
 
+/* ---------------- the feed's moments ----------------
+   When something worth a 👏 happens, the server notes it on the person (u.posts): a streak
+   milestone, a life goal reached, a test taken, a week at 100%, joining a team. Never words of
+   their own — no goal titles, habit names or answers. Each kind shows only while the person's
+   matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
+const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
+const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams' };
+const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
+function addPost_(u, kind, n) {
+  const cut = addDays_(today_(), -KEEP_POST_DAYS);
+  u.posts = (Array.isArray(u.posts) ? u.posts : []).filter(function (x) { return x.at >= cut; });
+  if (u.posts.some(function (x) { return x.kind === kind && x.n === n; })) return;   // once is enough
+  u.posts.push({ id: 'p' + crypto.randomBytes(5).toString('hex'), kind: kind, n: n == null ? null : n, at: today_(), claps: [] });
+  u.posts = u.posts.slice(-MAX_POSTS);
+}
+function postShown_(u, x) {
+  const sh = shareOf_(u);
+  if (!sh.feed || sh[POST_SHARE[x.kind]] === false) return false;
+  if (x.kind === 'type') return !!(u.personality && u.personality.share !== false);
+  if (x.kind === 'strengths') return !!(u.gstrengths && u.gstrengths.share !== false);
+  return true;
+}
+
 /* ---------------- what goes out ---------------- */
 /* What I see of myself. */
 function selfOut_(u) {
@@ -282,7 +316,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || []
+    plan: planOf_(u), tasks: u.tasks || [], admin: isAdmin_(u), blocked: (u.blocked || []).length
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -317,7 +351,8 @@ async function loginGoogle(token) {
   let tok = null;
   const res = await mutate_('u:' + map.id, null, function (u) {
     if (!u || u.closed) return { abort: true, ok: false, err: 'auth' };
-    tok = addToken_(u); u.seen = today_();
+    if (u.suspended) return { abort: true, ok: false, err: 'suspended' };
+    tok = addToken_(u); u.seen = today_(); if (g.email) u.eh = sha_(g.email);
     return { ok: true };
   });
   if (!res.ok) return res;
@@ -348,7 +383,8 @@ async function register(token, p) {
   const id = 'u' + crypto.randomBytes(9).toString('hex');
   const u = {
     id: id, username: username, name: name, birthYear: by, lang: p.lang === 'en' ? 'en' : 'km',
-    created: new Date().toISOString(), seen: today_(), teams: [], habits: [], days: {}, weeks: {}, share: {}
+    created: new Date().toISOString(), seen: today_(), teams: [], habits: [], days: {}, weeks: {}, share: {},
+    eh: g.email ? sha_(g.email) : ''
   };
   const tok = addToken_(u);
   await writeJSON('uname:' + username, { id: id });
@@ -373,7 +409,7 @@ async function boot(uid, tok) {
     teamTasksOut_(t, uid, {}).forEach(function (k) { if (k.forMe && !k.mine) teamTasks.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, k)); });
   }
   const co = await coachings(uid, tok);
-  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], today: today_() };
+  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u), today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -416,6 +452,7 @@ async function photos(uid, tok, ids) {
     if (typeof id !== 'string' || !/^u[a-f0-9]{18}$/.test(id)) continue;
     const u = id === uid ? me : await readJSON('u:' + id, null);
     if (!u || !u.hasPhoto) continue;
+    if (id !== uid && (gone_(u) || blocked_(me, u))) continue;
     if (id !== uid && isMinor_(u) && !(await sharesTeam_(me, u))) continue;
     const p = await readJSON('ph:' + id, null);
     if (p && p.d) out[id] = p.d;
@@ -435,6 +472,7 @@ async function savePersonality(uid, tok, p) {
       const scores = p.scores == null ? null : cleanPScores_(p.scores, p.type);
       if (p.scores != null && !scores) return { abort: true, ok: false, err: 'scores' };
       u.personality = { type: p.type, scores: scores, source: scores ? 'test' : 'picked', at: today_(), share: cur.share !== false, season: cur.season || 'ordinary' };
+      if (cur.type !== p.type) addPost_(u, 'type', p.type);
     } else if (!u.personality) return { abort: true, ok: false, err: 'type' };
     if (typeof p.share === 'boolean') u.personality.share = p.share;
     if (PSEASON_IDS.indexOf(p.season) > -1) u.personality.season = p.season;
@@ -452,6 +490,7 @@ async function saveStrengths(uid, tok, p) {
   if (p.answers) { scored = gsScore_(p.answers); if (!scored) return { ok: false, err: 'answers' }; }
   const res = await mutate_('u:' + uid, null, function (u) {
     if (!u) return { abort: true, ok: false, err: 'auth' };
+    if (scored && !u.gstrengths) addPost_(u, 'strengths', null);
     if (scored) u.gstrengths = { answers: scored.answers, scores: scored.scores, top: scored.top, at: today_(), share: !(u.gstrengths && u.gstrengths.share === false) };
     else if (!u.gstrengths) return { abort: true, ok: false, err: 'answers' };
     if (typeof p.share === 'boolean') u.gstrengths.share = p.share;
@@ -482,6 +521,8 @@ async function tickHabit(uid, tok, day, habitId, done) {
     if (Object.keys(m).length) u.days[day] = m; else delete u.days[day];
     const cut = addDays_(t, -KEEP_DAYS);
     Object.keys(u.days).forEach(function (d) { if (d < cut) delete u.days[d]; });
+    const st = streakOf_(u.days);
+    if (done && STREAK_MILESTONES.indexOf(st) > -1) addPost_(u, 'streak', st);
     return { ok: true };
   });
   if (!res.ok) return res;
@@ -502,6 +543,7 @@ async function saveWeek(uid, tok, week, goals) {
     if (!u) return { ok: false };
     u.weeks = u.weeks || {};
     if (clean.length) u.weeks[week] = clean; else delete u.weeks[week];
+    if (weekPct_(clean) === 100) addPost_(u, 'week', week);
     Object.keys(u.weeks).sort().slice(0, -60).forEach(function (k) { delete u.weeks[k]; });
     return { ok: true };
   });
@@ -578,7 +620,7 @@ async function goalAct(uid, tok, gid, act, a) {
     if (!g) return { abort: true, ok: false, err: 'none' };
     g.steps = Array.isArray(g.steps) ? g.steps : [];
     if (act === 'delete') { u.plan.goals = u.plan.goals.filter(function (x) { return x.id !== gid; }); return { ok: true }; }
-    if (act === 'reach') { g.done = a.done ? today_() : ''; return { ok: true }; }
+    if (act === 'reach') { g.done = a.done ? today_() : ''; if (a.done) addPost_(u, 'goal', g.id); return { ok: true }; }
     if (act === 'addStep') {
       const text = str_(a.text, 100);
       if (!text) return { abort: true, ok: false, err: 'text' };
@@ -636,7 +678,7 @@ async function searchPeople(uid, tok, q) {
   const out = [];
   for (const r of hits) {
     const u = await readJSON('u:' + r.id, null);
-    if (u && !u.closed && !isMinor_(u)) out.push(cardOut_(u, await sharesTeam_(me, u)));
+    if (u && !gone_(u) && !isMinor_(u) && !blocked_(me, u)) out.push(cardOut_(u, await sharesTeam_(me, u)));
   }
   return { ok: true, people: out };
 }
@@ -646,7 +688,7 @@ async function person(uid, tok, id) {
   if (!me) return { ok: false, err: 'auth' };
   if (typeof id !== 'string' || !/^u[a-f0-9]{18}$/.test(id)) return { ok: false, err: 'none' };
   const u = id === uid ? me : await readJSON('u:' + id, null);
-  if (!u || u.closed) return { ok: false, err: 'none' };
+  if (gone_(u) || blocked_(me, u)) return { ok: false, err: 'none' };
   const close = id === uid || await sharesTeam_(me, u);
   if (isMinor_(u) && !close) return { ok: false, err: 'none' };   // as if they weren't there
   const card = cardOut_(u, close);
@@ -706,7 +748,7 @@ async function joinTeam(uid, tok, code) {
     return { ok: true };
   });
   if (!res.ok) return res;
-  await mutate_('u:' + uid, null, function (u) { if ((u.teams || []).indexOf(map.id) === -1) u.teams = (u.teams || []).concat([map.id]); u.invites = (u.invites || []).filter(function (i) { return i.team !== map.id; }); return { ok: true }; });
+  await mutate_('u:' + uid, null, function (u) { if ((u.teams || []).indexOf(map.id) === -1) { u.teams = (u.teams || []).concat([map.id]); addPost_(u, 'joined', map.id); } u.invites = (u.invites || []).filter(function (i) { return i.team !== map.id; }); return { ok: true }; });
   return { ok: true, team: teamBrief_(await readJSON('t:' + map.id, null), uid) };
 }
 /* A team page: members' cards (progress, never details). Members only. */
@@ -714,11 +756,13 @@ async function team(uid, tok, tid) {
   const me = await auth_(uid, tok);
   if (!me) return { ok: false, err: 'auth' };
   const t = typeof tid === 'string' && (me.teams || []).indexOf(tid) > -1 ? await readJSON('t:' + tid, null) : null;
-  if (!t || t.members.indexOf(uid) === -1) return { ok: false, err: 'none' };
-  const people = [];
+  if (!t || t.closed || t.members.indexOf(uid) === -1) return { ok: false, err: 'none' };
+  const people = [], lead = t.leaders.indexOf(uid) > -1;
   for (const id of t.members) {
     const u = id === uid ? me : await readJSON('u:' + id, null);
-    if (u && !u.closed) { const c = cardOut_(u, true); c.leader = t.leaders.indexOf(id) > -1; people.push(c); }
+    if (gone_(u)) continue;
+    if (id !== uid && !lead && blocked_(me, u)) continue;   // a leader still sees everyone, to look after the team
+    const c = cardOut_(u, true); c.leader = t.leaders.indexOf(id) > -1; people.push(c);
   }
   const out = teamBrief_(t, uid); out.about = t.about || ''; out.people = people;
   const names = {}; people.forEach(function (p) { names[p.id] = p.name; });
@@ -747,17 +791,19 @@ async function teamManage(uid, tok, tid, act, who) {
     const w = typeof who === 'string' ? await readJSON('u:' + who, null) : null;
     if (!w || isMinor_(w)) return { ok: false, err: 'adult_only' };
   }
-  let oldCode = null, newCode = null, removed = null;
+  let oldCode = null, newCode = null, removed = null, removedPhoto = null;
   const res = await mutate_('t:' + tid, null, function (t) {
     if (!t || t.leaders.indexOf(uid) === -1) return { abort: true, ok: false, err: 'not_leader' };
     if (act === 'code') { oldCode = t.code; newCode = newCode_(); t.code = newCode; return { ok: true }; }
     if (typeof who !== 'string' || t.members.indexOf(who) === -1 || who === uid) return { abort: true, ok: false, err: 'none' };
     if (act === 'remove') { t.members = t.members.filter(function (m) { return m !== who; }); t.leaders = t.leaders.filter(function (m) { return m !== who; }); removed = who; return { ok: true }; }
     if (act === 'lead') { if (t.leaders.indexOf(who) === -1) t.leaders.push(who); return { ok: true }; }
+    if (act === 'photo') { removedPhoto = who; return { abort: true, ok: true }; }   // nothing on the team changes
     return { abort: true, ok: false, err: 'act' };
   });
   if (!res.ok) return res;
   if (newCode) { await writeJSON('tcode:' + newCode, { id: tid }); await dropKey('tcode:' + oldCode); }
+  if (removedPhoto) { await dropKey('ph:' + removedPhoto); await mutate_('u:' + removedPhoto, null, function (u) { if (u) u.hasPhoto = false; return { ok: true }; }); }
   if (removed) await mutate_('u:' + removed, null, function (u) { if (u) u.teams = (u.teams || []).filter(function (x) { return x !== tid; }); return { ok: true }; });
   return team(uid, tok, tid);
 }
@@ -768,7 +814,7 @@ async function inviteToTeam(uid, tok, tid, who) {
   const t = await readJSON('t:' + tid, null);
   if (!t || t.leaders.indexOf(uid) === -1) return { ok: false, err: 'not_leader' };
   const res = await mutate_('u:' + who, null, function (u) {
-    if (!u || u.closed || isMinor_(u)) return { abort: true, ok: false, err: 'none' };   // nobody adds anyone under 18
+    if (gone_(u) || isMinor_(u) || blocked_(me, u)) return { abort: true, ok: false, err: 'none' };   // nobody adds anyone under 18
     if ((u.teams || []).indexOf(tid) > -1) return { abort: true, ok: false, err: 'already' };
     u.invites = (u.invites || []).filter(function (i) { return i.team !== tid; }).concat([{ team: tid, name: t.name, emoji: t.emoji, from: me.name, at: today_() }]).slice(-20);
     return { ok: true };
@@ -853,7 +899,7 @@ async function coachAsk(uid, tok, otherId, tid, as) {
   if (as !== 'coach' && as !== 'mentee') return { ok: false, err: 'act' };
   const other = typeof otherId === 'string' && /^u[a-f0-9]{18}$/.test(otherId) && otherId !== uid ? await readJSON('u:' + otherId, null) : null;
   const t = typeof tid === 'string' && (me.teams || []).indexOf(tid) > -1 ? await readJSON('t:' + tid, null) : null;
-  if (!other || other.closed || !t || t.members.indexOf(uid) === -1 || t.members.indexOf(otherId) === -1) return { ok: false, err: 'none' };
+  if (gone_(other) || blocked_(me, other) || !t || t.members.indexOf(uid) === -1 || t.members.indexOf(otherId) === -1) return { ok: false, err: 'none' };
   const coach = as === 'coach' ? me : other, mentee = as === 'coach' ? other : me;
   if (isMinor_(coach) || t.leaders.indexOf(coach.id) === -1) return { ok: false, err: 'not_leader' };
   if (isMinor_(mentee) && t.leaders.length < 2) return { ok: false, err: 'second_leader' };
@@ -1033,6 +1079,160 @@ async function teamTask(uid, tok, tid, act, a) {
   return team(uid, tok, tid);
 }
 
+/* ---------------- the feed: 👏 for each other ----------------
+   Moments from the people in my teams over the last two weeks — nobody else's. A moment says
+   what happened, never anyone's own words (see addPost_). No comments: only 👏. */
+const FEED_DAYS = 14, FEED_MAX = 60, FEED_PEOPLE = 400;
+function postOut_(u, x, viewer, teamNames) {
+  const o = { id: x.id, kind: x.kind, at: x.at, claps: (x.claps || []).length, clapped: (x.claps || []).indexOf(viewer) > -1, mine: u.id === viewer,
+    who: { id: u.id, username: u.username, name: isMinor_(u) ? firstName_(u.name) : u.name, hasPhoto: !!u.hasPhoto } };
+  const sh = shareOf_(u);
+  if (sh.type && u.personality && u.personality.share !== false) { o.who.type = u.personality.type; o.who.sex = u.sex || ''; }
+  if (x.kind === 'streak') o.n = x.n;
+  if (x.kind === 'type') o.n = x.n;
+  if (x.kind === 'joined') o.team = teamNames[x.n] || null;   // the team's name only for someone in it
+  return o;
+}
+async function feed(uid, tok) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const ids = {}, teamNames = {};
+  for (const tid of (me.teams || [])) {
+    const t = await readJSON('t:' + tid, null);
+    if (!t) continue;
+    teamNames[t.id] = (t.emoji || '✦') + ' ' + t.name;
+    (t.members || []).forEach(function (m) { ids[m] = 1; });
+  }
+  ids[uid] = 1;
+  const cut = addDays_(today_(), -FEED_DAYS), out = [];
+  for (const id of Object.keys(ids).slice(0, FEED_PEOPLE)) {
+    const u = id === uid ? me : await readJSON('u:' + id, null);
+    if (gone_(u) || (id !== uid && blocked_(me, u))) continue;
+    (u.posts || []).forEach(function (x) { if (x.at >= cut && postShown_(u, x)) out.push(postOut_(u, x, uid, teamNames)); });
+  }
+  out.sort(function (a, b) { return a.at < b.at ? 1 : a.at > b.at ? -1 : 0; });
+  return { ok: true, feed: out.slice(0, FEED_MAX) };
+}
+/* 👏 someone's moment: only someone in a team with them, never your own. */
+async function clap(uid, tok, owner, postId, on) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (typeof owner !== 'string' || owner === uid) return { ok: false, err: 'none' };
+  const u = await readJSON('u:' + owner, null);
+  if (gone_(u) || blocked_(me, u) || !(await sharesTeam_(me, u))) return { ok: false, err: 'none' };
+  const res = await mutate_('u:' + owner, null, function (x) {
+    const pst = x && (x.posts || []).filter(function (y) { return y.id === postId; })[0];
+    if (!pst || !postShown_(x, pst)) return { abort: true, ok: false, err: 'none' };
+    pst.claps = (pst.claps || []).filter(function (c) { return c !== uid; });
+    if (on) pst.claps = pst.claps.concat([uid]).slice(-MAX_CLAPS);
+    return { ok: true, n: pst.claps.length };
+  });
+  return res;
+}
+/* Who cheered me lately — for Home. */
+async function cheersFor_(u) {
+  const cut = addDays_(today_(), -7), out = [];
+  for (const x of (u.posts || [])) {
+    if (x.at < cut || !(x.claps || []).length) continue;
+    const names = [];
+    for (const c of x.claps.slice(-2).reverse()) { const v = await readJSON('u:' + c, null); if (!gone_(v) && !blocked_(u, v)) names.push(isMinor_(v) ? firstName_(v.name) : v.name); }
+    out.push({ id: x.id, kind: x.kind, n: x.kind === 'streak' || x.kind === 'type' ? x.n : null, count: x.claps.length, names: names });
+  }
+  return out.reverse().slice(0, 5);
+}
+
+/* ---------------- blocking ---------------- */
+const MAX_BLOCKED = 300;
+async function block(uid, tok, who, on) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (typeof who !== 'string' || !/^u[a-f0-9]{18}$/.test(who) || who === uid) return { ok: false, err: 'none' };
+  await mutate_('u:' + uid, null, function (u) {
+    u.blocked = (u.blocked || []).filter(function (x) { return x !== who; });
+    if (on) u.blocked = u.blocked.concat([who]).slice(-MAX_BLOCKED);
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* The people I've blocked, so I can unblock them. */
+async function blockedList(uid, tok) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const out = [];
+  for (const id of (me.blocked || [])) { const u = await readJSON('u:' + id, null); if (u) out.push({ id: u.id, username: u.username, name: isMinor_(u) ? firstName_(u.name) : u.name }); }
+  return { ok: true, people: out };
+}
+
+/* ---------------- reporting, and the admin ----------------
+   Anyone can report a person they can see (their photo, name, line about them, or something
+   else) or a team they are in. Reports wait in 'reports' for the admin (isAdmin_), who can
+   remove the photo or the line, suspend the account, close the team, or let it be. */
+const REPORT_WHAT = ['photo', 'name', 'bio', 'team', 'other'], MAX_REPORTS = 1000, REPORTS_A_DAY = 15;
+async function report(uid, tok, p) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  p = p && typeof p === 'object' ? p : {};
+  if (REPORT_WHAT.indexOf(p.what) === -1) return { ok: false, err: 'what' };
+  const r = { id: 'r' + crypto.randomBytes(6).toString('hex'), by: uid, at: new Date().toISOString(), what: p.what, reason: str_(p.reason, 400), status: 'open' };
+  if (p.what === 'team') {
+    if (typeof p.team !== 'string' || (me.teams || []).indexOf(p.team) === -1) return { ok: false, err: 'none' };
+    r.team = p.team;
+  } else {
+    const v = await person(uid, tok, p.who);   // only someone you can see
+    if (!v.ok || p.who === uid) return { ok: false, err: 'none' };
+    r.who = p.who;
+    if (typeof p.team === 'string' && (me.teams || []).indexOf(p.team) > -1) r.team = p.team;
+  }
+  return mutate_('reports', [], function (rows) {
+    const today = today_();
+    if (rows.filter(function (x) { return x.by === uid && String(x.at).slice(0, 10) === today; }).length >= REPORTS_A_DAY) return { abort: true, ok: false, err: 'too_many' };
+    rows.push(r);
+    if (rows.length > MAX_REPORTS) { const i = rows.findIndex(function (x) { return x.status !== 'open'; }); rows.splice(i > -1 ? i : 0, 1); }
+    return { ok: true };
+  });
+}
+async function adminReports(uid, tok, all) {
+  const me = await auth_(uid, tok);
+  if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
+  const rows = (await readJSON('reports', [])).filter(function (r) { return all ? true : r.status === 'open'; }).slice(-200).reverse();
+  const out = [];
+  for (const r of rows) {
+    const o = Object.assign({}, r), by = await readJSON('u:' + r.by, null);
+    o.byName = by ? by.name + ' (@' + by.username + ')' : '?';
+    if (r.who) { const u = await readJSON('u:' + r.who, null); if (u) o.person = { id: u.id, name: u.name, username: u.username, bio: u.bio || '', hasPhoto: !!u.hasPhoto, minor: isMinor_(u), suspended: !!u.suspended }; }
+    if (r.team) { const t = await readJSON('t:' + r.team, null); if (t) o.teamInfo = { id: t.id, name: t.name, emoji: t.emoji, size: (t.members || []).length, closed: !!t.closed }; }
+    out.push(o);
+  }
+  const photos = {};
+  for (const o of out) if (o.person && o.person.hasPhoto && !photos[o.person.id]) { const ph = await readJSON('ph:' + o.person.id, null); if (ph) photos[o.person.id] = ph.d; }
+  return { ok: true, reports: out, photos: photos };
+}
+async function closeTeam_(tid) {
+  const t = await readJSON('t:' + tid, null);
+  if (!t) return;
+  for (const m of (t.members || [])) await mutate_('u:' + m, null, function (u) { if (u) u.teams = (u.teams || []).filter(function (x) { return x !== tid; }); return { ok: true }; });
+  if (t.code) await dropKey('tcode:' + t.code);
+  await mutate_('t:' + tid, null, function (x) { if (x) { x.closed = true; x.members = []; x.leaders = []; x.code = ''; } return { ok: true }; });
+}
+/* act: photo · bio · suspend · unsuspend · closeTeam · dismiss */
+async function adminAct(uid, tok, rid, act) {
+  const me = await auth_(uid, tok);
+  if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
+  const r = (await readJSON('reports', [])).filter(function (x) { return x.id === rid; })[0];
+  if (!r) return { ok: false, err: 'none' };
+  if (['photo', 'bio', 'suspend', 'unsuspend'].indexOf(act) > -1 && !r.who) return { ok: false, err: 'none' };
+  if (act === 'photo') { await dropKey('ph:' + r.who); await mutate_('u:' + r.who, null, function (u) { if (u) u.hasPhoto = false; return { ok: true }; }); }
+  else if (act === 'bio') await mutate_('u:' + r.who, null, function (u) { if (u) u.bio = ''; return { ok: true }; });
+  else if (act === 'suspend' || act === 'unsuspend') {
+    if (r.who === uid) return { ok: false, err: 'none' };
+    await mutate_('u:' + r.who, null, function (u) { if (u) { if (act === 'suspend') u.suspended = today_(); else delete u.suspended; } return { ok: true }; });
+  }
+  else if (act === 'closeTeam') { if (!r.team) return { ok: false, err: 'none' }; await closeTeam_(r.team); }
+  else if (act !== 'dismiss') return { ok: false, err: 'act' };
+  await mutate_('reports', [], function (rows) { rows.forEach(function (x) { if (x.id === rid) { x.status = act === 'dismiss' ? 'dismissed' : 'done'; x.acts = (x.acts || []).concat([act]); x.doneAt = new Date().toISOString(); } }); return { ok: true }; });
+  return adminReports(uid, tok, false);
+}
+
 async function signOut(uid, tok) {
   if (!(await auth_(uid, tok))) return { ok: true };
   const h = sha_(tok);
@@ -1045,6 +1245,7 @@ export const HANDLERS = {
   savePersonality, saveStrengths, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
+  feed, clap, block, blockedList, report, adminReports, adminAct,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };

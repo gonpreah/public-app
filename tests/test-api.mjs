@@ -220,7 +220,64 @@ const kept = await H.coaching(M.uid, M.token, cid2);
 ok('… she keeps her history, but nothing more can be added', kept.ok && kept.coaching.meetings.length === 1 && !kept.coaching.live && (await H.coachAct(M.uid, M.token, cid2, 'new', {})).err === 'none');
 ok('either of them can end it', (await H.coachAct(M.uid, M.token, cid, 'end')).coaching.status === 'ended');
 
-/* ---------- 10. the door ---------- */
+/* ---------- 10. the feed, 👏, blocking, reports and the admin ---------- */
+let fd = await H.feed(A.uid, A.token);
+const minasType = fd.feed.find(x => x.who.id === M.uid && x.kind === 'type');
+ok('the feed shows a teammate’s moments: her type, and joining the team', !!minasType && minasType.n === 'INFJ' && fd.feed.some(x => x.who.id === M.uid && x.kind === 'joined' && /Siem Reap Youth/.test(x.team)));
+ok('… by first name if she’s under 18', minasType.who.name === 'Mina');
+ok('… not her strengths (switched off) or her goal (plan switched off)', !fd.feed.some(x => x.who.id === M.uid && (x.kind === 'strengths' || x.kind === 'goal')));
+ok('… never anyone’s own words', !/grade 12|timetable|Psalm|notebook|nursing/.test(JSON.stringify(fd)));
+ok('someone in none of her teams sees none of it', !(await H.feed(E.uid, E.token)).feed.some(x => x.who.id === M.uid));
+ok('a stranger can’t 👏', (await H.clap(E.uid, E.token, M.uid, minasType.id, true)).err === 'none');
+ok('nobody 👏s their own moment', (await H.clap(M.uid, M.token, M.uid, minasType.id, true)).err === 'none');
+ok('a teammate 👏s', (await H.clap(A.uid, A.token, M.uid, minasType.id, true)).n === 1);
+ok('… and she sees who cheered her on Home', (await H.boot(M.uid, M.token)).cheers.some(c => c.kind === 'type' && c.names[0] === 'Sokha Chan'));
+await H.saveProfile(M.uid, M.token, { share: { feed: false } });
+ok('the feed switch hides all her moments', !(await H.feed(A.uid, A.token)).feed.some(x => x.who.id === M.uid));
+await H.saveProfile(M.uid, M.token, { share: { feed: true } });
+/* blocking */
+r = await H.block(M.uid, M.token, A.uid, true);
+ok('she blocks someone', r.ok && r.me.blocked === 1);
+ok('… who can no longer open her card or see her in the feed', (await H.person(A.uid, A.token, M.uid)).err === 'none' && !(await H.feed(A.uid, A.token)).feed.some(x => x.who.id === M.uid));
+ok('… nor 👏 her', (await H.clap(A.uid, A.token, M.uid, minasType.id, false)).err === 'none');
+ok('… and she doesn’t see them in her team', !(await H.team(M.uid, M.token, T.team.id)).team.people.some(p => p.id === A.uid));
+ok('… though a leader still sees every member, to look after the team', (await H.team(A.uid, A.token, T.team.id)).team.people.some(p => p.id === M.uid));
+ok('she sees who she blocked', (await H.blockedList(M.uid, M.token)).people[0].id === A.uid);
+await H.block(M.uid, M.token, A.uid, false);
+ok('unblocking brings it back', (await H.person(A.uid, A.token, M.uid)).ok);
+/* a leader removes a member's photo */
+ok('a member can’t remove someone’s photo', (await H.teamManage(M.uid, M.token, T.team.id, 'photo', A.uid)).err === 'not_leader');
+r = await H.teamManage(A.uid, A.token, T.team.id, 'photo', M.uid);
+ok('a leader removes a member’s photo', r.ok && !(await H.boot(M.uid, M.token)).me.hasPhoto && !(await H.photos(A.uid, A.token, [M.uid])).photos[M.uid]);
+/* reports and the admin (Fred) */
+process.env.GPA_ADMIN_EMAILS = 'someone@else.org, fred@example.com';
+ok('the admin is whoever’s Google email is listed', (await H.boot(F.uid, F.token)).me.admin === true && (await H.boot(M.uid, M.token)).me.admin === false);
+await H.saveProfile(A.uid, A.token, { bio: 'Rude words here' });
+ok('a report needs a reason kind', (await H.report(M.uid, M.token, { who: A.uid, what: 'x' })).err === 'what');
+ok('you can’t report someone you can’t see', (await H.report(E.uid, E.token, { who: M.uid, what: 'photo' })).err === 'none');
+ok('she reports a line about someone', (await H.report(M.uid, M.token, { who: A.uid, what: 'bio', reason: 'It is rude' })).ok);
+ok('only the admin sees reports', (await H.adminReports(M.uid, M.token)).err === 'not_admin');
+let ar = await H.adminReports(F.uid, F.token);
+const rep1 = ar.reports[0];
+ok('the admin sees it: who, what, the line, who reported', ar.reports.length === 1 && rep1.person.name === 'Sokha Chan' && rep1.person.bio === 'Rude words here' && /Mina/.test(rep1.byName) && rep1.reason === 'It is rude');
+ar = await H.adminAct(F.uid, F.token, rep1.id, 'bio');
+ok('the admin removes the line, and the report is done', ar.ok && ar.reports.length === 0 && (await H.boot(A.uid, A.token)).me.bio === '');
+await H.report(M.uid, M.token, { who: A.uid, what: 'other', reason: 'Asked me for money' });
+const rep2 = (await H.adminReports(F.uid, F.token)).reports[0];
+await H.adminAct(F.uid, F.token, rep2.id, 'suspend');
+ok('a suspended account is signed out and can’t sign in', (await H.boot(A.uid, A.token)).err === 'auth' && (await H.loginGoogle('test:sokha:Sokha Chan')).err === 'suspended');
+ok('… and is gone from the team and the search', !(await H.team(M.uid, M.token, T.team.id)).team.people.some(p => p.id === A.uid) && !(await H.searchPeople(F.uid, F.token, 'sokha')).people.length);
+await H.adminAct(F.uid, F.token, rep2.id, 'unsuspend');
+ok('… and can lift it', (await H.boot(A.uid, A.token)).ok);
+ok('a team can be reported by someone in it', (await H.report(M.uid, M.token, { team: T.team.id, what: 'team', reason: 'Bad name' })).ok && (await H.report(E.uid, E.token, { team: T.team.id, what: 'team' })).err === 'none');
+const rep3 = (await H.adminReports(F.uid, F.token)).reports.find(x => x.what === 'team');
+ok('the admin sees the team', rep3.teamInfo.name === 'Siem Reap Youth');
+await H.adminAct(F.uid, F.token, rep3.id, 'closeTeam');
+ok('closing a team takes everyone out of it, and its code stops working', (await H.boot(M.uid, M.token)).me.teams.length === 0 && (await H.team(A.uid, A.token, T.team.id)).err === 'none' && (await H.joinTeam(E.uid, E.token, nc.team.code)).err === 'code');
+ok('the admin sees past reports too', (await H.adminReports(F.uid, F.token, true)).reports.length === 3);
+delete process.env.GPA_ADMIN_EMAILS;
+
+/* ---------- 11. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

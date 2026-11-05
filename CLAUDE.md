@@ -80,7 +80,7 @@ km-app.js, the privacy promises first.
 ## Deploy
 Push to `main` → Netlify builds and goes live. Work on a branch and open a pull request; CI
 (`.github/workflows/tests.yml`) runs the tests on every PR. Run them locally first:
-`node tests/test-api.mjs`, `node tests/test-library.mjs` and `node tests/test-app-ui.mjs`
+`node tests/test-api.mjs`, `node tests/test-library.mjs`, `node tests/test-reminders.mjs` and `node tests/test-app-ui.mjs`
 (needs `npm install --no-save playwright`).
 
 ## The life plan (Plan tab)
@@ -116,10 +116,22 @@ phone's own voice; the 🎧 book player stays off (`LIB_AUDIO_ON`).
 (never on your own); Home shows who cheered you this week (`cheers` from boot). The admin's
 page is Me → Reports (`adminReports`, `adminAct`); Me → People you've blocked (`blockedList`).
 
+## Reminders on the phone (Me → Reminders; web push, copied from the Impact app)
+One a day at the hour each person picks (05–22, Phnom Penh), only when there's something to
+do: habits not ticked today, the plan's steps for now (Mondays), team tasks due by tomorrow, a
+1-on-1 today. Right away (`pushNow_`, if "alerts" is on): a coaching ask or offer, a task a
+leader gives you (the team's name only, never the task's words). `netlify/functions/reminders.js`
+runs `runReminders` hourly; `pushRun` stops an hour sending twice. The app makes its own VAPID
+key pair on first use (`pushKeys`, server only; GPA_VAPID_PUBLIC/PRIVATE in Netlify win if set).
+Subscriptions in `pushSubs`, only for push services in `PUSH_HOSTS`; gone ones (404/410) are
+dropped. No library: RFC 8291 encryption and RFC 8292 signing with node crypto. sw.js shows
+the notification. iPhones need the app on the Home Screen. tests/test-reminders.mjs decrypts
+what's sent as a phone would.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.
 3. ~~Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).~~ Done Nov 2026.
-4. ~~A Strava-like feed with 👏, reporting and blocking~~ Done Nov 2026. Still to do: reminders
-   on the phone (web push), Telegram sign-in (needs a bot from @BotFather).
+4. ~~A Strava-like feed with 👏, reporting and blocking; reminders on the phone~~ Done Nov 2026.
+   Still to do: Telegram sign-in (needs a bot from @BotFather).
 5. A daily Bible verse and more Christian content (Uriah: later).

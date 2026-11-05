@@ -243,7 +243,37 @@ ok('a quiz answer goes green', !!(await m.$('.khOpt.right')));
 await m.evaluate(() => { S.view = 'grow'; render(); });
 ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
 
-/* ---------- 10. Khmer ---------- */
+/* ---------- 10. reminders on the phone (the phone's push system stood in for) ---------- */
+{
+  const crypto = await import('node:crypto');
+  const e = crypto.createECDH('prime256v1'); e.generateKeys();
+  const b64u = b => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const fake = { endpoint: 'https://fcm.googleapis.com/fcm/send/test-' + Date.now(), keys: { p256dh: b64u(e.getPublicKey()), auth: b64u(crypto.randomBytes(16)) } };
+  const auth = await a.evaluate(() => localStorage.getItem('gpa-auth'));
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], userAgent: 'Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile', timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(([au, sub]) => {
+    localStorage.setItem('gpa-auth', au); localStorage.setItem('gpa-lang', 'en');
+    window.PushManager = function () {};
+    window.Notification = { permission: 'default', requestPermission: () => { window.Notification.permission = 'granted'; return Promise.resolve('granted'); } };
+    let cur = null;
+    const reg = { pushManager: { getSubscription: () => Promise.resolve(cur), subscribe: (o) => { window.__subKey = o.applicationServerKey.length; cur = { endpoint: sub.endpoint, toJSON: () => sub, unsubscribe: () => { cur = null; return Promise.resolve(true); } }; return Promise.resolve(cur); } } };
+    Object.defineProperty(navigator, 'serviceWorker', { value: { ready: Promise.resolve(reg), register: () => Promise.resolve(reg) } });
+  }, [auth, fake]);
+  const r = await ctx.newPage(); r.on('pageerror', x => errors.push('reminders: ' + x.message)); r.on('dialog', d => d.accept());
+  await r.goto(base + '/'); await r.waitForSelector('nav.bottom');
+  await r.click('nav.bottom button[data-tab="me"]'); await r.waitForSelector('#remOn');
+  ok('Me offers reminders', /One reminder a day/.test(await text(r)));
+  await r.click('#remOn'); await r.waitForSelector('#remHour');
+  ok('turning them on subscribes with the app’s key, and shows the choices', await r.evaluate(() => window.__subKey === 65) && /Reminders are on for this phone/.test(await text(r)) && (await r.inputValue('#remHour')) === '19');
+  await r.selectOption('#remHour', '7'); await r.click('#remPlan'); await r.waitForTimeout(500);
+  const me = await r.evaluate(() => S.push.prefs);
+  ok('… the time and what to hear about are saved', me.hour === 7 && me.plan === false && me.habits === true);
+  await r.click('#remOff'); await r.waitForSelector('#remOn');
+  ok('… and they can be turned off', /Reminders are off for this phone/.test(await r.$eval('#msg', x => x.textContent)));
+  await ctx.close();
+}
+
+/* ---------- 11. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -254,7 +284,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 11. the page fits a phone ---------- */
+/* ---------- 12. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

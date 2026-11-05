@@ -104,3 +104,7 @@ the account that owns the repo.
   on Home, report a person or a team, block (both ways), leaders remove a member's photo, and
   the admin's Reports page (remove a photo or line, suspend, close a team). The under-18 rules
   stay as they were. The admin is set by GPA_ADMIN_EMAILS in Netlify.
+- Merged the feed and safety (PR #4). Created the Netlify site **gonpreah-app** (team GP Apps)
+  with GPA_ADMIN_EMAILS set; Uriah links it to the repo, adds the domain and the Google key.
+- Built phone reminders (branch `reminders`), the Impact app's web push: the app makes its own
+  keys, so nothing to paste into Netlify.

@@ -361,5 +361,18 @@ var APP_KM = {
   "Leave it as it is": "ទុកវាដដែល",
   "Suspend this account? They will be signed out and hidden from everyone until you lift it.": "ផ្អាកគណនីនេះ? គាត់នឹងត្រូវចាកចេញ ហើយត្រូវបានលាក់ពីអ្នកគ្រប់គ្នា រហូតដល់អ្នកលើកការផ្អាកចេញ។",
   "Close this team? Everyone will be taken out of it and its code will stop working.": "បិទក្រុមនេះ? អ្នកគ្រប់គ្នានឹងត្រូវដកចេញពីក្រុម ហើយលេខកូដរបស់វានឹងលែងដំណើរការ។",
-  "My moments in my teams’ feed (👏)": "ព្រឹត្តិការណ៍របស់ខ្ញុំ ក្នុងព័ត៌មានរបស់ក្រុមខ្ញុំ (👏)"
+  "My moments in my teams’ feed (👏)": "ព្រឹត្តិការណ៍របស់ខ្ញុំ ក្នុងព័ត៌មានរបស់ក្រុមខ្ញុំ (👏)",
+  /* reminders on the phone */
+  "On iPhone, add GonPreah to your Home Screen first (Share → Add to Home Screen), open it from there, and turn reminders on here.": "នៅលើ iPhone សូមបន្ថែម កូនព្រះ ទៅអេក្រង់ដើមជាមុនសិន (ចែករំលែក → បន្ថែមទៅអេក្រង់ដើម) បើកវាពីទីនោះ ហើយបើកការរំលឹកនៅទីនេះ។",
+  "One reminder a day at a time you choose — only when there’s something to do.": "ការរំលឹកមួយដងក្នុងមួយថ្ងៃ នៅម៉ោងដែលអ្នកជ្រើសរើស — តែនៅពេលមានអ្វីត្រូវធ្វើប៉ុណ្ណោះ។",
+  "When today’s habits aren’t ticked": "ពេលទម្លាប់ថ្ងៃនេះមិនទាន់បានគូស",
+  "My life plan’s steps for now (Mondays)": "ជំហាននៃផែនការជីវិតរបស់ខ្ញុំសម្រាប់ពេលនេះ (ថ្ងៃច័ន្ទ)",
+  "Team tasks due soon": "កិច្ចការក្រុមដែលជិតដល់កាលកំណត់",
+  "A 1-on-1 today": "ការជួបមួយទល់មួយនៅថ្ងៃនេះ",
+  "Right away: someone asks about coaching, or a leader gives me a task": "ភ្លាមៗ៖ ពេលនរណាម្នាក់សួរអំពីការណែនាំ ឬអ្នកដឹកនាំផ្តល់កិច្ចការដល់ខ្ញុំ",
+  "Reminders couldn’t be turned on on this phone.": "មិនអាចបើកការរំលឹកនៅលើទូរស័ព្ទនេះបានទេ។",
+  "Reminders are on.": "ការរំលឹកត្រូវបានបើក។",
+  "Sent — it should arrive in a moment.": "បានផ្ញើហើយ — វាគួរតែមកដល់បន្តិចទៀតនេះ។",
+  "It couldn’t be sent. Try turning reminders off and on again.": "មិនអាចផ្ញើបានទេ។ សូមសាកល្បងបិទ ហើយបើកការរំលឹកម្តងទៀត។",
+  "Reminders are off for this phone.": "ការរំលឹកត្រូវបានបិទសម្រាប់ទូរស័ព្ទនេះ។"
 };

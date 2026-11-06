@@ -13,6 +13,9 @@
       people          the search index: [{id, username, name, minor}] — no photos, no birth years
       t:<id>          a team: name, emoji, join code, leaders, members, team tasks, its coachings' ids
       c:<id>          a coaching (1-on-1s): coach, mentee, the team, its meetings — see "1-on-1s" below
+      pushKeys        the app's own key pair for phone reminders (made on first use; server only)
+      pushSubs        each phone that asked for reminders: { uid, endpoint, p256dh, auth, lang, at }
+      pushRun         the last hour the reminders ran, so an hour never sends twice
       reports         what people reported (a photo, a name, a line about them, a team), for the admin
       tcode:<code>    join code → team id
 
@@ -409,7 +412,9 @@ async function boot(uid, tok) {
     teamTasksOut_(t, uid, {}).forEach(function (k) { if (k.forMe && !k.mine) teamTasks.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, k)); });
   }
   const co = await coachings(uid, tok);
-  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u), today: today_() };
+  const pk = await pushKeys_(true);
+  return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
+    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -914,6 +919,7 @@ async function coachAsk(uid, tok, otherId, tid, as) {
   await writeJSON('c:' + c.id, c);
   for (const id of [coach.id, mentee.id]) await mutate_('u:' + id, null, function (u) { if (u) u.coaching = (u.coaching || []).concat([c.id]).slice(-60); return { ok: true }; });
   await mutate_('t:' + tid, null, function (x) { if (x) x.coachings = (x.coachings || []).concat([c.id]).slice(-400); return { ok: true }; });
+  await pushNow_(otherId, as === 'mentee' ? 'coachAsk' : 'coachOffer', { name: isMinor_(me) ? firstName_(me.name) : me.name });
   return { ok: true, id: c.id };
 }
 /* The other person says yes or no. */
@@ -1076,6 +1082,10 @@ async function teamTask(uid, tok, tid, act, a) {
     return { abort: true, ok: false, err: 'act' };
   });
   if (!res.ok) return res;
+  if (act === 'add' && typeof a.who === 'string' && a.who && a.who !== uid) {
+    const t = await readJSON('t:' + tid, null);
+    if (t) await pushNow_(a.who, 'teamTask', { team: (t.emoji || '') + ' ' + t.name });
+  }
   return team(uid, tok, tid);
 }
 
@@ -1233,6 +1243,228 @@ async function adminAct(uid, tok, rid, act) {
   return adminReports(uid, tok, false);
 }
 
+/* ---------------- reminders: web push ----------------
+   Copied from the Impact app (its "Reminders — web push"), for GonPreah. One reminder a day
+   at the hour each person picks (Phnom Penh time), only when there is something to do:
+   today's habits not ticked yet, the life plan's steps for now (Mondays), team tasks due
+   today or tomorrow, a 1-on-1 today. And right away, when someone asks you to coach them
+   or offers to coach you, or a leader gives you a team task. netlify/functions/reminders.js
+   runs runReminders every hour.
+   Keys: GPA_VAPID_PUBLIC / GPA_VAPID_PRIVATE (raw base64url) in Netlify win if set; otherwise
+   the app makes a P-256 pair the first time it's needed and keeps it in 'pushKeys' — server
+   side only. Messages are encrypted to each phone (RFC 8291, aes128gcm) and signed (VAPID,
+   RFC 8292) with node's crypto, no library. Only push services in PUSH_HOSTS are ever
+   called, so a subscription can't point the server anywhere else; one the service says is
+   gone (404/410) is dropped. The words are PUSH_TEXT, in the phone's language. */
+const PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /^updates\.push\.services\.mozilla\.com$/, /^([a-z0-9-]+\.)*push\.apple\.com$/, /^([a-z0-9-]+\.)*notify\.windows\.com$/];
+const PUSH_MAX_SUBS = 5, PUSH_HOURS_MIN = 5, PUSH_HOURS_MAX = 22, PUSH_DEFAULT_HOUR = 19;
+const PUSH_TEXT = {
+  title: { en: 'GonPreah', km: 'កូនព្រះ' },
+  habits: { en: 'Tick today’s habits and keep your {n}-day streak going 🔥', km: 'សូមគូសទម្លាប់ថ្ងៃនេះ ហើយរក្សាស្ទ្រីក {n} ថ្ងៃរបស់អ្នកឱ្យបន្ត 🔥' },
+  habitsNew: { en: 'Your habits for today aren’t ticked yet ✅', km: 'ទម្លាប់សម្រាប់ថ្ងៃនេះ មិនទាន់បានគូសនៅឡើយទេ ✅' },
+  steps: { en: '{n} steps in your life plan for now 🎯', km: 'មានជំហាន {n} ក្នុងផែនការជីវិតរបស់អ្នកសម្រាប់ពេលនេះ 🎯' },
+  teamTasks: { en: '{n} team tasks due soon 📋', km: 'កិច្ចការក្រុម {n} ជិតដល់កាលកំណត់ 📋' },
+  oneonone: { en: '1-on-1 with {name} today 🤝', km: 'ជួបមួយទល់មួយជាមួយ {name} ថ្ងៃនេះ 🤝' },
+  coachAsk: { en: '{name} asked you to be their coach.', km: '{name} បានសុំឱ្យអ្នកធ្វើជាអ្នកណែនាំរបស់គាត់។' },
+  coachOffer: { en: '{name} offered to be your coach.', km: '{name} បានស្នើធ្វើជាអ្នកណែនាំរបស់អ្នក។' },
+  teamTask: { en: 'A new task for you in {team}.', km: 'មានកិច្ចការថ្មីសម្រាប់អ្នកនៅក្នុង {team}។' },
+  test: { en: 'Reminders are on. You’ll hear from GonPreah at the time you chose.', km: 'ការរំលឹកត្រូវបានបើក។ កូនព្រះនឹងរំលឹកអ្នកនៅម៉ោងដែលអ្នកបានជ្រើសរើស។' }
+};
+function pushText_(key, lang, params) {
+  const x = PUSH_TEXT[key] || {};
+  let out = (lang === 'km' && x.km) || x.en || key;
+  Object.keys(params || {}).forEach(function (k) { out = out.split('{' + k + '}').join(String(params[k])); });
+  return out;
+}
+const b64u_ = function (buf) { return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u_ = function (x) { return Buffer.from(String(x || '').replace(/-/g, '+').replace(/_/g, '/'), 'base64'); };
+function hkdf_(salt, ikm, info, len) { return Buffer.from(crypto.hkdfSync('sha256', ikm, salt, info, len)); }
+async function pushKeys_(make) {
+  if (process.env.GPA_VAPID_PUBLIC && process.env.GPA_VAPID_PRIVATE) return { pub: process.env.GPA_VAPID_PUBLIC, priv: process.env.GPA_VAPID_PRIVATE, subject: 'https://app.gonpreah.org' };
+  const k = await readJSON('pushKeys', {});
+  if (k && k.pub && k.priv) return k;
+  if (!make) return null;
+  await mutate_('pushKeys', {}, function (x) {
+    if (x.pub && x.priv) return { abort: true, ok: true };   // someone else made them a moment ago
+    const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
+    x.pub = b64u_(ecdh.getPublicKey()); x.priv = b64u_(ecdh.getPrivateKey()); x.subject = 'https://app.gonpreah.org'; x.at = new Date().toISOString();
+    return { ok: true };
+  });
+  return readJSON('pushKeys', null);
+}
+function vapidKeyObject_(pub, priv) {
+  const p = unb64u_(pub);
+  return crypto.createPrivateKey({ key: { kty: 'EC', crv: 'P-256', d: b64u_(unb64u_(priv)), x: b64u_(p.subarray(1, 33)), y: b64u_(p.subarray(33, 65)) }, format: 'jwk' });
+}
+function vapidJwt_(endpoint, keys, nowSec) {
+  const aud = new URL(endpoint).origin;
+  const head = b64u_(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
+  const body = b64u_(JSON.stringify({ aud: aud, exp: (nowSec || Math.floor(Date.now() / 1000)) + 12 * 3600, sub: keys.subject }));
+  const sig = crypto.sign('sha256', Buffer.from(head + '.' + body), { key: vapidKeyObject_(keys.pub, keys.priv), dsaEncoding: 'ieee-p1363' });
+  return head + '.' + body + '.' + b64u_(sig);
+}
+function pushEncrypt_(sub, payload) {
+  const uaPub = unb64u_(sub.p256dh), auth = unb64u_(sub.auth);
+  const ecdh = crypto.createECDH('prime256v1'); ecdh.generateKeys();
+  const asPub = ecdh.getPublicKey(), secret = ecdh.computeSecret(uaPub);
+  const ikm = hkdf_(auth, secret, Buffer.concat([Buffer.from('WebPush: info\0'), uaPub, asPub]), 32);
+  const salt = crypto.randomBytes(16);
+  const cek = hkdf_(salt, ikm, Buffer.from('Content-Encoding: aes128gcm\0'), 16);
+  const nonce = hkdf_(salt, ikm, Buffer.from('Content-Encoding: nonce\0'), 12);
+  const c = crypto.createCipheriv('aes-128-gcm', cek, nonce);
+  const body = Buffer.concat([c.update(Buffer.concat([Buffer.from(payload, 'utf8'), Buffer.from([2])])), c.final(), c.getAuthTag()]);
+  const rs = Buffer.alloc(4); rs.writeUInt32BE(4096);
+  return Buffer.concat([salt, rs, Buffer.from([asPub.length]), asPub, body]);
+}
+function pushHostOk_(endpoint) {
+  try { const u = new URL(endpoint); return u.protocol === 'https:' && PUSH_HOSTS.some(function (re) { return re.test(u.hostname); }); }
+  catch (e) { return false; }
+}
+async function pushSend_(sub, message, keys) {
+  if (!pushHostOk_(sub.endpoint)) return 'bad_host';
+  try {
+    const res = await globalThis.fetch(sub.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '43200', Urgency: 'normal',
+        Authorization: 'vapid t=' + vapidJwt_(sub.endpoint, keys) + ', k=' + keys.pub },
+      body: pushEncrypt_(sub, JSON.stringify(message))
+    });
+    if (res.status === 404 || res.status === 410) return 'gone';
+    return res.ok ? 'sent' : 'failed';
+  } catch (e) { return 'failed'; }
+}
+const PUSH_PREF_KEYS = ['habits', 'plan', 'team', 'coach', 'alerts'];
+function pushPrefsOf_(u) {
+  const p = (u && u.pushPrefs) || {}, h = Number(p.hour), o = { hour: h >= PUSH_HOURS_MIN && h <= PUSH_HOURS_MAX ? Math.round(h) : PUSH_DEFAULT_HOUR };
+  PUSH_PREF_KEYS.forEach(function (k) { o[k] = p[k] !== false; });
+  return o;
+}
+async function dropSubs_(gone) {
+  if (gone.length) await mutate_('pushSubs', [], function (rows) { for (let i = rows.length - 1; i >= 0; i--) if (gone.indexOf(rows[i].endpoint) > -1) rows.splice(i, 1); return { ok: true }; });
+}
+/* Right away, to one person's phones (if they have reminders and alerts on). Never throws. */
+async function pushNow_(uid, key, params) {
+  try {
+    const keys = await pushKeys_(false); if (!keys) return 0;
+    const subs = (await readJSON('pushSubs', [])).filter(function (r) { return r.uid === uid; });
+    if (!subs.length) return 0;
+    const u = await readJSON('u:' + uid, null);
+    if (gone_(u) || !pushPrefsOf_(u).alerts) return 0;
+    let sent = 0; const gone = [];
+    for (const sub of subs) {
+      const r = await pushSend_(sub, { title: pushText_('title', sub.lang), body: pushText_(key, sub.lang, params), tag: 'gpa-' + key, url: '/' }, keys);
+      if (r === 'sent') sent++; if (r === 'gone') gone.push(sub.endpoint);
+    }
+    await dropSubs_(gone);
+    return sent;
+  } catch (e) { return 0; }
+}
+async function pushSubscribe(uid, tok, sub, lang) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (!(await pushKeys_(true))) return { ok: false, err: 'not_set_up' };
+  const endpoint = sub && typeof sub.endpoint === 'string' ? sub.endpoint.slice(0, 1200) : '';
+  const k = (sub && sub.keys) || {};
+  if (!pushHostOk_(endpoint)) return { ok: false, err: 'bad_endpoint' };
+  if (unb64u_(k.p256dh).length !== 65 || unb64u_(k.auth).length !== 16) return { ok: false, err: 'bad_keys' };
+  await mutate_('pushSubs', [], function (rows) {
+    for (let i = rows.length - 1; i >= 0; i--) if (rows[i].endpoint === endpoint) rows.splice(i, 1);
+    const mine = rows.filter(function (r) { return r.uid === uid; }).sort(function (a, b) { return a.at < b.at ? -1 : 1; });
+    if (mine.length >= PUSH_MAX_SUBS) rows.splice(rows.indexOf(mine[0]), 1);
+    rows.push({ uid: uid, endpoint: endpoint, p256dh: String(k.p256dh), auth: String(k.auth), lang: lang === 'en' ? 'en' : 'km', at: new Date().toISOString() });
+    return { ok: true };
+  });
+  return { ok: true, prefs: pushPrefsOf_(await readJSON('u:' + uid, null)) };
+}
+async function pushUnsubscribe(uid, tok, endpoint) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  await mutate_('pushSubs', [], function (rows) { for (let i = rows.length - 1; i >= 0; i--) if (rows[i].uid === uid && rows[i].endpoint === endpoint) rows.splice(i, 1); return { ok: true }; });
+  return { ok: true };
+}
+async function pushSavePrefs(uid, tok, prefs) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  const p = prefs && typeof prefs === 'object' ? prefs : {}, h = Number(p.hour);
+  const clean = { hour: h >= PUSH_HOURS_MIN && h <= PUSH_HOURS_MAX ? Math.round(h) : PUSH_DEFAULT_HOUR };
+  PUSH_PREF_KEYS.forEach(function (k) { clean[k] = p[k] !== false; });
+  await mutate_('u:' + uid, null, function (u) { if (u) u.pushPrefs = clean; return { ok: true }; });
+  return { ok: true, prefs: clean };
+}
+async function pushTest(uid, tok) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  const keys = await pushKeys_(false);
+  if (!keys) return { ok: false, err: 'not_set_up' };
+  const subs = (await readJSON('pushSubs', [])).filter(function (r) { return r.uid === uid; });
+  if (!subs.length) return { ok: false, err: 'no_subscription' };
+  let sent = 0; const gone = [];
+  for (const sub of subs) { const r = await pushSend_(sub, { title: pushText_('title', sub.lang), body: pushText_('test', sub.lang), tag: 'gpa-test', url: '/' }, keys); if (r === 'sent') sent++; if (r === 'gone') gone.push(sub.endpoint); }
+  await dropSubs_(gone);
+  return { ok: sent > 0, sent: sent, err: sent ? undefined : 'not_sent' };
+}
+/* What one person's reminder says right now, if anything. */
+async function reminderItems_(u, ctx) {
+  const p = pushPrefsOf_(u), out = [], today = ctx.today;
+  if (p.habits && (u.habits || []).length) {
+    const m = (u.days || {})[today];
+    if (!(m && Object.keys(m).some(function (k) { return m[k]; }))) { const st = streakOf_(u.days || {}); out.push(st ? { key: 'habits', params: { n: st } } : { key: 'habitsNew' }); }
+  }
+  if (p.plan && ctx.monday) {
+    const mon = monthOf_(today), q = quarterOf_(today);
+    let n = 0;
+    planOf_(u).goals.forEach(function (g) { if (!g.done) (g.steps || []).forEach(function (st) { if (!st.done && (st.when === mon || st.when === q || st.when < (/Q/.test(st.when) ? q : mon))) n++; }); });
+    if (n) out.push({ key: 'steps', params: { n: n } });
+  }
+  if (p.team) {
+    let n = 0; const soon = addDays_(today, 1);
+    for (const tid of (u.teams || [])) {
+      if (!(tid in ctx.teams)) ctx.teams[tid] = await readJSON('t:' + tid, null);
+      const t = ctx.teams[tid]; if (!t) continue;
+      (t.tasks || []).forEach(function (k) { if ((!k.who || k.who === u.id) && !(k.done || {})[u.id] && k.due && k.due <= soon) n++; });
+    }
+    if (n) out.push({ key: 'teamTasks', params: { n: n } });
+  }
+  if (p.coach) {
+    for (const cid of (u.coaching || [])) {
+      const c = await readJSON('c:' + cid, null);
+      if (!c || c.status !== 'active' || c.next !== today) continue;
+      const other = await readJSON('u:' + (c.coach === u.id ? c.mentee : c.coach), null);
+      if (other && !gone_(other)) out.push({ key: 'oneonone', params: { name: firstName_(other.name) } });
+    }
+  }
+  return out;
+}
+/* Every hour (netlify/functions/reminders.js): everyone whose hour it is gets one notification
+   with whatever applies to them. Nothing to say → nothing sent. `now` is for tests. */
+async function runReminders(now) {
+  return scope.run(new Map(), async function () {
+    const at = now || new Date();
+    const keys = await pushKeys_(false);
+    if (!keys) return { ok: false, err: 'not_set_up' };
+    const local = new Date(at.getTime() + 7 * 3600 * 1000);
+    const hour = local.getUTCHours(), today = local.toISOString().slice(0, 10);
+    const subs = await readJSON('pushSubs', []);
+    if (!subs.length) return { ok: true, sent: 0, people: 0 };
+    const run = await readJSON('pushRun', {});
+    if (run.slot === today + 'T' + hour) return { ok: true, sent: 0, skipped: 'already_ran' };
+    await writeJSON('pushRun', { slot: today + 'T' + hour, at: at.toISOString(), running: true });
+    const ctx = { today: today, monday: local.getUTCDay() === 1, teams: {} }, byUid = {};
+    subs.forEach(function (r) { (byUid[r.uid] = byUid[r.uid] || []).push(r); });
+    let sent = 0, people = 0; const gone = [];
+    for (const uid of Object.keys(byUid)) {
+      const u = await readJSON('u:' + uid, null);
+      if (gone_(u) || pushPrefsOf_(u).hour !== hour) continue;
+      const items = await reminderItems_(u, ctx);
+      if (!items.length) continue;
+      people++;
+      for (const sub of byUid[uid]) {
+        const r = await pushSend_(sub, { title: pushText_('title', sub.lang), body: items.map(function (x) { return pushText_(x.key, sub.lang, x.params); }).join('\n'), tag: 'gpa-reminder', url: '/' }, keys);
+        if (r === 'sent') sent++; if (r === 'gone') gone.push(sub.endpoint);
+      }
+    }
+    await dropSubs_(gone);
+    await writeJSON('pushRun', { slot: today + 'T' + hour, at: at.toISOString(), sent: sent, people: people, dropped: gone.length });
+    return { ok: true, sent: sent, people: people, dropped: gone.length };
+  });
+}
+
 async function signOut(uid, tok) {
   if (!(await auth_(uid, tok))) return { ok: true };
   const h = sha_(tok);
@@ -1246,9 +1478,11 @@ export const HANDLERS = {
   savePlanWhy, saveGoal, goalAct, myTask, teamTask,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
+  pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };
+export { runReminders, pushEncrypt_, vapidJwt_ };
 
 export default async function (req) {
   const J = function (o, s) { return new Response(JSON.stringify(o), { status: s || 200, headers: { 'Content-Type': 'application/json' } }); };

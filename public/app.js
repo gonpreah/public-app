@@ -41,7 +41,8 @@ var S = {
   signup: null, ptest: null, gtest: null, habitDraft: null, weekEdit: false,
   teamTasks: [], goalId: null, goalDraft: null, whyEdit: false, showDone: false, showReached: false,
   coach: [], coaching: null, meetId: null, meetDraft: null, showEnded: false,
-  feed: null, feedMore: false, cheers: [], reportFor: null, blockedPeople: null, admin: null
+  feed: null, feedMore: false, cheers: [], reportFor: null, blockedPeople: null, admin: null,
+  push: null, pushSub: null, pushChecked: false, pushBusy: false
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -70,7 +71,7 @@ function failMsg(d){
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.today) S.today=d.today; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -483,6 +484,7 @@ function meHtml(){
     '<label class="f">'+esc(t('Language'))+'</label><div class="seg"><button data-lang="km" class="'+(LANG==='km'?'on':'')+'">ខ្មែរ</button><button data-lang="en" class="'+(LANG==='en'?'on':'')+'">English</button></div>'+
     '<label class="f">'+esc(t('Appearance'))+'</label><div class="seg">'+[['auto','Auto'],['light','Light'],['dark','Dark']].map(function(x){ var cur=lsGet('gpa-theme')||'auto'; return '<button data-theme="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
     '<button class="btn" id="pfSave">'+esc(t('Save'))+'</button></div>'+
+    remindersCardHtml_()+
     (me.blocked?'<button class="linkbtn" id="goBlocked">🚫 '+esc(gpT('People you’ve blocked ({n})',{n:me.blocked}))+'</button>':'')+
     '<button class="linkbtn" id="signOut">'+esc(t('Sign out'))+'</button>';
   if(me.admin) h=entryCardHtml('goAdmin','🛡️',t('Reports'),t('You’re the admin: see what people reported, and act on it.'))+h;
@@ -1109,6 +1111,7 @@ function bind(){
   on('goLibrary', function(){ S.back=[]; libOpen_(); });
   on('goLearn', function(){ S.back=[]; khOpen_(); });
   if(S.view==='library') bindLibrary_();
+  bindReminders_();
   bindKhmer_();
   if(S.view==='team' && S.team) loadPhotos_(S.team.people);
   if(S.view==='teams' && S.feed===null && (S.teams||[]).length && !S.feedAsked){ S.feedAsked=true; feedLoad_(); }
@@ -1229,6 +1232,68 @@ function adminHtml(){
   return h;
 }
 function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all }; render(); } else { failMsg(d); goBack('me'); } }); }
+
+/* ---------------- reminders on the phone (Me) ----------------
+   Copied from the Impact app: one reminder a day at the hour you pick, only when there's
+   something to do, plus a few right away (a coach asking, a task from a leader). This phone
+   subscribes with the app's public key from boot (S.push.key); the server keeps it. iPhones
+   only allow it once the app is on the Home Screen. */
+function pushSupported_(){ return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification!=='undefined'; }
+function pushNeedsInstall_(){
+  var ios=/iPhone|iPad|iPod/.test(navigator.userAgent||'');
+  var standalone=window.navigator.standalone===true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  return ios && !standalone;
+}
+function pushKeyBytes_(b64){ var x=String(b64).replace(/-/g,'+').replace(/_/g,'/'); while(x.length%4) x+='='; var raw=atob(x), out=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++) out[i]=raw.charCodeAt(i); return out; }
+function pushCheck_(){
+  if(S.pushChecked || !pushSupported_()) return; S.pushChecked=true;
+  navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription(); }).then(function(sub){ S.pushSub=sub||null; if(S.view==='me' && !typing_()) render(); }).catch(function(){});
+}
+function remindersCardHtml_(){
+  var P=S.push, h='<h3>🔔 '+esc(t('Reminders'))+'</h3><div class="card" id="remCard">';
+  if(!P) return '';
+  if(!pushSupported_()) return h+'<p class="hint" style="margin:0">'+esc(t('This phone or browser can’t show reminders from the app.'))+'</p></div>';
+  if(pushNeedsInstall_()) return h+'<p class="hint" style="margin:0">'+esc(t('On iPhone, add GonPreah to your Home Screen first (Share → Add to Home Screen), open it from there, and turn reminders on here.'))+'</p></div>';
+  if(Notification.permission==='denied') return h+'<p class="hint" style="margin:0">'+esc(t('Notifications are blocked for this app in your phone’s settings. Allow them there, then come back.'))+'</p></div>';
+  pushCheck_();
+  if(!S.pushSub) return h+'<p class="hint" style="margin:0 0 8px">'+esc(t('One reminder a day at a time you choose — only when there’s something to do.'))+'</p>'+
+    '<button class="btn" id="remOn"'+(S.pushBusy?' disabled':'')+'>🔔 '+esc(t('Turn on reminders'))+'</button></div>';
+  var pr=P.prefs||{}, opts='';
+  for(var hr=5; hr<=22; hr++) opts+='<option value="'+hr+'"'+(pr.hour===hr?' selected':'')+'>'+(hr<10?'0':'')+hr+':00</option>';
+  var box=function(id, on, label){ return '<label class="switchRow"><span>'+esc(label)+'</span><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'></label>'; };
+  return h+'<p class="hint" style="margin:0 0 8px">✓ '+esc(t('Reminders are on for this phone.'))+'</p>'+
+    '<label class="f" for="remHour">'+esc(t('Remind me at'))+'</label><select id="remHour">'+opts+'</select>'+
+    box('remHabits', pr.habits!==false, t('When today’s habits aren’t ticked'))+
+    box('remPlan', pr.plan!==false, t('My life plan’s steps for now (Mondays)'))+
+    box('remTeam', pr.team!==false, t('Team tasks due soon'))+
+    box('remCoach', pr.coach!==false, t('A 1-on-1 today'))+
+    box('remAlerts', pr.alerts!==false, t('Right away: someone asks about coaching, or a leader gives me a task'))+
+    '<div class="btnRow" style="margin-top:10px"><button class="btn small ghost" id="remTest">'+esc(t('Send me a test'))+'</button><button class="btn small ghost" id="remOff">'+esc(t('Turn off'))+'</button></div></div>';
+}
+function remSavePrefs_(){
+  var g=function(id){ var el=$(id); return el ? !!el.checked : true; };
+  var pr={ hour:Number(($('remHour')||{}).value)||19, habits:g('remHabits'), plan:g('remPlan'), team:g('remTeam'), coach:g('remCoach'), alerts:g('remAlerts') };
+  S.push.prefs=pr;
+  call('pushSavePrefs', pr).then(function(d){ if(d && d.ok){ S.push.prefs=d.prefs; showMsg(t('Saved.')); } else failMsg(d); });
+}
+function bindReminders_(){
+  on('remOn', function(){
+    gpTap(); S.pushBusy=true; render();
+    var fail=function(msg){ S.pushBusy=false; render(); showMsg(msg || t('Reminders couldn’t be turned on on this phone.')); };
+    Promise.resolve(Notification.permission==='granted' ? 'granted' : Notification.requestPermission()).then(function(perm){
+      if(perm!=='granted'){ fail(t('Allow notifications to get reminders.')); return; }
+      return navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:pushKeyBytes_(S.push.key) }); })
+        .then(function(sub){ var j=sub.toJSON();
+          return call('pushSubscribe', { endpoint:j.endpoint, keys:j.keys }, LANG).then(function(d){
+            S.pushBusy=false;
+            if(d && d.ok){ S.pushSub=sub; if(d.prefs) S.push.prefs=d.prefs; render(); showMsg(t('Reminders are on.')); }
+            else { sub.unsubscribe().catch(function(){}); fail(); } }); });
+    }).catch(function(){ fail(); });
+  });
+  ['remHour','remHabits','remPlan','remTeam','remCoach','remAlerts'].forEach(function(id){ var el=$(id); if(el) el.onchange=remSavePrefs_; });
+  on('remTest', function(){ var b=$('remTest'); b.disabled=true; call('pushTest').then(function(d){ b.disabled=false; showMsg(d && d.ok ? t('Sent — it should arrive in a moment.') : t('It couldn’t be sent. Try turning reminders off and on again.')); }); });
+  on('remOff', function(){ var sub=S.pushSub; if(!sub) return; call('pushUnsubscribe', sub.endpoint); sub.unsubscribe().catch(function(){}); S.pushSub=null; render(); showMsg(t('Reminders are off for this phone.')); });
+}
 
 /* ---------------- the Learn tab ---------------- */
 /* Two doors: the Library and Learn Khmer / English. What each knows is on this phone. */

@@ -18,3 +18,23 @@ self.addEventListener('fetch', function(e){
     setTimeout(function(){ caches.match(r, { ignoreSearch: true }).then(function(m){ if (m) finish(m); }); }, NET_WAIT_MS);
   }));
 });
+
+/* Reminders (web push, copied from the Impact app): the server sends { title, body, tag, url },
+   encrypted to this phone; one notification, replacing the last with the same tag. Tapping it
+   opens the app, or brings an open copy to the front. */
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'GonPreah', {
+    body: d.body || '', tag: d.tag || 'gpa-reminder', renotify: true,
+    icon: 'icon-512.png', badge: 'icon-180.png', data: { url: d.url || '/' }
+  }));
+});
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var url = new URL((e.notification.data && e.notification.data.url) || '/', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    for (var i = 0; i < list.length; i++) { if (list[i].url.indexOf(self.registration.scope) === 0 && 'focus' in list[i]) return list[i].focus(); }
+    return self.clients.openWindow(url);
+  }));
+});

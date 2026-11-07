@@ -381,7 +381,30 @@ ok('others see the level, not the XP log', xcard.level && xcard.level.level === 
 await H.saveProfile(X.uid, X.token, { share: { level: false } });
 ok('… unless the level switch is off', !(await H.person(A.uid, A.token, X.uid)).person.level);
 
-/* ---------- 15. the door ---------- */
+/* ---------- 15. faith daily: reading plans and prayers ---------- */
+const F2 = await H.registerPassword({ username: 'faith_t', name: 'Faith Test', birthYear: 2001, password: 'faith password' });
+ok('only known plans', (await H.reading(F2.uid, F2.token, 'start', { plan: 'constructor' })).err === 'none' && (await H.reading(F2.uid, F2.token, 'start', { plan: 'nope' })).err === 'none');
+r = await H.reading(F2.uid, F2.token, 'start', { plan: 'hard_days' });
+ok('a reading plan starts', r.ok && r.me.reading.hard_days.start === today && r.me.reading.hard_days.done.length === 0);
+ok('the plans come with start-up — passages only, never the Bible’s text', (await H.boot(F2.uid, F2.token)).plans.hard_days[0] === 'Psalms 23');
+ok('a day out of range is refused', (await H.reading(F2.uid, F2.token, 'tick', { plan: 'hard_days', day: 7, done: true })).err === 'none');
+r = await H.reading(F2.uid, F2.token, 'tick', { plan: 'hard_days', day: 0, done: true });
+ok('a day read: ticked, and 10 XP', r.me.reading.hard_days.done[0] === 0 && r.me.level.xp === 10);
+await H.reading(F2.uid, F2.token, 'tick', { plan: 'hard_days', day: 0, done: false });
+r = await H.reading(F2.uid, F2.token, 'tick', { plan: 'hard_days', day: 0, done: true });
+ok('… once', r.me.level.xp === 10);
+for (let i = 1; i < 7; i++) r = await H.reading(F2.uid, F2.token, 'tick', { plan: 'hard_days', day: i, done: true });
+ok('every day read finishes the plan', r.me.reading.hard_days.finished === today);
+await H.reading(F2.uid, F2.token, 'start', { plan: 'john' }); await H.reading(F2.uid, F2.token, 'start', { plan: 'mark' }); await H.reading(F2.uid, F2.token, 'start', { plan: 'proverbs' });
+ok('three plans at once at most', (await H.reading(F2.uid, F2.token, 'start', { plan: 'identity' })).err === 'too_many');
+ok('a prayer needs words', (await H.prayer(F2.uid, F2.token, 'add', { text: ' ' })).err === 'text');
+r = await H.prayer(F2.uid, F2.token, 'add', { text: 'For my grandmother’s health' });
+const yid = r.me.prayers[0].id;
+r = await H.prayer(F2.uid, F2.token, 'answer', { id: yid, on: true });
+ok('a prayer is added and marked answered', r.me.prayers[0].answered === today);
+ok('prayers and reading are never on anyone’s card', !/grandmother|hard_days|"prayers"|"reading"/.test(JSON.stringify((await H.person(A.uid, A.token, F2.uid)).person)));
+
+/* ---------- 16. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

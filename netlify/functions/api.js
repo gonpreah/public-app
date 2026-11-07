@@ -356,6 +356,76 @@ async function logFocus(uid, tok, date, minutes) {
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 
+/* ---------------- faith daily: Bible reading plans and a prayer list ----------------
+   A plan is a list of passages — references only ("John 3"); the app never carries the Bible's
+   text, so people read in their own Bible or Bible app and tick the day. u.reading[plan] =
+   { start, done:[day indexes], finished }. Up to READING_ACTIVE at once. A day read is 10 XP
+   (once per plan day), finishing a plan is a feed moment. u.prayers = [{ id, text, made,
+   answered }] — private, never shown to anyone. */
+const range_ = function (book, n) { const a = []; for (let i = 1; i <= n; i++) a.push(book + ' ' + i); return a; };
+const READING_PLANS = {
+  who_is_jesus: ['John 1', 'Luke 2', 'Matthew 5', 'Matthew 6', 'Luke 15', 'John 11', 'Matthew 26', 'Luke 23', 'John 20', 'Acts 1'],
+  identity: ['Psalms 139', 'Ephesians 1', 'Ephesians 2', 'Romans 8', '1 John 3', 'Isaiah 43', '2 Corinthians 5'],
+  hard_days: ['Psalms 23', 'Psalms 27', 'Psalms 34', 'Psalms 46', 'Psalms 91', 'Psalms 121', 'Psalms 62'],
+  mark: range_('Mark', 16),
+  john: range_('John', 21),
+  proverbs: range_('Proverbs', 31)
+};
+const READING_ACTIVE = 3, MAX_PRAYERS = 150;
+async function reading(uid, tok, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const plan = READING_PLANS[a.plan];
+  if (!plan || !Object.prototype.hasOwnProperty.call(READING_PLANS, a.plan)) return { ok: false, err: 'none' };
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.reading = u.reading && typeof u.reading === 'object' ? u.reading : {};
+    const R = u.reading[a.plan];
+    if (act === 'start') {
+      const active = Object.keys(u.reading).filter(function (k) { return !u.reading[k].finished; });
+      if (!R && active.length >= READING_ACTIVE) return { abort: true, ok: false, err: 'too_many' };
+      u.reading[a.plan] = { start: today_(), done: [], finished: '' };
+      return { ok: true };
+    }
+    if (act === 'stop') { delete u.reading[a.plan]; return { ok: true }; }
+    if (act === 'tick') {
+      const i = Math.round(Number(a.day));
+      if (!R || !(i >= 0 && i < plan.length)) return { abort: true, ok: false, err: 'none' };
+      R.done = (R.done || []).filter(function (x) { return x !== i; });
+      if (a.done) { R.done.push(i); R.done.sort(function (x, y) { return x - y; }); xpAdd_(u, 'r|' + a.plan + '|' + i, 10); }
+      else xpDrop_(u, 'r|' + a.plan + '|' + i);
+      if (R.done.length === plan.length && !R.finished) { R.finished = today_(); addPost_(u, 'reading', a.plan); }
+      if (R.done.length < plan.length) R.finished = '';
+      return { ok: true };
+    }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+async function prayer(uid, tok, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.prayers = Array.isArray(u.prayers) ? u.prayers : [];
+    if (act === 'add') {
+      const text = str_(a.text, 200);
+      if (!text) return { abort: true, ok: false, err: 'text' };
+      if (u.prayers.length >= MAX_PRAYERS) return { abort: true, ok: false, err: 'too_many' };
+      u.prayers.push({ id: 'y' + crypto.randomBytes(5).toString('hex'), text: text, made: today_(), answered: '' });
+      return { ok: true };
+    }
+    const x = u.prayers.filter(function (y) { return y.id === a.id; })[0];
+    if (!x) return { abort: true, ok: false, err: 'none' };
+    if (act === 'answer') { x.answered = a.on ? today_() : ''; return { ok: true }; }
+    if (act === 'drop') { u.prayers = u.prayers.filter(function (y) { return y.id !== a.id; }); return { ok: true }; }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+
 /* ---------------- XP and levels ----------------
    Every good thing earns XP, once: a habit ticked (5), one of today's 3 done (5, all three
    +10), focus (1 per 2 minutes), the evening check-in (5), a life-plan step (15), a goal
@@ -391,7 +461,7 @@ function xpDrop_(u, key) {
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level' };
+const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -417,7 +487,8 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp)
+    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
+    reading: u.reading || {}, prayers: u.prayers || []
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -583,7 +654,7 @@ async function boot(uid, tok) {
   const co = await coachings(uid, tok);
   const pk = await pushKeys_(true);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
-    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, today: today_() };
+    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -1342,6 +1413,7 @@ function postOut_(u, x, viewer, teamNames) {
   if (sh.type && u.personality && u.personality.share !== false) { o.who.type = u.personality.type; o.who.sex = u.sex || ''; }
   if (x.kind === 'streak') o.n = x.n;
   if (x.kind === 'focus') o.n = Number(String(x.n).split(':')[1]) || null;
+  if (x.kind === 'reading') o.n = x.n;   // the plan's id: the app's own words, not theirs
   if (x.kind === 'level') { o.n = x.n; const lv = levelOf_(xpForLevel_(x.n)); o.title = lv.title; o.icon = lv.icon; }
   if (x.kind === 'challenge') o.team = teamNames['ch:' + x.n] || null;   // the challenge's title only for people in that team
   if (x.kind === 'type') o.n = x.n;
@@ -1725,7 +1797,7 @@ export const HANDLERS = {
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,
-  saveTop, saveCheckin, logFocus, challenge,
+  saveTop, saveCheckin, logFocus, challenge, reading, prayer,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_, levelOf_, xpForLevel_ };

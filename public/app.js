@@ -9,6 +9,7 @@
       home                       — today: my why, today's 3, focus, habits, steps for now, the evening
                                    check-in, the Sunday recap, this week's goals, invites
       focus                      — the focus timer (25 or 50 minutes, phone down)
+      share                      — a picture of my week to share (drawn on the phone)
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -45,7 +46,8 @@ var S = {
   coach: [], coaching: null, meetId: null, meetDraft: null, showEnded: false,
   feed: null, feedMore: false, cheers: [], reportFor: null, blockedPeople: null, admin: null,
   push: null, pushSub: null, pushChecked: false, pushBusy: false, authCfg: null, resetResult: null,
-  topEdit: false, checkinEdit: false, checkinMood: 0, focusSetup: { dur: 25, label: '' }
+  topEdit: false, checkinEdit: false, checkinMood: 0, focusSetup: { dur: 25, label: '' },
+  challenges: [], chNew: null
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -76,7 +78,7 @@ function failMsg(d){
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.today) S.today=d.today; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -110,7 +112,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -144,6 +146,7 @@ function render(){
     else if(V==='meet') h=meetHtml();
     else if(V==='grow') h=growHtml();
     else if(V==='focus') h=focusHtml();
+    else if(V==='share') h=shareHtml();
     else if(V==='report') h=reportHtml();
     else if(V==='blocked') h=blockedHtml();
     else if(V==='admin') h=adminHtml();
@@ -293,7 +296,7 @@ function homeHtml(){
   var me=S.me, st=me.stats||{}, hour=new Date().getHours();
   var hello = hour<12 ? 'Good morning' : hour<18 ? 'Good afternoon' : 'Good evening';
   var h='<div class="heroCard">'+
-    '<div class="heroTop">'+faceHtml(me,56)+'<div><div class="heroHi">'+esc(t(hello))+'</div><div class="heroName">'+esc(firstName_(me.name))+'</div></div></div>'+
+    '<div class="heroTop">'+faceHtml(me,56)+'<div style="flex:1"><div class="heroHi">'+esc(t(hello))+'</div><div class="heroName">'+esc(firstName_(me.name))+'</div></div><button class="heroShare" id="goShare" aria-label="'+esc(t('Share my week'))+'">📤</button></div>'+
     '<div class="heroStats">'+
       '<div><b>'+(st.streak||0)+'</b><span>🔥 '+esc(t('day streak'))+'</span></div>'+
       '<div><b>'+(st.week==null?'—':st.week+'%')+'</b><span>🗒️ '+esc(t('this week'))+'</span></div>'+
@@ -303,7 +306,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=whyLineHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  h+=whyLineHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -395,6 +398,7 @@ function teamHtml(){
       '<div class="btnRow"><button class="btn small" id="shareCode" data-link="'+esc(link)+'">'+esc(t('Share the link'))+'</button><button class="btn small ghost" id="newCode">'+esc(t('New code'))+'</button></div>'+
       '<div class="hint">'+esc(t('Anyone with the code can join. Make a new one if it gets passed around.'))+'</div></div>';
   }
+  h+=challengesHtml(T);
   h+=teamTasksHtml(T);
   h+=teamMixHtml(T.people);
   h+='<h3>'+esc(t('People'))+'</h3><div class="card list">';
@@ -1037,6 +1041,30 @@ function bind(){
   on('focusAgain', function(){ S.focusDone=null; render(); });
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
+  /* share my week */
+  on('goShare', function(){ S.shareImg=null; go('share'); drawShareCard_(function(blob, url){ S.shareImg={ blob:blob, url:url }; if(S.view==='share') render(); }); });
+  on('shareGo', function(){ var I=S.shareImg; if(!I) return; var link=location.origin+'/', text=gpT('My week on GonPreah 🔥 Grow with me: {link}',{link:link});
+    try { var file=new File([I.blob], 'gonpreah-my-week.png', { type:'image/png' });
+      if(navigator.canShare && navigator.canShare({ files:[file] })){ navigator.share({ files:[file], text:text }).catch(function(){}); return; }
+      if(navigator.share){ navigator.share({ title:'GonPreah', text:text, url:link }).catch(function(){}); return; } } catch(e){}
+    showMsg(t('Save the picture, then post it from your gallery.')); });
+
+  /* challenges */
+  all('[data-chtick]', function(b){ var p=b.getAttribute('data-chtick').split('|'), on=p[2]==='1'; gpTap(); if(on) confettiAt_(b);
+    call('challenge', p[0], 'tick', { id:p[1], date:todayStr(), done:on }).then(function(d){ if(d && d.ok){ if(S.team && S.team.id===p[0]) S.team=d.team; refresh_(); render(); } else failMsg(d); }); });
+  all('[data-chjoin]', function(b){ var p=b.getAttribute('data-chjoin').split('|');
+    if(p[1]==='0' && !confirm(t('Leave this challenge? Your days so far will be lost.'))) return;
+    call('challenge', S.team.id, 'join', { id:p[0], on:p[1]==='1' }).then(function(d){ if(d && d.ok){ S.team=d.team; refresh_(); render(); } else failMsg(d); }); });
+  all('[data-chdrop]', function(b){ if(!confirm(t('End this challenge for everyone?'))) return;
+    call('challenge', S.team.id, 'drop', { id:b.getAttribute('data-chdrop') }).then(function(d){ if(d && d.ok){ S.team=d.team; refresh_(); render(); } else failMsg(d); }); });
+  on('chNewOpen', function(){ S.chNew={ title:'', emoji:'🏁', days:7, tomorrow:false }; render(); });
+  on('chCancel', function(){ S.chNew=null; render(); });
+  all('[data-chidea]', function(b){ var p=b.getAttribute('data-chidea').split('|'); S.chNew.emoji=p[0]; S.chNew.title=p.slice(1).join('|'); render(); });
+  all('[data-chdays]', function(b){ keepChNew_(); S.chNew.days=Number(b.getAttribute('data-chdays')); render(); });
+  all('[data-chstart]', function(b){ keepChNew_(); S.chNew.tomorrow=b.getAttribute('data-chstart')==='1'; render(); });
+  on('chGo', busyOnce_(function(){ keepChNew_(); var N=S.chNew; if((N.title||'').trim().length<2){ showMsg(t('Write something first.')); return; }
+    return call('challenge', S.team.id, 'add', { title:N.title, emoji:N.emoji, days:N.days, start:N.tomorrow?addDays(todayStr(),1):todayStr() }).then(function(d){ if(d && d.ok){ S.team=d.team; S.chNew=null; showMsg(t('Challenge started! 🏁')); refresh_(); render(); } else failMsg(d); }); }));
+
   /* the life plan */
   on('goPlan', function(){ S.back=[]; go('plan', true); });
   on('whyEdit', function(){ S.whyEdit=true; render(); var w=$('whyIn'); if(w) w.focus(); });
@@ -1224,8 +1252,8 @@ function bindGTest_(){
 /* ---------------- the feed: 👏 for each other ---------------- */
 /* Moments from the people in my teams (api.js feed): what happened, never their own words. */
 var FEED_LINES = { streak:'{name} reached a {n}-day streak 🔥', goal:'{name} reached a life goal 🏆', type:'{name} found their personality type: {n} 🧭',
-  strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋', focus:'{name} focused for {n} hours this week ⏱' };
-function feedLine_(x){ var k = x.kind==='joined' && !x.team ? 'joinedSome' : x.kind; return gpT(FEED_LINES[k]||'{name}',{ name:firstName_(x.who.name), n:x.n, team:x.team||'' }); }
+  strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋', focus:'{name} focused for {n} hours this week ⏱', challenge:'{name} finished the challenge {team}', challengeSome:'{name} finished a team challenge 🏁' };
+function feedLine_(x){ var k = x.kind==='joined' && !x.team ? 'joinedSome' : x.kind==='challenge' && !x.team ? 'challengeSome' : x.kind; return gpT(FEED_LINES[k]||'{name}',{ name:firstName_(x.who.name), n:x.n, team:x.team||'' }); }
 function whenLabel_(iso){ var d=todayStr(); return iso===d ? t('Today') : iso===addDays(d,-1) ? t('Yesterday') : dayLabel(iso); }
 function feedLoad_(){ if(!AUTH) return; call('feed').then(function(d){ if(d && d.ok){ S.feed=d.feed; if(S.view==='teams' && !typing_()){ render(); loadPhotos_(S.feed.map(function(x){ return x.who; })); } } }); }
 function feedHtml(){
@@ -1242,7 +1270,7 @@ function feedHtml(){
   if(S.feed.length>8 && !S.feedMore) h+='<button class="linkbtn" id="feedMore">'+esc(t('Show more'))+'</button>';
   return h;
 }
-var CHEER_WHAT = { streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus' };
+var CHEER_WHAT = { streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus', challenge:'you finishing a challenge' };
 function cheersHtml(){
   var c=S.cheers||[]; if(!c.length) return '';
   return '<div class="card cheerCard">'+c.slice(0,3).map(function(x){
@@ -1434,6 +1462,94 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- team challenges ----------------
+   A leader starts one (api.js "team challenges"); members join and tick each day. The team
+   sees who's in and how many days each has done — never anything else. */
+var CH_IDEAS=[['📖','Read a Bible chapter every day'],['🙏','Pray for 10 minutes'],['📵','No phone after 10 pm'],['🏃','Exercise for 20 minutes'],['🔤','Practise English for 15 minutes'],['⏱','Focus for one hour'],['💧','Drink 8 glasses of water'],['💛','Do something kind']];
+function chDots_(c){ var h='<div class="chDots">'; for(var i=0;i<c.days;i++){ var d=addDays(c.start,i), done=(c.mine||[]).indexOf(d)>-1, isToday=d===todayStr(); h+='<span class="chDot'+(done?' on':'')+(isToday?' now':'')+(d>todayStr()?' later':'')+'"></span>'; } return h+'</div>'; }
+function chStateLine_(c){ return c.state==='soon' ? t('Starts tomorrow') : c.state==='over' ? gpT('Finished · {n} of {d} days',{n:(c.mine||[]).length,d:c.days}) : gpT('Day {n} of {d}',{n:c.dayNo,d:c.days}); }
+function chTickBtn_(c, team){ if(c.state!=='on' || !c.joined) return '';
+  return '<button class="btn small'+(c.doneToday?' ghost':'')+'" data-chtick="'+esc(team)+'|'+esc(c.id)+'|'+(c.doneToday?0:1)+'">'+esc(c.doneToday?t('✓ Done today'):t('I did it today'))+'</button>'; }
+function challengesHtml(T){
+  var list=T.challenges||[];
+  if(!list.length && !T.leader) return '';
+  var h='<h3>🏁 '+esc(t('Challenges'))+'</h3>';
+  list.forEach(function(c){
+    h+='<div class="card chCard'+(c.state==='over'?' muted':'')+'"><div class="chHead"><span class="chEmoji">'+esc(c.emoji)+'</span><span style="flex:1;min-width:0"><b>'+esc(c.title)+'</b><div class="pmeta">'+esc(chStateLine_(c))+'</div></span>'+
+      (T.leader?'<button class="xBtn" data-chdrop="'+esc(c.id)+'" aria-label="'+esc(t('End this challenge'))+'">×</button>':'')+'</div>';
+    if(c.joined) h+=chDots_(c);
+    h+='<div class="btnRow" style="margin-top:8px">'+(c.joined ? chTickBtn_(c, T.id) : (c.state!=='over'?'<button class="btn small" data-chjoin="'+esc(c.id)+'|1">'+esc(t('Join the challenge'))+'</button>':''))+'</div>';
+    if(c.people.length){
+      h+='<div class="chPeople">'+c.people.slice(0,8).map(function(p){ var pct=Math.round(p.n/c.days*100);
+        return '<div class="chPerson"><span class="chName">'+esc(firstName_(p.name)||'?')+'</span><span class="chBar"><i style="width:'+pct+'%"></i></span><b>'+p.n+'/'+c.days+'</b></div>'; }).join('')+
+        (c.people.length>8?'<div class="pmeta">'+esc(gpT('and {n} more',{n:c.people.length-8}))+'</div>':'')+'</div>';
+    }
+    if(c.joined && c.state!=='over') h+='<button class="linkbtn" data-chjoin="'+esc(c.id)+'|0" style="font-size:12.5px">'+esc(t('Leave the challenge'))+'</button>';
+    h+='</div>';
+  });
+  if(T.leader){
+    var N=S.chNew;
+    if(!N) h+='<button class="btn ghost" id="chNewOpen">＋ '+esc(t('Start a challenge'))+'</button>';
+    else {
+      h+='<div class="card"><label class="f">'+esc(t('Pick one, or write your own'))+'</label><div class="catChips">'+CH_IDEAS.map(function(x){ return '<button class="catChip'+(N.title===t(x[1])?' on':'')+'" data-chidea="'+esc(x[0])+'|'+esc(t(x[1]))+'">'+x[0]+' '+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
+        '<label class="f" for="chTitle">'+esc(t('The challenge'))+'</label><input type="text" id="chTitle" maxlength="60" value="'+esc(N.title)+'">'+
+        '<label class="f">'+esc(t('How many days?'))+'</label><div class="seg">'+[3,7,14,21,30].map(function(n){ return '<button data-chdays="'+n+'" class="'+(N.days===n?'on':'')+'">'+n+'</button>'; }).join('')+'</div>'+
+        '<label class="f">'+esc(t('Starts'))+'</label><div class="seg"><button data-chstart="0" class="'+(!N.tomorrow?'on':'')+'">'+esc(t('Today'))+'</button><button data-chstart="1" class="'+(N.tomorrow?'on':'')+'">'+esc(t('Tomorrow'))+'</button></div>'+
+        '<div class="btnRow" style="margin-top:12px"><button class="btn small" id="chGo">🏁 '+esc(t('Start the challenge'))+'</button><button class="btn small ghost" id="chCancel">'+esc(t('Cancel'))+'</button></div>'+
+        '<div class="hint">'+esc(t('Everyone in the team sees it and chooses to join. They see who’s in and how many days each has done.'))+'</div></div>';
+    }
+  }
+  return h;
+}
+function myChallengesHtml(){
+  var list=S.challenges||[]; if(!list.length) return '';
+  return '<h3>🏁 '+esc(t('Your challenges'))+'</h3><div class="card list">'+list.map(function(c){
+    return '<div class="feedRow"><span class="chEmoji">'+esc(c.emoji)+'</span><span class="feedTx"><b>'+esc(c.title)+'</b><div class="pmeta">'+esc(chStateLine_(c))+' · '+esc(c.teamEmoji+' '+c.teamName)+'</div></span>'+chTickBtn_(c, c.team)+'</div>';
+  }).join('')+'</div>';
+}
+function keepChNew_(){ var x=$('chTitle'); if(x && S.chNew) S.chNew.title=x.value; }
+
+/* ---------------- a picture of my week, to share ----------------
+   Drawn on the phone (canvas, 1080×1920 like a story), never uploaded by the app: the person
+   shares it themselves. First name only, and numbers only — never goals, habits or the why. */
+function weekNumbers_(){
+  var me=S.me, mon=mondayOf(todayStr()), habitDays=0, top3=0;
+  for(var i=0;i<7;i++){ var d=addDays(mon,i); if(d>todayStr()) break; var m=(me.days||{})[d]; if(m && Object.keys(m).some(function(k){ return m[k]; })) habitDays++; var D=dayOf_(d); if(D.top && D.top.length && D.top.every(function(x){ return x.done; })) top3++; }
+  return { streak:(me.stats||{}).streak||0, focus:(me.stats||{}).focusWeek||0, habitDays:habitDays, top3:top3 };
+}
+function drawShareCard_(cb){
+  var W=1080, H=1920, c=document.createElement('canvas'); c.width=W; c.height=H; var x=c.getContext('2d'), me=S.me, N=weekNumbers_();
+  var go=function(){
+    var g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,'#17150F'); g.addColorStop(.55,'#1430B0'); g.addColorStop(1,'#1F44FF'); x.fillStyle=g; x.fillRect(0,0,W,H);
+    x.fillStyle='rgba(255,179,35,.16)'; x.beginPath(); x.arc(W-80,260,360,0,Math.PI*2); x.fill();
+    var font=function(sz, w, fam){ x.font=(w||'700')+' '+sz+'px '+(fam||"'Kantumruy Pro', system-ui, sans-serif"); };
+    x.textAlign='center'; x.fillStyle='#FAF6F0';
+    font(64,'400',"'Koulen', system-ui, sans-serif"); x.fillText('កូនព្រះ  GONPREAH', W/2, 210);
+    font(46,'500'); x.fillStyle='rgba(250,246,240,.75)'; x.fillText(t('My week'), W/2, 330);
+    font(120,'400',"'Koulen', system-ui, sans-serif"); x.fillStyle='#FFFFFF'; x.fillText(firstName_(me.name).toUpperCase(), W/2, 470);
+    var tiles=[['🔥', String(N.streak), t('day streak')], ['⏱', focusShort_(N.focus), t('focus this week')], ['✅', N.habitDays+'/7', t('days with habits')], ['☀️', String(N.top3), t('days all 3 done')]];
+    tiles.forEach(function(tl, i){ var col=i%2, row=Math.floor(i/2), bx=90+col*470, by=600+row*420, bw=430, bh=380;
+      x.fillStyle='rgba(250,246,240,.10)'; if(x.roundRect){ x.beginPath(); x.roundRect(bx,by,bw,bh,40); x.fill(); } else x.fillRect(bx,by,bw,bh);
+      font(90,'400'); x.fillStyle='#FFFFFF'; x.fillText(tl[0], bx+bw/2, by+120);
+      font(110,'400',"'Koulen', system-ui, sans-serif"); x.fillStyle='#FFB323'; x.fillText(tl[1], bx+bw/2, by+250);
+      font(38,'600'); x.fillStyle='rgba(250,246,240,.85)'; x.fillText(tl[2], bx+bw/2, by+320); });
+    var y=1490;
+    if(me.personality && typeof GP_PTYPES!=='undefined' && GP_PTYPES[me.personality.type] && me.personality.share!==false){
+      font(44,'600'); x.fillStyle='rgba(250,246,240,.75)'; x.fillText(t('How God made me'), W/2, y);
+      font(72,'400',"'Koulen', system-ui, sans-serif"); x.fillStyle='#FFFFFF'; x.fillText(me.personality.type+' · '+pTheName(me.personality.type), W/2, y+90, W-140); y+=170;
+    }
+    font(40,'600'); x.fillStyle='#FFB323'; x.fillText(location.host || 'app.gonpreah.org', W/2, H-110);
+    c.toBlob(function(b){ cb(b, c.toDataURL('image/png')); }, 'image/png');
+  };
+  var f=document.fonts; if(f && f.load) Promise.all([f.load("400 64px 'Koulen'"), f.load("400 64px 'Kantumruy Pro'"), f.load("700 40px 'Kantumruy Pro'")]).then(go, go); else go();
+}
+function shareHtml(){
+  var h=backBtn(t('Home'))+'<h2>📤 '+esc(t('Share my week'))+'</h2><p class="sub">'+esc(t('A picture for your story or your friends. Only your first name and your numbers — nothing private.'))+'</p>';
+  if(!S.shareImg) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
+  return h+'<img class="shareImg" src="'+S.shareImg.url+'" alt="">'+
+    '<div class="btnRow" style="margin-top:12px"><button class="btn" id="shareGo">📤 '+esc(t('Share'))+'</button><a class="btn ghost" id="shareSave" download="gonpreah-my-week.png" href="'+S.shareImg.url+'">'+esc(t('Save the picture'))+'</a></div>';
 }
 
 /* ---------------- the focus timer ----------------

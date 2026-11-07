@@ -817,3 +817,22 @@ input[type=password] { width:100%; box-sizing:border-box; }
 .ringTx { position:absolute; inset:0; display:grid; place-items:center; font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:.02em; }
 .focusRun .btnRow { justify-content:center; }
 @media (prefers-reduced-motion: reduce) { .ringFg { transition:none; } }
+
+/* ---------- team challenges ---------- */
+.chHead { display:flex; align-items:center; gap:12px; }
+.chEmoji { flex:0 0 auto; width:42px; height:42px; border-radius:12px; background:var(--accentSoft); display:grid; place-items:center; font-size:22px; }
+.chDots { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; }
+.chDot { width:14px; height:14px; border-radius:4px; background:var(--line); }
+.chDot.on { background:var(--good); }
+.chDot.now { box-shadow:0 0 0 2px var(--accent); }
+.chDot.later { opacity:.45; }
+.chPeople { margin-top:10px; border-top:1px solid var(--line); padding-top:8px; }
+.chPerson { display:flex; align-items:center; gap:8px; font-size:13.5px; padding:3px 0; }
+.chName { flex:0 0 76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chBar { flex:1; height:7px; border-radius:999px; background:var(--line); overflow:hidden; }
+.chBar i { display:block; height:100%; background:var(--good); border-radius:999px; }
+
+/* ---------- share my week ---------- */
+.heroShare { flex:0 0 auto; width:40px; height:40px; border-radius:50%; border:1px solid var(--onDarkBorder, rgba(255,255,255,.25)); background:rgba(255,255,255,.08); font-size:18px; cursor:pointer; }
+.shareImg { display:block; width:100%; max-width:360px; margin:0 auto; border-radius:18px; box-shadow:var(--shadow); aspect-ratio:9/16; object-fit:cover; }
+a.btn { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }

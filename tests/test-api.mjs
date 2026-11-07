@@ -329,7 +329,33 @@ ok('… never her three things, her mood or what she’s thankful for', !/essay|
 await H.saveProfile(Q.uid, Q.token, { share: { focus: false } });
 ok('switching focus off hides it', !(await H.team(Q2.uid, Q2.token, QT.team.id)).team.people.find(p => p.id === Q.uid).focusWeek && !(await H.feed(Q2.uid, Q2.token)).feed.some(x => x.who.id === Q.uid && x.kind === 'focus'));
 
-/* ---------- 13. the door ---------- */
+/* ---------- 13. team challenges ---------- */
+ok('only a leader starts a challenge', (await H.challenge(Q.uid, Q.token, QT.team.id, 'add', { title: '7 days of Bible', days: 7 })).err === 'not_leader');
+ok('a challenge is 3 to 40 days', (await H.challenge(Q2.uid, Q2.token, QT.team.id, 'add', { title: 'Too long', days: 90 })).err === 'days');
+let ch = await H.challenge(Q2.uid, Q2.token, QT.team.id, 'add', { title: '7 days of Bible', emoji: '📖', days: 7 });
+const chal = ch.team.challenges[0];
+ok('a leader starts one, from today, and is in it', ch.ok && chal.state === 'on' && chal.dayNo === 1 && chal.joined && chal.end > chal.start);
+ok('a member sees it and isn’t in it until they join', !(await H.team(Q.uid, Q.token, QT.team.id)).team.challenges[0].joined);
+ch = await H.challenge(Q.uid, Q.token, QT.team.id, 'join', { id: chal.id, on: true });
+ok('she joins', ch.team.challenges[0].joined && ch.team.challenges[0].people.length === 2);
+ok('only days in the challenge, up to today, can be ticked', (await H.challenge(Q.uid, Q.token, QT.team.id, 'tick', { id: chal.id, date: new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10), done: true })).err === 'day');
+ch = await H.challenge(Q.uid, Q.token, QT.team.id, 'tick', { id: chal.id, date: today, done: true });
+ok('she ticks today, and the team sees her count', ch.team.challenges[0].doneToday && ch.team.challenges[0].people.find(p => p.id === Q.uid).n === 1);
+ok('her joined challenges come with her start-up, for Home', (await H.boot(Q.uid, Q.token)).challenges.some(c => c.id === chal.id && c.doneToday && c.teamName === 'Study crew'));
+ok('someone outside the team can’t touch it', (await H.challenge(E.uid, E.token, QT.team.id, 'tick', { id: chal.id, done: true })).err === 'none');
+/* finish a 3-day challenge (its first two days set by hand, as if ticked on those days) */
+ch = await H.challenge(Q2.uid, Q2.token, QT.team.id, 'add', { title: 'No phone after 10pm', emoji: '📵', days: 3 });
+const ch3 = ch.team.challenges.find(c => c.days === 3);
+const tk = JSON.parse(globalThis.__gpaStore._m.get('t:' + QT.team.id)), cc = tk.challenges.find(c => c.id === ch3.id);
+cc.start = new Date(Date.parse(today) - 2 * 864e5).toISOString().slice(0, 10); cc.members[Q.uid] = [cc.start, new Date(Date.parse(today) - 864e5).toISOString().slice(0, 10)];
+globalThis.__gpaStore._m.set('t:' + QT.team.id, JSON.stringify(tk));
+await H.challenge(Q.uid, Q.token, QT.team.id, 'tick', { id: ch3.id, date: today, done: true });
+const fin = (await H.feed(Q2.uid, Q2.token)).feed.find(x => x.who.id === Q.uid && x.kind === 'challenge');
+ok('finishing every day is a feed moment, with the challenge’s name for the team', fin && /No phone after 10pm/.test(fin.team));
+ok('… and no name for someone in none of that team', !(await H.feed(E.uid, E.token)).feed.some(x => x.kind === 'challenge'));
+ok('a leader can end a challenge; a member can’t', (await H.challenge(Q.uid, Q.token, QT.team.id, 'drop', { id: chal.id })).err === 'not_leader' && (await H.challenge(Q2.uid, Q2.token, QT.team.id, 'drop', { id: chal.id })).team.challenges.length === 1);
+
+/* ---------- 14. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

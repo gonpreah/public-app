@@ -355,7 +355,7 @@ async function logFocus(uid, tok, date, minutes) {
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus' };
+const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -535,17 +535,18 @@ async function boot(uid, tok) {
   const u = await auth_(uid, tok);
   if (!u) return { ok: false, err: 'auth' };
   if (u.seen !== today_()) await mutate_('u:' + uid, null, function (r) { if (r) r.seen = today_(); return { ok: true }; });
-  const teams = [], teamTasks = [];
+  const teams = [], teamTasks = [], myChallenges = [];
   for (const tid of (u.teams || [])) {
     const t = await readJSON('t:' + tid, null);
     if (!t) continue;
     teams.push(teamBrief_(t, uid));
     teamTasksOut_(t, uid, {}).forEach(function (k) { if (k.forMe && !k.mine) teamTasks.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, k)); });
+    challengesOut_(t, uid, {}).forEach(function (c) { if (c.joined && c.state === 'on') myChallenges.push(Object.assign({ teamName: t.name, teamEmoji: t.emoji || '✦' }, c, { people: undefined, others: c.people.length - 1 })); });
   }
   const co = await coachings(uid, tok);
   const pk = await pushKeys_(true);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
-    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, today: today_() };
+    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -903,6 +904,7 @@ async function team(uid, tok, tid) {
   const out = teamBrief_(t, uid); out.about = t.about || ''; out.people = people;
   const names = {}; people.forEach(function (p) { names[p.id] = p.name; });
   out.tasks = teamTasksOut_(t, uid, names);
+  out.challenges = challengesOut_(t, uid, names);
   return { ok: true, team: out };
 }
 async function leaveTeam(uid, tok, tid) {
@@ -1167,6 +1169,69 @@ async function coachAct(uid, tok, cid, act, a) {
    person ticks their own. Everyone in the team sees every team task — there is
    no private channel here, on purpose (see CLAUDE.md, safety). */
 const MAX_TEAM_TASKS = 40, KEEP_TEAM_TASK_DAYS = 60;
+/* ---------------- team challenges ----------------
+   A leader starts a challenge for the team: a title, an emoji and a number of days (3–40),
+   from today or tomorrow. Members choose to join and tick each day they did it; everyone in
+   the team sees who's in and how many days each has done — counts, nothing else. Finishing
+   every day is a feed moment. t.challenges = [{ id, title, emoji, days, start, by, made,
+   members: { uid: [dates] } }]. */
+const MAX_CHALLENGES = 8, CH_DAYS_MIN = 3, CH_DAYS_MAX = 40, CH_KEEP_DAYS = 30;
+function chEnd_(c) { return addDays_(c.start, c.days - 1); }
+function challengesOut_(t, uid, names) {
+  const today = today_();
+  return (t.challenges || []).map(function (c) {
+    const mine = (c.members || {})[uid], end = chEnd_(c);
+    const people = Object.keys(c.members || {}).filter(function (m) { return (t.members || []).indexOf(m) > -1; })
+      .map(function (m) { return { id: m, name: names[m] || '', n: c.members[m].length }; }).sort(function (a, b) { return b.n - a.n; });
+    const dayNo = today < c.start ? 0 : Math.min(c.days, Math.round((Date.parse(today) - Date.parse(c.start)) / 864e5) + 1);
+    return { id: c.id, team: t.id, title: c.title, emoji: c.emoji || '🏁', days: c.days, start: c.start, end: end, dayNo: dayNo,
+      state: today < c.start ? 'soon' : today > end ? 'over' : 'on', joined: !!mine, mine: mine || [], doneToday: !!(mine && mine.indexOf(today) > -1), people: people };
+  });
+}
+async function challenge(uid, tok, tid, act, a) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (typeof tid !== 'string' || (me.teams || []).indexOf(tid) === -1) return { ok: false, err: 'none' };
+  a = a && typeof a === 'object' ? a : {};
+  let finished = null;
+  const res = await mutate_('t:' + tid, null, function (t) {
+    if (!t || t.closed || t.members.indexOf(uid) === -1) return { abort: true, ok: false, err: 'none' };
+    const lead = t.leaders.indexOf(uid) > -1, today = today_();
+    t.challenges = (Array.isArray(t.challenges) ? t.challenges : []).filter(function (c) { return chEnd_(c) >= addDays_(today, -CH_KEEP_DAYS); });
+    if (act === 'add') {
+      if (!lead) return { abort: true, ok: false, err: 'not_leader' };
+      const title = str_(a.title, 60), days = Math.round(Number(a.days));
+      if (title.length < 2) return { abort: true, ok: false, err: 'text' };
+      if (!(days >= CH_DAYS_MIN && days <= CH_DAYS_MAX)) return { abort: true, ok: false, err: 'days' };
+      const start = a.start === addDays_(today, 1) ? a.start : today;
+      if (t.challenges.filter(function (c) { return chEnd_(c) >= today; }).length >= MAX_CHALLENGES) return { abort: true, ok: false, err: 'too_many' };
+      const c = { id: 'h' + crypto.randomBytes(5).toString('hex'), title: title, emoji: str_(a.emoji, 8) || '🏁', days: days, start: start, by: uid, made: today, members: {} };
+      c.members[uid] = [];   // the leader is in it
+      t.challenges.push(c);
+      return { ok: true };
+    }
+    const c = t.challenges.filter(function (x) { return x.id === a.id; })[0];
+    if (!c) return { abort: true, ok: false, err: 'none' };
+    c.members = c.members || {};
+    if (act === 'join') { if (a.on) { if (!c.members[uid]) c.members[uid] = []; } else delete c.members[uid]; return { ok: true }; }
+    if (act === 'tick') {
+      const d = isDay_(a.date) ? a.date : today;
+      if (!nearDay_(d) || d < c.start || d > chEnd_(c) || d > addDays_(today, 0)) return { abort: true, ok: false, err: 'day' };
+      if (!c.members[uid]) c.members[uid] = [];
+      const list = c.members[uid].filter(function (x) { return x !== d; });
+      if (a.done) list.push(d);
+      c.members[uid] = list.sort();
+      if (a.done && list.length === c.days) finished = c.id;
+      return { ok: true };
+    }
+    if (act === 'drop') { if (!lead) return { abort: true, ok: false, err: 'not_leader' }; t.challenges = t.challenges.filter(function (x) { return x.id !== a.id; }); return { ok: true }; }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  if (finished) await mutate_('u:' + uid, null, function (u) { if (u) addPost_(u, 'challenge', tid + ':' + finished); return { ok: true }; });
+  return team(uid, tok, tid);
+}
+
 function teamTasksOut_(t, uid, names) {
   const members = t.members || [];
   return (t.tasks || []).filter(function (k) { return !k.who || members.indexOf(k.who) > -1; }).map(function (k) {
@@ -1231,6 +1296,7 @@ function postOut_(u, x, viewer, teamNames) {
   if (sh.type && u.personality && u.personality.share !== false) { o.who.type = u.personality.type; o.who.sex = u.sex || ''; }
   if (x.kind === 'streak') o.n = x.n;
   if (x.kind === 'focus') o.n = Number(String(x.n).split(':')[1]) || null;
+  if (x.kind === 'challenge') o.team = teamNames['ch:' + x.n] || null;   // the challenge's title only for people in that team
   if (x.kind === 'type') o.n = x.n;
   if (x.kind === 'joined') o.team = teamNames[x.n] || null;   // the team's name only for someone in it
   return o;
@@ -1243,6 +1309,7 @@ async function feed(uid, tok) {
     const t = await readJSON('t:' + tid, null);
     if (!t) continue;
     teamNames[t.id] = (t.emoji || '✦') + ' ' + t.name;
+    (t.challenges || []).forEach(function (c) { teamNames['ch:' + t.id + ':' + c.id] = (c.emoji || '🏁') + ' ' + c.title; });
     (t.members || []).forEach(function (m) { ids[m] = 1; });
   }
   ids[uid] = 1;
@@ -1611,7 +1678,7 @@ export const HANDLERS = {
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,
-  saveTop, saveCheckin, logFocus,
+  saveTop, saveCheckin, logFocus, challenge,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };

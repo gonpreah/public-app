@@ -332,7 +332,27 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   await ctx.close();
 }
 
-/* ---------- 13. Khmer ---------- */
+/* ---------- 13. team challenges, and a picture of my week ---------- */
+await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(400);
+await a.click('[data-team]'); await a.waitForSelector('#chNewOpen');
+await a.click('#chNewOpen'); await a.click('[data-chidea^="📖"]'); await a.click('[data-chdays="7"]'); await a.click('#chGo');
+await a.waitForSelector('.chCard');
+ok('a leader starts a 7-day challenge', /Read a Bible chapter every day/.test(await text(a)) && /Day 1 of 7/.test(await text(a)));
+await m.click('nav.bottom button[data-tab="teams"]'); await m.waitForTimeout(400); await m.click('[data-team]'); await m.waitForSelector('[data-chjoin]');
+await m.click('[data-chjoin$="|1"]'); await m.waitForSelector('[data-chtick]');
+ok('a member joins it', (await m.$$('.chDot')).length === 7);
+await m.click('nav.bottom button[data-tab="home"]'); await m.waitForSelector('[data-chtick]');
+ok('… sees it on Home', /Your challenges/.test(await text(m)));
+await m.click('[data-chtick$="|1"]'); await m.waitForTimeout(800);
+ok('… and ticks today from Home', /Done today/.test(await text(m)));
+await a.click('[data-back]'); await a.waitForTimeout(300); await a.click('[data-team]'); await a.waitForSelector('.chPerson');
+ok('the team sees her day counted', /Mina\s*1\/7/.test(await a.$eval('.chPeople', e => e.innerText.replace(/\n/g, ' '))));
+await a.click('nav.bottom button[data-tab="home"]'); await a.click('#goShare');
+await a.waitForSelector('.shareImg');
+ok('a picture of my week is drawn on the phone', await a.evaluate(() => S.shareImg && S.shareImg.blob && S.shareImg.blob.size > 20000 && S.shareImg.url.startsWith('data:image/png')));
+await a.click('[data-back]');
+
+/* ---------- 14. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -343,7 +363,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 14. the page fits a phone ---------- */
+/* ---------- 15. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

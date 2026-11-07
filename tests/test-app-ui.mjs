@@ -376,7 +376,22 @@ await a.click('[data-back]');
   await ctx.close();
 }
 
-/* ---------- 15. Khmer ---------- */
+/* ---------- 15. Bible reading plans and prayer ---------- */
+await a.click('nav.bottom button[data-tab="grow"]'); await a.click('#goFaith'); await a.waitForSelector('[data-planstart="hard_days"]');
+ok('the Learn tab opens Bible & prayer, with plans to start', /Psalms for hard days/.test(await text(a)) && /John in 21 days/.test(await text(a)));
+await a.click('[data-planstart="hard_days"]'); await a.waitForSelector('[data-read^="hard_days|0"]');
+ok('a plan starts on day 1: a passage, never the Bible’s text', /Psalms 23/.test(await text(a)));
+await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('[data-read]');
+ok('today’s reading is on Home', /Today’s reading/.test(await text(a)) && /Psalms 23/.test(await text(a)));
+await a.click('[data-read^="hard_days|0"]'); await a.waitForTimeout(700);
+ok('ticking it moves on to the next day', /Psalms 27/.test(await text(a)) && /Day 2 of 7/.test(await text(a)));
+ok('book names follow the language', await a.evaluate(() => { const was = LANG; LANG = 'km'; const r = refLabel_('Psalms 23'); LANG = was; return r === 'ទំនុកតម្កើង 23'; }));
+await a.click('nav.bottom button[data-tab="grow"]'); await a.click('#goFaith'); await a.waitForSelector('#prIn');
+await a.fill('#prIn', 'For my exams next week'); await a.click('#prAdd'); await a.waitForSelector('[data-pranswer]');
+await a.click('[data-pranswer$="|1"]'); await a.waitForTimeout(600);
+ok('a prayer is added, then marked answered', /God answered 1 of your prayers/.test(await text(a)));
+
+/* ---------- 16. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -387,7 +402,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 16. the page fits a phone ---------- */
+/* ---------- 17. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

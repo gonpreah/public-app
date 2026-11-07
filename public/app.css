@@ -860,3 +860,10 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 .obList div { display:flex; gap:12px; align-items:flex-start; padding:8px 0; font-size:15px; line-height:1.4; border-top:1px solid var(--line); }
 .obList div:first-child { border-top:0; }
 .obList span { font-size:20px; }
+
+/* ---------- Bible reading plans and prayer ---------- */
+.readRow { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
+.readRow:first-child { border-top:0; }
+.readRef { display:block; font-size:17px; margin:2px 0; }
+.readQ { font-style:italic; }
+.planDays { margin-top:6px; border-top:1px dashed var(--border2); }

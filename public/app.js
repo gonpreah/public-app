@@ -11,6 +11,7 @@
       focus                      — the focus timer (25 or 50 minutes, phone down)
       share                      — a picture of my week to share (drawn on the phone)
       welcome                    — the first-day walkthrough: welcome, my why, habits, my team
+      faith                      — Bible reading plans (passages only) and my prayer list
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -79,7 +80,7 @@ function failMsg(d){
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.today) S.today=d.today; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -113,7 +114,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -149,6 +150,7 @@ function render(){
     else if(V==='focus') h=focusHtml();
     else if(V==='share') h=shareHtml();
     else if(V==='welcome') h=welcomeHtml();
+    else if(V==='faith') h=faithHtml();
     else if(V==='report') h=reportHtml();
     else if(V==='blocked') h=blockedHtml();
     else if(V==='admin') h=adminHtml();
@@ -310,7 +312,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=whyLineHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  h+=whyLineHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -1046,6 +1048,20 @@ function bind(){
   on('focusAgain', function(){ S.focusDone=null; render(); });
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
+  /* faith daily */
+  on('goFaith', function(){ S.back=[]; go('faith', true); });
+  all('[data-planstart]', busyOnce_(function(b){ return call('reading', 'start', { plan:b.getAttribute('data-planstart') }).then(function(d){ if(d && d.ok){ S.me=d.me; showMsg(t('Plan started. Day 1 is on Home. 📖')); render(); } else failMsg(d); }); }));
+  all('[data-planstop]', function(b){ if(!confirm(t('Stop this plan? Your ticks will be lost.'))) return; call('reading', 'stop', { plan:b.getAttribute('data-planstop') }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); });
+  all('[data-planopen]', function(b){ var id=b.getAttribute('data-planopen'); S.planOpen=S.planOpen===id?null:id; render(); });
+  all('[data-read]', function(b){ var p=b.getAttribute('data-read').split('|'), on=p[2]==='1'; gpTap(); if(on) confettiAt_(b);
+    call('reading', 'tick', { plan:p[0], day:Number(p[1]), done:on }).then(function(d){ if(d && d.ok){ S.me=d.me; var R=(S.me.reading||{})[p[0]]; if(on && R && R.finished) showMsg(t('Plan finished! Well done. 🏆')); render(); } else failMsg(d); }); });
+  on('prAdd', busyOnce_(function(){ var v=$('prIn').value.trim(); if(!v){ showMsg(t('Write something first.')); return; }
+    return call('prayer', 'add', { text:v }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
+  all('[data-pranswer]', function(b){ var p=b.getAttribute('data-pranswer').split('|'); if(p[1]==='1'){ gpTap(); confettiAt_(b); }
+    call('prayer', 'answer', { id:p[0], on:p[1]==='1' }).then(function(d){ if(d && d.ok){ S.me=d.me; if(p[1]==='1') showMsg(t('Thank God! 🙌')); render(); } else failMsg(d); }); });
+  all('[data-prdrop]', function(b){ if(!confirm(t('Delete this prayer?'))) return; call('prayer', 'drop', { id:b.getAttribute('data-prdrop') }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); });
+  on('prShowAns', function(){ S.showAnswered=!S.showAnswered; render(); });
+
   /* the walkthrough */
   on('obSkip', obFinish_);
   on('obLater', function(){ S.ob.step=3; render(); });
@@ -1270,8 +1286,8 @@ function bindGTest_(){
 /* ---------------- the feed: 👏 for each other ---------------- */
 /* Moments from the people in my teams (api.js feed): what happened, never their own words. */
 var FEED_LINES = { streak:'{name} reached a {n}-day streak 🔥', goal:'{name} reached a life goal 🏆', type:'{name} found their personality type: {n} 🧭',
-  strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋', focus:'{name} focused for {n} hours this week ⏱', challenge:'{name} finished the challenge {team}', challengeSome:'{name} finished a team challenge 🏁', level:'{name} reached level {n} {icon}' };
-function feedLine_(x){ var k = x.kind==='joined' && !x.team ? 'joinedSome' : x.kind==='challenge' && !x.team ? 'challengeSome' : x.kind; return gpT(FEED_LINES[k]||'{name}',{ name:firstName_(x.who.name), n:x.n, team:x.team||'', icon:x.icon||'' }); }
+  strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋', focus:'{name} focused for {n} hours this week ⏱', challenge:'{name} finished the challenge {team}', challengeSome:'{name} finished a team challenge 🏁', level:'{name} reached level {n} {icon}', reading:'{name} finished the reading plan {plan} 📖' };
+function feedLine_(x){ var k = x.kind==='joined' && !x.team ? 'joinedSome' : x.kind==='challenge' && !x.team ? 'challengeSome' : x.kind; return gpT(FEED_LINES[k]||'{name}',{ name:firstName_(x.who.name), n:x.n, team:x.team||'', icon:x.icon||'', plan:x.kind==='reading' && PLAN_INFO[x.n] ? t(PLAN_INFO[x.n][1]) : '' }); }
 function whenLabel_(iso){ var d=todayStr(); return iso===d ? t('Today') : iso===addDays(d,-1) ? t('Yesterday') : dayLabel(iso); }
 function feedLoad_(){ if(!AUTH) return; call('feed').then(function(d){ if(d && d.ok){ S.feed=d.feed; if(S.view==='teams' && !typing_()){ render(); loadPhotos_(S.feed.map(function(x){ return x.who; })); } } }); }
 function feedHtml(){
@@ -1288,7 +1304,7 @@ function feedHtml(){
   if(S.feed.length>8 && !S.feedMore) h+='<button class="linkbtn" id="feedMore">'+esc(t('Show more'))+'</button>';
   return h;
 }
-var CHEER_WHAT = { streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus', challenge:'you finishing a challenge', level:'you reaching level {n}' };
+var CHEER_WHAT = { streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus', challenge:'you finishing a challenge', level:'you reaching level {n}', reading:'you finishing a reading plan' };
 function cheersHtml(){
   var c=S.cheers||[]; if(!c.length) return '';
   return '<div class="card cheerCard">'+c.slice(0,3).map(function(x){
@@ -1529,6 +1545,58 @@ function myChallengesHtml(){
 }
 function keepChNew_(){ var x=$('chTitle'); if(x && S.chNew) S.chNew.title=x.value; }
 
+/* ---------------- faith daily: reading plans and prayer (api.js "faith daily") ----------------
+   Plans are passages only ("John 3"): the app carries no Bible text, so people read in their
+   own Bible or Bible app and tick the day. The prayer list is private. */
+var BOOKS_KM={"Genesis":"លោកុប្បត្តិ","Exodus":"និក្ខមនំ","Leviticus":"លេវីវិន័យ","Numbers":"ជនគណនា","Deuteronomy":"ចោទិយកថា","Joshua":"យ៉ូស្វេ","Judges":"ពួកចៅហ្វាយ","Ruth":"នាងរស់","1 Samuel":"សាំយូអែលទី១","2 Samuel":"សាំយូអែលទី២","1 Kings":"ពង្សាវតារក្សត្រទី១","2 Kings":"ពង្សាវតារក្សត្រទី២","1 Chronicles":"របាក្សត្រទី១","2 Chronicles":"របាក្សត្រទី២","Ezra":"អែសរ៉ា","Nehemiah":"នេហេមា","Esther":"នាងអេសធើរ","Job":"យ៉ូប","Psalms":"ទំនុកតម្កើង","Proverbs":"សុភាសិត","Ecclesiastes":"សាស្ដា","Song of Songs":"បទចម្រៀង","Isaiah":"អេសាយ","Jeremiah":"យេរេមា","Lamentations":"បរិទេវ","Ezekiel":"អេសេគាល","Daniel":"ដានីយ៉ែល","Hosea":"ហូសេ","Joel":"យ៉ូអែល","Amos":"អាម៉ុស","Obadiah":"អូបាឌា","Jonah":"យ៉ូណាស","Micah":"មីកា","Nahum":"ណាហ៊ុម","Habakkuk":"ហាបាគុក","Zephaniah":"សេផានា","Haggai":"ហាកាយ","Zechariah":"សាការី","Malachi":"ម៉ាឡាគី","Matthew":"ម៉ាថាយ","Mark":"ម៉ាកុស","Luke":"លូកា","John":"យ៉ូហាន","Acts":"កិច្ចការ","Romans":"រ៉ូម","1 Corinthians":"កូរិនថូសទី១","2 Corinthians":"កូរិនថូសទី២","Galatians":"កាឡាទី","Ephesians":"អេភេសូរ","Philippians":"ភីលីព","Colossians":"កូល៉ុស","1 Thessalonians":"ថែស្សាឡូនីចទី១","2 Thessalonians":"ថែស្សាឡូនីចទី២","1 Timothy":"ធីម៉ូថេទី១","2 Timothy":"ធីម៉ូថេទី២","Titus":"ទីតុស","Philemon":"ភីលេម៉ូន","Hebrews":"ហេព្រើរ","James":"យ៉ាកុប","1 Peter":"ពេត្រុសទី១","2 Peter":"ពេត្រុសទី២","1 John":"យ៉ូហានទី១","2 John":"យ៉ូហានទី២","3 John":"យ៉ូហានទី៣","Jude":"យូដាស","Revelation":"វិវរណៈ"};
+var PLAN_INFO={ who_is_jesus:['✝️','Who is Jesus?','Ten days with Jesus: who he is, what he taught, why he died and rose.'],
+  identity:['💛','Who God says you are','Seven days on how God sees you — chosen, loved, made new.'],
+  hard_days:['🌧️','Psalms for hard days','Seven psalms for when life is heavy.'],
+  mark:['🦁','Mark in 16 days','The shortest Gospel, one chapter a day.'],
+  john:['🕊️','John in 21 days','Jesus up close, one chapter a day.'],
+  proverbs:['🦉','Proverbs in a month','Wisdom for everyday life — one chapter for each day of the month.'] };
+var READ_PROMPTS=['What does this show you about God?','What is one thing you want to remember?','What will you do today because of it?','Talk to God about it in your own words.'];
+function refLabel_(ref){ var i=ref.lastIndexOf(' '), book=ref.slice(0,i), ch=ref.slice(i+1); return (LANG==='km' && BOOKS_KM[book] ? BOOKS_KM[book] : book)+' '+ch; }
+function planNext_(id){ var R=(S.me.reading||{})[id], days=(S.plans||{})[id]||[]; if(!R) return -1; for(var i=0;i<days.length;i++){ if((R.done||[]).indexOf(i)<0) return i; } return -1; }
+function readingRowHtml_(id){
+  var info=PLAN_INFO[id]||['📖',id,''], days=(S.plans||{})[id]||[], R=(S.me.reading||{})[id]||{ done:[] }, i=planNext_(id), n=(R.done||[]).length;
+  if(i<0) return '';
+  return '<div class="readRow"><span class="chEmoji">'+info[0]+'</span><span class="feedTx"><span class="pmeta">'+esc(t(info[1]))+' · '+esc(gpT('Day {n} of {d}',{n:i+1,d:days.length}))+'</span><b class="readRef">'+esc(refLabel_(days[i]))+'</b>'+
+    '<div class="pmeta readQ">💭 '+esc(t(READ_PROMPTS[i%READ_PROMPTS.length]))+'</div></span><button class="btn small" data-read="'+esc(id)+'|'+i+'|1">'+esc(t('I read it'))+'</button></div>';
+}
+function readingHomeHtml(){
+  var rd=(S.me && S.me.reading)||{}, ids=Object.keys(rd).filter(function(k){ return !rd[k].finished && PLAN_INFO[k]; });
+  if(!ids.length || !S.plans) return '';
+  return '<h3>📖 '+esc(t('Today’s reading'))+'</h3><div class="card list">'+ids.map(readingRowHtml_).join('')+'</div>';
+}
+function faithHtml(){
+  var me=S.me, rd=me.reading||{}, P=S.plans||{}, active=Object.keys(rd).filter(function(k){ return !rd[k].finished && PLAN_INFO[k]; }), finished=Object.keys(rd).filter(function(k){ return rd[k].finished && PLAN_INFO[k]; });
+  var h=backBtn(t('Learn'))+'<h2>🙏 '+esc(t('Bible & prayer'))+'</h2><p class="sub">'+esc(t('A few minutes with God each day. Read in your own Bible or Bible app, then tick the day.'))+'</p>';
+  h+='<h3>📖 '+esc(t('Reading plans'))+'</h3>';
+  active.forEach(function(id){ var info=PLAN_INFO[id], days=P[id]||[], R=rd[id], n=(R.done||[]).length, open=S.planOpen===id;
+    h+='<div class="card"><div class="chHead"><span class="chEmoji">'+info[0]+'</span><span style="flex:1;min-width:0"><b>'+esc(t(info[1]))+'</b><div class="pmeta">'+esc(gpT('{a} of {b} days',{a:n,b:days.length}))+'</div></span><button class="xBtn" data-planstop="'+esc(id)+'" aria-label="'+esc(t('Stop this plan'))+'">×</button></div>'+
+      '<div class="miniTrack"><div style="width:'+Math.round(n/Math.max(1,days.length)*100)+'%"></div></div>'+readingRowHtml_(id)+
+      '<button class="linkbtn" data-planopen="'+esc(id)+'">'+esc(open?t('Hide the days'):t('See all the days'))+'</button>';
+    if(open) h+='<div class="planDays">'+days.map(function(ref,i){ var on=(R.done||[]).indexOf(i)>-1; return '<div class="stepRow'+(on?' done':'')+'">'+checkHtml('data-read="'+esc(id)+'|'+i+'|'+(on?0:1)+'"', on, ref)+'<span class="stepTx">'+esc(gpT('Day {n}',{n:i+1}))+' · '+esc(refLabel_(ref))+'</span></div>'; }).join('')+'</div>';
+    h+='</div>';
+  });
+  var startable=Object.keys(PLAN_INFO).filter(function(id){ return !rd[id] && P[id]; });
+  if(startable.length){
+    h+='<div class="card list">'+startable.map(function(id){ var info=PLAN_INFO[id];
+      return '<div class="feedRow"><span class="chEmoji">'+info[0]+'</span><span class="feedTx"><b>'+esc(t(info[1]))+'</b><div class="pmeta">'+esc(gpT('{n} days',{n:(P[id]||[]).length}))+' · '+esc(t(info[2]))+'</div></span><button class="btn small ghost" data-planstart="'+esc(id)+'">'+esc(t('Start'))+'</button></div>'; }).join('')+'</div>';
+  }
+  if(finished.length) h+='<div class="pmeta" style="margin:-4px 0 12px">🏆 '+esc(t('Finished:'))+' '+esc(finished.map(function(id){ return t(PLAN_INFO[id][1]); }).join(', '))+'</div>';
+  var pr=me.prayers||[], openP=pr.filter(function(x){ return !x.answered; }), answered=pr.filter(function(x){ return x.answered; });
+  h+='<h3>🙏 '+esc(t('My prayer list'))+'</h3><div class="card"><div class="atRow"><input type="text" id="prIn" maxlength="200" placeholder="'+esc(t('What do you want to pray for?'))+'"><button class="btn small" id="prAdd">'+esc(t('Add'))+'</button></div>'+
+    '<div class="hint">🔒 '+esc(t('Only you see your prayer list.'))+'</div>';
+  openP.slice().reverse().forEach(function(x){ h+='<div class="stepRow"><span class="stepTx">'+esc(x.text)+'<div class="pmeta">'+esc(dayLabel(x.made))+'</div></span><button class="btn small ghost" data-pranswer="'+esc(x.id)+'|1">🙌 '+esc(t('Answered'))+'</button><button class="xBtn" data-prdrop="'+esc(x.id)+'" aria-label="'+esc(t('Delete'))+'">×</button></div>'; });
+  if(answered.length){
+    h+='<button class="linkbtn" id="prShowAns">🙌 '+esc(gpT('God answered {n} of your prayers',{n:answered.length}))+' '+(S.showAnswered?'▴':'▾')+'</button>';
+    if(S.showAnswered) answered.slice().reverse().forEach(function(x){ h+='<div class="stepRow done"><span class="stepTx">'+esc(x.text)+'<div class="pmeta">'+esc(gpT('Answered {d}',{d:dayLabel(x.answered)}))+'</div></span><button class="xBtn" data-pranswer="'+esc(x.id)+'|0" aria-label="'+esc(t('Not answered yet'))+'">↺</button></div>'; });
+  }
+  return h+'</div>';
+}
+
 /* ---------------- XP and levels (api.js "XP and levels") ----------------
    The server counts XP; the page shows the level, pops "+n XP" when it grows, and celebrates
    a new level. */
@@ -1674,6 +1742,8 @@ function growHtml(){
   var today=G ? (G.days[khToday_()]||0) : 0;
   var h='<h2>'+esc(t('Learn'))+'</h2><p class="sub">'+esc(t('Grow a little every day: read a great book in ten minutes, and practise Khmer or English.'))+'</p>';
   h+=entryCardHtml('goLibrary','📚',t('Library'), going ? gpT('Continue: {title}',{title:libTitle_(going)}) : (total ? gpT('{n} of {total} books read',{n:read,total:total}) : t('Ten-minute reads of great books on faith, habits, friendships, money and leading.')));
+  var rd=S.me.reading||{}, act=Object.keys(rd).filter(function(k){ return !rd[k].finished; }).length;
+  h+=entryCardHtml('goFaith','🙏',t('Bible & prayer'), act ? gpT('{n} reading plans going',{n:act}) : t('Reading plans for every day, and your prayer list.'));
   h+=entryCardHtml('goLearn','🔤',t('Learn Khmer / English'), G && G.xp ? gpT('{xp} XP today · 🔥 {n} days',{xp:today,n:streak}) : t('Flashcards, quizzes, a matching game and grammar — like a language app.'));
   return h;
 }

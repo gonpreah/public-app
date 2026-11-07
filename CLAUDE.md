@@ -163,10 +163,18 @@ level and each new title is a feed moment. **Walkthrough** (view `welcome`): a n
 no habits and no why, on a phone that hasn't seen it (`gpa-onboarded`) — welcome, my why, a few
 habits, my team; every step can be skipped.
 
+## Faith daily: Bible reading plans and a prayer list (Learn tab → Bible & prayer, view `faith`)
+Plans (`READING_PLANS` in api.js, sent with boot) are **passages only** ("John 3") — the app
+never carries the Bible's text, so nobody's translation is copied; people read in their own Bible
+or Bible app and tick the day (`reading`: start/tick/stop; up to 3 at once; 10 XP a day, once).
+Book names in Khmer come from the KBC list (`BOOKS_KM` in app.js). Home shows today's reading;
+finishing a plan is a feed moment. The prayer list (`prayer`: add/answer/drop) is private.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.
 3. ~~Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).~~ Done Nov 2026.
 4. ~~A Strava-like feed with 👏, reporting and blocking; reminders on the phone~~ Done Nov 2026.
    Still to do: Telegram sign-in (needs a bot from @BotFather).
-5. A daily Bible verse and more Christian content (Uriah: later).
+5. ~~Christian content daily~~: reading plans and a prayer list, Nov 2026. A verse of the day
+   with its text waits for a Bible translation we have permission to use.

@@ -425,6 +425,13 @@ async function reading(uid, tok, act, a) {
   if (!res.ok) return res;
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
+/* Today's devotional, read: once a day, 5 XP. The devotionals themselves are in public/devotions.js. */
+async function devoDone(uid, tok, date) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (!nearDay_(date)) return { ok: false, err: 'day' };
+  await mutate_('u:' + uid, null, function (u) { if (u) { dailyMutate_(u, date, function (x) { x.devo = true; }); xpAdd_(u, 'd|' + date, 5); } return { ok: true }; });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
 async function prayer(uid, tok, act, a) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
   a = a && typeof a === 'object' ? a : {};
@@ -685,8 +692,9 @@ async function boot(uid, tok) {
   }
   const co = await coachings(uid, tok);
   const pk = await pushKeys_(true);
+  const fr = await friendsList(uid, tok);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
-    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, today: today_() };
+    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, friends: fr.ok ? fr.friends : [], friendAsks: fr.ok ? fr.asks : [], today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -1617,6 +1625,9 @@ const PUSH_TEXT = {
   steps: { en: '{n} steps in your life plan for now 🎯', km: 'មានជំហាន {n} ក្នុងផែនការជីវិតរបស់អ្នកសម្រាប់ពេលនេះ 🎯' },
   teamTasks: { en: '{n} team tasks due soon 📋', km: 'កិច្ចការក្រុម {n} ជិតដល់កាលកំណត់ 📋' },
   oneonone: { en: '1-on-1 with {name} today 🤝', km: 'ជួបមួយទល់មួយជាមួយ {name} ថ្ងៃនេះ 🤝' },
+  friendAsk: { en: '{name} wants to be friends on GonPreah 👯', km: '{name} ចង់ធ្វើជាមិត្តភក្តិនៅលើ កូនព្រះ 👯' },
+  nudge: { en: '{name} nudged you 👋 Keep your streak going today!', km: '{name} បានរំលឹកអ្នក 👋 រក្សាស្ទ្រីករបស់អ្នកឱ្យបន្តថ្ងៃនេះ!' },
+  cheer: { en: '{name} from {team} is cheering you on 💛', km: '{name} មកពី {team} កំពុងលើកទឹកចិត្តអ្នក 💛' },
   coachAsk: { en: '{name} asked you to be their coach.', km: '{name} បានសុំឱ្យអ្នកធ្វើជាអ្នកណែនាំរបស់គាត់។' },
   coachOffer: { en: '{name} offered to be your coach.', km: '{name} បានស្នើធ្វើជាអ្នកណែនាំរបស់អ្នក។' },
   teamTask: { en: 'A new task for you in {team}.', km: 'មានកិច្ចការថ្មីសម្រាប់អ្នកនៅក្នុង {team}។' },
@@ -1837,6 +1848,139 @@ async function runReminders(now) {
   });
 }
 
+/* ---------------- friends ----------------
+   Two or three close friends who keep each other going. Both must agree (an ask, then yes).
+   Adults can ask adults by username; with anyone under 18, the two must share a team — and a
+   friendship with someone under 18 shows only while they still share one. Friends see each
+   other's streak and whether today's habits are done (behind share.streak) and their streak
+   together; a 👋 nudge is a fixed notification, once a day per friend — never a message.
+   u.friends = [{ id, since }], u.friendAsks = [{ from, at }] (asks I've received). */
+const MAX_FRIENDS = 12, MAX_FRIEND_ASKS = 30;
+async function friendOk_(a, b) {
+  if (gone_(a) || gone_(b) || a.id === b.id || blocked_(a, b)) return false;
+  if (isMinor_(a) || isMinor_(b)) return sharesTeam_(a, b);
+  return true;
+}
+async function friendAsk(uid, tok, username) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const n = cleanUsername_(username), map = n ? await readJSON('uname:' + n, null) : null;
+  const them = map ? await readJSON('u:' + map.id, null) : null;
+  if (!them || !(await friendOk_(me, them))) return { ok: false, err: 'none' };   // as if they weren't there
+  if ((me.friends || []).some(function (f) { return f.id === them.id; })) return { ok: false, err: 'already' };
+  if ((me.friends || []).length >= MAX_FRIENDS) return { ok: false, err: 'too_many' };
+  if ((me.friendAsks || []).some(function (x) { return x.from === them.id; })) return friendAnswer(uid, tok, them.id, true);   // they asked me first
+  const res = await mutate_('u:' + them.id, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'none' };
+    if ((u.friends || []).length >= MAX_FRIENDS) return { abort: true, ok: false, err: 'too_many' };
+    u.friendAsks = (u.friendAsks || []).filter(function (x) { return x.from !== uid; }).concat([{ from: uid, at: today_() }]).slice(-MAX_FRIEND_ASKS);
+    return { ok: true };
+  });
+  if (!res.ok) return res;
+  await pushNow_(them.id, 'friendAsk', { name: isMinor_(me) ? firstName_(me.name) : me.name });
+  return { ok: true, asked: true };
+}
+async function friendAnswer(uid, tok, from, yes) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (!(me.friendAsks || []).some(function (x) { return x.from === from; })) return { ok: false, err: 'none' };
+  const them = await readJSON('u:' + from, null);
+  let made = false;
+  if (yes && them && await friendOk_(me, them) && (me.friends || []).length < MAX_FRIENDS) {
+    made = true;
+    await mutate_('u:' + from, null, function (u) { if (u) u.friends = (u.friends || []).filter(function (f) { return f.id !== uid; }).concat([{ id: uid, since: today_() }]); return { ok: true }; });
+  }
+  await mutate_('u:' + uid, null, function (u) {
+    u.friendAsks = (u.friendAsks || []).filter(function (x) { return x.from !== from; });
+    if (made) u.friends = (u.friends || []).filter(function (f) { return f.id !== from; }).concat([{ id: from, since: today_() }]);
+    return { ok: true };
+  });
+  return friendsList(uid, tok);
+}
+async function friendDrop(uid, tok, id) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  for (const [a, b] of [[uid, id], [id, uid]]) await mutate_('u:' + a, null, function (u) { if (u) u.friends = (u.friends || []).filter(function (f) { return f.id !== b; }); return { ok: true }; });
+  return friendsList(uid, tok);
+}
+/* Days in a row both of us ticked a habit (ending today or yesterday). */
+function togetherStreak_(a, b) {
+  let d = today_(); if (!(habitDone_(a, d) && habitDone_(b, d))) d = addDays_(d, -1);
+  let n = 0; while (n < 3660 && habitDone_(a, d) && habitDone_(b, d)) { n++; d = addDays_(d, -1); }
+  return n;
+}
+async function friendsList(uid, tok) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const friends = [], asks = [], t = today_();
+  for (const f of (me.friends || [])) {
+    const u = await readJSON('u:' + f.id, null);
+    if (!u || !(await friendOk_(me, u))) continue;
+    const o = personBrief_(u), sh = shareOf_(u);
+    o.since = f.since; o.nudged = (me.nudged || {})[u.id] === t;
+    if (sh.streak) { o.streak = streakOf_(u.days || {}, u.frozen); o.doneToday = habitDone_(u, t); o.together = togetherStreak_(me, u); }
+    friends.push(o);
+  }
+  for (const x of (me.friendAsks || [])) {
+    const u = await readJSON('u:' + x.from, null);
+    if (u && await friendOk_(me, u)) asks.push(Object.assign(personBrief_(u), { at: x.at }));
+  }
+  return { ok: true, friends: friends, asks: asks };
+}
+async function friendNudge(uid, tok, id) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const them = (me.friends || []).some(function (f) { return f.id === id; }) ? await readJSON('u:' + id, null) : null;
+  if (!them || !(await friendOk_(me, them))) return { ok: false, err: 'none' };
+  if ((me.nudged || {})[id] === today_()) return { ok: false, err: 'once_a_day' };
+  await mutate_('u:' + uid, null, function (u) { u.nudged = Object.assign({}, u.nudged || {}); u.nudged[id] = today_(); Object.keys(u.nudged).forEach(function (k) { if (u.nudged[k] < addDays_(today_(), -7)) delete u.nudged[k]; }); return { ok: true }; });
+  const sent = await pushNow_(id, 'nudge', { name: isMinor_(me) ? firstName_(me.name) : me.name });
+  return { ok: true, sent: sent };
+}
+
+/* ---------------- the leader's dashboard ----------------
+   For a team's leaders only: each member's last day in the app, and — behind the member's own
+   switches — their streak, habit days this week, focus and XP this week. Numbers only. A 💛
+   cheer is a fixed notification from the leader, once a day per member. */
+async function teamPulse(uid, tok, tid) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const t = typeof tid === 'string' && (me.teams || []).indexOf(tid) > -1 ? await readJSON('t:' + tid, null) : null;
+  if (!t || t.closed || (t.leaders || []).indexOf(uid) === -1) return { ok: false, err: 'not_leader' };
+  const today = today_(), wk = weekOf_(today), rows = [];
+  for (const id of t.members) {
+    if (id === uid) continue;
+    const u = await readJSON('u:' + id, null);
+    if (gone_(u)) continue;
+    const sh = shareOf_(u), o = personBrief_(u);
+    o.seenAgo = u.seen ? Math.max(0, Math.round((Date.parse(today) - Date.parse(u.seen)) / 864e5)) : null;
+    o.cheered = (me.cheered || {})[id] === today;
+    if (sh.streak) {
+      o.streak = streakOf_(u.days || {}, u.frozen);
+      let n = 0; for (let i = 0; i < 7; i++) { const d = addDays_(wk, i); if (d <= today && habitDone_(u, d)) n++; }
+      o.habitDays = n;
+    }
+    if (sh.focus) o.focusWeek = focusWeek_(u, wk);
+    if (sh.level) o.xpWeek = (u.xpWeeks || {})[wk] || 0;
+    rows.push(o);
+  }
+  rows.sort(function (a, b) { return (b.seenAgo == null ? 999 : b.seenAgo) - (a.seenAgo == null ? 999 : a.seenAgo); });
+  return { ok: true, pulse: { team: { id: t.id, name: t.name, emoji: t.emoji }, rows: rows,
+    today: rows.filter(function (r) { return r.seenAgo === 0; }).length,
+    week: rows.filter(function (r) { return r.seenAgo != null && r.seenAgo < 7; }).length,
+    quiet: rows.filter(function (r) { return r.seenAgo == null || r.seenAgo >= 4; }).length } };
+}
+async function leaderCheer(uid, tok, tid, who) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const t = typeof tid === 'string' && (me.teams || []).indexOf(tid) > -1 ? await readJSON('t:' + tid, null) : null;
+  if (!t || (t.leaders || []).indexOf(uid) === -1) return { ok: false, err: 'not_leader' };
+  if (typeof who !== 'string' || t.members.indexOf(who) === -1 || who === uid) return { ok: false, err: 'none' };
+  if ((me.cheered || {})[who] === today_()) return { ok: false, err: 'once_a_day' };
+  await mutate_('u:' + uid, null, function (u) { u.cheered = Object.assign({}, u.cheered || {}); u.cheered[who] = today_(); Object.keys(u.cheered).forEach(function (k) { if (u.cheered[k] < addDays_(today_(), -7)) delete u.cheered[k]; }); return { ok: true }; });
+  const sent = await pushNow_(who, 'cheer', { name: firstName_(me.name), team: t.name });
+  return { ok: true, sent: sent };
+}
+
 async function signOut(uid, tok) {
   if (!(await auth_(uid, tok))) return { ok: true };
   const h = sha_(tok);
@@ -1851,7 +1995,8 @@ export const HANDLERS = {
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,
-  saveTop, saveCheckin, logFocus, challenge, reading, prayer,
+  saveTop, saveCheckin, logFocus, challenge, reading, prayer, devoDone,
+  friendAsk, friendAnswer, friendDrop, friendsList, friendNudge, teamPulse, leaderCheer,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_, levelOf_, xpForLevel_ };

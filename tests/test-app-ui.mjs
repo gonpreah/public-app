@@ -396,7 +396,27 @@ ok('the team page shows this week’s leaderboard', /This week/.test(await text(
 await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('.heroStats');
 ok('Home explains streak freezes', /streak freeze/.test(await text(a)));
 
-/* ---------- 16. Khmer ---------- */
+/* ---------- 16. friends, and the leader's pulse ---------- */
+await openTeamPerson(a, 'Dara');
+await a.click('[data-friendask]'); await a.waitForTimeout(600);
+ok('ask a teammate to be friends from their card', /Asked!/.test(await a.$eval('#msg', e => e.textContent)));
+await d.click('nav.bottom button[data-tab="home"]'); await d.waitForSelector('[data-friendyes]');
+ok('… they see the ask on Home', /wants to be friends/.test(await text(d)));
+await d.click('[data-friendyes$="|1"]'); await d.waitForTimeout(800);
+ok('… and say yes', /You’re friends now/.test(await d.$eval('#msg', e => e.textContent)));
+await a.click('nav.bottom button[data-tab="home"]'); await a.waitForTimeout(800);
+ok('friends show on Home with their streak', /Friends/.test(await text(a)) && /Dara/.test(await a.$eval('.feedRow:has-text("Dara")', e => e.innerText)));
+if (await a.$('[data-nudge]')) { await a.click('[data-nudge]'); await a.waitForTimeout(600); ok('a 👋 nudge, once a day', !!(await a.$('[data-nudge][disabled]'))); }
+else ok('a friend who has done today needs no nudge', !!(await a.$('.feedRow:has-text("Dara") .clapN')));
+await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(400); await a.click('[data-team]'); await a.waitForSelector('#goPulse');
+await a.click('#goPulse'); await a.waitForSelector('[data-cheer]');
+ok('a leader sees the team’s pulse', /Team pulse/.test(await text(a)) && /Mina/.test(await text(a)) && /in the app today/.test(await text(a)));
+await a.click('.feedRow:has-text("Mina") [data-cheer]'); await a.waitForTimeout(600);
+ok('… and can cheer someone, once a day', !!(await a.$('.feedRow:has-text("Mina") [data-cheer][disabled]')));
+ok('a member who isn’t a leader has no pulse', await (async () => { await m.click('nav.bottom button[data-tab="teams"]'); await m.waitForTimeout(400); if (!(await m.$('[data-team]'))) return true; await m.click('[data-team]'); await m.waitForTimeout(500); return !(await m.$('#goPulse')); })());
+await a.click('[data-back]'); await a.waitForTimeout(200);
+
+/* ---------- 17. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -407,7 +427,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 17. the page fits a phone ---------- */
+/* ---------- 18. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

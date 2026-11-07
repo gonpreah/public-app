@@ -1536,7 +1536,7 @@ function recapCardHtml(){
    month picks it. "Amen" marks it read (devoDone, 5 XP once a day). */
 var devoLoading=false;
 function devoLoad_(){ if(typeof GP_DEVOS!=='undefined' || devoLoading) return; devoLoading=true;
-  var sc=document.createElement('script'); sc.src='devotions.js'; sc.onload=function(){ devoLoading=false; if(S.view==='home' || S.view==='devo') render(); }; sc.onerror=function(){ devoLoading=false; sc.remove(); }; document.head.appendChild(sc); }
+  var sc=document.createElement('script'); sc.src='devotions.js'; sc.setAttribute('data-optional',''); sc.onload=function(){ devoLoading=false; if(S.view==='home' || S.view==='devo') render(); }; sc.onerror=function(){ devoLoading=false; sc.remove(); }; document.head.appendChild(sc); }
 function devoToday_(){ if(typeof GP_DEVOS==='undefined' || !GP_DEVOS.length) return null; var n=Number(todayStr().slice(8,10)); return GP_DEVOS[(n-1)%GP_DEVOS.length]; }
 function devoField_(D, f){ return LANG==='km' && D[f+'_km'] ? D[f+'_km'] : D[f+'_en']; }
 function devoCardHtml(){

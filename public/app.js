@@ -12,6 +12,8 @@
       share                      — a picture of my week to share (drawn on the phone)
       welcome                    — the first-day walkthrough: welcome, my why, habits, my team
       faith                      — Bible reading plans (passages only) and my prayer list
+      friends · pulse            — my friends (asks, list); a leader's view of their team
+      devo                       — today's devotional (devotions.js, one for each day of the month)
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -77,10 +79,11 @@ function failMsg(d){
     not_admin:'Only the admin can see this.', what:'Choose what is wrong.', suspended:'This account has been suspended.',
     password:'Use at least 8 characters for your password.', login:'That username or password isn’t right.',
     locked:'Too many tries. Wait 15 minutes and try again.', google_only:'This account signs in with Google.', current:'Your current password isn’t right.',
+    once_a_day:'Once a day is enough — try again tomorrow.',
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -114,7 +117,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -151,6 +154,9 @@ function render(){
     else if(V==='share') h=shareHtml();
     else if(V==='welcome') h=welcomeHtml();
     else if(V==='faith') h=faithHtml();
+    else if(V==='friends') h=friendsHtml();
+    else if(V==='devo') h=devoHtml();
+    else if(V==='pulse') h=pulseHtml();
     else if(V==='report') h=reportHtml();
     else if(V==='blocked') h=blockedHtml();
     else if(V==='admin') h=adminHtml();
@@ -313,7 +319,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=whyLineHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  h+=whyLineHtml()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -407,6 +413,7 @@ function teamHtml(){
       '<div class="btnRow"><button class="btn small" id="shareCode" data-link="'+esc(link)+'">'+esc(t('Share the link'))+'</button><button class="btn small ghost" id="newCode">'+esc(t('New code'))+'</button></div>'+
       '<div class="hint">'+esc(t('Anyone with the code can join. Make a new one if it gets passed around.'))+'</div></div>';
   }
+  if(T.leader) h+='<button class="btn ghost" id="goPulse" style="margin-bottom:12px">📊 '+esc(t('Team pulse: who’s active, who’s gone quiet'))+'</button>';
   h+=leaderboardHtml_(T);
   h+=challengesHtml(T);
   h+=teamTasksHtml(T);
@@ -464,6 +471,7 @@ function personHtml(){
       '<button class="btn small ghost" id="removeMember" style="color:var(--bad);border-color:var(--bad)">'+esc(t('Remove from team'))+'</button></div></div>';
   }
   if(p.id!==S.me.id) h+=coachAskHtml_(p);
+  if(p.id!==S.me.id && !(S.friends||[]).some(function(f){ return f.id===p.id; })) h+='<button class="btn ghost" data-friendask="'+esc(p.username)+'" style="margin-bottom:12px">👯 '+esc(gpT('Add {name} as a friend',{name:firstName_(p.name)}))+'</button>';
   if(p.id!==S.me.id) h+='<div class="safeRow"><button class="linkbtn" id="reportPerson">🚩 '+esc(t('Report'))+'</button><button class="linkbtn" id="blockPerson">🚫 '+esc(t('Block'))+'</button></div>';
   if(!p.minor && p.id!==S.me.id){
     var mine=(S.teams||[]).filter(function(tm){ return tm.leader && !(p.sharedTeams||[]).some(function(x){ return x.id===tm.id; }); });
@@ -1052,6 +1060,26 @@ function bind(){
   on('focusAgain', function(){ S.focusDone=null; render(); });
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
+  /* today's devotional */
+  on('goDevo', function(){ go('devo'); });
+  on('devoAmen', busyOnce_(function(){ var b=$('devoAmen'); confettiAt_(b); gpTap();
+    return call('devoDone', todayStr()).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
+
+  /* friends */
+  on('goFriends', function(){ go('friends'); });
+  var friendAsk_=function(un){ return call('friendAsk', un).then(function(d){ if(d && d.ok){ showMsg(d.asked?t('Asked! They’ll see it on Home.'):t('You’re friends now! 👯')); refresh_(); } else if(d && d.err==='already') showMsg(t('You’re already friends.')); else if(d && d.err==='none') showMsg(t('No one to add with that username.')); else failMsg(d); }); };
+  on('frAsk', busyOnce_(function(){ var v=$('frUser').value.trim().replace(/^@/,''); if(!v) return; return friendAsk_(v); }));
+  all('[data-friendask]', busyOnce_(function(b){ return friendAsk_(b.getAttribute('data-friendask')); }));
+  all('[data-friendyes]', busyOnce_(function(b){ var p=b.getAttribute('data-friendyes').split('|');
+    return call('friendAnswer', p[0], p[1]==='1').then(function(d){ if(d && d.ok){ S.friends=d.friends; S.friendAsks=d.asks; if(p[1]==='1') showMsg(t('You’re friends now! 👯')); render(); } else failMsg(d); }); }));
+  all('[data-frienddrop]', function(b){ if(!confirm(t('Remove this friend?'))) return; call('friendDrop', b.getAttribute('data-frienddrop')).then(function(d){ if(d && d.ok){ S.friends=d.friends; S.friendAsks=d.asks; render(); } else failMsg(d); }); });
+  all('[data-nudge]', busyOnce_(function(b){ var id=b.getAttribute('data-nudge'); gpTap();
+    return call('friendNudge', id).then(function(d){ if(d && d.ok){ (S.friends||[]).forEach(function(f){ if(f.id===id) f.nudged=true; }); showMsg(d.sent?t('Nudged 👋'):t('Nudged — they’ll see it when they turn reminders on.')); render(); } else failMsg(d); }); }));
+  /* the leader's pulse */
+  on('goPulse', function(){ S.pulse=null; go('pulse'); call('teamPulse', S.team.id).then(function(d){ if(d && d.ok){ S.pulse=d.pulse; render(); loadPhotos_(d.pulse.rows); } else { failMsg(d); goBack('team'); } }); });
+  all('[data-cheer]', busyOnce_(function(b){ var id=b.getAttribute('data-cheer'); gpTap(); confettiAt_(b);
+    return call('leaderCheer', S.pulse.team.id, id).then(function(d){ if(d && d.ok){ S.pulse.rows.forEach(function(r){ if(r.id===id) r.cheered=true; }); showMsg(d.sent?t('Cheer sent 💛'):t('Sent — they’ll see it when they turn reminders on.')); render(); } else failMsg(d); }); }));
+
   /* faith daily */
   on('goFaith', function(){ S.back=[]; go('faith', true); });
   all('[data-planstart]', busyOnce_(function(b){ return call('reading', 'start', { plan:b.getAttribute('data-planstart') }).then(function(d){ if(d && d.ok){ S.me=d.me; showMsg(t('Plan started. Day 1 is on Home. 📖')); render(); } else failMsg(d); }); }));
@@ -1500,6 +1528,75 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- today's devotional ----------------
+   devotions.js (GP_DEVOS: 31, our own words in English and Khmer — a passage to read, a short
+   reflection, a question, a prayer; no Bible text) loads only when Home needs it. Day of the
+   month picks it. "Amen" marks it read (devoDone, 5 XP once a day). */
+var devoLoading=false;
+function devoLoad_(){ if(typeof GP_DEVOS!=='undefined' || devoLoading) return; devoLoading=true;
+  var sc=document.createElement('script'); sc.src='devotions.js'; sc.setAttribute('data-optional',''); sc.onload=function(){ devoLoading=false; if(S.view==='home' || S.view==='devo') render(); }; sc.onerror=function(){ devoLoading=false; sc.remove(); }; document.head.appendChild(sc); }
+function devoToday_(){ if(typeof GP_DEVOS==='undefined' || !GP_DEVOS.length) return null; var n=Number(todayStr().slice(8,10)); return GP_DEVOS[(n-1)%GP_DEVOS.length]; }
+function devoField_(D, f){ return LANG==='km' && D[f+'_km'] ? D[f+'_km'] : D[f+'_en']; }
+function devoCardHtml(){
+  var D=devoToday_(); if(!D){ devoLoad_(); return ''; }
+  var done=!!dayOf_(todayStr()).devo;
+  return '<button class="card devoCard'+(done?' done':'')+'" id="goDevo"><span class="pmeta">🕊️ '+esc(t('Today’s devotional'))+(done?' · ✓':'')+'</span><b class="devoTitle">'+esc(devoField_(D,'title'))+'</b><span class="pmeta">📖 '+esc(refLabel_(D.ref))+'</span></button>';
+}
+function devoHtml(){
+  var D=devoToday_(); if(!D){ devoLoad_(); return backBtn(t('Home'))+'<p class="sub">'+esc(t('Loading…'))+'</p>'; }
+  var done=!!dayOf_(todayStr()).devo;
+  return backBtn(t('Home'))+'<div class="devoPage"><div class="pmeta">🕊️ '+esc(t('Today’s devotional'))+'</div><h2>'+esc(devoField_(D,'title'))+'</h2>'+
+    '<div class="card devoRead">📖 '+esc(t('Read first:'))+' <b>'+esc(refLabel_(D.ref))+'</b><div class="pmeta">'+esc(t('in your own Bible or Bible app'))+'</div></div>'+
+    '<p class="devoBody">'+esc(devoField_(D,'body'))+'</p>'+
+    '<div class="card"><div class="pmeta">💭 '+esc(t('Think about it'))+'</div><p class="devoQ">'+esc(devoField_(D,'ask'))+'</p></div>'+
+    '<div class="card devoPray"><div class="pmeta">🙏 '+esc(t('Pray'))+'</div><p>'+esc(devoField_(D,'pray'))+'</p></div>'+
+    (done ? '<div class="allDone">✓ '+esc(t('Read today. See you tomorrow!'))+'</div>' : '<button class="btn" id="devoAmen">🙏 '+esc(t('Amen'))+'</button>')+'</div>';
+}
+
+/* ---------------- friends (api.js "friends") ----------------
+   Both agree; with anyone under 18 only through a shared team. A 👋 nudge is a fixed
+   notification, once a day — there are no messages. */
+function friendRowHtml_(f, full){
+  var line = f.streak!=null ? '🔥 '+f.streak+' · '+(f.doneToday?'✓ '+t('done today'):t('not yet today'))+(f.together?' · 🤝 '+gpT('{n} days together',{n:f.together}):'') : '@'+f.username;
+  return '<div class="feedRow">'+faceHtml(f,40)+'<span class="feedTx"><b>'+esc(f.name)+'</b><div class="pmeta">'+esc(line)+'</div></span>'+
+    (full ? '<button class="xBtn" data-frienddrop="'+esc(f.id)+'" aria-label="'+esc(t('Remove'))+'">×</button>'
+      : (f.doneToday ? '<span class="clapN">✅</span>' : '<button class="clapBtn'+(f.nudged?' on':'')+'" data-nudge="'+esc(f.id)+'"'+(f.nudged?' disabled':'')+' aria-label="'+esc(t('Nudge'))+'">👋</button>'))+'</div>';
+}
+function friendAsksHtml_(){
+  return (S.friendAsks||[]).map(function(a){ return '<div class="card inviteCard"><div class="feedRow">'+faceHtml(a,40)+'<span class="feedTx"><b>'+esc(a.name)+'</b><div class="pmeta">'+esc(t('wants to be friends'))+'</div></span></div>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" data-friendyes="'+esc(a.id)+'|1">'+esc(t('Accept'))+'</button><button class="btn small ghost" data-friendyes="'+esc(a.id)+'|0">'+esc(t('No thanks'))+'</button></div></div>'; }).join('');
+}
+function friendsHomeHtml(){
+  var F=S.friends||[], h=friendAsksHtml_();
+  if(!F.length) return h;
+  return h+'<h3>👯 '+esc(t('Friends'))+'</h3><div class="card list">'+F.map(function(f){ return friendRowHtml_(f,false); }).join('')+'<button class="linkbtn" id="goFriends">'+esc(t('All friends'))+' ›</button></div>';
+}
+function friendsHtml(){
+  var F=S.friends||[], h=backBtn(t('Home'))+'<h2>👯 '+esc(t('Friends'))+'</h2><p class="sub">'+esc(t('A few close friends who keep each other going. You see each other’s streak — never your goals or words.'))+'</p>';
+  h+='<div class="card"><label class="f" for="frUser">'+esc(t('Add a friend by username'))+'</label><div class="atRow"><span>@</span><input type="text" id="frUser" autocapitalize="none" maxlength="20"><button class="btn small" id="frAsk">'+esc(t('Ask'))+'</button></div>'+
+    '<div class="hint">'+esc(t('They need to say yes. Someone under 18 can only be friends with people in their team.'))+'</div></div>';
+  h+=friendAsksHtml_();
+  if(F.length) h+='<div class="card list">'+F.map(function(f){ return friendRowHtml_(f,true); }).join('')+'</div>';
+  return h;
+}
+
+/* ---------------- a leader's view of their team (api.js "the leader's dashboard") ---------------- */
+function agoLabel_(n){ return n==null ? t('not yet') : n===0 ? t('Today') : n===1 ? t('Yesterday') : gpT('{n} days ago',{n:n}); }
+function pulseHtml(){
+  var P=S.pulse, h=backBtn(t('Back'));
+  if(!P) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
+  h+='<h2>📊 '+esc(t('Team pulse'))+'</h2><p class="sub">'+esc(P.team.emoji+' '+P.team.name)+' · '+esc(t('Only leaders see this. Numbers only — never anyone’s words.'))+'</p>';
+  h+='<div class="card statTiles"><div><b>'+P.today+'</b><span>'+esc(t('in the app today'))+'</span></div><div><b>'+P.week+'</b><span>'+esc(t('this week'))+'</span></div><div><b>'+P.quiet+'</b><span>'+esc(t('quiet 4+ days'))+'</span></div></div>';
+  if(!P.rows.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('No one else in the team yet.'))+'</p></div>';
+  h+='<div class="card list">'+P.rows.map(function(r){
+    var bits=[]; if(r.streak!=null) bits.push('🔥 '+r.streak); if(r.habitDays!=null) bits.push('✅ '+r.habitDays+'/7'); if(r.focusWeek) bits.push('⏱ '+focusShort_(r.focusWeek)); if(r.xpWeek) bits.push('+'+r.xpWeek+' XP');
+    var quiet=r.seenAgo==null || r.seenAgo>=4;
+    return '<div class="feedRow'+(quiet?' quietRow':'')+'">'+faceHtml(r,40)+'<span class="feedTx"><b>'+esc(r.name)+'</b><div class="pmeta">'+esc(agoLabel_(r.seenAgo))+(bits.length?' · '+esc(bits.join(' · ')):'')+'</div></span>'+
+      '<button class="btn small'+(quiet?'':' ghost')+'" data-cheer="'+esc(r.id)+'"'+(r.cheered?' disabled':'')+'>'+(r.cheered?'💛 ✓':'💛 '+esc(t('Cheer')))+'</button></div>';
+  }).join('')+'</div><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
+  return h;
 }
 
 /* ---------------- the team's week: who earned the most XP ----------------

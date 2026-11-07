@@ -3,8 +3,8 @@
    Same-origin GETs only: the API (a POST) and Google are never touched.
    Bump SHELL when PRECACHE changes. library-km.js (large, Khmer summaries) is not in it:
    it is fetched the first time someone reads in Khmer, and kept from then on. */
-var SHELL = 'gpa-shell-v2', NET_WAIT_MS = 4000;
-var PRECACHE = ['/', 'index.html', 'app.css', 'app.js', 'logo.js', 'km.js', 'km-app.js', 'personality.js', 'gpstrengths.js', 'library-app.js', 'learn.js', 'library.js', 'khmer-vocab.js', 'khmer-grammar.js', 'manifest.json',
+var SHELL = 'gpa-shell-v3', NET_WAIT_MS = 4000;
+var PRECACHE = ['/', 'index.html', 'app.css', 'app.js', 'logo.js', 'km.js', 'km-app.js', 'personality.js', 'gpstrengths.js', 'library-app.js', 'learn.js', 'library.js', 'khmer-vocab.js', 'khmer-grammar.js', 'devotions.js', 'manifest.json',
   'fonts/kantumruy-latin.woff2', 'fonts/kantumruy-khmer.woff2', 'fonts/kantumruy-latin-ext.woff2', 'fonts/koulen-latin.woff2', 'fonts/koulen-khmer.woff2', 'icon-180.png', 'icon-512.png'];
 self.addEventListener('install', function(e){ e.waitUntil(caches.open(SHELL).then(function(c){ return c.addAll(PRECACHE).catch(function(){}); }).then(function(){ return self.skipWaiting(); })); });
 self.addEventListener('activate', function(e){ e.waitUntil(caches.keys().then(function(ks){ return Promise.all(ks.filter(function(k){ return k !== SHELL; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); })); });

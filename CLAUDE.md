@@ -178,6 +178,18 @@ of them (`u.frozen`), and the streak lives on (`streakOf_(days, frozen)`). **The
 people who show their level. **Reminders** also say: plan your day (a morning reminder with no
 Today's 3 yet), today's Bible reading (a plan going, nothing read today), and challenges to tick.
 
+## Friends, the leader's pulse, and today's devotional
+**Friends** (`friendAsk`/`friendAnswer`/`friendDrop`/`friendsList`/`friendNudge`; Home and view
+`friends`): both agree; adults ask adults by username, and with anyone **under 18** the two must
+share a team — the friendship shows only while they do (`friendOk_`). Friends see each other's
+streak, today, and their streak together (behind `share.streak`); a 👋 nudge is a fixed
+notification, once a day — no messages. **Team pulse** (`teamPulse`, view `pulse`, leaders only):
+each member's last day in the app (`u.seen`) and, behind their switches, streak, habit days, focus
+and XP this week; a 💛 cheer (`leaderCheer`) is a fixed notification, once a day. **Today's
+devotional** (`public/devotions.js`, 31 in our own words, English and Khmer — a passage to read,
+a reflection, a question, a prayer; no Bible text): on Home by day of the month, view `devo`;
+"Amen" marks it read (`devoDone`, 5 XP). tests/test-library.mjs checks the devotionals.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.

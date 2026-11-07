@@ -429,7 +429,42 @@ await H.saveProfile(Q.uid, Q.token, { share: { level: true } });
 const zq = (await H.team(Z.uid, Z.token, ZT.team.id)).team.people.find(p => p.id === Q.uid);
 ok('teammates see the XP earned this week, for the leaderboard', zq.xpWeek > 0 && zq.level);
 
-/* ---------- 17. the door ---------- */
+/* ---------- 17. friends, and the leader's dashboard ---------- */
+ok('an adult can’t find someone under 18 to be friends', (await H.friendAsk(A.uid, A.token, 'mina')).err === 'none');
+ok('nobody is friends with themselves', (await H.friendAsk(A.uid, A.token, 'sokha')).err === 'none');
+r = await H.friendAsk(A.uid, A.token, 'fred');
+ok('an adult asks another adult', r.ok && r.asked);
+let fl = await H.friendsList(F.uid, F.token);
+ok('… who sees the ask', fl.asks.length === 1 && fl.asks[0].id === A.uid && fl.friends.length === 0);
+fl = await H.friendAnswer(F.uid, F.token, A.uid, true);
+ok('saying yes makes them friends, both ways', fl.friends.some(f => f.id === A.uid) && (await H.friendsList(A.uid, A.token)).friends.some(f => f.id === F.uid));
+ok('asking again says you’re already friends', (await H.friendAsk(A.uid, A.token, 'fred')).err === 'already');
+setU(A.uid, u => { u.days = { [day(-1)]: { bible: true }, [today]: { bible: true } }; });
+setU(F.uid, u => { u.days = { [day(-2)]: { x: true }, [day(-1)]: { x: true }, [today]: { x: true } }; });
+const af = (await H.friendsList(A.uid, A.token)).friends.find(f => f.id === F.uid);
+ok('friends see each other’s streak, today, and their streak together', af.streak === 3 && af.doneToday === true && af.together === 2);
+ok('a nudge goes once a day', (await H.friendNudge(A.uid, A.token, F.uid)).ok && (await H.friendNudge(A.uid, A.token, F.uid)).err === 'once_a_day');
+ok('a stranger can’t nudge', (await H.friendNudge(E.uid, E.token, F.uid)).err === 'none');
+/* someone under 18: only through a shared team */
+const sp = await H.loginPassword('srey', rp.password);
+await H.joinTeam(PM.uid, sp.token, QT.team.code);
+ok('an adult in her team can ask a 15-year-old', (await H.friendAsk(Q.uid, Q.token, 'srey')).ok);
+fl = await H.friendAnswer(PM.uid, sp.token, Q.uid, true);
+ok('… and she can say yes', fl.friends.some(f => f.id === Q.uid && f.name === 'Thida Ros'));
+ok('her name shows as her first name only', (await H.friendsList(Q.uid, Q.token)).friends.find(f => f.id === PM.uid).name === 'Srey');
+await H.leaveTeam(PM.uid, sp.token, QT.team.id);
+ok('once they no longer share a team, the friendship is hidden', !(await H.friendsList(Q.uid, Q.token)).friends.some(f => f.id === PM.uid) && (await H.friendNudge(Q.uid, Q.token, PM.uid)).err === 'none');
+ok('either can end a friendship', !(await H.friendDrop(F.uid, F.token, A.uid)).friends.length && !(await H.friendsList(A.uid, A.token)).friends.some(f => f.id === F.uid));
+/* the leader's dashboard */
+ok('only a leader sees the team’s pulse', (await H.teamPulse(Q.uid, Q.token, QT.team.id)).err === 'not_leader');
+const pulse = (await H.teamPulse(Q2.uid, Q2.token, QT.team.id)).pulse;
+const qrow = pulse.rows.find(x => x.id === Q.uid);
+ok('the leader sees each member’s last day in the app and their numbers', qrow && qrow.seenAgo === 0 && 'streak' in qrow && pulse.week >= 1);
+ok('… never their words', !/essay|Call Mum|sister|grandmother|"why"|"top"|"prayers"/.test(JSON.stringify(pulse)));
+ok('a cheer goes once a day', (await H.leaderCheer(Q2.uid, Q2.token, QT.team.id, Q.uid)).ok && (await H.leaderCheer(Q2.uid, Q2.token, QT.team.id, Q.uid)).err === 'once_a_day');
+ok('only a leader can cheer', (await H.leaderCheer(Q.uid, Q.token, QT.team.id, Q2.uid)).err === 'not_leader');
+
+/* ---------- 18. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

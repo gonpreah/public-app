@@ -874,3 +874,17 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 .lbRank { flex:0 0 26px; text-align:center; font-size:20px; font-weight:900; color:var(--muted); }
 .lbXp { color:var(--good); white-space:nowrap; }
 .lbRow.me { background:var(--accentSoft); border-radius:12px; padding-left:6px; padding-right:6px; }
+
+/* ---------- friends, the leader's pulse ---------- */
+.clapBtn:disabled { opacity:.6; cursor:default; }
+.quietRow { background:var(--badSoft, rgba(220,60,60,.08)); border-radius:12px; padding-left:6px; padding-right:6px; }
+
+/* ---------- today's devotional ---------- */
+.devoCard { display:flex; flex-direction:column; gap:3px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--ink); background:linear-gradient(135deg, var(--surface), var(--accentSoft)); }
+.devoCard.done { opacity:.75; }
+.devoTitle { font-size:17px; }
+.devoPage h2 { margin-top:4px; }
+.devoRead b { font-size:16px; }
+.devoBody { font-size:16px; line-height:1.65; margin:4px 2px 16px; }
+.devoQ { font-size:16px; font-weight:700; margin:4px 0 0; line-height:1.5; }
+.devoPray p { font-style:italic; margin:4px 0 0; line-height:1.55; }

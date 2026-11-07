@@ -34,8 +34,14 @@ a file came from.
   `env.mjs` (in-memory store, a stand-in for Google, a local server), `serve.mjs` (preview).
 
 ## Accounts
-Google sign-in (`loginGoogle` / `register`), then a username (unique, 3–20 of a-z 0-9 _ .),
-a name and a birth year. A phone keeps a random device token (hashed on the account); every
+A **username and password** (`registerPassword` / `loginPassword`; Nov 2026, Uriah: "a basic
+login besides Google") or Google sign-in (`loginGoogle` / `register`), then a username (unique,
+3–20 of a-z 0-9 _ .), a name and a birth year. Passwords: 8+ characters, kept only as a salted
+scrypt hash (`u.pw`); 8 wrong tries lock the account 15 minutes; Me → Password changes it (or
+adds one to a Google account). No email, so the admin resets a forgotten one (Me → Reports →
+Reset a password: a one-time password, and every old sign-in ends). The Google button shows
+only when `GPA_GOOGLE_CLIENT_ID` is set. An admin is named by Google email (`GPA_ADMIN_EMAILS`)
+or by username (`GPA_ADMIN_USERNAMES` — set only after that account exists). A phone keeps a random device token (hashed on the account); every
 signed-in call is `(uid, token, …)` and starts with `auth_`. Telegram sign-in is planned.
 `GPA_GOOGLE_CLIENT_ID` (Netlify env) must be a Google OAuth web client with
 https://app.gonpreah.org as an authorised JavaScript origin; without it the button says so.

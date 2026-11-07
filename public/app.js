@@ -5,7 +5,7 @@
     Every word a person reads goes through t() (Khmer from km.js and km-app.js).
 
     Screens (S.view):
-      signin · signup            — Google, then a username, name and birth year
+      signin · signup            — a username and password (or Google), then a name and birth year
       home                       — today: streak, habits, steps for now, this week's goals, invites
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
@@ -42,7 +42,7 @@ var S = {
   teamTasks: [], goalId: null, goalDraft: null, whyEdit: false, showDone: false, showReached: false,
   coach: [], coaching: null, meetId: null, meetDraft: null, showEnded: false,
   feed: null, feedMore: false, cheers: [], reportFor: null, blockedPeople: null, admin: null,
-  push: null, pushSub: null, pushChecked: false, pushBusy: false
+  push: null, pushSub: null, pushChecked: false, pushBusy: false, authCfg: null, resetResult: null
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -68,6 +68,8 @@ function failMsg(d){
     title:'Write what you want to do.', area:'Choose a part of life.', by:'Choose a month that hasn’t passed yet.', text:'Write something first.',
     not_leader:'Only a leader can do this.', none:'That isn’t here any more.',
     not_admin:'Only the admin can see this.', what:'Choose what is wrong.', suspended:'This account has been suspended.',
+    password:'Use at least 8 characters for your password.', login:'That username or password isn’t right.',
+    locked:'Too many tries. Wait 15 minutes and try again.', google_only:'This account signs in with Google.', current:'Your current password isn’t right.',
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
@@ -171,8 +173,12 @@ function signinHtml(){
     '<p class="sub" style="text-align:center">'+esc(t('Find out how God made you, build a plan for your life, and grow together with your team.'))+'</p>'+
     (JOIN ? '<div class="banner">'+esc(gpT('You have a team code: {code}. Sign in to join.',{code:JOIN}))+'</div>' : '')+
     '<div class="card">'+
-      '<button class="btn gBtn" id="googleBtn"'+(S.busy?' disabled':'')+'><span class="gG">G</span>'+esc(S.busy?t('Signing in…'):t('Continue with Google'))+'</button>'+
-      '<p class="hint" style="text-align:center;margin-top:10px">'+esc(t('New here? The same button makes your account.'))+'</p>'+
+      '<label class="f" for="liUser">'+esc(t('Username'))+'</label><div class="atRow"><span>@</span><input type="text" id="liUser" autocomplete="username" autocapitalize="none" maxlength="20"></div>'+
+      '<label class="f" for="liPass">'+esc(t('Password'))+'</label><input type="password" id="liPass" autocomplete="current-password" maxlength="128">'+
+      '<button class="btn" id="liGo"'+(S.busy?' disabled':'')+'>'+esc(S.busy?t('Signing in…'):t('Sign in'))+'</button>'+
+      '<button class="btn ghost" id="liNew" style="margin-top:8px">'+esc(t('New here? Make an account'))+'</button>'+
+      (S.authCfg && S.authCfg.google ? '<div class="orLine"><span>'+esc(t('or'))+'</span></div><button class="btn gBtn" id="googleBtn"'+(S.busy?' disabled':'')+'><span class="gG">G</span>'+esc(t('Continue with Google'))+'</button>' : '')+
+      '<p class="hint" style="text-align:center;margin-top:10px">'+esc(t('Forgot your password? Ask your team leader to contact the GonPreah admin.'))+'</p>'+
     '</div>'+
     '<p class="pFine" style="text-align:center">'+esc(t('GonPreah is for people 13 and older.'))+'</p></div>';
 }
@@ -221,6 +227,9 @@ function signupHtml(){
       '<label class="f" for="suUser">'+esc(t('Username'))+'</label>'+
       '<div class="atRow"><span>@</span><input type="text" id="suUser" autocomplete="off" autocapitalize="none" maxlength="20" value="'+esc(F.username)+'"></div>'+
       '<div class="hint" id="suUserHint">'+esc(F.free===false?t('That username is taken.'):F.free===true?t('✓ Free'):t('3–20 letters, numbers, _ or .'))+'</div>'+
+      (S.google ? '' : '<label class="f" for="suPass">'+esc(t('Password'))+'</label><input type="password" id="suPass" autocomplete="new-password" maxlength="128" value="'+esc(F.password||'')+'">'+
+        '<div class="hint">'+esc(t('At least 8 characters. Write it down somewhere safe — there’s no email to reset it.'))+'</div>'+
+        '<label class="f" for="suPass2">'+esc(t('The password again'))+'</label><input type="password" id="suPass2" autocomplete="new-password" maxlength="128" value="'+esc(F.password2||'')+'">')+
       '<label class="f" for="suName">'+esc(t('Your name'))+'</label><input type="text" id="suName" maxlength="60" value="'+esc(F.name)+'">'+
       '<label class="f" for="suYear">'+esc(t('The year you were born'))+'</label>'+
       '<select id="suYear"><option value="">'+esc(t('Choose…'))+'</option>'+years+'</select>'+
@@ -233,17 +242,21 @@ function signupHtml(){
 var suTimer=null;
 function bindSignup_(){
   var u=document.getElementById('suUser'); if(!u) return;
-  var keep=function(){ var F=S.signup; F.username=u.value.trim().toLowerCase(); F.name=document.getElementById('suName').value; F.birthYear=document.getElementById('suYear').value; F.code=document.getElementById('suCode').value; };
+  var keep=function(){ var F=S.signup; F.username=u.value.trim().toLowerCase(); F.name=document.getElementById('suName').value; F.birthYear=document.getElementById('suYear').value; F.code=document.getElementById('suCode').value;
+    if(document.getElementById('suPass')){ F.password=document.getElementById('suPass').value; F.password2=document.getElementById('suPass2').value; } };
   u.oninput=function(){ keep(); S.signup.free=null; var hint=document.getElementById('suUserHint'); hint.textContent=t('3–20 letters, numbers, _ or .');
     clearTimeout(suTimer); suTimer=setTimeout(function(){ if(!S.signup) return; var v=S.signup.username; if(v.length<3) return;
       api('checkUsername',[v]).then(function(d){ if(!S.signup || S.signup.username!==v || !document.getElementById('suUserHint')) return; S.signup.free=!!(d && d.free); hint.textContent = d && d.err==='bad' ? t('3–20 letters, numbers, _ or .') : (d && d.free ? t('✓ Free') : t('That username is taken.')); }); }, 350); };
-  ['suName','suYear','suCode'].forEach(function(id){ document.getElementById(id).oninput=keep; document.getElementById(id).onchange=keep; });
+  ['suName','suYear','suCode','suPass','suPass2'].filter(function(id){ return document.getElementById(id); }).forEach(function(id){ document.getElementById(id).oninput=keep; document.getElementById(id).onchange=keep; });
   document.getElementById('suCancel').onclick=function(){ S.signup=null; S.google=null; S.view='signin'; render(); };
   document.getElementById('suGo').onclick=function(){
     keep(); clearTimeout(suTimer); var F=S.signup;
     if(!F.birthYear){ showMsg(t('Please choose the year you were born.')); return; }
+    if(!S.google){ if((F.password||'').length<8){ showMsg(t('Use at least 8 characters for your password.')); return; } if(F.password!==F.password2){ showMsg(t('The two passwords aren’t the same.')); return; } }
     S.busy=true; render();
-    api('register',[S.google, { username:F.username, name:F.name, birthYear:Number(F.birthYear), code:F.code, lang:LANG }]).then(function(d){
+    var info={ username:F.username, name:F.name, birthYear:Number(F.birthYear), code:F.code, lang:LANG };
+    if(!S.google) info.password=F.password;
+    (S.google ? api('register',[S.google, info]) : api('registerPassword',[info])).then(function(d){
       S.busy=false;
       if(d && d.ok){ lsDel('gpa-join'); JOIN=''; S.signup=null; afterSignIn_(d); if(d.joined) showMsg(gpT('You joined {team}!',{team:d.joined.name})); return; }
       if(d && d.err==='google'){ S.view='signin'; }
@@ -484,6 +497,7 @@ function meHtml(){
     '<label class="f">'+esc(t('Language'))+'</label><div class="seg"><button data-lang="km" class="'+(LANG==='km'?'on':'')+'">ខ្មែរ</button><button data-lang="en" class="'+(LANG==='en'?'on':'')+'">English</button></div>'+
     '<label class="f">'+esc(t('Appearance'))+'</label><div class="seg">'+[['auto','Auto'],['light','Light'],['dark','Dark']].map(function(x){ var cur=lsGet('gpa-theme')||'auto'; return '<button data-theme="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
     '<button class="btn" id="pfSave">'+esc(t('Save'))+'</button></div>'+
+    passwordCardHtml_()+
     remindersCardHtml_()+
     (me.blocked?'<button class="linkbtn" id="goBlocked">🚫 '+esc(gpT('People you’ve blocked ({n})',{n:me.blocked}))+'</button>':'')+
     '<button class="linkbtn" id="signOut">'+esc(t('Sign out'))+'</button>';
@@ -940,6 +954,12 @@ function bind(){
   all('[data-tab]', function(b){ S.back=[]; S.view=b.getAttribute('data-tab'); if(S.view!=='me') refresh_(); if(S.view==='teams') feedLoad_(); render(); window.scrollTo(0,0); });
   all('[data-back]', function(){ goBack(); });
   on('googleBtn', function(){ if(!S.busy) signIn_(); });
+  on('liNew', function(){ S.google=null; S.signup={ name:'', username:'', birthYear:'', code:JOIN, free:null, password:'', password2:'' }; S.view='signup'; render(); });
+  var lp=$('liPass'); if(lp) lp.onkeydown=function(e){ if(e.key==='Enter') $('liGo').click(); };
+  on('liGo', function(){ if(S.busy) return; var un=$('liUser').value.trim(), pw=$('liPass').value;
+    if(!un || !pw){ showMsg(t('That username or password isn’t right.')); return; }
+    S.busy=true; render();
+    api('loginPassword',[un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ afterSignIn_(d); return; } failMsg(d); render(); var x=$('liUser'); if(x) x.value=un; }); });
   bindSignup_();
   if(!AUTH || !S.me) return;
 
@@ -1112,6 +1132,12 @@ function bind(){
   on('goLearn', function(){ S.back=[]; khOpen_(); });
   if(S.view==='library') bindLibrary_();
   bindReminders_();
+  on('pwSave', busyOnce_(function(){ var nw=$('pwNew').value, cur=$('pwCur') ? $('pwCur').value : '';
+    if(nw.length<8){ showMsg(t('Use at least 8 characters for your password.')); return; }
+    return call('setPassword', cur, nw).then(function(d){ if(d && d.ok){ S.me=d.me; showMsg(t('Saved.')); render(); } else failMsg(d); }); }));
+  on('arGo', busyOnce_(function(){ var un=$('arUser').value.trim(); if(!un) return;
+    if(!confirm(gpT('Reset the password for @{u}? They will be signed out everywhere.',{u:un.replace(/^@/,'')}))) return;
+    return call('adminResetPassword', un).then(function(d){ if(d && d.ok){ S.resetResult=d; render(); } else { S.resetResult=null; failMsg(d); } }); }));
   bindKhmer_();
   if(S.view==='team' && S.team) loadPhotos_(S.team.people);
   if(S.view==='teams' && S.feed===null && (S.teams||[]).length && !S.feedAsked){ S.feedAsked=true; feedLoad_(); }
@@ -1210,6 +1236,8 @@ var REPORT_LABEL = { photo:'Their photo', name:'Their name', bio:'The line about
 function adminHtml(){
   var A=S.admin, h=backBtn(t('Me'))+'<h2>🛡️ '+esc(t('Reports'))+'</h2>';
   if(!A) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
+  h+=adminResetHtml_();
+  h+='<h3>🚩 '+esc(t('What people reported'))+'</h3>';
   h+='<div class="seg" style="margin-bottom:12px"><button data-adminall="0" class="'+(A.all?'':'on')+'">'+esc(t('Waiting'))+'</button><button data-adminall="1" class="'+(A.all?'on':'')+'">'+esc(t('All'))+'</button></div>';
   if(!A.reports.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('No reports waiting. 🙌'))+'</p></div>';
   A.reports.forEach(function(r){
@@ -1231,7 +1259,24 @@ function adminHtml(){
   });
   return h;
 }
+function adminResetHtml_(){
+  var R=S.resetResult;
+  return '<h3>🔑 '+esc(t('Reset a password'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(t('For someone who forgot theirs: you get a one-time password to give them, and they’re signed out everywhere.'))+'</p>'+
+    '<div class="atRow"><span>@</span><input type="text" id="arUser" autocapitalize="none" maxlength="20" placeholder="'+esc(t('Username'))+'"><button class="btn small" id="arGo">'+esc(t('Reset'))+'</button></div>'+
+    (R ? '<div class="banner" style="margin-top:10px">'+esc(gpT('One-time password for @{u}:',{u:R.username}))+' <b class="bigPw">'+esc(R.password)+'</b><div class="hint">'+esc(t('Give it to them in person. They can change it on Me.'))+'</div></div>' : '')+'</div>';
+}
 function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all }; render(); } else { failMsg(d); goBack('me'); } }); }
+
+/* ---------------- my password (Me) ---------------- */
+function passwordCardHtml_(){
+  var has=S.me.hasPassword;
+  return '<h3>🔑 '+esc(t('Password'))+'</h3><div class="card">'+
+    (has ? '<label class="f" for="pwCur">'+esc(t('Current password'))+'</label><input type="password" id="pwCur" autocomplete="current-password" maxlength="128">'
+         : '<p class="sub" style="margin:0 0 4px">'+esc(t('Add a password so you can sign in with your username on any phone.'))+'</p>')+
+    '<label class="f" for="pwNew">'+esc(t('New password'))+'</label><input type="password" id="pwNew" autocomplete="new-password" maxlength="128">'+
+    '<div class="hint">'+esc(t('At least 8 characters.'))+'</div>'+
+    '<button class="btn small" id="pwSave" style="margin-top:8px">'+esc(has?t('Change my password'):t('Add a password'))+'</button></div>';
+}
 
 /* ---------------- reminders on the phone (Me) ----------------
    Copied from the Impact app: one reminder a day at the hour you pick, only when there's
@@ -1323,5 +1368,6 @@ function confettiAt_(el){
 /* ---------------- start ---------------- */
 if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.serviceWorker.register('sw.js').catch(function(){}); } catch(e){}
 /* Start once every script is in (library-app.js and learn.js load after this file and use S). */
-function start_(){ if(AUTH) bootNow_(); else render(); }
+function start_(){ if(AUTH) bootNow_(); else render();
+  api('authConfig').then(function(c){ S.authCfg=c||{}; if(!AUTH && !typing_()) render(); }); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();

@@ -108,3 +108,9 @@ the account that owns the repo.
   with GPA_ADMIN_EMAILS set; Uriah links it to the repo, adds the domain and the Google key.
 - Built phone reminders (branch `reminders`), the Impact app's web push: the app makes its own
   keys, so nothing to paste into Netlify.
+- The site was uploaded by hand (Uriah allowed api.netlify.com and netlify-mcp.netlify.app in this
+  environment's network settings): live at gonpreah-app.netlify.app, not yet linked to GitHub, so
+  each merge must be uploaded again. gonpreah.org's DNS is at Wix (impact.gonpreah.org is a CNAME
+  there); app.gonpreah.org needs a CNAME `app` → gonpreah-app.netlify.app and the domain added in Netlify.
+- Uriah: "just get it up and running" — added username-and-password sign-in, so the app works
+  without the Google key.

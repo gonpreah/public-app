@@ -273,7 +273,33 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   await ctx.close();
 }
 
-/* ---------- 11. Khmer ---------- */
+/* ---------- 11. a username and password, no Google ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); } catch (e) {} });
+  const q = await ctx.newPage(); q.on('pageerror', x => errors.push('password: ' + x.message));
+  await q.goto(base + '/'); await q.waitForSelector('#liNew');
+  await q.click('#liNew'); await q.waitForSelector('#suPass');
+  await q.fill('#suUser', 'kosal'); await q.fill('#suPass', 'my good password'); await q.fill('#suPass2', 'not the same');
+  await q.fill('#suName', 'Kosal Meas'); await q.selectOption('#suYear', '2001');
+  await q.click('#suGo'); await q.waitForTimeout(200);
+  ok('sign-up with a password checks the two match', /aren’t the same/.test(await q.$eval('#msg', e => e.textContent)));
+  await q.fill('#suPass2', 'my good password'); await q.click('#suGo');
+  await q.waitForSelector('nav.bottom button[data-tab="home"]');
+  ok('an account made with a username and password', /Kosal/.test(await text(q)));
+  await q.evaluate(() => { AUTH = null; localStorage.removeItem('gpa-auth'); S.me = null; S.view = 'signin'; render(); });
+  await q.waitForSelector('#liGo');
+  await q.fill('#liUser', 'kosal'); await q.fill('#liPass', 'wrong password'); await q.click('#liGo'); await q.waitForTimeout(500);
+  ok('a wrong password is turned away', /isn’t right/.test(await q.$eval('#msg', e => e.textContent)) && !!(await q.$('#liGo')));
+  await q.fill('#liPass', 'my good password'); await q.click('#liGo');
+  await q.waitForSelector('nav.bottom button[data-tab="home"]');
+  ok('… and the right one signs in', /Kosal/.test(await text(q)));
+  await q.click('nav.bottom button[data-tab="me"]'); await q.waitForSelector('#pwSave');
+  ok('Me has the password card', /Change my password/.test(await text(q)));
+  await ctx.close();
+}
+
+/* ---------- 12. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -284,7 +310,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 12. the page fits a phone ---------- */
+/* ---------- 13. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

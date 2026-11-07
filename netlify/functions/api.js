@@ -154,7 +154,10 @@ async function auth_(uid, tok) {
    they see reports and can remove a photo or a line, suspend an account or close a team.
    The account keeps only a hash of its Google email (eh), so the list can change any time. */
 function adminHashes_() { return String(process.env.GPA_ADMIN_EMAILS || '').toLowerCase().split(/[\s,;]+/).filter(Boolean).map(sha_); }
-function isAdmin_(u) { return !!(u && u.eh && adminHashes_().indexOf(u.eh) > -1); }
+/* …or whose username is in GPA_ADMIN_USERNAMES (for accounts with a password, not Google).
+   Set it only after that person has made their account, so nobody else can claim the name. */
+function adminUsernames_() { return String(process.env.GPA_ADMIN_USERNAMES || '').toLowerCase().split(/[\s,;]+/).filter(Boolean); }
+function isAdmin_(u) { return !!(u && ((u.eh && adminHashes_().indexOf(u.eh) > -1) || adminUsernames_().indexOf(u.username) > -1)); }
 /* Blocking works both ways: neither sees the other. */
 function blocked_(a, b) { return !!(a && b && (((a.blocked || []).indexOf(b.id) > -1) || ((b.blocked || []).indexOf(a.id) > -1))); }
 function gone_(u) { return !u || u.closed || u.suspended; }
@@ -319,7 +322,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], admin: isAdmin_(u), blocked: (u.blocked || []).length
+    plan: planOf_(u), tasks: u.tasks || [], admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -369,9 +372,76 @@ async function checkUsername(name) {
   return { ok: true, free: !(await readJSON('uname:' + n, null)) };
 }
 
-async function register(token, p) {
-  const g = await verifyGoogle_(token);
-  if (!g) return { ok: false, err: 'google' };
+/* ---------------- username and password (Nov 2026: "a basic login besides Google") ----------------
+   A password is kept only as a salted scrypt hash (u.pw). After PW_MAX_FAILS wrong tries in a
+   row an account locks for PW_LOCK_MIN minutes. There is no email, so a forgotten password is
+   reset by the admin (adminResetPassword), who gets a one-time password to pass on. */
+const PW_MIN = 8, PW_MAX = 128, PW_MAX_FAILS = 8, PW_LOCK_MIN = 15;
+function pwHash_(pw, salt) { return crypto.scryptSync(String(pw), salt, 32, { N: 16384, r: 8, p: 1 }).toString('hex'); }
+function cleanPassword_(pw) { const x = typeof pw === 'string' ? pw : ''; return x.length >= PW_MIN && x.length <= PW_MAX ? x : null; }
+function makePw_(pw) { const salt = crypto.randomBytes(16).toString('hex'); return { salt: salt, hash: pwHash_(pw, salt), at: new Date().toISOString() }; }
+function pwOk_(u, pw) { return !!(u && u.pw && typeof pw === 'string' && pw.length <= PW_MAX && safeEq_(pwHash_(pw, u.pw.salt), u.pw.hash)); }
+async function registerPassword(p) {
+  p = p && typeof p === 'object' ? p : {};
+  const pw = cleanPassword_(p.password);
+  if (!pw) return { ok: false, err: 'password' };
+  return register(null, p, makePw_(pw));
+}
+async function loginPassword(username, password) {
+  const n = cleanUsername_(username);
+  const map = n ? await readJSON('uname:' + n, null) : null;
+  const u0 = map ? await readJSON('u:' + map.id, null) : null;
+  if (!u0 || u0.closed) return { ok: false, err: 'login' };
+  if (u0.suspended) return { ok: false, err: 'suspended' };
+  if (u0.pwLock && u0.pwLock.until && Date.parse(u0.pwLock.until) > Date.now()) return { ok: false, err: 'locked' };
+  if (!u0.pw) return { ok: false, err: 'google_only' };
+  let tok = null;
+  const good = pwOk_(u0, password);
+  const res = await mutate_('u:' + u0.id, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'login' };
+    if (!good) {
+      const lock = u.pwLock || {}, expired = !!(lock.until && Date.parse(lock.until) <= Date.now());
+      const f = (expired ? 0 : (lock.n || 0)) + 1;   // a lock that has run out starts the count again
+      u.pwLock = f >= PW_MAX_FAILS ? { n: f, until: new Date(Date.now() + PW_LOCK_MIN * 60000).toISOString() } : { n: f };
+      return { ok: false, err: f >= PW_MAX_FAILS ? 'locked' : 'login' };
+    }
+    delete u.pwLock; tok = addToken_(u); u.seen = today_();
+    return { ok: true };
+  });
+  if (!res.ok) return res;
+  const u = await readJSON('u:' + u0.id, null);
+  return { ok: true, uid: u.id, token: tok, me: selfOut_(u) };
+}
+/* Set or change my password. With a password already, the current one is needed. */
+async function setPassword(uid, tok, current, next) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (me.pw && !pwOk_(me, current)) return { ok: false, err: 'current' };
+  const pw = cleanPassword_(next);
+  if (!pw) return { ok: false, err: 'password' };
+  await mutate_('u:' + uid, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.pwLock; } return { ok: true }; });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* The admin gives someone who forgot their password a one-time one; it signs them out everywhere. */
+async function adminResetPassword(uid, tok, username) {
+  const me = await auth_(uid, tok);
+  if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
+  const n = cleanUsername_(username), map = n ? await readJSON('uname:' + n, null) : null;
+  if (!map || map.id === uid) return { ok: false, err: 'none' };
+  const A = 'abcdefghjkmnpqrstuvwxyz23456789', b = crypto.randomBytes(10);
+  let temp = ''; for (let i = 0; i < 10; i++) temp += A[b[i] % A.length];
+  const res = await mutate_('u:' + map.id, null, function (u) {
+    if (!u || u.closed) return { abort: true, ok: false, err: 'none' };
+    u.pw = makePw_(temp); u.tokens = []; delete u.pwLock;
+    return { ok: true };
+  });
+  return res.ok ? { ok: true, username: n, password: temp } : res;
+}
+
+/* Google (token) or a password (pw, from registerPassword). */
+async function register(token, p, pw) {
+  let g = null;
+  if (!pw) { g = await verifyGoogle_(token); if (!g) return { ok: false, err: 'google' }; }
   p = p && typeof p === 'object' ? p : {};
   const username = cleanUsername_(p.username);
   if (!username) return { ok: false, err: 'username' };
@@ -380,18 +450,19 @@ async function register(token, p) {
   const by = Number(p.birthYear), y = thisYear_();
   if (!(by >= y - 100 && by <= y)) return { ok: false, err: 'birthYear' };
   if (y - by < MIN_AGE) return { ok: false, err: 'too_young' };   // even at the most, they are under 13
-  const gkey = 'gsub:' + sha_(g.sub);
-  if (await readJSON(gkey, null)) return { ok: false, err: 'exists' };
+  const gkey = g ? 'gsub:' + sha_(g.sub) : null;
+  if (gkey && await readJSON(gkey, null)) return { ok: false, err: 'exists' };
   if (await readJSON('uname:' + username, null)) return { ok: false, err: 'taken' };
   const id = 'u' + crypto.randomBytes(9).toString('hex');
   const u = {
     id: id, username: username, name: name, birthYear: by, lang: p.lang === 'en' ? 'en' : 'km',
     created: new Date().toISOString(), seen: today_(), teams: [], habits: [], days: {}, weeks: {}, share: {},
-    eh: g.email ? sha_(g.email) : ''
+    eh: g && g.email ? sha_(g.email) : ''
   };
+  if (pw) u.pw = pw;
   const tok = addToken_(u);
   await writeJSON('uname:' + username, { id: id });
-  await writeJSON(gkey, { id: id });
+  if (gkey) await writeJSON(gkey, { id: id });
   await writeJSON('u:' + id, u);
   await mutate_('people', [], function (rows) { rows.push({ id: id, username: username, name: name, minor: isMinor_(u) }); return { ok: true }; });
   let joined = null;
@@ -1473,7 +1544,7 @@ async function signOut(uid, tok) {
 }
 
 export const HANDLERS = {
-  authConfig, loginGoogle, checkUsername, register, boot, saveProfile, savePhoto, photos,
+  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask,
   coachAsk, coachAnswer, coachings, coaching, coachAct,

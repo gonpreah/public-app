@@ -277,7 +277,36 @@ ok('closing a team takes everyone out of it, and its code stops working', (await
 ok('the admin sees past reports too', (await H.adminReports(F.uid, F.token, true)).reports.length === 3);
 delete process.env.GPA_ADMIN_EMAILS;
 
-/* ---------- 11. the door ---------- */
+/* ---------- 11. username and password ---------- */
+ok('a password must be 8 characters or more', (await H.registerPassword({ username: 'kosal', name: 'Kosal Meas', birthYear: 2001, password: 'short' })).err === 'password');
+ok('under 13 can’t make an account with a password either', (await H.registerPassword({ username: 'kidpw', name: 'Kid Pw', birthYear: Y - 12, password: 'longenough' })).err === 'too_young');
+ok('a taken username is refused', (await H.registerPassword({ username: 'sokha', name: 'Someone', birthYear: 2001, password: 'longenough' })).err === 'taken');
+const P = await H.registerPassword({ username: 'Kosal', name: 'Kosal Meas', birthYear: 2001, password: 'my good password' });
+ok('an account with a username and password', P.ok && P.me.username === 'kosal' && P.me.hasPassword && P.me.minor === false);
+ok('… never stores the password itself', !JSON.stringify(globalThis.__gpaStore._m.get('u:' + P.uid)).includes('my good password'));
+const PM = await H.registerPassword({ username: 'srey', name: 'Srey Pich', birthYear: Y - 15, password: 'another pass' });
+ok('a 15-year-old with a password is under 18, as with Google', PM.ok && PM.me.minor === true && !(await H.searchPeople(P.uid, P.token, 'srey')).people.length);
+let pl = await H.loginPassword('KOSAL', 'my good password');
+ok('sign in with username (any case) and password', pl.ok && pl.uid === P.uid && pl.token !== P.token && (await H.boot(P.uid, pl.token)).ok);
+ok('a wrong password is refused', (await H.loginPassword('kosal', 'wrong password')).err === 'login');
+ok('an unknown username says the same', (await H.loginPassword('nobody_here', 'my good password')).err === 'login');
+ok('a Google account has no password to sign in with', (await H.loginPassword('sokha', 'anything at all')).err === 'google_only');
+for (let i = 0; i < 6; i++) await H.loginPassword('kosal', 'wrong password');
+ok('after 8 wrong tries the account locks', (await H.loginPassword('kosal', 'wrong password')).err === 'locked' && (await H.loginPassword('kosal', 'my good password')).err === 'locked');
+globalThis.__gpaStore._m.set('u:' + P.uid, JSON.stringify(Object.assign(JSON.parse(globalThis.__gpaStore._m.get('u:' + P.uid)), { pwLock: { n: 8, until: new Date(Date.now() - 1000).toISOString() } })));
+ok('… and opens again after 15 minutes', (await H.loginPassword('kosal', 'my good password')).ok);
+ok('changing it needs the current one', (await H.setPassword(P.uid, P.token, 'not it', 'a new password')).err === 'current');
+ok('… and a long enough new one', (await H.setPassword(P.uid, P.token, 'my good password', 'short')).err === 'password');
+ok('a password is changed', (await H.setPassword(P.uid, P.token, 'my good password', 'a new password')).ok && (await H.loginPassword('kosal', 'a new password')).ok);
+ok('a Google account can add a password', (await H.setPassword(A.uid, A.token, '', 'sokha password')).ok && (await H.loginPassword('sokha', 'sokha password')).ok);
+ok('only the admin can reset a password', (await H.adminResetPassword(P.uid, P.token, 'srey')).err === 'not_admin');
+process.env.GPA_ADMIN_USERNAMES = 'kosal';
+ok('an admin named by username', (await H.boot(P.uid, P.token)).me.admin === true);
+const rp = await H.adminResetPassword(P.uid, P.token, 'srey');
+ok('the admin resets a forgotten password: a one-time one, and old sign-ins end', rp.ok && rp.password.length === 10 && (await H.boot(PM.uid, PM.token)).err === 'auth' && (await H.loginPassword('srey', rp.password)).ok);
+delete process.env.GPA_ADMIN_USERNAMES;
+
+/* ---------- 12. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

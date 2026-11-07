@@ -568,5 +568,11 @@ var APP_KM = {
   "{name} finished the reading plan {plan} 📖": "{name} បានបញ្ចប់ផែនការអាន {plan} 📖",
   "you finishing a reading plan": "ការបញ្ចប់ផែនការអានរបស់អ្នក",
   "{n} days": "{n} ថ្ងៃ",
-  "Answered": "បានឆ្លើយតប"
+  "Answered": "បានឆ្លើយតប",
+  /* streak freezes, the team's week */
+  "🧊 A streak freeze saved your {n}-day streak!": "🧊 ការការពារស្ទ្រីកបានជួយសង្គ្រោះស្ទ្រីក {n} ថ្ងៃរបស់អ្នក!",
+  "Streak freezes": "ការការពារស្ទ្រីក",
+  "{n} streak freezes — if you miss a day, one saves your streak.": "ការការពារស្ទ្រីក {n} — បើអ្នករំលងមួយថ្ងៃ វានឹងជួយសង្គ្រោះស្ទ្រីករបស់អ្នក។",
+  "Every 7 days in a row earns a streak freeze, to save your streak on a day you miss.": "រៀងរាល់ ៧ ថ្ងៃជាប់គ្នា អ្នកទទួលបានការការពារស្ទ្រីកមួយ ដើម្បីសង្គ្រោះស្ទ្រីករបស់អ្នកនៅថ្ងៃដែលអ្នករំលង។",
+  "This week": "សប្តាហ៍នេះ"
 };

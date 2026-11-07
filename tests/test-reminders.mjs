@@ -105,4 +105,19 @@ await H.pushSubscribe(M.uid, M.token, pk.sub, 'km');
 sent = []; await H.pushTest(M.uid, M.token);
 ok('a phone in Khmer gets Khmer (an iPhone too)', /ការរំលឹក/.test(decrypt(pk, sent[0].opts.body).body) && decrypt(pk, sent[0].opts.body).title === 'កូនព្រះ');
 ok('turning it off on a phone drops it', (await H.pushUnsubscribe(M.uid, M.token, pk.sub.endpoint)).ok && get('pushSubs').length === 0);
+/* ---------- 4. a morning nudge, and today's Bible reading ---------- */
+const pm2 = phone();
+await H.pushSubscribe(M.uid, M.token, pm2.sub, 'en');
+await H.pushSavePrefs(M.uid, M.token, { hour: 8 });
+await H.reading(M.uid, M.token, 'start', { plan: 'john' });
+mem.delete('pushRun'); sent = [];
+await runReminders(new Date(today + 'T01:00:00Z'));   // 08:00 in Phnom Penh
+const mb = decrypt(pm2, sent[0].opts.body).body;
+ok('a morning reminder asks for today’s 3 and points to today’s reading', /3 things for today/.test(mb) && /Bible reading is waiting/.test(mb), mb);
+await H.saveTop(M.uid, M.token, today, [{ text: 'Study' }]);
+await H.reading(M.uid, M.token, 'tick', { plan: 'john', day: 0, done: true });
+mem.delete('pushRun'); sent = [];
+await runReminders(new Date(today + 'T01:00:00Z'));
+const mb2 = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
+ok('… and stops asking once they’re done', !/3 things for today/.test(mb2) && !/Bible reading/.test(mb2), mb2);
 ok.done();

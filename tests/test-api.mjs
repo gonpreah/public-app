@@ -404,7 +404,32 @@ r = await H.prayer(F2.uid, F2.token, 'answer', { id: yid, on: true });
 ok('a prayer is added and marked answered', r.me.prayers[0].answered === today);
 ok('prayers and reading are never on anyone’s card', !/grandmother|hard_days|"prayers"|"reading"/.test(JSON.stringify((await H.person(A.uid, A.token, F2.uid)).person)));
 
-/* ---------- 16. the door ---------- */
+/* ---------- 16. streak freezes and the week's XP ---------- */
+const Z = await H.registerPassword({ username: 'freeze_t', name: 'Freeze Test', birthYear: 2001, password: 'freeze password' });
+await H.saveHabits(Z.uid, Z.token, [{ id: 'bible' }]);
+const day = n => new Date(Date.parse(today) + n * 864e5).toISOString().slice(0, 10);
+const setU = (id, f) => { const u = JSON.parse(globalThis.__gpaStore._m.get('u:' + id)); f(u); globalThis.__gpaStore._m.set('u:' + id, JSON.stringify(u)); };
+/* six days done before today; ticking today makes seven and earns a freeze */
+setU(Z.uid, u => { u.days = {}; for (let i = -6; i <= -1; i++) u.days[day(i)] = { bible: true }; });
+r = await H.tickHabit(Z.uid, Z.token, today, 'bible', true);
+ok('a 7-day streak earns a streak freeze', r.me.stats.streak === 7 && r.me.stats.freezes === 1);
+await H.tickHabit(Z.uid, Z.token, today, 'bible', false); r = await H.tickHabit(Z.uid, Z.token, today, 'bible', true);
+ok('… once, however often today is ticked', r.me.stats.freezes === 1);
+/* now yesterday is missed: the freeze covers it at start-up */
+setU(Z.uid, u => { u.days = {}; for (let i = -8; i <= -2; i++) u.days[day(i)] = { bible: true }; u.seen = day(-1); u.freezes = 1; u.frozen = []; });
+let zb = await H.boot(Z.uid, Z.token);
+ok('a missed day uses a freeze and the streak lives on', zb.froze.length === 1 && zb.froze[0] === day(-1) && zb.me.stats.streak === 7 && zb.me.stats.freezes === 0);
+setU(Z.uid, u => { u.days = {}; for (let i = -9; i <= -3; i++) u.days[day(i)] = { bible: true }; u.seen = day(-1); u.freezes = 1; u.frozen = []; });
+zb = await H.boot(Z.uid, Z.token);
+ok('two missed days and one freeze: the freeze is kept and the streak ends', zb.froze.length === 0 && zb.me.stats.streak === 0 && zb.me.stats.freezes === 1);
+/* the week's XP, for the team's leaderboard */
+const ZT = await H.createTeam(Z.uid, Z.token, { name: 'Freeze crew' });
+await H.joinTeam(Q.uid, Q.token, ZT.team.code);
+await H.saveProfile(Q.uid, Q.token, { share: { level: true } });
+const zq = (await H.team(Z.uid, Z.token, ZT.team.id)).team.people.find(p => p.id === Q.uid);
+ok('teammates see the XP earned this week, for the leaderboard', zq.xpWeek > 0 && zq.level);
+
+/* ---------- 17. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

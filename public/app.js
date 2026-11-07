@@ -285,6 +285,7 @@ function bootNow_(){
     if(d && d.ok){
       adopt_(d);
       focusResume_();
+      if(d.froze && d.froze.length) setTimeout(function(){ showMsg(gpT('🧊 A streak freeze saved your {n}-day streak!',{n:(S.me.stats||{}).streak||0})); }, 600);
       if(JOIN){ var c=JOIN; JOIN=''; lsDel('gpa-join'); call('joinTeam', c).then(function(j){ if(j && j.ok){ showMsg(j.already ? gpT('You’re already in {team}.',{team:j.team.name}) : gpT('You joined {team}!',{team:j.team.name})); refresh_(); } else failMsg(j); }); }
     } else if(d && d.err!=='auth' && !S.me){ showMsg(t('No connection — try again.')); }
     render();
@@ -304,7 +305,7 @@ function homeHtml(){
   var h='<div class="heroCard">'+
     '<div class="heroTop">'+faceHtml(me,56)+'<div style="flex:1"><div class="heroHi">'+esc(t(hello))+'</div><div class="heroName">'+esc(firstName_(me.name))+'</div>'+levelLineHtml_()+'</div><button class="heroShare" id="goShare" aria-label="'+esc(t('Share my week'))+'">📤</button></div>'+
     '<div class="heroStats">'+
-      '<div><b>'+(st.streak||0)+'</b><span>🔥 '+esc(t('day streak'))+'</span></div>'+
+      '<div><b>'+(st.streak||0)+(st.freezes?'<i class="frz" title="'+esc(t('Streak freezes'))+'">🧊'+st.freezes+'</i>':'')+'</b><span>🔥 '+esc(t('day streak'))+'</span></div>'+
       '<div><b>'+(st.week==null?'—':st.week+'%')+'</b><span>🗒️ '+esc(t('this week'))+'</span></div>'+
       '<div><b>'+focusShort_((dayOf_(todayStr()).focus)||0)+'</b><span>⏱ '+esc(t('focus today'))+'</span></div>'+
     '</div>'+xpBarHtml_()+'</div>';
@@ -334,7 +335,9 @@ function habitsCardHtml(){
   list.forEach(function(x){ var m=habitMeta(x), on=!!done[x.id];
     h+='<button class="habitTile'+(on?' on':'')+'" data-habit="'+esc(x.id)+'" aria-pressed="'+on+'"><span class="hIc">'+esc(m.icon)+'</span><span class="hLb">'+esc(m.label)+'</span>'+(on?'<span class="hOk">✓</span>':'')+'</button>';
   });
-  return h+'</div><button class="linkbtn" id="habitPick">'+esc(t('Change my habits'))+'</button></div>';
+  var fz=(me.stats||{}).freezes||0;
+  h+='</div><div class="pmeta frzHint">🧊 '+esc(fz ? gpT('{n} streak freezes — if you miss a day, one saves your streak.',{n:fz}) : t('Every 7 days in a row earns a streak freeze, to save your streak on a day you miss.'))+'</div>';
+  return h+'<button class="linkbtn" id="habitPick">'+esc(t('Change my habits'))+'</button></div>';
 }
 function weekCardHtml(){
   var wk=mondayOf(todayStr()), goals=((S.me.weeks||{})[wk]||[]).slice();
@@ -404,6 +407,7 @@ function teamHtml(){
       '<div class="btnRow"><button class="btn small" id="shareCode" data-link="'+esc(link)+'">'+esc(t('Share the link'))+'</button><button class="btn small ghost" id="newCode">'+esc(t('New code'))+'</button></div>'+
       '<div class="hint">'+esc(t('Anyone with the code can join. Make a new one if it gets passed around.'))+'</div></div>';
   }
+  h+=leaderboardHtml_(T);
   h+=challengesHtml(T);
   h+=teamTasksHtml(T);
   h+=teamMixHtml(T.people);
@@ -1496,6 +1500,17 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- the team's week: who earned the most XP ----------------
+   Numbers only, from people who show their level (share.level). */
+function leaderboardHtml_(T){
+  var rows=(T.people||[]).filter(function(p){ return p.xpWeek>0; }).sort(function(a,b){ return b.xpWeek-a.xpWeek; }).slice(0,5);
+  if(rows.length<2) return '';
+  var medal=['🥇','🥈','🥉','4','5'];
+  return '<h3>🏆 '+esc(t('This week'))+'</h3><div class="card list">'+rows.map(function(p,i){
+    return '<div class="feedRow lbRow'+(p.id===S.me.id?' me':'')+'"><span class="lbRank">'+medal[i]+'</span>'+faceHtml(p,36)+'<span class="feedTx"><b>'+esc(firstName_(p.name))+'</b>'+(p.level?'<div class="pmeta">'+esc(p.level.icon+' '+gpT('Level {n}',{n:p.level.level}))+'</div>':'')+'</span><b class="lbXp">+'+p.xpWeek+' XP</b></div>';
+  }).join('')+'</div>';
 }
 
 /* ---------------- team challenges ----------------

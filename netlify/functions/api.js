@@ -172,7 +172,7 @@ function cleanUsername_(v) {
 }
 
 /* ---------------- what each person may show ---------------- */
-const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan', 'feed'];
+const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan', 'feed', 'focus'];
 function shareOf_(u) {
   const s = (u && u.share) || {}; const o = {};
   SHARE_KEYS.forEach(function (k) { o[k] = s[k] !== false; });
@@ -281,13 +281,72 @@ function weekPct_(goals) {
   return Math.round(goals.reduce(function (a, g) { return a + (Number(g.pct) || 0); }, 0) / goals.length);
 }
 /* What a person's progress looks like from outside: numbers, never words. */
+function focusWeek_(u, wk) {
+  const d = u.daily || {}; let m = 0;
+  for (let i = 0; i < 7; i++) { const x = d[addDays_(wk, i)]; if (x && x.focus) m += x.focus; }
+  return m;
+}
 function statsOf_(u) {
   const days = u.days || {}, wk = weekOf_(today_());
   return {
     streak: streakOf_(days), best: bestStreakOf_(days),
     week: weekPct_((u.weeks || {})[wk]), habits: (u.habits || []).length,
-    tests: (u.personality ? 1 : 0) + (u.gstrengths ? 1 : 0)
+    tests: (u.personality ? 1 : 0) + (u.gstrengths ? 1 : 0),
+    focusWeek: focusWeek_(u, wk)
   };
+}
+
+/* ---------------- Today: three things, focus time, the evening check-in ----------------
+   u.daily[date] = { top:[{text, done}] (up to 3), focus (minutes), sessions, mood (1–5),
+   grateful }. All of it is the person's own: others see only focus minutes this week, behind
+   share.focus. Kept DAILY_KEEP days. A date may be yesterday, today or tomorrow (planning
+   tomorrow in the evening; a phone a little off). */
+const DAILY_KEEP = 120, FOCUS_MIN = 5, FOCUS_MAX = 180, FOCUS_DAY_MAX = 16 * 60, FOCUS_MILESTONES = [2, 5, 10, 20, 30];
+function nearDay_(d) { const t = today_(); return isDay_(d) && (d === t || d === addDays_(t, -1) || d === addDays_(t, 1)); }
+function dailyMutate_(u, date, fn) {
+  u.daily = u.daily && typeof u.daily === 'object' ? u.daily : {};
+  const x = Object.assign({}, u.daily[date] || {});
+  fn(x);
+  u.daily[date] = x;
+  const cut = addDays_(today_(), -DAILY_KEEP);
+  Object.keys(u.daily).forEach(function (k) { if (k < cut) delete u.daily[k]; });
+}
+async function saveTop(uid, tok, date, items) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (!nearDay_(date)) return { ok: false, err: 'day' };
+  if (!Array.isArray(items)) return { ok: false, err: 'text' };
+  const clean = items.slice(0, 3).map(function (i) { return { text: str_(i && i.text, 100), done: !!(i && i.done) }; }).filter(function (i) { return i.text; });
+  await mutate_('u:' + uid, null, function (u) { if (u) dailyMutate_(u, date, function (x) { x.top = clean; }); return { ok: true }; });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+async function saveCheckin(uid, tok, date, c) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (!nearDay_(date)) return { ok: false, err: 'day' };
+  c = c && typeof c === 'object' ? c : {};
+  const mood = Number(c.mood);
+  if ([1, 2, 3, 4, 5].indexOf(mood) === -1) return { ok: false, err: 'mood' };
+  await mutate_('u:' + uid, null, function (u) { if (u) dailyMutate_(u, date, function (x) { x.mood = mood; x.grateful = str_(c.grateful, 200); }); return { ok: true }; });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* A focus session the phone timed: minutes, added to the day. Hours this week can make a
+   feed moment (FOCUS_MILESTONES). */
+async function logFocus(uid, tok, date, minutes) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (!nearDay_(date)) return { ok: false, err: 'day' };
+  const m = Math.round(Number(minutes));
+  if (!(m >= FOCUS_MIN && m <= FOCUS_MAX)) return { ok: false, err: 'minutes' };
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    const before = focusWeek_(u, weekOf_(date));
+    let over = false;
+    dailyMutate_(u, date, function (x) { if ((x.focus || 0) + m > FOCUS_DAY_MAX) { over = true; return; } x.focus = (x.focus || 0) + m; x.sessions = (x.sessions || 0) + 1; });
+    if (over) return { abort: true, ok: false, err: 'minutes' };
+    const after = before + m, wk = weekOf_(date);
+    FOCUS_MILESTONES.forEach(function (h) { if (before < h * 60 && after >= h * 60) addPost_(u, 'focus', wk + ':' + h); });
+    return { ok: true };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 
 /* ---------------- the feed's moments ----------------
@@ -296,7 +355,7 @@ function statsOf_(u) {
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams' };
+const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -322,7 +381,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw
+    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -335,6 +394,7 @@ function cardOut_(u, close) {
   if (sh.week && st.week !== null) o.week = st.week;
   if (sh.teams && close) o.teamCount = (u.teams || []).length;
   if (sh.plan) { const ps = planStats_(u); if (ps.goals || ps.reached) o.plan = ps; }   // counts, never the words
+  if (sh.focus && st.focusWeek) o.focusWeek = st.focusWeek;   // minutes, never what they worked on
   o.tests = st.tests;
   if (!minor && u.bio) o.bio = u.bio;
   return o;
@@ -1170,6 +1230,7 @@ function postOut_(u, x, viewer, teamNames) {
   const sh = shareOf_(u);
   if (sh.type && u.personality && u.personality.share !== false) { o.who.type = u.personality.type; o.who.sex = u.sex || ''; }
   if (x.kind === 'streak') o.n = x.n;
+  if (x.kind === 'focus') o.n = Number(String(x.n).split(':')[1]) || null;
   if (x.kind === 'type') o.n = x.n;
   if (x.kind === 'joined') o.team = teamNames[x.n] || null;   // the team's name only for someone in it
   return o;
@@ -1217,7 +1278,7 @@ async function cheersFor_(u) {
     if (x.at < cut || !(x.claps || []).length) continue;
     const names = [];
     for (const c of x.claps.slice(-2).reverse()) { const v = await readJSON('u:' + c, null); if (!gone_(v) && !blocked_(u, v)) names.push(isMinor_(v) ? firstName_(v.name) : v.name); }
-    out.push({ id: x.id, kind: x.kind, n: x.kind === 'streak' || x.kind === 'type' ? x.n : null, count: x.claps.length, names: names });
+    out.push({ id: x.id, kind: x.kind, n: x.kind === 'streak' || x.kind === 'type' ? x.n : x.kind === 'focus' ? Number(String(x.n).split(':')[1]) || null : null, count: x.claps.length, names: names });
   }
   return out.reverse().slice(0, 5);
 }
@@ -1550,6 +1611,7 @@ export const HANDLERS = {
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,
+  saveTop, saveCheckin, logFocus,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
 export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };

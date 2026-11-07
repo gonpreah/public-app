@@ -134,6 +134,15 @@ dropped. No library: RFC 8291 encryption and RFC 8292 signing with node crypto. 
 the notification. iPhones need the app on the Home Screen. tests/test-reminders.mjs decrypts
 what's sent as a phone would.
 
+## Today (Home) — the daily rhythm (Nov 2026, Uriah: "the app every gen Z Cambodian wants to use every day")
+Home opens with my **why**, then **Today's 3** (`saveTop`), the **focus timer** (view `focus`:
+15/25/50 min; the phone keeps the session in `gpa-focus` so it survives the screen locking;
+5+ minutes count, `logFocus`), habits, and from 5 pm the **evening check-in** (mood 1–5 and
+one thing I'm thankful for, `saveCheckin`). Sunday and Monday show **Your week** (habit days,
+focus, days all 3 done, steps, mood). Stored in `u.daily[date]` (120 days), all private: others
+see only focus minutes this week (`share.focus`), and 2/5/10/20/30 focus hours in a week is a
+feed moment.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.

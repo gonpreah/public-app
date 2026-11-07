@@ -299,7 +299,40 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   await ctx.close();
 }
 
-/* ---------- 12. Khmer ---------- */
+/* ---------- 12. Today: my why, three things, focus, the check-in ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); } catch (e) {} });
+  const q = await ctx.newPage(); q.on('pageerror', x => errors.push('today: ' + x.message)); q.on('dialog', d => d.accept());
+  await q.goto(base + '/'); await q.click('#liNew'); await q.waitForSelector('#suPass');
+  await q.fill('#suUser', 'thida'); await q.fill('#suPass', 'thida password'); await q.fill('#suPass2', 'thida password');
+  await q.fill('#suName', 'Thida Ros'); await q.selectOption('#suYear', '2002'); await q.click('#suGo');
+  await q.waitForSelector('[data-topin]');
+  ok('Home asks for my why and today’s three things', /Write your why/.test(await text(q)) && /three things that matter most today/.test(await text(q)));
+  await q.fill('[data-topin="0"]', 'Finish the essay'); await q.fill('[data-topin="1"]', 'Call Mum');
+  await q.click('#topSave'); await q.waitForSelector('[data-top="0"]');
+  await q.click('[data-top="1"]'); await q.waitForTimeout(500);
+  ok('today’s three save and tick', /1 of 2 done/.test(await text(q)));
+  await q.click('#goFocus'); await q.waitForSelector('#focusStart');
+  ok('focus offers today’s things to work on', !!(await q.$('[data-flabel="Finish the essay"]')) && !(await q.$('[data-flabel="Call Mum"]')));
+  await q.click('[data-fdur="15"]'); await q.click('[data-flabel="Finish the essay"]'); await q.click('#focusStart');
+  await q.waitForSelector('#focusLeft');
+  ok('the timer runs', /^1[45]:\d\d$/.test(await q.$eval('#focusLeft', e => e.textContent)));
+  /* the phone is put away for 15 minutes: the session ends while the app is closed */
+  await q.evaluate(() => { const f = JSON.parse(localStorage.getItem('gpa-focus')); f.start -= 15 * 60000; localStorage.setItem('gpa-focus', JSON.stringify(f)); });
+  await q.reload(); await q.waitForSelector('nav.bottom'); await q.waitForTimeout(1200);
+  ok('a session that ended while away is counted', await q.evaluate(() => (S.me.daily[S.today] || {}).focus === 15) && /15m/.test(await text(q)));
+  await q.click('#goFocus'); await q.waitForTimeout(300);
+  ok('… and the done screen offers to tick the thing off', /I finished: Finish the essay/.test(await text(q)));
+  await q.click('#focusTick'); await q.waitForTimeout(600); await q.click('#focusHome'); await q.waitForTimeout(300);
+  ok('ticked from the focus screen', /All done today/.test(await text(q)));
+  await q.evaluate(() => { S.checkinEdit = true; render(); });
+  await q.click('[data-mood="4"]'); await q.fill('#gratefulIn', 'My sister helped me'); await q.click('#checkSave'); await q.waitForTimeout(600);
+  ok('the evening check-in saves', /Thankful for/.test(await text(q)) && /My sister helped me/.test(await text(q)));
+  await ctx.close();
+}
+
+/* ---------- 13. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -310,7 +343,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 13. the page fits a phone ---------- */
+/* ---------- 14. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

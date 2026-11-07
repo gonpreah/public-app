@@ -416,6 +416,15 @@ ok('… and can cheer someone, once a day', !!(await a.$('.feedRow:has-text("Min
 ok('a member who isn’t a leader has no pulse', await (async () => { await m.click('nav.bottom button[data-tab="teams"]'); await m.waitForTimeout(400); if (!(await m.$('[data-team]'))) return true; await m.click('[data-team]'); await m.waitForTimeout(500); return !(await m.$('#goPulse')); })());
 await a.click('[data-back]'); await a.waitForTimeout(200);
 
+/* today's devotional */
+await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('#goDevo');
+ok('today’s devotional is on Home', /Today’s devotional/.test(await text(a)));
+await a.click('#goDevo'); await a.waitForSelector('#devoAmen');
+ok('… a passage to read first, a reflection, a question and a prayer', /Read first:/.test(await text(a)) && /Think about it/.test(await text(a)) && /Pray/.test(await text(a)));
+await a.click('#devoAmen'); await a.waitForTimeout(600);
+ok('… and Amen marks it read', /See you tomorrow/.test(await text(a)) && await a.evaluate(() => !!(S.me.daily[S.today] || {}).devo));
+await a.click('[data-back]');
+
 /* ---------- 17. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

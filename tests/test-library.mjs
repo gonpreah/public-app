@@ -29,5 +29,12 @@ const ywam = B.filter(b => /YWAM|Youth With A Mission/i.test(txt(b)) || /YWAM|�
 ok('no YWAM in any book, English or Khmer (Uriah: "leave out ywam stuff")', ywam.length === 0, ywam.map(b => b.id).join(' '));
 vm.runInContext(fs.readFileSync(new URL('../public/khmer-vocab.js', import.meta.url), 'utf8'), ctx);
 ok('… nor in Learn Khmer’s word lists', !/YWAM/i.test(JSON.stringify(ctx.GP_KHMER_VOCAB)) && !ctx.GP_KHMER_VOCAB.cats.some(c => c.id === 'ywam'));
+/* the daily devotionals (public/devotions.js) */
+vm.runInContext(fs.readFileSync(new URL('../public/devotions.js', import.meta.url), 'utf8'), ctx);
+const DV = ctx.GP_DEVOS, BOOKS = ['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel','1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs','Ecclesiastes','Song of Songs','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos','Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi','Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians','Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon','Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
+ok('a devotional for each day of the month, in order', DV.length === 31 && DV.every((d, i) => d.day === i + 1));
+ok('… each with a real passage to read (a reference only)', DV.every(d => BOOKS.includes(d.ref.replace(/\s+\d.*$/, ''))), DV.filter(d => !BOOKS.includes(d.ref.replace(/\s+\d.*$/, ''))).map(d => d.ref).join(' '));
+ok('… in English and Khmer, every part', DV.every(d => ['title', 'body', 'ask', 'pray'].every(k => d[k + '_en'] && /[ក-៿]/.test(d[k + '_km']))));
+ok('… quoting no Bible text', DV.every(d => !/["“”]/.test(d.body_en)));
 ok('none of the staff guides came across', !B.some(b => b.original || b.shelf === 'gp' || b.shelf === 'ywam'));
 ok.done();

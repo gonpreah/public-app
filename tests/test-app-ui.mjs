@@ -308,7 +308,7 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   await q.fill('#suUser', 'thida'); await q.fill('#suPass', 'thida password'); await q.fill('#suPass2', 'thida password');
   await q.fill('#suName', 'Thida Ros'); await q.selectOption('#suYear', '2002'); await q.click('#suGo');
   await q.waitForSelector('[data-topin]');
-  ok('Home asks for my why and today’s three things', /Write your why/.test(await text(q)) && /three things that matter most today/.test(await text(q)));
+  ok('Home asks what God made me for, and today’s three things', /Take the Life Journey/.test(await text(q)) && /three things that matter most today/.test(await text(q)));
   await q.fill('[data-topin="0"]', 'Finish the essay'); await q.fill('[data-topin="1"]', 'Call Mum');
   await q.click('#topSave'); await q.waitForSelector('[data-top="0"]');
   await q.click('[data-top="1"]'); await q.waitForTimeout(500);
@@ -425,7 +425,60 @@ await a.click('#devoAmen'); await a.waitForTimeout(600);
 ok('… and Amen marks it read', /See you tomorrow/.test(await text(a)) && await a.evaluate(() => !!(S.me.daily[S.today] || {}).devo));
 await a.click('[data-back]');
 
-/* ---------- 17. Khmer ---------- */
+/* ---------- 17. the Life Journey, and my vision ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const j = await ctx.newPage(); j.on('pageerror', x => errors.push('journey: ' + x.message)); j.on('dialog', d => d.accept());
+  await j.goto(base + '/'); await j.click('#liNew'); await j.waitForSelector('#suPass');
+  await j.fill('#suUser', 'jonah'); await j.fill('#suPass', 'jonah password'); await j.fill('#suPass2', 'jonah password');
+  await j.fill('#suName', 'Jonah Lim'); await j.selectOption('#suYear', '2003'); await j.click('#suGo');
+  await j.waitForSelector('#goJourney'); await j.click('#goJourney'); await j.waitForSelector('#jrGo');
+  ok('the Life Journey starts at stop 1 of 7', /Stop 1 of 7/.test(await text(j)) && /Where you come from/.test(await text(j)) && (await j.$$('.jrStop')).length === 7);
+  await j.click('#jrGo'); await j.waitForSelector('[data-jrc]');
+  for (const id of ['happy', 'hard', 'blessed', 'growing']) await j.click(`[data-jrc="${id}"]`);
+  ok('a question with chips keeps to its number', await j.$$eval('.jrChip.on', b => b.map(x => x.getAttribute('data-jrc')).join()) === 'hard,blessed,growing');
+  await j.click('#jrNext'); await j.fill('#jrText', 'Leading worship at camp'); await j.click('#jrNext');
+  ok('an empty question can be skipped', /Skip/.test(await j.$eval('#jrNext', b => b.textContent)) && /Only you will ever see this/.test(await text(j)));
+  await j.click('#jrNext'); await j.fill('#jrText', 'God takes care of us'); await j.click('#jrNext');
+  await j.waitForSelector('#jrOn');
+  ok('finishing a stop saves it, with XP', /Where you come from: done!/.test(await text(j)) && await j.evaluate(() => S.me.story.done.join() === 'home' && S.me.story.a.best === 'Leading worship at camp' && S.me.level.xp === 20));
+  await j.click('#jrLater2'); await j.waitForTimeout(300);
+  await j.click('nav.bottom button[data-tab="home"]'); await j.waitForTimeout(300);
+  ok('Home offers to continue the journey', /Continue your Life Journey · 1 of 7 stops/.test(await text(j)));
+  await j.click('#goJourney'); await j.waitForSelector('#jrGo');
+  ok('… which picks up at the next stop', /Who you are/.test(await text(j)));
+  const answers = { gifts: ['music', 'teach'], who: ['youth'], heart: ['hope'], fear: ['fail'], truth: ['with'], walk: ['team'], known: ['brave', 'faithful'], word: ['focus'] };
+  for (let guard = 0; guard < 60; guard++) {
+    if (await j.$('#levelOk')) await j.click('#levelOk');
+    if (await j.$('#jrGo')) { await j.click('#jrGo'); continue; }
+    if (await j.$('#jrOn')) { await j.click('#jrOn'); continue; }
+    if (await j.$('.jrBuild')) { await j.waitForSelector('#jrVision'); break; }
+    if (await j.$('#jrVision')) break;
+    const k = await j.evaluate(() => JR_STOPS[S.jr.s].qs[S.jr.q].k);
+    if (k === 'areas') await j.fill('#jrA_study', 'I teach English at a school');
+    else if (k === 'year') await j.fill('#jrText', 'I pass grade 12');
+    else if (answers[k]) for (const id of answers[k]) await j.click(`[data-jrc="${id}"]`);
+    await j.click('#jrNext'); await j.waitForTimeout(100);
+  }
+  const draft = await j.$eval('#jrVision', e => e.value);
+  ok('the app writes a vision from the answers', /I’m Jonah, a child of God, becoming someone brave and faithful\./.test(draft) && /gift for music and explaining and teaching, and I want to use it to help young people/.test(draft)
+    && /🎓 I teach English at a school/.test(draft) && /When I’m afraid of failing, I’ll remember: God is with me, even here\./.test(draft) && /My word for \d{4}: FOCUS/.test(draft), draft);
+  ok('… and a why in one line, ready to use', /To help young people with my gift for music and explaining and teaching, because God cares about young people without hope/.test(await text(j)) && await j.$eval('#jrUseWhy', e => e.checked));
+  await j.fill('#jrVision', draft + '\n\nI will not give up.'); await j.click('#jrKeep'); await j.waitForSelector('#visionRead');
+  ok('keeping it shows my vision, as I changed it', /I will not give up/.test(await text(j)) && await j.evaluate(() => S.me.plan.word === 'Focus' && /^To help young people/.test(S.me.plan.why)), await j.evaluate(() => JSON.stringify({ w: S.me.plan.word, why: S.me.plan.why, v: S.me.plan.vision.slice(-60), view: S.view })));
+  if (await j.$('#levelOk')) await j.click('#levelOk');
+  await j.click('#visionRead'); await j.waitForTimeout(600);
+  ok('… and I can mark it read today', /Read today/.test(await text(j)));
+  await j.click('nav.bottom button[data-tab="home"]'); await j.waitForSelector('#goVision');
+  ok('Home shows my vision: my word, my why, who I’m becoming and one thing for today', /FOCUS/.test(await text(j)) && /Becoming: Brave · Faithful/.test(await text(j)) && /For today/.test(await text(j)) && /To help young people/.test(await text(j)));
+  await j.click('nav.bottom button[data-tab="plan"]'); await j.waitForSelector('[data-dream="study"]');
+  await j.click('[data-dream="study"]'); await j.waitForSelector('#gTitle');
+  ok('a dream becomes a goal in one tap', await j.$eval('#gTitle', e => e.value) === 'I teach English at a school' && !!(await j.$('[data-garea="study"].on')));
+  await ctx.close();
+}
+
+/* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -436,7 +489,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 18. the page fits a phone ---------- */
+/* ---------- 19. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

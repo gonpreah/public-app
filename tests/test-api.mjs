@@ -208,6 +208,10 @@ ok('only she can share it', (await H.coachAct(A.uid, A.token, cid, 'sharePlan', 
 await H.coachAct(M.uid, M.token, cid, 'sharePlan', { on: true });
 ok('once shared, the coach sees her plan', (await H.coaching(A.uid, A.token, cid)).coaching.plan.goals.length === 1);
 ok('… other leaders still don’t', !(await H.coaching(B.uid, B.token, cid)).coaching.plan);
+await H.journey(M.uid, M.token, 'save', { answers: { hard: 'A secret hard time', areas: { study: 'A nurse' } }, stop: 'home' });
+await H.journey(M.uid, M.token, 'vision', { vision: 'I’m Mina, a child of God.', word: 'Brave' });
+const cpv = await H.coaching(A.uid, A.token, cid);
+ok('the coach she shares her plan with sees her vision — never the Life Journey’s answers', cpv.coaching.plan.vision.startsWith('I’m Mina') && cpv.coaching.plan.word === 'Brave' && !/secret|story/.test(JSON.stringify(cpv)));
 const fid = (await H.coaching(M.uid, M.token, cid)).coaching.meetings[0].follow[0].id;
 ok('she ticks her follow-up', (await H.coachAct(M.uid, M.token, cid, 'tickFollow', { mid, fid, done: true })).coaching.myFollow === 0);
 co = await H.coachAsk(B.uid, B.token, M.uid, T.team.id, 'coach');
@@ -464,7 +468,26 @@ ok('… never their words', !/essay|Call Mum|sister|grandmother|"why"|"top"|"pra
 ok('a cheer goes once a day', (await H.leaderCheer(Q2.uid, Q2.token, QT.team.id, Q.uid)).ok && (await H.leaderCheer(Q2.uid, Q2.token, QT.team.id, Q.uid)).err === 'once_a_day');
 ok('only a leader can cheer', (await H.leaderCheer(Q.uid, Q.token, QT.team.id, Q2.uid)).err === 'not_leader');
 
-/* ---------- 18. the door ---------- */
+/* ---------- 18. the Life Journey, and my vision ---------- */
+const JN = await H.registerPassword({ username: 'jona', name: 'Jona Lim', birthYear: 2004, password: 'jona password', lang: 'en' });
+let jr = await H.journey(JN.uid, JN.token, 'save', { answers: { best: 'Camp', hard: 'When we lost the farm', gifts: { c: ['music', 'lead', 'teach', 'care'], o: 'Drums' }, fear: { c: ['fail', 'alone'] }, areas: { study: 'A nurse', bogus: 'x' }, evil: 'x', pastWords: { c: ['Bad ID!', 'happy'] } }, stop: 'home' });
+ok('a stop is saved with its answers, and 20 XP', jr.ok && jr.me.story.done.join() === 'home' && jr.me.story.a.best === 'Camp' && jr.me.level.xp === 20);
+ok('… chips kept to the most a question allows', jr.me.story.a.gifts.c.join() === 'music,lead,teach' && jr.me.story.a.gifts.o === 'Drums' && jr.me.story.a.fear.c.length === 1);
+ok('… and only the journey’s own kinds of answers', !('evil' in jr.me.story.a) && !('bogus' in jr.me.story.a.areas) && jr.me.story.a.pastWords.c.join() === 'happy');
+ok('a stop gives its XP once', (await H.journey(JN.uid, JN.token, 'save', { answers: {}, stop: 'home' })).me.level.xp === 20);
+ok('an unknown stop is refused', (await H.journey(JN.uid, JN.token, 'save', { stop: 'moon' })).err === 'stop');
+ok('there’s no vision to read before it’s written', (await H.journey(JN.uid, JN.token, 'read', { date: today })).err === 'none');
+ok('a vision needs a few words', (await H.journey(JN.uid, JN.token, 'vision', { vision: 'Hi' })).err === 'text');
+jr = await H.journey(JN.uid, JN.token, 'vision', { vision: 'I’m Jona, a child of God.\n\n\n\nFive years from now:\n🎓 A nurse', word: 'Brave', why: 'To help young people' });
+ok('the vision is kept with its lines, my word and my why — and 60 XP', jr.ok && jr.me.plan.vision === 'I’m Jona, a child of God.\n\nFive years from now:\n🎓 A nurse' && jr.me.plan.word === 'Brave' && jr.me.plan.why === 'To help young people' && jr.me.story.finished === today && jr.me.level.xp === 80);
+jr = await H.journey(JN.uid, JN.token, 'read', { date: today });
+ok('reading it again: 5 XP, once a day', jr.me.daily[today].vision === true && jr.me.level.xp === 85 && (await H.journey(JN.uid, JN.token, 'read', { date: today })).me.level.xp === 85);
+const ju = JSON.parse(globalThis.__gpaStore._m.get('u:' + JN.uid));
+ok('finishing is a feed moment that carries none of their words', ju.posts.some(x => x.kind === 'journey' && x.n === null));
+const jc = await H.person(B.uid, B.token, JN.uid);
+ok('nobody else sees the vision or the journey’s answers', jc.ok && !/child of God|farm|nurse|Drums|story|vision|Brave/.test(JSON.stringify(jc)));
+
+/* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

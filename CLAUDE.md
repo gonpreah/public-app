@@ -170,6 +170,14 @@ or Bible app and tick the day (`reading`: start/tick/stop; up to 3 at once; 10 X
 Book names in Khmer come from the KBC list (`BOOKS_KM` in app.js). Home shows today's reading;
 finishing a plan is a feed moment. The prayer list (`prayer`: add/answer/drop) is private.
 
+## Streak freezes, the team's week, and smarter reminders
+**Freezes 🧊** (`applyFreezes_`): every 7 days of streak earns one (keep 2, `u.freezes`); missed
+days are covered by themselves at start-up or the next tick when there are enough freezes for all
+of them (`u.frozen`), and the streak lives on (`streakOf_(days, frozen)`). **The team's week**:
+`u.xpWeeks[week]` (8 weeks) feeds a top-5 "This week" on the team page — XP numbers only, from
+people who show their level. **Reminders** also say: plan your day (a morning reminder with no
+Today's 3 yet), today's Bible reading (a plan going, nothing read today), and challenges to tick.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.

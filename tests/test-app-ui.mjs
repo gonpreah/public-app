@@ -391,6 +391,11 @@ await a.fill('#prIn', 'For my exams next week'); await a.click('#prAdd'); await 
 await a.click('[data-pranswer$="|1"]'); await a.waitForTimeout(600);
 ok('a prayer is added, then marked answered', /God answered 1 of your prayers/.test(await text(a)));
 
+await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(400); await a.click('[data-team]'); await a.waitForSelector('.personRow');
+ok('the team page shows this week’s leaderboard', /This week/.test(await text(a)) && !!(await a.$('.lbRow')) && /\+\d+ XP/.test(await text(a)));
+await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('.heroStats');
+ok('Home explains streak freezes', /streak freeze/.test(await text(a)));
+
 /* ---------- 16. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

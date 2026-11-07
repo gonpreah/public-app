@@ -867,3 +867,10 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 .readRef { display:block; font-size:17px; margin:2px 0; }
 .readQ { font-style:italic; }
 .planDays { margin-top:6px; border-top:1px dashed var(--border2); }
+
+/* ---------- streak freezes, the team's week ---------- */
+.frz { font-style:normal; font-size:13px; margin-left:6px; vertical-align:4px; font-family:'Kantumruy Pro', system-ui, sans-serif; }
+.frzHint { margin-top:10px; }
+.lbRank { flex:0 0 26px; text-align:center; font-size:20px; font-weight:900; color:var(--muted); }
+.lbXp { color:var(--good); white-space:nowrap; }
+.lbRow.me { background:var(--accentSoft); border-radius:12px; padding-left:6px; padding-right:6px; }

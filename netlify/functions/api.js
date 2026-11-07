@@ -264,11 +264,33 @@ function cleanHabits_(list) {
 }
 /* A streak: days in a row with at least one habit ticked, ending today or
    yesterday (today isn't over yet, so not ticking it yet doesn't break it). */
-function streakOf_(days) {
+/* A streak: days in a row with at least one habit ticked, ending today or yesterday. A day a
+   streak freeze covered (frozen) keeps it going without adding to it. */
+function streakOf_(days, frozen) {
   const done = function (d) { const m = days && days[d]; return !!(m && Object.keys(m).some(function (k) { return m[k]; })); };
+  const fz = function (d) { return !!(frozen && frozen.indexOf(d) > -1); };
   let d = today_(); if (!done(d)) d = addDays_(d, -1);
-  let n = 0; while (done(d) && n < 3660) { n++; d = addDays_(d, -1); }
+  let n = 0, guard = 0;
+  while ((done(d) || fz(d)) && guard < 4000) { if (done(d)) n++; d = addDays_(d, -1); guard++; }
   return n;
+}
+/* ---------------- streak freezes 🧊 ----------------
+   Every 7 days of streak earns a freeze (keep up to MAX_FREEZES). When days are missed and
+   there are enough freezes to cover them all, they're used by themselves (at start-up or the
+   next tick), and the streak lives on. u.freezes = count, u.frozen = the dates covered. */
+const MAX_FREEZES = 2;
+function habitDone_(u, d) { const m = (u.days || {})[d]; return !!(m && Object.keys(m).some(function (k) { return m[k]; })); }
+function applyFreezes_(u) {
+  const t = today_(), frozen = u.frozen || [];
+  if (!(u.freezes > 0)) return [];
+  let d = addDays_(t, -1), gap = [];
+  while (gap.length <= u.freezes && !habitDone_(u, d) && frozen.indexOf(d) === -1) { gap.push(d); d = addDays_(d, -1); }
+  if (!gap.length || gap.length > u.freezes) return [];
+  if (!(habitDone_(u, d) || frozen.indexOf(d) > -1)) return [];   // there was no streak to save
+  if (streakOf_(u.days || {}, frozen.concat(gap)) < 1) return [];
+  u.frozen = frozen.concat(gap).sort().slice(-60);
+  u.freezes -= gap.length;
+  return gap;
 }
 function bestStreakOf_(days) {
   const ks = Object.keys(days || {}).filter(function (d) { const m = days[d]; return m && Object.keys(m).some(function (k) { return m[k]; }); }).sort();
@@ -289,7 +311,7 @@ function focusWeek_(u, wk) {
 function statsOf_(u) {
   const days = u.days || {}, wk = weekOf_(today_());
   return {
-    streak: streakOf_(days), best: bestStreakOf_(days),
+    streak: streakOf_(days, u.frozen), best: bestStreakOf_(days), freezes: u.freezes || 0,
     week: weekPct_((u.weeks || {})[wk]), habits: (u.habits || []).length,
     tests: (u.personality ? 1 : 0) + (u.gstrengths ? 1 : 0),
     focusWeek: focusWeek_(u, wk)
@@ -392,7 +414,7 @@ async function reading(uid, tok, act, a) {
       const i = Math.round(Number(a.day));
       if (!R || !(i >= 0 && i < plan.length)) return { abort: true, ok: false, err: 'none' };
       R.done = (R.done || []).filter(function (x) { return x !== i; });
-      if (a.done) { R.done.push(i); R.done.sort(function (x, y) { return x - y; }); xpAdd_(u, 'r|' + a.plan + '|' + i, 10); }
+      if (a.done) { R.done.push(i); R.done.sort(function (x, y) { return x - y; }); xpAdd_(u, 'r|' + a.plan + '|' + i, 10); R.lastRead = today_(); }
       else xpDrop_(u, 'r|' + a.plan + '|' + i);
       if (R.done.length === plan.length && !R.finished) { R.finished = today_(); addPost_(u, 'reading', a.plan); }
       if (R.done.length < plan.length) R.finished = '';
@@ -446,13 +468,19 @@ function xpAdd_(u, key, n) {
   if (key in u.xpLog || !(n > 0)) return;
   const before = levelOf_(u.xp).level;
   u.xpLog[key] = n; u.xp = (u.xp || 0) + n;
+  const wk = weekOf_(today_()); u.xpWeeks = u.xpWeeks || {}; u.xpWeeks[wk] = (u.xpWeeks[wk] || 0) + n;
+  Object.keys(u.xpWeeks).sort().slice(0, -8).forEach(function (k) { delete u.xpWeeks[k]; });
   const after = levelOf_(u.xp).level;
   if (after > before && (after % 5 === 0 || LEVEL_TITLES.some(function (x) { return x[0] === after; }))) addPost_(u, 'level', after);
   const cut = addDays_(today_(), -XP_LOG_DAYS);
   Object.keys(u.xpLog).forEach(function (k) { const m = /\|(\d{4}-\d{2}-\d{2})/.exec(k); if (m && m[1] < cut) delete u.xpLog[k]; });
 }
 function xpDrop_(u, key) {
-  if (u.xpLog && key in u.xpLog) { u.xp = Math.max(0, (u.xp || 0) - u.xpLog[key]); delete u.xpLog[key]; }
+  if (u.xpLog && key in u.xpLog) {
+    u.xp = Math.max(0, (u.xp || 0) - u.xpLog[key]);
+    const wk = weekOf_(today_()); if (u.xpWeeks && u.xpWeeks[wk]) u.xpWeeks[wk] = Math.max(0, u.xpWeeks[wk] - u.xpLog[key]);
+    delete u.xpLog[key];
+  }
 }
 
 /* ---------------- the feed's moments ----------------
@@ -502,7 +530,7 @@ function cardOut_(u, close) {
   if (sh.teams && close) o.teamCount = (u.teams || []).length;
   if (sh.plan) { const ps = planStats_(u); if (ps.goals || ps.reached) o.plan = ps; }   // counts, never the words
   if (sh.focus && st.focusWeek) o.focusWeek = st.focusWeek;   // minutes, never what they worked on
-  if (sh.level && u.xp) { const lv = levelOf_(u.xp); o.level = { level: lv.level, title: lv.title, icon: lv.icon }; }
+  if (sh.level && u.xp) { const lv = levelOf_(u.xp); o.level = { level: lv.level, title: lv.title, icon: lv.icon }; o.xpWeek = (u.xpWeeks || {})[weekOf_(today_())] || 0; }
   o.tests = st.tests;
   if (!minor && u.bio) o.bio = u.bio;
   return o;
@@ -642,7 +670,11 @@ async function register(token, p, pw) {
 async function boot(uid, tok) {
   const u = await auth_(uid, tok);
   if (!u) return { ok: false, err: 'auth' };
-  if (u.seen !== today_()) await mutate_('u:' + uid, null, function (r) { if (r) r.seen = today_(); return { ok: true }; });
+  let froze = [];
+  if (u.seen !== today_()) {
+    await mutate_('u:' + uid, null, function (r) { if (r) { r.seen = today_(); froze = applyFreezes_(r); } return { ok: true }; });
+    if (froze.length) Object.assign(u, await readJSON('u:' + uid, u));
+  }
   const teams = [], teamTasks = [], myChallenges = [];
   for (const tid of (u.teams || [])) {
     const t = await readJSON('t:' + tid, null);
@@ -654,7 +686,7 @@ async function boot(uid, tok) {
   const co = await coachings(uid, tok);
   const pk = await pushKeys_(true);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
-    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, today: today_() };
+    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, today: today_() };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -769,8 +801,10 @@ async function tickHabit(uid, tok, day, habitId, done) {
     if (Object.keys(m).length) u.days[day] = m; else delete u.days[day];
     const cut = addDays_(t, -KEEP_DAYS);
     Object.keys(u.days).forEach(function (d) { if (d < cut) delete u.days[d]; });
-    const st = streakOf_(u.days);
+    applyFreezes_(u);
+    const st = streakOf_(u.days, u.frozen);
     if (done && STREAK_MILESTONES.indexOf(st) > -1) addPost_(u, 'streak', st);
+    if (done && st > 0 && st % 7 === 0 && u.freezeAt !== t && (u.freezes || 0) < MAX_FREEZES) { u.freezes = (u.freezes || 0) + 1; u.freezeAt = t; }
     return { ok: true };
   });
   if (!res.ok) return res;
@@ -1586,6 +1620,9 @@ const PUSH_TEXT = {
   coachAsk: { en: '{name} asked you to be their coach.', km: '{name} បានសុំឱ្យអ្នកធ្វើជាអ្នកណែនាំរបស់គាត់។' },
   coachOffer: { en: '{name} offered to be your coach.', km: '{name} បានស្នើធ្វើជាអ្នកណែនាំរបស់អ្នក។' },
   teamTask: { en: 'A new task for you in {team}.', km: 'មានកិច្ចការថ្មីសម្រាប់អ្នកនៅក្នុង {team}។' },
+  planDay: { en: 'Good morning ☀️ What are your 3 things for today?', km: 'អរុណសួស្តី ☀️ តើរឿងទាំង ៣ របស់អ្នកសម្រាប់ថ្ងៃនេះជាអ្វី?' },
+  reading: { en: 'Today’s Bible reading is waiting 📖', km: 'ការអានព្រះគម្ពីរថ្ងៃនេះកំពុងរង់ចាំ 📖' },
+  challenges: { en: '{n} team challenges to tick today 🏁', km: 'ការប្រកួតក្រុម {n} ដែលត្រូវគូសថ្ងៃនេះ 🏁' },
   test: { en: 'Reminders are on. You’ll hear from GonPreah at the time you chose.', km: 'ការរំលឹកត្រូវបានបើក។ កូនព្រះនឹងរំលឹកអ្នកនៅម៉ោងដែលអ្នកបានជ្រើសរើស។' }
 };
 function pushText_(key, lang, params) {
@@ -1720,15 +1757,32 @@ async function pushTest(uid, tok) {
 /* What one person's reminder says right now, if anything. */
 async function reminderItems_(u, ctx) {
   const p = pushPrefsOf_(u), out = [], today = ctx.today;
+  if (p.habits && ctx.hour < 12) {   // a morning reminder: plan the day first
+    const D = (u.daily || {})[today];
+    if (!(D && D.top && D.top.length)) out.push({ key: 'planDay' });
+  }
+  if (p.plan) {
+    const rd = u.reading || {};
+    if (Object.keys(rd).some(function (k) { return READING_PLANS[k] && !rd[k].finished && rd[k].lastRead !== today; })) out.push({ key: 'reading' });
+  }
   if (p.habits && (u.habits || []).length) {
     const m = (u.days || {})[today];
-    if (!(m && Object.keys(m).some(function (k) { return m[k]; }))) { const st = streakOf_(u.days || {}); out.push(st ? { key: 'habits', params: { n: st } } : { key: 'habitsNew' }); }
+    if (!(m && Object.keys(m).some(function (k) { return m[k]; }))) { const st = streakOf_(u.days || {}, u.frozen); out.push(st ? { key: 'habits', params: { n: st } } : { key: 'habitsNew' }); }
   }
   if (p.plan && ctx.monday) {
     const mon = monthOf_(today), q = quarterOf_(today);
     let n = 0;
     planOf_(u).goals.forEach(function (g) { if (!g.done) (g.steps || []).forEach(function (st) { if (!st.done && (st.when === mon || st.when === q || st.when < (/Q/.test(st.when) ? q : mon))) n++; }); });
     if (n) out.push({ key: 'steps', params: { n: n } });
+  }
+  if (p.team) {
+    let ch = 0;
+    for (const tid of (u.teams || [])) {
+      if (!(tid in ctx.teams)) ctx.teams[tid] = await readJSON('t:' + tid, null);
+      const t = ctx.teams[tid]; if (!t) continue;
+      (t.challenges || []).forEach(function (c) { const mine = (c.members || {})[u.id]; if (mine && today >= c.start && today <= chEnd_(c) && mine.indexOf(today) === -1) ch++; });
+    }
+    if (ch) out.push({ key: 'challenges', params: { n: ch } });
   }
   if (p.team) {
     let n = 0; const soon = addDays_(today, 1);
@@ -1763,7 +1817,7 @@ async function runReminders(now) {
     const run = await readJSON('pushRun', {});
     if (run.slot === today + 'T' + hour) return { ok: true, sent: 0, skipped: 'already_ran' };
     await writeJSON('pushRun', { slot: today + 'T' + hour, at: at.toISOString(), running: true });
-    const ctx = { today: today, monday: local.getUTCDay() === 1, teams: {} }, byUid = {};
+    const ctx = { today: today, hour: hour, monday: local.getUTCDay() === 1, teams: {} }, byUid = {};
     subs.forEach(function (r) { (byUid[r.uid] = byUid[r.uid] || []).push(r); });
     let sent = 0, people = 0; const gone = [];
     for (const uid of Object.keys(byUid)) {

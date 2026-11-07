@@ -306,7 +306,30 @@ const rp = await H.adminResetPassword(P.uid, P.token, 'srey');
 ok('the admin resets a forgotten password: a one-time one, and old sign-ins end', rp.ok && rp.password.length === 10 && (await H.boot(PM.uid, PM.token)).err === 'auth' && (await H.loginPassword('srey', rp.password)).ok);
 delete process.env.GPA_ADMIN_USERNAMES;
 
-/* ---------- 12. the door ---------- */
+/* ---------- 12. Today: three things, focus time, the evening check-in ---------- */
+const Q = await H.registerPassword({ username: 'thida', name: 'Thida Ros', birthYear: 2002, password: 'thida password' });
+const Q2 = await H.registerPassword({ username: 'vanna', name: 'Vanna Ly', birthYear: 2000, password: 'vanna password' });
+const QT = await H.createTeam(Q2.uid, Q2.token, { name: 'Study crew' });
+await H.joinTeam(Q.uid, Q.token, QT.team.code);
+ok('today’s three must be for about today', (await H.saveTop(Q.uid, Q.token, '2020-01-01', [{ text: 'x' }])).err === 'day');
+r = await H.saveTop(Q.uid, Q.token, today, [{ text: 'Finish the essay' }, { text: 'Call Mum', done: true }, { text: '' }, { text: 'fourth' }]);
+ok('today’s three save (empty ones dropped)', r.ok && r.me.daily[today].top.length === 2 && r.me.daily[today].top[1].done === true);
+ok('… and tomorrow can be planned tonight', (await H.saveTop(Q.uid, Q.token, new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10), [{ text: 'Gym' }])).ok);
+ok('a check-in needs a mood from 1 to 5', (await H.saveCheckin(Q.uid, Q.token, today, { mood: 9 })).err === 'mood');
+r = await H.saveCheckin(Q.uid, Q.token, today, { mood: 4, grateful: 'My sister helped me study' });
+ok('the evening check-in saves', r.ok && r.me.daily[today].mood === 4 && r.me.daily[today].grateful === 'My sister helped me study');
+ok('focus needs 5 to 180 minutes', (await H.logFocus(Q.uid, Q.token, today, 2)).err === 'minutes' && (await H.logFocus(Q.uid, Q.token, today, 500)).err === 'minutes');
+for (let i = 0; i < 4; i++) r = await H.logFocus(Q.uid, Q.token, today, 30);
+ok('focus sessions add up', r.ok && r.me.daily[today].focus === 120 && r.me.daily[today].sessions === 4 && r.me.stats.focusWeek === 120);
+let qf = (await H.feed(Q2.uid, Q2.token)).feed.find(x => x.who.id === Q.uid && x.kind === 'focus');
+ok('two hours of focus this week is a moment in the team’s feed', qf && qf.n === 2);
+const qcard = (await H.team(Q2.uid, Q2.token, QT.team.id)).team.people.find(p => p.id === Q.uid);
+ok('teammates see focus minutes this week', qcard.focusWeek === 120);
+ok('… never her three things, her mood or what she’s thankful for', !/essay|Call Mum|sister|"mood"|grateful|"top"/.test(JSON.stringify(qcard) + JSON.stringify(await H.feed(Q2.uid, Q2.token))));
+await H.saveProfile(Q.uid, Q.token, { share: { focus: false } });
+ok('switching focus off hides it', !(await H.team(Q2.uid, Q2.token, QT.team.id)).team.people.find(p => p.id === Q.uid).focusWeek && !(await H.feed(Q2.uid, Q2.token)).feed.some(x => x.who.id === Q.uid && x.kind === 'focus'));
+
+/* ---------- 13. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

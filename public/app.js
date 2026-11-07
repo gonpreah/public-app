@@ -6,7 +6,9 @@
 
     Screens (S.view):
       signin · signup            — a username and password (or Google), then a name and birth year
-      home                       — today: streak, habits, steps for now, this week's goals, invites
+      home                       — today: my why, today's 3, focus, habits, steps for now, the evening
+                                   check-in, the Sunday recap, this week's goals, invites
+      focus                      — the focus timer (25 or 50 minutes, phone down)
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -42,7 +44,8 @@ var S = {
   teamTasks: [], goalId: null, goalDraft: null, whyEdit: false, showDone: false, showReached: false,
   coach: [], coaching: null, meetId: null, meetDraft: null, showEnded: false,
   feed: null, feedMore: false, cheers: [], reportFor: null, blockedPeople: null, admin: null,
-  push: null, pushSub: null, pushChecked: false, pushBusy: false, authCfg: null, resetResult: null
+  push: null, pushSub: null, pushChecked: false, pushBusy: false, authCfg: null, resetResult: null,
+  topEdit: false, checkinEdit: false, checkinMood: 0, focusSetup: { dur: 25, label: '' }
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -107,7 +110,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -140,6 +143,7 @@ function render(){
     else if(V==='coach') h=coachHtml();
     else if(V==='meet') h=meetHtml();
     else if(V==='grow') h=growHtml();
+    else if(V==='focus') h=focusHtml();
     else if(V==='report') h=reportHtml();
     else if(V==='blocked') h=blockedHtml();
     else if(V==='admin') h=adminHtml();
@@ -272,6 +276,7 @@ function bootNow_(){
   call('boot').then(function(d){
     if(d && d.ok){
       adopt_(d);
+      focusResume_();
       if(JOIN){ var c=JOIN; JOIN=''; lsDel('gpa-join'); call('joinTeam', c).then(function(j){ if(j && j.ok){ showMsg(j.already ? gpT('You’re already in {team}.',{team:j.team.name}) : gpT('You joined {team}!',{team:j.team.name})); refresh_(); } else failMsg(j); }); }
     } else if(d && d.err!=='auth' && !S.me){ showMsg(t('No connection — try again.')); }
     render();
@@ -280,6 +285,7 @@ function bootNow_(){
 /* A fresh copy from the server. It doesn't redraw under someone who is typing — that
    would wipe what they've typed; the next redraw shows it. */
 function typing_(){ var e=document.activeElement; return !!(e && /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName) && e.type!=='checkbox' && e.closest && e.closest('#main')); }
+function focusResume_(){ var f=focusState_(); if(!f) return; if(!f.pausedAt && focusLeft_(f)<=0) focusFinish_(f.dur, f.label); else focusEnsureTimer_(); }
 function refresh_(){ return call('boot').then(function(d){ if(d && d.ok){ adopt_(d); if(!typing_()) render(); } }); }
 
 /* ---------------- Home ---------------- */
@@ -291,13 +297,13 @@ function homeHtml(){
     '<div class="heroStats">'+
       '<div><b>'+(st.streak||0)+'</b><span>🔥 '+esc(t('day streak'))+'</span></div>'+
       '<div><b>'+(st.week==null?'—':st.week+'%')+'</b><span>🗒️ '+esc(t('this week'))+'</span></div>'+
-      '<div><b>'+(S.teams||[]).length+'</b><span>👥 '+esc(t('teams'))+'</span></div>'+
+      '<div><b>'+focusShort_((dayOf_(todayStr()).focus)||0)+'</b><span>⏱ '+esc(t('focus today'))+'</span></div>'+
     '</div></div>';
   (me.invites||[]).forEach(function(iv){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=cheersHtml()+habitsCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  h+=whyLineHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -427,6 +433,7 @@ function personHtml(){
   if(p.streak!=null) tiles+='<div><b>'+p.streak+'</b><span>🔥 '+esc(t('day streak'))+'</span></div>';
   if(p.best) tiles+='<div><b>'+p.best+'</b><span>🏆 '+esc(t('best streak'))+'</span></div>';
   if(p.week!=null) tiles+='<div><b>'+p.week+'%</b><span>🗒️ '+esc(t('this week'))+'</span></div>';
+  if(p.focusWeek) tiles+='<div><b>'+focusShort_(p.focusWeek)+'</b><span>⏱ '+esc(t('focus this week'))+'</span></div>';
   if(p.plan){ if(p.plan.goals) tiles+='<div><b>'+p.plan.goals+'</b><span>🎯 '+esc(t('life goals'))+'</span></div>';
     if(p.plan.steps) tiles+='<div><b>'+p.plan.steps+'</b><span>🪜 '+esc(t('steps this month'))+'</span></div>';
     if(p.plan.reached) tiles+='<div><b>'+p.plan.reached+'</b><span>🏆 '+esc(t('goals reached'))+'</span></div>'; }
@@ -486,7 +493,7 @@ function meHtml(){
 
   h+='<h3>👁 '+esc(t('What others see'))+'</h3><div class="card">'+
     '<p class="sub" style="margin:0 0 8px">'+esc(t('People see your progress, never the details: not your goals, your habits or your answers.'))+'</p>';
-  [['type','Your personality type'],['strengths','Your top 5 strengths'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['feed','My moments in my teams’ feed (👏)'],['teams','How many teams you’re in']].forEach(function(x){
+  [['type','Your personality type'],['strengths','Your top 5 strengths'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['focus','My focus time this week (never what I worked on)'],['feed','My moments in my teams’ feed (👏)'],['teams','How many teams you’re in']].forEach(function(x){
     h+='<label class="switchRow"><span>'+esc(t(x[1]))+'</span><input type="checkbox" data-share="'+x[0]+'"'+(sh[x[0]]!==false?' checked':'')+'></label>';
   });
   h+=(me.minor?'<div class="hint">🔒 '+esc(t('You’re under 18, so only people in your teams can see you, by your first name.'))+'</div>':'')+'</div>';
@@ -1000,6 +1007,36 @@ function bind(){
     S.habitDraft.push({ id:'c_'+Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'a'), label:v.slice(0,40), icon:'⭐' }); render(); });
   on('hSave', busyOnce_(function(){ return call('saveHabits', S.habitDraft).then(function(d){ if(d && d.ok){ S.me=d.me; S.habitDraft=null; goBack('home'); } else failMsg(d); }); }));
 
+  /* today */
+  on('goWhy', function(){ S.back=[]; if(!planOf().why) S.whyEdit=true; go('plan', true); });
+  on('topEdit', function(){ S.topEdit=true; render(); });
+  on('topCancel', function(){ S.topEdit=false; render(); });
+  on('topSave', busyOnce_(function(){ var old=dayOf_(todayStr()).top||[];
+    var items=[].map.call(document.querySelectorAll('[data-topin]'), function(el){ var i=Number(el.getAttribute('data-topin')), v=el.value.trim(); return { text:v, done:!!(old[i] && old[i].text===v && old[i].done) }; }).filter(function(x){ return x.text; });
+    if(!items.length){ showMsg(t('Write something first.')); return; }
+    return call('saveTop', todayStr(), items).then(function(d){ if(d && d.ok){ S.me=d.me; S.topEdit=false; render(); } else failMsg(d); }); }));
+  all('[data-top]', function(b){ var i=Number(b.getAttribute('data-top')), d=todayStr(), top=(dayOf_(d).top||[]).map(function(x){ return Object.assign({},x); });
+    if(!top[i]) return; top[i].done=!top[i].done; gpTap(); if(top[i].done) confettiAt_(b);
+    S.me.daily=S.me.daily||{}; S.me.daily[d]=Object.assign({}, dayOf_(d), { top:top }); render();
+    call('saveTop', d, top).then(function(r){ if(r && r.ok){ S.me=r.me; render(); } else { failMsg(r); refresh_(); } }); });
+  all('[data-mood]', function(b){ S.checkinMood=Number(b.getAttribute('data-mood')); var g=$('gratefulIn'), v=g?g.value:''; gpTap(); render(); var g2=$('gratefulIn'); if(g2) g2.value=v; });
+  on('checkEdit', function(){ S.checkinEdit=true; S.checkinMood=dayOf_(todayStr()).mood||0; render(); });
+  on('checkSave', busyOnce_(function(){ var m=S.checkinMood||dayOf_(todayStr()).mood; if(!m){ showMsg(t('Choose how today was.')); return; }
+    return call('saveCheckin', todayStr(), { mood:m, grateful:$('gratefulIn').value }).then(function(d){ if(d && d.ok){ S.me=d.me; S.checkinEdit=false; S.checkinMood=0; showMsg(t('Saved. Sleep well 🌙')); render(); } else failMsg(d); }); }));
+  on('goFocus', function(){ go('focus'); focusEnsureTimer_(); });   // a session that ended while away shows its done screen first
+  all('[data-fdur]', function(b){ var l=$('focusLabel'); if(l) S.focusSetup.label=l.value; S.focusSetup.dur=Number(b.getAttribute('data-fdur')); render(); });
+  all('[data-flabel]', function(b){ S.focusSetup.label=b.getAttribute('data-flabel'); render(); });
+  on('focusStart', function(){ var l=$('focusLabel'); S.focusSetup.label=l?l.value.trim():''; gpTap();
+    lsSet(FOCUS_KEY, JSON.stringify({ dur:S.focusSetup.dur, start:Date.now(), label:S.focusSetup.label, paused:0, pausedAt:0 })); render(); focusEnsureTimer_(); });
+  on('focusPause', function(){ var f=focusState_(); if(!f) return; if(f.pausedAt){ f.paused+=Date.now()-f.pausedAt; f.pausedAt=0; } else f.pausedAt=Date.now(); lsSet(FOCUS_KEY, JSON.stringify(f)); render(); });
+  on('focusStop', function(){ var f=focusState_(); if(!f) return; var min=Math.floor(focusElapsed_(f)/60000);
+    if(min<5){ if(!confirm(t('Stop now? Less than 5 minutes doesn’t count.'))) return; lsDel(FOCUS_KEY); clearInterval(focusTimer); focusTimer=null; render(); return; }
+    if(!confirm(gpT('Stop and count {n} minutes?',{n:min}))) return; focusFinish_(min, f.label); render(); });
+  on('focusTick', busyOnce_(function(){ var dn=S.focusDone, d=todayStr(), top=(dayOf_(d).top||[]).map(function(x){ return Object.assign({},x); });
+    if(top[dn.topIndex]) top[dn.topIndex].done=true; return call('saveTop', d, top).then(function(r){ if(r && r.ok){ S.me=r.me; dn.topIndex=-1; showMsg(t('Ticked off. 🎉')); render(); } else failMsg(r); }); }));
+  on('focusAgain', function(){ S.focusDone=null; render(); });
+  on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
+
   /* the life plan */
   on('goPlan', function(){ S.back=[]; go('plan', true); });
   on('whyEdit', function(){ S.whyEdit=true; render(); var w=$('whyIn'); if(w) w.focus(); });
@@ -1187,7 +1224,7 @@ function bindGTest_(){
 /* ---------------- the feed: 👏 for each other ---------------- */
 /* Moments from the people in my teams (api.js feed): what happened, never their own words. */
 var FEED_LINES = { streak:'{name} reached a {n}-day streak 🔥', goal:'{name} reached a life goal 🏆', type:'{name} found their personality type: {n} 🧭',
-  strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋' };
+  strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋', focus:'{name} focused for {n} hours this week ⏱' };
 function feedLine_(x){ var k = x.kind==='joined' && !x.team ? 'joinedSome' : x.kind; return gpT(FEED_LINES[k]||'{name}',{ name:firstName_(x.who.name), n:x.n, team:x.team||'' }); }
 function whenLabel_(iso){ var d=todayStr(); return iso===d ? t('Today') : iso===addDays(d,-1) ? t('Yesterday') : dayLabel(iso); }
 function feedLoad_(){ if(!AUTH) return; call('feed').then(function(d){ if(d && d.ok){ S.feed=d.feed; if(S.view==='teams' && !typing_()){ render(); loadPhotos_(S.feed.map(function(x){ return x.who; })); } } }); }
@@ -1205,7 +1242,7 @@ function feedHtml(){
   if(S.feed.length>8 && !S.feedMore) h+='<button class="linkbtn" id="feedMore">'+esc(t('Show more'))+'</button>';
   return h;
 }
-var CHEER_WHAT = { streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team' };
+var CHEER_WHAT = { streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus' };
 function cheersHtml(){
   var c=S.cheers||[]; if(!c.length) return '';
   return '<div class="card cheerCard">'+c.slice(0,3).map(function(x){
@@ -1338,6 +1375,118 @@ function bindReminders_(){
   ['remHour','remHabits','remPlan','remTeam','remCoach','remAlerts'].forEach(function(id){ var el=$(id); if(el) el.onchange=remSavePrefs_; });
   on('remTest', function(){ var b=$('remTest'); b.disabled=true; call('pushTest').then(function(d){ b.disabled=false; showMsg(d && d.ok ? t('Sent — it should arrive in a moment.') : t('It couldn’t be sent. Try turning reminders off and on again.')); }); });
   on('remOff', function(){ var sub=S.pushSub; if(!sub) return; call('pushUnsubscribe', sub.endpoint); sub.unsubscribe().catch(function(){}); S.pushSub=null; render(); showMsg(t('Reminders are off for this phone.')); });
+}
+
+/* ---------------- Today: my why, today's 3, focus, the evening check-in, the recap ----------------
+   All private (api.js "Today"): others see only focus minutes this week, behind a switch. */
+function dayOf_(d){ return ((S.me && S.me.daily)||{})[d] || {}; }
+function focusShort_(min){ min=Math.round(min||0); if(!min) return '0'; var h=Math.floor(min/60), m=min%60; return h ? h+'h'+(m?' '+m+'m':'') : m+'m'; }
+function whyLineHtml(){
+  var why=planOf().why;
+  if(!why) return '<button class="card whyLine empty" id="goWhy">✦ '+esc(t('What did God make you for? Write your why'))+' ›</button>';
+  return '<button class="card whyLine" id="goWhy"><span class="pmeta">✦ '+esc(t('My why'))+'</span><span class="whyLineTx">“'+esc(why)+'”</span></button>';
+}
+function todayCardHtml(){
+  var d=todayStr(), D=dayOf_(d), top=D.top||[], h='<h3>☀️ '+esc(t('Today'))+'</h3><div class="card todayCard">';
+  if(S.topEdit || !top.length){
+    var ph=[t('The most important thing today'), t('Second thing'), t('Third thing')];
+    if(!S.topEdit) h+='<p class="sub" style="margin:0 0 8px">'+esc(t('What are the three things that matter most today?'))+'</p>';
+    for(var i=0;i<3;i++) h+='<input type="text" class="topIn" data-topin="'+i+'" maxlength="100" placeholder="'+esc(ph[i])+'" value="'+esc((top[i]||{}).text||'')+'" style="margin-bottom:8px">';
+    h+='<div class="btnRow"><button class="btn small" id="topSave">'+esc(t('Save'))+'</button>'+(S.topEdit?'<button class="btn small ghost" id="topCancel">'+esc(t('Cancel'))+'</button>':'')+'</div>';
+  } else {
+    var done=top.filter(function(x){ return x.done; }).length;
+    h+='<div class="todayHead"><span class="pmeta">'+esc(gpT('{a} of {b} done',{a:done,b:top.length}))+'</span><button class="linkbtn inline" id="topEdit">'+esc(t('Change'))+'</button></div>';
+    top.forEach(function(x,i){ h+='<div class="stepRow'+(x.done?' done':'')+'">'+checkHtml('data-top="'+i+'"', !!x.done, x.text)+'<span class="stepTx">'+esc(x.text)+'</span></div>'; });
+    if(done===top.length) h+='<div class="allDone">🎉 '+esc(t('All done today. Well done!'))+'</div>';
+  }
+  h+='<div class="focusRow"><span>⏱ <b>'+focusShort_(D.focus||0)+'</b> '+esc(t('focused today'))+(D.sessions?' · '+esc(gpT('{n} sessions',{n:D.sessions})):'')+'</span><button class="btn small" id="goFocus">'+esc(focusActive_()?t('Back to focus'):t('Start focus'))+'</button></div>';
+  return h+'</div>';
+}
+var MOODS=[[1,'😢','Hard'],[2,'😕','Not great'],[3,'😐','OK'],[4,'🙂','Good'],[5,'😄','Great']];
+function checkinCardHtml(){
+  var d=todayStr(), D=dayOf_(d), hour=new Date().getHours();
+  if(!D.mood && hour<17 && !S.checkinEdit) return '';
+  var h='<h3>🌙 '+esc(t('Tonight'))+'</h3><div class="card">';
+  if(D.mood && !S.checkinEdit){
+    h+='<div class="checkDone"><span class="bigMood">'+MOODS[D.mood-1][1]+'</span><span style="flex:1">'+(D.grateful?'<span class="pmeta">🙏 '+esc(t('Thankful for'))+'</span><div>'+esc(D.grateful)+'</div>':esc(t('You checked in today.')))+'</span><button class="linkbtn inline" id="checkEdit">'+esc(t('Change'))+'</button></div>';
+    return h+'</div>';
+  }
+  var m=S.checkinMood||D.mood||0;
+  h+='<label class="f">'+esc(t('How was today?'))+'</label><div class="rateBtns">'+MOODS.map(function(x){ return '<button class="rateBtn'+(m===x[0]?' on':'')+'" data-mood="'+x[0]+'" aria-label="'+esc(t(x[2]))+'">'+x[1]+'</button>'; }).join('')+'</div>'+
+    '<label class="f" for="gratefulIn">'+esc(t('One thing you’re thankful for'))+'</label><input type="text" id="gratefulIn" maxlength="200" value="'+esc(D.grateful||'')+'" placeholder="'+esc(t('e.g. My friend helped me with homework'))+'">'+
+    '<div class="hint">🔒 '+esc(t('Only you see this.'))+'</div><button class="btn small" id="checkSave" style="margin-top:8px">'+esc(t('Save'))+'</button></div>';
+  return h;
+}
+/* Sunday: this week so far. Monday: the week just gone. */
+function recapCardHtml(){
+  var d=todayStr(), dow=new Date(d+'T00:00:00Z').getUTCDay();
+  if(dow!==0 && dow!==1) return '';
+  var mon = dow===0 ? addDays(d,-6) : addDays(d,-7), days=[];
+  for(var i=0;i<7;i++) days.push(addDays(mon,i));
+  var me=S.me, habitDays=0, focus=0, topDays=0, moods=[], steps=0, reached=0;
+  days.forEach(function(x){ var m=(me.days||{})[x]; if(m && Object.keys(m).some(function(k){ return m[k]; })) habitDays++;
+    var D=dayOf_(x); focus+=D.focus||0; if(D.top && D.top.length && D.top.every(function(y){ return y.done; })) topDays++; if(D.mood) moods.push(D.mood); });
+  planOf().goals.forEach(function(g){ if(g.done && g.done>=mon && g.done<=days[6]) reached++; (g.steps||[]).forEach(function(st){ if(st.done && st.done>=mon && st.done<=days[6]) steps++; }); });
+  if(!habitDays && !focus && !topDays && !moods.length && !steps) return '';
+  var avg=moods.length ? Math.round(moods.reduce(function(a,b){ return a+b; },0)/moods.length) : 0;
+  var tiles=[[habitDays+'/7','✅ '+t('days with habits')],[focusShort_(focus),'⏱ '+t('focus')],[String(topDays),'☀️ '+t('days all 3 done')],[String(steps),'🪜 '+t('steps done')]];
+  if(avg) tiles.push([MOODS[avg-1][1],t('your week, mostly')]);
+  if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
+  return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
+    '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- the focus timer ----------------
+   The phone keeps the session (gpa-focus: {dur, start, label, pausedAt, paused}) so it
+   survives the screen locking or the app closing; the minutes go to the server at the end
+   (logFocus). Stopping early still counts if it was 5 minutes or more. */
+var FOCUS_KEY='gpa-focus', focusTimer=null;
+function focusState_(){ try { var f=JSON.parse(lsGet(FOCUS_KEY)||'null'); return f && f.dur && f.start ? f : null; } catch(e){ return null; } }
+function focusActive_(){ return !!focusState_(); }
+function focusElapsed_(f){ var now=f.pausedAt||Date.now(); return Math.max(0, now-f.start-(f.paused||0)); }
+function focusLeft_(f){ return Math.max(0, f.dur*60000-focusElapsed_(f)); }
+function mmss_(ms){ var s=Math.ceil(ms/1000), m=Math.floor(s/60); s=s%60; return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
+function focusHtml(){
+  var f=focusState_(), h=backBtn(t('Home'));
+  if(S.focusDone){ var dn=S.focusDone;
+    return h+'<div class="focusDone"><div class="focusBig">🎉</div><h2>'+esc(gpT('{n} minutes of focus!',{n:dn.min}))+'</h2><p class="sub">'+esc(t('Stand up, drink some water, rest your eyes for 5 minutes.'))+'</p>'+
+      (dn.label && dn.topIndex>-1 ? '<button class="btn" id="focusTick">✓ '+esc(gpT('I finished: {x}',{x:dn.label}))+'</button>' : '')+
+      '<div class="btnRow" style="margin-top:10px"><button class="btn ghost" id="focusAgain">'+esc(t('Focus again'))+'</button><button class="btn ghost" id="focusHome">'+esc(t('Done'))+'</button></div></div>';
+  }
+  if(!f){
+    var F=S.focusSetup, top=(dayOf_(todayStr()).top||[]).filter(function(x){ return !x.done; });
+    h+='<h2>⏱ '+esc(t('Focus'))+'</h2><p class="sub">'+esc(t('One thing, no phone. Put it face down and start.'))+'</p><div class="card">'+
+      '<label class="f">'+esc(t('How long?'))+'</label><div class="seg">'+[15,25,50].map(function(m){ return '<button data-fdur="'+m+'" class="'+(F.dur===m?'on':'')+'">'+m+' '+esc(t('min'))+'</button>'; }).join('')+'</div>'+
+      '<label class="f" for="focusLabel">'+esc(t('What are you working on?'))+'</label>'+
+      (top.length ? '<div class="catChips" style="margin-bottom:8px">'+top.map(function(x){ return '<button class="catChip'+(F.label===x.text?' on':'')+'" data-flabel="'+esc(x.text)+'">'+esc(x.text)+'</button>'; }).join('')+'</div>' : '')+
+      '<input type="text" id="focusLabel" maxlength="100" value="'+esc(F.label)+'" placeholder="'+esc(t('e.g. Maths homework'))+'">'+
+      '<button class="btn" id="focusStart" style="margin-top:12px">▶ '+esc(t('Start'))+'</button></div>';
+    return h;
+  }
+  var left=focusLeft_(f), pct=1-left/(f.dur*60000), R=110, C=2*Math.PI*R;
+  h+='<div class="focusRun"><div class="pmeta">'+esc(f.label||t('Focus'))+'</div>'+
+    '<div class="ring"><svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="'+R+'" class="ringBg"/><circle cx="130" cy="130" r="'+R+'" class="ringFg" id="focusArc" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-pct)).toFixed(1)+'"/></svg>'+
+    '<div class="ringTx" id="focusLeft">'+mmss_(left)+'</div></div>'+
+    '<p class="sub">📵 '+esc(f.pausedAt?t('Paused'):t('Phone down. You’ve got this.'))+'</p>'+
+    '<div class="btnRow"><button class="btn ghost" id="focusPause">'+esc(f.pausedAt?t('Resume'):t('Pause'))+'</button><button class="btn ghost" id="focusStop">'+esc(t('Stop'))+'</button></div></div>';
+  return h;
+}
+function focusTick_(){
+  var f=focusState_(); if(!f){ clearInterval(focusTimer); focusTimer=null; return; }
+  if(!f.pausedAt && focusLeft_(f)<=0){ focusFinish_(f.dur, f.label); return; }
+  if(S.view!=='focus') return;
+  var el=$('focusLeft'), arc=$('focusArc'); if(!el) return;
+  var left=focusLeft_(f), C=2*Math.PI*110; el.textContent=mmss_(left); if(arc) arc.setAttribute('stroke-dashoffset', (C*(left/(f.dur*60000))).toFixed(1));
+}
+function focusEnsureTimer_(){ if(!focusTimer && focusActive_()) focusTimer=setInterval(focusTick_, 1000); }
+function focusFinish_(min, label){
+  lsDel(FOCUS_KEY); clearInterval(focusTimer); focusTimer=null;
+  var top=dayOf_(todayStr()).top||[], idx=-1; top.forEach(function(x,i){ if(x.text===label && !x.done) idx=i; });
+  S.focusDone={ min:min, label:label, topIndex:idx };
+  try { if(navigator.vibrate) navigator.vibrate([200,100,200]); } catch(e){}
+  if(S.view==='focus'){ render(); var b=document.querySelector('.focusBig'); if(b) confettiAt_(b); }
+  else showMsg(gpT('Focus done: {n} minutes 🎉',{n:min}));
+  if(AUTH && min>=5) call('logFocus', todayStr(), min).then(function(d){ if(d && d.ok){ S.me=d.me; if(S.view!=='focus') render(); } else failMsg(d); });
 }
 
 /* ---------------- the Learn tab ---------------- */

@@ -794,3 +794,26 @@ h2 .khCrowns{font-size:16px; margin-left:4px;}
 .orLine::before, .orLine::after { content:''; flex:1; height:1px; background:var(--line); }
 input[type=password] { width:100%; box-sizing:border-box; }
 .bigPw { font-family:ui-monospace, Menlo, monospace; font-size:20px; letter-spacing:.08em; user-select:all; }
+
+/* ---------- Today: my why, today's 3, focus, the check-in, the recap ---------- */
+.whyLine { display:flex; flex-direction:column; gap:2px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--ink); background:var(--surface); }
+.whyLine.empty { color:var(--accent); font-weight:700; font-size:14.5px; }
+.whyLineTx { font-style:italic; font-size:15.5px; line-height:1.45; }
+.todayHead { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+.allDone { text-align:center; font-weight:800; color:var(--good); padding:8px 0 2px; }
+.focusRow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border2); font-size:14.5px; }
+.checkDone { display:flex; align-items:center; gap:12px; font-size:14.5px; }
+.bigMood { font-size:34px; line-height:1; }
+.recapCard { background:linear-gradient(135deg, var(--accentSoft), var(--surface)); }
+.recapHead { font-weight:900; font-size:16px; margin-bottom:8px; }
+.recapTiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; border:0; padding:0; background:none; margin:0; }
+.recapTiles div { background:var(--surface); border-radius:12px; padding:10px 6px; }
+.focusDone, .focusRun { text-align:center; padding:12px 0; }
+.focusBig { font-size:64px; line-height:1.1; }
+.ring { position:relative; width:260px; max-width:78vw; margin:16px auto; aspect-ratio:1; }
+.ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.ringBg { fill:none; stroke:var(--line); stroke-width:14; }
+.ringFg { fill:none; stroke:var(--accent); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1s linear; }
+.ringTx { position:absolute; inset:0; display:grid; place-items:center; font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+.focusRun .btnRow { justify-content:center; }
+@media (prefers-reduced-motion: reduce) { .ringFg { transition:none; } }

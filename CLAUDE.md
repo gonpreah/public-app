@@ -152,6 +152,17 @@ that team). **Share my week** (📤 on Home, view `share`): a 1080×1920 picture
 (canvas) — first name, streak, focus this week, habit days, days all 3 done, and the type if
 shared; never goals, habits or the why. The person shares or saves it themselves.
 
+## XP, levels and the first-day walkthrough
+**XP** (api.js "XP and levels"): a habit ticked 5, one of today's 3 done 5 (all three +10), focus
+1 per 2 minutes, the check-in 5, a step 15, a goal 100, a challenge day 10, a week at 100% 30, a
+test 50 — each once, by a key in `u.xpLog`, so undoing takes it back and ticking on and off earns
+nothing. `u.xp` is the total; `levelOf_`: 100 XP to level 2, then 50 more each level; titles 🌱 Seed
+→ 🏛️ Angkor (the same names as Learn Khmer's ranks). Home shows the level and a bar, pops "+n XP"
+and celebrates a new level (`xpWatch_`). Others see the level behind `share.level`; every 5th
+level and each new title is a feed moment. **Walkthrough** (view `welcome`): a new account with
+no habits and no why, on a phone that hasn't seen it (`gpa-onboarded`) — welcome, my why, a few
+habits, my team; every step can be skipped.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.

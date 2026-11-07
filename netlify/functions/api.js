@@ -172,7 +172,7 @@ function cleanUsername_(v) {
 }
 
 /* ---------------- what each person may show ---------------- */
-const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan', 'feed', 'focus'];
+const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan', 'feed', 'focus', 'level'];
 function shareOf_(u) {
   const s = (u && u.share) || {}; const o = {};
   SHARE_KEYS.forEach(function (k) { o[k] = s[k] !== false; });
@@ -316,7 +316,13 @@ async function saveTop(uid, tok, date, items) {
   if (!nearDay_(date)) return { ok: false, err: 'day' };
   if (!Array.isArray(items)) return { ok: false, err: 'text' };
   const clean = items.slice(0, 3).map(function (i) { return { text: str_(i && i.text, 100), done: !!(i && i.done) }; }).filter(function (i) { return i.text; });
-  await mutate_('u:' + uid, null, function (u) { if (u) dailyMutate_(u, date, function (x) { x.top = clean; }); return { ok: true }; });
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: true };
+    dailyMutate_(u, date, function (x) { x.top = clean; });
+    for (let i = 0; i < 3; i++) { if (clean[i] && clean[i].done) xpAdd_(u, 't|' + date + '|' + i, 5); else xpDrop_(u, 't|' + date + '|' + i); }
+    if (clean.length === 3 && clean.every(function (i) { return i.done; })) xpAdd_(u, 't|' + date + '|all', 10); else xpDrop_(u, 't|' + date + '|all');
+    return { ok: true };
+  });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 async function saveCheckin(uid, tok, date, c) {
@@ -325,7 +331,7 @@ async function saveCheckin(uid, tok, date, c) {
   c = c && typeof c === 'object' ? c : {};
   const mood = Number(c.mood);
   if ([1, 2, 3, 4, 5].indexOf(mood) === -1) return { ok: false, err: 'mood' };
-  await mutate_('u:' + uid, null, function (u) { if (u) dailyMutate_(u, date, function (x) { x.mood = mood; x.grateful = str_(c.grateful, 200); }); return { ok: true }; });
+  await mutate_('u:' + uid, null, function (u) { if (u) { dailyMutate_(u, date, function (x) { x.mood = mood; x.grateful = str_(c.grateful, 200); }); xpAdd_(u, 'c|' + date, 5); } return { ok: true }; });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 /* A focus session the phone timed: minutes, added to the day. Hours this week can make a
@@ -341,6 +347,7 @@ async function logFocus(uid, tok, date, minutes) {
     let over = false;
     dailyMutate_(u, date, function (x) { if ((x.focus || 0) + m > FOCUS_DAY_MAX) { over = true; return; } x.focus = (x.focus || 0) + m; x.sessions = (x.sessions || 0) + 1; });
     if (over) return { abort: true, ok: false, err: 'minutes' };
+    xpAdd_(u, 'f|' + date + '|' + u.daily[date].sessions, Math.round(m / 2));
     const after = before + m, wk = weekOf_(date);
     FOCUS_MILESTONES.forEach(function (h) { if (before < h * 60 && after >= h * 60) addPost_(u, 'focus', wk + ':' + h); });
     return { ok: true };
@@ -349,13 +356,42 @@ async function logFocus(uid, tok, date, minutes) {
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 
+/* ---------------- XP and levels ----------------
+   Every good thing earns XP, once: a habit ticked (5), one of today's 3 done (5, all three
+   +10), focus (1 per 2 minutes), the evening check-in (5), a life-plan step (15), a goal
+   reached (100), a challenge day (10), a week at 100% (30), a test taken (50). u.xpLog keeps
+   what each was worth by a key ('h|date|habit', 's|step'…), so undoing takes it back and
+   nothing counts twice; u.xp is the total. Dated keys older than XP_LOG_DAYS are dropped
+   from the log (the total keeps them). Levels: 100 XP to level 2, then 50 more each level. */
+const XP_LOG_DAYS = 130, LEVEL_TITLES = [[1, 'Seed', '🌱'], [3, 'Sprout', '🌿'], [5, 'Leaf', '🍃'], [8, 'Tree', '🌳'], [12, 'Bamboo', '🎋'], [17, 'Lotus', '🪷'], [23, 'Elephant', '🐘'], [30, 'Angkor', '🏛️']];
+function xpForLevel_(L) { return L <= 1 ? 0 : (L - 1) * 100 + 25 * (L - 1) * (L - 2); }   // 0, 100, 250, 450, 700…
+function levelOf_(xp) {
+  xp = xp || 0; let L = 1;
+  while (xpForLevel_(L + 1) <= xp && L < 200) L++;
+  let t = LEVEL_TITLES[0]; LEVEL_TITLES.forEach(function (x) { if (L >= x[0]) t = x; });
+  return { level: L, title: t[1], icon: t[2], xp: xp, from: xpForLevel_(L), to: xpForLevel_(L + 1) };
+}
+function xpAdd_(u, key, n) {
+  u.xpLog = u.xpLog && typeof u.xpLog === 'object' ? u.xpLog : {};
+  if (key in u.xpLog || !(n > 0)) return;
+  const before = levelOf_(u.xp).level;
+  u.xpLog[key] = n; u.xp = (u.xp || 0) + n;
+  const after = levelOf_(u.xp).level;
+  if (after > before && (after % 5 === 0 || LEVEL_TITLES.some(function (x) { return x[0] === after; }))) addPost_(u, 'level', after);
+  const cut = addDays_(today_(), -XP_LOG_DAYS);
+  Object.keys(u.xpLog).forEach(function (k) { const m = /\|(\d{4}-\d{2}-\d{2})/.exec(k); if (m && m[1] < cut) delete u.xpLog[k]; });
+}
+function xpDrop_(u, key) {
+  if (u.xpLog && key in u.xpLog) { u.xp = Math.max(0, (u.xp || 0) - u.xpLog[key]); delete u.xpLog[key]; }
+}
+
 /* ---------------- the feed's moments ----------------
    When something worth a 👏 happens, the server notes it on the person (u.posts): a streak
    milestone, a life goal reached, a test taken, a week at 100%, joining a team. Never words of
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams' };
+const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -381,7 +417,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw
+    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp)
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -395,6 +431,7 @@ function cardOut_(u, close) {
   if (sh.teams && close) o.teamCount = (u.teams || []).length;
   if (sh.plan) { const ps = planStats_(u); if (ps.goals || ps.reached) o.plan = ps; }   // counts, never the words
   if (sh.focus && st.focusWeek) o.focusWeek = st.focusWeek;   // minutes, never what they worked on
+  if (sh.level && u.xp) { const lv = levelOf_(u.xp); o.level = { level: lv.level, title: lv.title, icon: lv.icon }; }
   o.tests = st.tests;
   if (!minor && u.bio) o.bio = u.bio;
   return o;
@@ -610,6 +647,7 @@ async function savePersonality(uid, tok, p) {
       if (p.scores != null && !scores) return { abort: true, ok: false, err: 'scores' };
       u.personality = { type: p.type, scores: scores, source: scores ? 'test' : 'picked', at: today_(), share: cur.share !== false, season: cur.season || 'ordinary' };
       if (cur.type !== p.type) addPost_(u, 'type', p.type);
+      xpAdd_(u, 'pt', 50);
     } else if (!u.personality) return { abort: true, ok: false, err: 'type' };
     if (typeof p.share === 'boolean') u.personality.share = p.share;
     if (PSEASON_IDS.indexOf(p.season) > -1) u.personality.season = p.season;
@@ -628,6 +666,7 @@ async function saveStrengths(uid, tok, p) {
   const res = await mutate_('u:' + uid, null, function (u) {
     if (!u) return { abort: true, ok: false, err: 'auth' };
     if (scored && !u.gstrengths) addPost_(u, 'strengths', null);
+    if (scored) xpAdd_(u, 'gs', 50);
     if (scored) u.gstrengths = { answers: scored.answers, scores: scored.scores, top: scored.top, at: today_(), share: !(u.gstrengths && u.gstrengths.share === false) };
     else if (!u.gstrengths) return { abort: true, ok: false, err: 'answers' };
     if (typeof p.share === 'boolean') u.gstrengths.share = p.share;
@@ -655,6 +694,7 @@ async function tickHabit(uid, tok, day, habitId, done) {
     u.days = u.days || {};
     const m = Object.assign({}, u.days[day] || {});
     if (done) m[habitId] = true; else delete m[habitId];
+    if (done) xpAdd_(u, 'h|' + day + '|' + habitId, 5); else xpDrop_(u, 'h|' + day + '|' + habitId);
     if (Object.keys(m).length) u.days[day] = m; else delete u.days[day];
     const cut = addDays_(t, -KEEP_DAYS);
     Object.keys(u.days).forEach(function (d) { if (d < cut) delete u.days[d]; });
@@ -680,7 +720,7 @@ async function saveWeek(uid, tok, week, goals) {
     if (!u) return { ok: false };
     u.weeks = u.weeks || {};
     if (clean.length) u.weeks[week] = clean; else delete u.weeks[week];
-    if (weekPct_(clean) === 100) addPost_(u, 'week', week);
+    if (weekPct_(clean) === 100) { addPost_(u, 'week', week); xpAdd_(u, 'w|' + week, 30); }
     Object.keys(u.weeks).sort().slice(0, -60).forEach(function (k) { delete u.weeks[k]; });
     return { ok: true };
   });
@@ -757,7 +797,7 @@ async function goalAct(uid, tok, gid, act, a) {
     if (!g) return { abort: true, ok: false, err: 'none' };
     g.steps = Array.isArray(g.steps) ? g.steps : [];
     if (act === 'delete') { u.plan.goals = u.plan.goals.filter(function (x) { return x.id !== gid; }); return { ok: true }; }
-    if (act === 'reach') { g.done = a.done ? today_() : ''; if (a.done) addPost_(u, 'goal', g.id); return { ok: true }; }
+    if (act === 'reach') { g.done = a.done ? today_() : ''; if (a.done) { addPost_(u, 'goal', g.id); xpAdd_(u, 'g|' + g.id, 100); } else xpDrop_(u, 'g|' + g.id); return { ok: true }; }
     if (act === 'addStep') {
       const text = str_(a.text, 100);
       if (!text) return { abort: true, ok: false, err: 'text' };
@@ -768,7 +808,7 @@ async function goalAct(uid, tok, gid, act, a) {
     }
     const s = g.steps.filter(function (x) { return x.id === a.id; })[0];
     if (!s) return { abort: true, ok: false, err: 'none' };
-    if (act === 'tickStep') { s.done = a.done ? today_() : ''; return { ok: true }; }
+    if (act === 'tickStep') { s.done = a.done ? today_() : ''; if (a.done) xpAdd_(u, 's|' + s.id, 15); else xpDrop_(u, 's|' + s.id); return { ok: true }; }
     if (act === 'dropStep') { g.steps = g.steps.filter(function (x) { return x.id !== a.id; }); return { ok: true }; }
     return { abort: true, ok: false, err: 'act' };
   });
@@ -1193,7 +1233,7 @@ async function challenge(uid, tok, tid, act, a) {
   if (!me) return { ok: false, err: 'auth' };
   if (typeof tid !== 'string' || (me.teams || []).indexOf(tid) === -1) return { ok: false, err: 'none' };
   a = a && typeof a === 'object' ? a : {};
-  let finished = null;
+  let finished = null, ticked = null;
   const res = await mutate_('t:' + tid, null, function (t) {
     if (!t || t.closed || t.members.indexOf(uid) === -1) return { abort: true, ok: false, err: 'none' };
     const lead = t.leaders.indexOf(uid) > -1, today = today_();
@@ -1222,13 +1262,19 @@ async function challenge(uid, tok, tid, act, a) {
       if (a.done) list.push(d);
       c.members[uid] = list.sort();
       if (a.done && list.length === c.days) finished = c.id;
+      ticked = { key: 'ch|' + d + '|' + c.id, on: !!a.done };
       return { ok: true };
     }
     if (act === 'drop') { if (!lead) return { abort: true, ok: false, err: 'not_leader' }; t.challenges = t.challenges.filter(function (x) { return x.id !== a.id; }); return { ok: true }; }
     return { abort: true, ok: false, err: 'act' };
   });
   if (!res.ok) return res;
-  if (finished) await mutate_('u:' + uid, null, function (u) { if (u) addPost_(u, 'challenge', tid + ':' + finished); return { ok: true }; });
+  if (finished || ticked) await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: true };
+    if (ticked) { if (ticked.on) xpAdd_(u, ticked.key, 10); else xpDrop_(u, ticked.key); }
+    if (finished) addPost_(u, 'challenge', tid + ':' + finished);
+    return { ok: true };
+  });
   return team(uid, tok, tid);
 }
 
@@ -1296,6 +1342,7 @@ function postOut_(u, x, viewer, teamNames) {
   if (sh.type && u.personality && u.personality.share !== false) { o.who.type = u.personality.type; o.who.sex = u.sex || ''; }
   if (x.kind === 'streak') o.n = x.n;
   if (x.kind === 'focus') o.n = Number(String(x.n).split(':')[1]) || null;
+  if (x.kind === 'level') { o.n = x.n; const lv = levelOf_(xpForLevel_(x.n)); o.title = lv.title; o.icon = lv.icon; }
   if (x.kind === 'challenge') o.team = teamNames['ch:' + x.n] || null;   // the challenge's title only for people in that team
   if (x.kind === 'type') o.n = x.n;
   if (x.kind === 'joined') o.team = teamNames[x.n] || null;   // the team's name only for someone in it
@@ -1345,7 +1392,7 @@ async function cheersFor_(u) {
     if (x.at < cut || !(x.claps || []).length) continue;
     const names = [];
     for (const c of x.claps.slice(-2).reverse()) { const v = await readJSON('u:' + c, null); if (!gone_(v) && !blocked_(u, v)) names.push(isMinor_(v) ? firstName_(v.name) : v.name); }
-    out.push({ id: x.id, kind: x.kind, n: x.kind === 'streak' || x.kind === 'type' ? x.n : x.kind === 'focus' ? Number(String(x.n).split(':')[1]) || null : null, count: x.claps.length, names: names });
+    out.push({ id: x.id, kind: x.kind, n: x.kind === 'streak' || x.kind === 'type' || x.kind === 'level' ? x.n : x.kind === 'focus' ? Number(String(x.n).split(':')[1]) || null : null, count: x.claps.length, names: names });
   }
   return out.reverse().slice(0, 5);
 }
@@ -1681,7 +1728,7 @@ export const HANDLERS = {
   saveTop, saveCheckin, logFocus, challenge,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
-export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_ };
+export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_, levelOf_, xpForLevel_ };
 export { runReminders, pushEncrypt_, vapidJwt_ };
 
 export default async function (req) {

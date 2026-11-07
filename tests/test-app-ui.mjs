@@ -11,7 +11,7 @@ async function phone(sub, name) {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
   await ctx.addInitScript(([s, n]) => {
     window.__gpaGoogle = function (cb) { setTimeout(function () { cb('test:' + s + ':' + n); }, 10); };
-    try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); } catch (e) {}
+    try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {}
   }, [sub, name]);
   const page = await ctx.newPage();
   page.on('pageerror', e => errors.push(sub + ': ' + e.message));
@@ -252,7 +252,7 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   const auth = await a.evaluate(() => localStorage.getItem('gpa-auth'));
   const ctx = await browser.newContext({ ...devices['iPhone 13'], userAgent: 'Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile', timezoneId: 'Asia/Phnom_Penh' });
   await ctx.addInitScript(([au, sub]) => {
-    localStorage.setItem('gpa-auth', au); localStorage.setItem('gpa-lang', 'en');
+    localStorage.setItem('gpa-auth', au); localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1');
     window.PushManager = function () {};
     window.Notification = { permission: 'default', requestPermission: () => { window.Notification.permission = 'granted'; return Promise.resolve('granted'); } };
     let cur = null;
@@ -276,7 +276,7 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
 /* ---------- 11. a username and password, no Google ---------- */
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
-  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); } catch (e) {} });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
   const q = await ctx.newPage(); q.on('pageerror', x => errors.push('password: ' + x.message));
   await q.goto(base + '/'); await q.waitForSelector('#liNew');
   await q.click('#liNew'); await q.waitForSelector('#suPass');
@@ -302,7 +302,7 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
 /* ---------- 12. Today: my why, three things, focus, the check-in ---------- */
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
-  await ctx.addInitScript(() => { try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); } catch (e) {} });
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
   const q = await ctx.newPage(); q.on('pageerror', x => errors.push('today: ' + x.message)); q.on('dialog', d => d.accept());
   await q.goto(base + '/'); await q.click('#liNew'); await q.waitForSelector('#suPass');
   await q.fill('#suUser', 'thida'); await q.fill('#suPass', 'thida password'); await q.fill('#suPass2', 'thida password');
@@ -352,7 +352,31 @@ await a.waitForSelector('.shareImg');
 ok('a picture of my week is drawn on the phone', await a.evaluate(() => S.shareImg && S.shareImg.blob && S.shareImg.blob.size > 20000 && S.shareImg.url.startsWith('data:image/png')));
 await a.click('[data-back]');
 
-/* ---------- 14. Khmer ---------- */
+/* ---------- 14. the first-day walkthrough, and levels ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); } catch (e) {} });
+  const q = await ctx.newPage(); q.on('pageerror', x => errors.push('welcome: ' + x.message));
+  await q.goto(base + '/'); await q.click('#liNew'); await q.waitForSelector('#suPass');
+  await q.fill('#suUser', 'dalin'); await q.fill('#suPass', 'dalin password'); await q.fill('#suPass2', 'dalin password');
+  await q.fill('#suName', 'Dalin Chea'); await q.selectOption('#suYear', '2004'); await q.click('#suGo');
+  await q.waitForSelector('.obBox');
+  ok('a new account starts with the walkthrough', /Welcome, Dalin!/.test(await text(q)));
+  await q.click('#obNext'); await q.waitForSelector('#obWhy');
+  await q.fill('#obWhy', 'To be a light in my family'); await q.click('#obNext'); await q.waitForSelector('[data-obh]');
+  await q.click('[data-obh="bible"]'); await q.click('[data-obh="exercise"]'); await q.click('#obNext');
+  await q.waitForSelector('#obDone');
+  ok('… my why and two habits are saved', await q.evaluate(() => S.me.plan.why === 'To be a light in my family' && S.me.habits.length === 2));
+  await q.click('#obDone'); await q.waitForSelector('[data-habit="bible"]');
+  ok('… and Home is ready, with my why on it', /To be a light in my family/.test(await text(q)) && /Level 1/.test(await text(q)));
+  await q.click('[data-habit="bible"]'); await q.waitForSelector('.xpPop');
+  ok('a habit ticked pops +5 XP', /\+5 XP/.test(await q.$eval('.xpPop', e => e.textContent)));
+  await q.reload(); await q.waitForSelector('nav.bottom'); await q.waitForTimeout(500);
+  ok('the walkthrough doesn’t come back', !(await q.$('.obBox')));
+  await ctx.close();
+}
+
+/* ---------- 15. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');
 ok('Khmer switches the screens', /ទម្លាប់ថ្ងៃនេះ/.test(await text(a)) && /ទំព័រដើម/.test(await a.$eval('nav.bottom', e => e.innerText)));
@@ -363,7 +387,7 @@ await a.waitForTimeout(400);
 await a.click('[data-libbook="boundaries"]'); await a.waitForTimeout(500);
 ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប់អ្នក/.test(await text(a)) && /[ក-៿]{20}/.test(await a.$eval('.libForUs', e => e.innerText)));
 
-/* ---------- 15. the page fits a phone ---------- */
+/* ---------- 16. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();

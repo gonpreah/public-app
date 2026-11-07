@@ -355,7 +355,33 @@ ok('finishing every day is a feed moment, with the challenge’s name for the te
 ok('… and no name for someone in none of that team', !(await H.feed(E.uid, E.token)).feed.some(x => x.kind === 'challenge'));
 ok('a leader can end a challenge; a member can’t', (await H.challenge(Q.uid, Q.token, QT.team.id, 'drop', { id: chal.id })).err === 'not_leader' && (await H.challenge(Q2.uid, Q2.token, QT.team.id, 'drop', { id: chal.id })).team.challenges.length === 1);
 
-/* ---------- 14. the door ---------- */
+/* ---------- 14. XP and levels ---------- */
+ok('levels: 100 XP to level 2, then 50 more each', __test.xpForLevel_(2) === 100 && __test.xpForLevel_(3) === 250 && __test.xpForLevel_(4) === 450 && __test.levelOf_(260).level === 3 && __test.levelOf_(0).title === 'Seed');
+const X = await H.registerPassword({ username: 'xp_test', name: 'Xp Test', birthYear: 2000, password: 'xp password' });
+await H.saveHabits(X.uid, X.token, [{ id: 'bible' }, { id: 'english' }]);
+r = await H.tickHabit(X.uid, X.token, today, 'bible', true);
+ok('a habit ticked earns 5 XP', r.me.level.xp === 5 && r.me.level.level === 1);
+for (let i = 0; i < 3; i++) { await H.tickHabit(X.uid, X.token, today, 'bible', false); r = await H.tickHabit(X.uid, X.token, today, 'bible', true); }
+ok('ticking it off and on again earns nothing more', r.me.level.xp === 5);
+r = await H.tickHabit(X.uid, X.token, today, 'bible', false);
+ok('undoing takes it back', r.me.level.xp === 0);
+r = await H.saveTop(X.uid, X.token, today, [{ text: 'a', done: true }, { text: 'b', done: true }, { text: 'c', done: true }]);
+ok('all three of today’s things: 3×5 + 10', r.me.level.xp === 25);
+r = await H.logFocus(X.uid, X.token, today, 50);
+ok('50 minutes of focus: 25 XP', r.me.level.xp === 50);
+r = await H.saveCheckin(X.uid, X.token, today, { mood: 3 });
+r = await H.saveCheckin(X.uid, X.token, today, { mood: 4 });
+ok('the check-in counts once a day', r.me.level.xp === 55);
+const xg = await H.saveGoal(X.uid, X.token, { area: 'study', title: 'Pass the exam', by: __test.monthOf_(today) });
+r = await H.goalAct(X.uid, X.token, xg.id, 'reach', { done: true });
+ok('a goal reached: 100 XP, and level 2', r.me.level.xp === 155 && r.me.level.level === 2);
+await H.saveProfile(X.uid, X.token, { share: { level: true } });
+const xcard = (await H.person(A.uid, A.token, X.uid)).person;
+ok('others see the level, not the XP log', xcard.level && xcard.level.level === 2 && !JSON.stringify(xcard).includes('xpLog'));
+await H.saveProfile(X.uid, X.token, { share: { level: false } });
+ok('… unless the level switch is off', !(await H.person(A.uid, A.token, X.uid)).person.level);
+
+/* ---------- 15. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;
 ok('an unknown function is a 400', await call({ fn: 'constructor', args: [] }) === 400);

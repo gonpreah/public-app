@@ -94,6 +94,26 @@ Push to `main` → Netlify builds and goes live. Work on a branch and open a pul
 when:'YYYY-MM'|'YYYY-Qn', done}]}]}`; `u.tasks` = a person's own tasks; `t.tasks` = team tasks
 (`done` is a map of who ticked). Six areas of life (`AREAS`, the same six the 1-on-1s will use).
 Up to 8 goals at once; Home shows this month's and this quarter's open steps and team tasks.
+`u.plan.vision` (the statement, up to 1500 characters with its line breaks) and `u.plan.word` (a
+word for the year) come from the Life Journey (below).
+
+## The Life Journey (Plan tab → view `journey`; my vision → view `vision`)
+Nov 2026, Uriah: make the life plan "a fun Q&A journey" mixing self-authoring, Donald Miller,
+the Hero's Journey and Living Forward. Seven stops in hero's-journey order (`JR_STOPS` in app.js):
+where you come from (past: best moment, a hard time, what it taught), who you are (gifts, flow,
+what holds you back), the call (what breaks your heart, who to help, the dream), the dragons (a
+fear, the future to avoid, a truth to hold), your guides (who helped, who walks with me, who I'll
+guide), the future you want (five years in each of the six areas, one year), your legacy (the
+70th birthday, three words, a word for the year). One question a screen, chips (`JR_OPTS`, ids
+only on the server) or a short text; every question can be skipped. In our own words: no text
+from the books. The app writes the vision on the phone (`visionMake_`, in the person's language)
+and a one-line why (`missionMake_`); they edit it, then `journey` 'vision' keeps it. Answers are
+`u.story` = {a, done, finished} — only `selfOut_` sends them: no card, coach or leader ever sees
+them; a coach the mentee shares their plan with sees the vision and word. XP: 20 a stop, 60 the
+vision (once ever), 5 a day for reading it again. Home shows my vision (word, why, "Becoming",
+one five-year line or the truth for today, rotating by day); the Plan tab offers each five-year
+line as a goal ("Turn your dreams into goals"). Finishing is a feed moment (no words). In Khmer
+the "dragons" are ឧបសគ្គ (obstacles): the naga is a good figure in Cambodia.
 
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan

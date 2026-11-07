@@ -888,3 +888,62 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 .devoBody { font-size:16px; line-height:1.65; margin:4px 2px 16px; }
 .devoQ { font-size:16px; font-weight:700; margin:4px 0 0; line-height:1.5; }
 .devoPray p { font-style:italic; margin:4px 0 0; line-height:1.55; }
+
+/* ---------- the Life Journey, and my vision ---------- */
+.jrTop { display:flex; justify-content:space-between; align-items:center; }
+.jrMap { display:flex; align-items:center; justify-content:center; margin:6px 0 18px; }
+.jrStop { position:relative; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; background:var(--surface); border:2px solid var(--line); flex:none; filter:grayscale(.7); opacity:.7; }
+.jrStop.done { filter:none; opacity:1; border-color:var(--good); }
+.jrStop.cur { filter:none; opacity:1; border-color:var(--accent); box-shadow:0 0 0 4px var(--accentSoft); transform:scale(1.12); }
+.jrStop i { position:absolute; right:-4px; bottom:-4px; width:15px; height:15px; border-radius:50%; background:var(--good); color:#fff; font-size:9px; font-style:normal; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.jrPath { flex:1; max-width:18px; height:3px; background:var(--line); border-radius:2px; }
+.jrPath.on { background:var(--good); }
+.jrIntro, .jrDone, .jrBuild, .jrReveal { text-align:center; }
+.jrBig { font-size:72px; line-height:1.1; margin:10px 0 4px; animation:jrPop .5s var(--ease, ease) both; }
+.jrStory { font-size:17px; line-height:1.6; margin:6px 4px 18px; color:var(--ink); }
+.jrKnow { text-align:left; }
+.jrQt { font-size:21px; line-height:1.35; margin:14px 0 8px; }
+.jrQ textarea { font-size:16px; }
+.jrPick { margin:6px 0 8px; }
+.jrChips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.jrChip { border:1.5px solid var(--border2); background:var(--surface); color:var(--ink); border-radius:999px; padding:9px 14px; font:inherit; font-size:14px; cursor:pointer; transition:transform .12s; }
+.jrChip:active { transform:scale(.95); }
+.jrChip.on { background:var(--accent); border-color:var(--accent); color:var(--accentInk); font-weight:700; }
+.jrChips.long .jrChip { border-radius:14px; text-align:left; width:100%; }
+.jrAreaL { margin-top:10px; }
+.jrNav { margin-top:18px; }
+.jrDone h2 { margin:4px 0; }
+.jrXp { display:inline-block; background:var(--accentSoft); color:var(--accent); font-weight:800; border-radius:999px; padding:4px 12px; margin:4px 0 6px; animation:jrPop .5s var(--ease, ease) both; }
+.jrNextCard { display:flex; align-items:center; gap:12px; text-align:left; }
+.jrNextIc { font-size:34px; }
+.jrBuild { padding:30px 0; }
+.jrSpark { font-size:64px; animation:jrSpin 1.6s ease-in-out infinite; }
+.jrVisionIn { font-size:15px; line-height:1.6; text-align:left; margin:8px 0 12px; }
+.jrMission { text-align:left; }
+.jrCheck { display:flex; gap:8px; align-items:center; font-size:14px; cursor:pointer; }
+.jrCheck input { width:auto; margin:0; }
+@keyframes jrPop { from { transform:scale(.4); opacity:0; } to { transform:scale(1); opacity:1; } }
+@keyframes jrSpin { 0%,100% { transform:rotate(-12deg) scale(1); } 50% { transform:rotate(12deg) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) { .jrBig, .jrXp, .jrSpark { animation:none; } }
+.jrInvite { display:flex; flex-direction:column; gap:5px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--onDark); background:linear-gradient(135deg, var(--headerBg), var(--accent)); border:0; }
+.jrInvite b { font-size:19px; }
+.jrInvite .pmeta { color:var(--onDark); opacity:.85; }
+.jrInvMap { font-size:18px; letter-spacing:1px; }
+.jrInvMeta { font-weight:800; font-size:13px; color:#FFB323; }
+.visionCard { display:flex; flex-direction:column; gap:6px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--ink); background:linear-gradient(135deg, var(--surface), var(--accentSoft)); }
+.visionTop, .visionHead { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.visionHead h2 { margin:0; }
+.wordBadge { background:var(--headerBg); color:#FFB323; font-weight:800; font-size:12px; letter-spacing:.8px; border-radius:999px; padding:3px 10px; white-space:nowrap; }
+.becoming { font-size:13px; color:var(--muted); }
+.becoming b { color:var(--ink); }
+.visionToday { border-top:1px dashed var(--border2); padding-top:6px; font-size:14px; line-height:1.45; }
+.visionToday .pmeta { display:block; }
+.visionRead { font-size:13px; font-weight:800; color:var(--accent); }
+.visionText { white-space:pre-wrap; line-height:1.6; font-size:15px; }
+.visionText.clip { max-height:9.6em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 60%, transparent); mask-image:linear-gradient(#000 60%, transparent); }
+.jrTags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.jrTags span { background:var(--accentSoft); color:var(--ink); border-radius:999px; padding:4px 10px; font-size:13px; }
+.jrLine { margin:6px 0 10px; line-height:1.5; }
+.dreamRow { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+.dreamRow:first-of-type { border-top:0; }
+.dreamRow .btn { flex:none; width:auto; margin:0; }

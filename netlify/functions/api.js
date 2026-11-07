@@ -496,7 +496,7 @@ function xpDrop_(u, key) {
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
+const POST_SHARE = { journey: 'plan', streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -523,7 +523,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || []
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u)
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -852,7 +852,7 @@ function quarterOf_(iso) { return iso.slice(0, 4) + '-Q' + (Math.floor((Number(i
 function isMonth_(s) { return typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s); }
 function isQuarter_(s) { return typeof s === 'string' && /^\d{4}-Q[1-4]$/.test(s); }
 function inYears_(s) { const y = Number(String(s).slice(0, 4)); return y >= thisYear_() - 1 && y <= thisYear_() + 10; }
-function planOf_(u) { const p = (u && u.plan) || {}; return { why: p.why || '', goals: Array.isArray(p.goals) ? p.goals : [] }; }
+function planOf_(u) { const p = (u && u.plan) || {}; return { why: p.why || '', goals: Array.isArray(p.goals) ? p.goals : [], vision: p.vision || '', word: p.word || '' }; }
 function activeGoals_(u) { return planOf_(u).goals.filter(function (g) { return !g.done; }); }
 function planStats_(u) {
   const goals = planOf_(u).goals, m = monthOf_(today_());
@@ -899,6 +899,72 @@ async function saveGoal(uid, tok, g) {
   if (!res.ok) return res;
   return { ok: true, id: gid, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
+/* ---------------- the Life Journey (Plan tab → view journey) ----------------
+   A Q&A in seven stops, in the order of a hero's journey: where you come from, who you are, the
+   call, the dragons, your guides, the future you want, your legacy. Its questions borrow the best
+   of a few ways of writing a life plan (looking back over your story and ahead to the future you
+   want and the one to avoid; your life as a story with a call, a problem to solve and guides; a
+   picture of each area of life and how you want to be remembered) — in our own words. The app
+   writes a vision statement from the answers; the person edits it and keeps it (u.plan.vision,
+   u.plan.word). The answers (u.story = { a: {key: answer}, done: [stop ids], finished }) are
+   theirs alone: only selfOut_ sends them, never a card, a coach or a leader. 20 XP a stop (once
+   ever), 60 for the vision, 5 a day for reading it again (Home → My vision). */
+const JOURNEY_STOPS = ['home', 'you', 'call', 'dragon', 'guide', 'future', 'legacy'];
+const STORY_TEXT = ['best', 'hard', 'lesson', 'flow', 'dream', 'avoid', 'helped', 'guideFor', 'year', 'remember'];
+const STORY_CHIPS = { pastWords: 3, gifts: 3, weak: 2, heart: 2, who: 2, fear: 1, truth: 1, walk: 3, known: 3, word: 1 };
+function strMl_(v, max) { return String(v == null ? '' : v).replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, max); }
+function storyAnswer_(k, v) {
+  if (STORY_TEXT.indexOf(k) > -1) return str_(v, 300);
+  if (k === 'areas') {
+    const o = {}; v = v && typeof v === 'object' ? v : {};
+    AREAS.forEach(function (a) { const x = str_(v[a], 160); if (x) o[a] = x; });
+    return o;
+  }
+  if (Object.prototype.hasOwnProperty.call(STORY_CHIPS, k)) {
+    v = v && typeof v === 'object' ? v : {};
+    const c = (Array.isArray(v.c) ? v.c : []).filter(function (x) { return typeof x === 'string' && /^[a-z]{2,12}$/.test(x); });
+    return { c: c.filter(function (x, i) { return c.indexOf(x) === i; }).slice(0, STORY_CHIPS[k]), o: str_(v.o, 80) };
+  }
+  return undefined;
+}
+function storyOf_(u) { const s = (u && u.story) || {}; return { a: s.a && typeof s.a === 'object' ? s.a : {}, done: Array.isArray(s.done) ? s.done : [], finished: s.finished || '' }; }
+async function journey(uid, tok, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.story = storyOf_(u);
+    if (act === 'save') {   // some answers, and maybe a stop finished
+      const ans = a.answers && typeof a.answers === 'object' ? a.answers : {};
+      Object.keys(ans).slice(0, 40).forEach(function (k) { const v = storyAnswer_(k, ans[k]); if (v !== undefined) u.story.a[k] = v; });
+      if (a.stop != null) {
+        if (JOURNEY_STOPS.indexOf(a.stop) === -1) return { abort: true, ok: false, err: 'stop' };
+        if (u.story.done.indexOf(a.stop) === -1) u.story.done.push(a.stop);
+        xpAdd_(u, 'j|' + a.stop, 20);
+      }
+      return { ok: true };
+    }
+    if (act === 'vision') {   // the statement they keep (edited or not), and their word for the year
+      const v = strMl_(a.vision, 1500);
+      if (v.length < 10) return { abort: true, ok: false, err: 'text' };
+      u.plan = planOf_(u); u.plan.vision = v; u.plan.word = str_(a.word, 30);
+      if (a.why != null && str_(a.why, 300)) u.plan.why = str_(a.why, 300);
+      if (!u.story.finished) { u.story.finished = today_(); addPost_(u, 'journey', null); }
+      xpAdd_(u, 'j|vision', 60);
+      return { ok: true };
+    }
+    if (act === 'read') {   // read my vision again today: 5 XP, once a day
+      if (!nearDay_(a.date)) return { abort: true, ok: false, err: 'day' };
+      if (!planOf_(u).vision) return { abort: true, ok: false, err: 'none' };
+      dailyMutate_(u, a.date, function (x) { x.vision = true; }); xpAdd_(u, 'v|' + a.date, 5);
+      return { ok: true };
+    }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+
 /* One goal: add / tick / drop a step, mark it reached (or not), or delete it. */
 async function goalAct(uid, tok, gid, act, a) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
@@ -1991,7 +2057,7 @@ async function signOut(uid, tok) {
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveHabits, tickHabit, saveWeek,
-  savePlanWhy, saveGoal, goalAct, myTask, teamTask,
+  savePlanWhy, saveGoal, goalAct, myTask, teamTask, journey,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,

@@ -143,6 +143,15 @@ focus, days all 3 done, steps, mood). Stored in `u.daily[date]` (120 days), all 
 see only focus minutes this week (`share.focus`), and 2/5/10/20/30 focus hours in a week is a
 feed moment.
 
+## Team challenges and the share card
+**Challenges** (team page; `challenge` handler, `t.challenges`): a leader starts one — a title
+(or one of `CH_IDEAS`), an emoji, 3–40 days, from today or tomorrow. Members choose to join and
+tick each day; the team sees who's in and each one's day count, nothing more. Joined ones show
+on Home ("Your challenges"); finishing every day is a feed moment (its title only for people in
+that team). **Share my week** (📤 on Home, view `share`): a 1080×1920 picture drawn on the phone
+(canvas) — first name, streak, focus this week, habit days, days all 3 done, and the type if
+shared; never goals, habits or the why. The person shares or saves it themselves.
+
 ## Planned, in order
 1. ~~Life plan: SMART life goals with quarterly and monthly steps; tasks (shared in a team).~~ Done Nov 2026.
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.

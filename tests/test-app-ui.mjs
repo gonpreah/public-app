@@ -456,22 +456,39 @@ await a.click('[data-back]');
     if (await j.$('.jrBuild')) { await j.waitForSelector('#jrVision'); break; }
     if (await j.$('#jrVision')) break;
     const k = await j.evaluate(() => JR_STOPS[S.jr.s].qs[S.jr.q].k);
-    if (k === 'areas') await j.fill('#jrA_study', 'I teach English at a school');
+    if (k === 'wheel') { for (const a of ['faith', 'family', 'study', 'health', 'money', 'serve']) await j.click(`[data-jrw="${a}|4"]`); }
+    else if (k === 'areas') await j.fill('#jrA_study', 'I teach English at a school');
     else if (k === 'year') await j.fill('#jrText', 'I pass grade 12');
     else if (answers[k]) for (const id of answers[k]) await j.click(`[data-jrc="${id}"]`);
     await j.click('#jrNext'); await j.waitForTimeout(100);
   }
   const draft = await j.$eval('#jrVision', e => e.value);
+  ok('text boxes are 16px on a phone, so iPhone Safari doesn’t zoom in', await j.$eval('#jrVision', e => getComputedStyle(e).fontSize) === '16px');
+  await j.tap('#jrVision'); await j.waitForTimeout(200);
+  ok('with the box in focus but no keyboard up, the bottom bar stays', await j.evaluate(() => !document.body.classList.contains('typing')));
+  const vp = j.viewportSize(); await j.setViewportSize({ width: vp.width, height: Math.round(vp.height * 0.55) }); await j.waitForTimeout(300);   // the keyboard comes up
+  ok('… and steps aside while the keyboard is up', await j.evaluate(() => document.body.classList.contains('typing') && getComputedStyle(document.getElementById('bottomNav')).display === 'none'));
+  await j.setViewportSize(vp); await j.waitForTimeout(300);
+  ok('… and comes back when the keyboard goes', await j.evaluate(() => !document.body.classList.contains('typing')));
   ok('the app writes a vision from the answers', /I’m Jonah, a child of God, becoming someone brave and faithful\./.test(draft) && /gift for music and explaining and teaching, and I want to use it to help young people/.test(draft)
     && /🎓 I teach English at a school/.test(draft) && /When I’m afraid of failing, I’ll remember: God is with me, even here\./.test(draft) && /My word for \d{4}: FOCUS/.test(draft), draft);
   ok('… and a why in one line, ready to use', /To help young people with my gift for music and explaining and teaching, because God cares about young people without hope/.test(await text(j)) && await j.$eval('#jrUseWhy', e => e.checked));
-  await j.fill('#jrVision', draft + '\n\nI will not give up.'); await j.click('#jrKeep'); await j.waitForSelector('#visionRead');
+  await j.fill('#jrVision', draft + '\n\nI will not give up.'); await j.evaluate(() => document.activeElement.blur()); await j.waitForTimeout(200); await j.click('#jrKeep'); await j.waitForSelector('#visionRead');
   ok('keeping it shows my vision, as I changed it', /I will not give up/.test(await text(j)) && await j.evaluate(() => S.me.plan.word === 'Focus' && /^To help young people/.test(S.me.plan.why)), await j.evaluate(() => JSON.stringify({ w: S.me.plan.word, why: S.me.plan.why, v: S.me.plan.vision.slice(-60), view: S.view })));
   if (await j.$('#levelOk')) await j.click('#levelOk');
   await j.click('#visionRead'); await j.waitForTimeout(600);
   ok('… and I can mark it read today', /Read today/.test(await text(j)));
   await j.click('nav.bottom button[data-tab="home"]'); await j.waitForSelector('#goVision');
   ok('Home shows my vision: my word, my why, who I’m becoming and one thing for today', /FOCUS/.test(await text(j)) && /Becoming: Brave · Faithful/.test(await text(j)) && /For today/.test(await text(j)) && /To help young people/.test(await text(j)));
+  await j.click('#goVision'); await j.waitForSelector('.visionText');
+  ok('the journey’s life wheel shows on my vision', await j.evaluate(() => S.me.story.wheels.length === 1 && S.me.story.a.wheel.faith === 4) && /My life now/.test(await text(j)));
+  await j.click('#wheelAgain'); await j.waitForSelector('[data-wh]');
+  for (const a of ['faith', 'family', 'study', 'health', 'money', 'serve']) await j.click(`[data-wh="${a}|5"]`);
+  await j.click('#wheelSave'); await j.waitForTimeout(700);
+  ok('checking my life again saves it', await j.evaluate(() => S.me.story.a.wheel.health === 5 && !S.wheelEdit) && !(await j.$('[data-wh]')));
+  await j.click('#shareWord'); await j.waitForSelector('.shareImg');
+  ok('my word for the year makes a picture to share', /Share my word for the year/.test(await text(j)) && /gonpreah-my-word\.png/.test(await j.$eval('#shareSave', a => a.download)));
+  await j.click('[data-back]'); await j.waitForSelector('#visionRead, .allDone');
   await j.click('nav.bottom button[data-tab="plan"]'); await j.waitForSelector('[data-dream="study"]');
   await j.click('[data-dream="study"]'); await j.waitForSelector('#gTitle');
   ok('a dream becomes a goal in one tap', await j.$eval('#gTitle', e => e.value) === 'I teach English at a school' && !!(await j.$('[data-garea="study"].on')));

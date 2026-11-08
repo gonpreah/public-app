@@ -913,8 +913,10 @@ const JOURNEY_STOPS = ['home', 'you', 'call', 'dragon', 'guide', 'future', 'lega
 const STORY_TEXT = ['best', 'hard', 'lesson', 'flow', 'dream', 'avoid', 'helped', 'guideFor', 'year', 'remember'];
 const STORY_CHIPS = { pastWords: 3, gifts: 3, weak: 2, heart: 2, who: 2, fear: 1, truth: 1, walk: 3, known: 3, word: 1 };
 function strMl_(v, max) { return String(v == null ? '' : v).replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, max); }
+function wheelOf_(v) { const o = {}; v = v && typeof v === 'object' ? v : {}; AREAS.forEach(function (a) { const n = Number(v[a]); if ([1, 2, 3, 4, 5].indexOf(n) > -1) o[a] = n; }); return o; }
 function storyAnswer_(k, v) {
   if (STORY_TEXT.indexOf(k) > -1) return str_(v, 300);
+  if (k === 'wheel') return wheelOf_(v);
   if (k === 'areas') {
     const o = {}; v = v && typeof v === 'object' ? v : {};
     AREAS.forEach(function (a) { const x = str_(v[a], 160); if (x) o[a] = x; });
@@ -927,7 +929,12 @@ function storyAnswer_(k, v) {
   }
   return undefined;
 }
-function storyOf_(u) { const s = (u && u.story) || {}; return { a: s.a && typeof s.a === 'object' ? s.a : {}, done: Array.isArray(s.done) ? s.done : [], finished: s.finished || '' }; }
+function storyOf_(u) { const s = (u && u.story) || {}; return { a: s.a && typeof s.a === 'object' ? s.a : {}, done: Array.isArray(s.done) ? s.done : [], finished: s.finished || '', wheels: Array.isArray(s.wheels) ? s.wheels : [] }; }
+/* A wheel kept in the history (u.story.wheels: [{d, v}], the last 12; one a day). */
+function wheelKeep_(st, v) {
+  if (!Object.keys(v).length) return;
+  const t = today_(); st.wheels = st.wheels.filter(function (w) { return w.d !== t; }).concat([{ d: t, v: v }]).slice(-12);
+}
 async function journey(uid, tok, act, a) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
   a = a && typeof a === 'object' ? a : {};
@@ -937,6 +944,7 @@ async function journey(uid, tok, act, a) {
     if (act === 'save') {   // some answers, and maybe a stop finished
       const ans = a.answers && typeof a.answers === 'object' ? a.answers : {};
       Object.keys(ans).slice(0, 40).forEach(function (k) { const v = storyAnswer_(k, ans[k]); if (v !== undefined) u.story.a[k] = v; });
+      if ('wheel' in ans) wheelKeep_(u.story, u.story.a.wheel || {});
       if (a.stop != null) {
         if (JOURNEY_STOPS.indexOf(a.stop) === -1) return { abort: true, ok: false, err: 'stop' };
         if (u.story.done.indexOf(a.stop) === -1) u.story.done.push(a.stop);
@@ -951,6 +959,12 @@ async function journey(uid, tok, act, a) {
       if (a.why != null && str_(a.why, 300)) u.plan.why = str_(a.why, 300);
       if (!u.story.finished) { u.story.finished = today_(); addPost_(u, 'journey', null); }
       xpAdd_(u, 'j|vision', 60);
+      return { ok: true };
+    }
+    if (act === 'wheel') {   // how's my life now? Again any time; 10 XP once a month
+      const v = wheelOf_(a.wheel);
+      if (Object.keys(v).length < AREAS.length) return { abort: true, ok: false, err: 'wheel' };
+      u.story.a.wheel = v; wheelKeep_(u.story, v); xpAdd_(u, 'w|' + monthOf_(today_()), 10);
       return { ok: true };
     }
     if (act === 'read') {   // read my vision again today: 5 XP, once a day
@@ -1698,6 +1712,7 @@ const PUSH_TEXT = {
   coachOffer: { en: '{name} offered to be your coach.', km: '{name} បានស្នើធ្វើជាអ្នកណែនាំរបស់អ្នក។' },
   teamTask: { en: 'A new task for you in {team}.', km: 'មានកិច្ចការថ្មីសម្រាប់អ្នកនៅក្នុង {team}។' },
   planDay: { en: 'Good morning ☀️ What are your 3 things for today?', km: 'អរុណសួស្តី ☀️ តើរឿងទាំង ៣ របស់អ្នកសម្រាប់ថ្ងៃនេះជាអ្វី?' },
+  vision: { en: 'It’s Sunday: read your vision again 📜', km: 'ថ្ងៃនេះជាថ្ងៃអាទិត្យ៖ អានចក្ខុវិស័យរបស់អ្នកម្តងទៀត 📜' },
   reading: { en: 'Today’s Bible reading is waiting 📖', km: 'ការអានព្រះគម្ពីរថ្ងៃនេះកំពុងរង់ចាំ 📖' },
   challenges: { en: '{n} team challenges to tick today 🏁', km: 'ការប្រកួតក្រុម {n} ដែលត្រូវគូសថ្ងៃនេះ 🏁' },
   test: { en: 'Reminders are on. You’ll hear from GonPreah at the time you chose.', km: 'ការរំលឹកត្រូវបានបើក។ កូនព្រះនឹងរំលឹកអ្នកនៅម៉ោងដែលអ្នកបានជ្រើសរើស។' }
@@ -1846,6 +1861,7 @@ async function reminderItems_(u, ctx) {
     const m = (u.days || {})[today];
     if (!(m && Object.keys(m).some(function (k) { return m[k]; }))) { const st = streakOf_(u.days || {}, u.frozen); out.push(st ? { key: 'habits', params: { n: st } } : { key: 'habitsNew' }); }
   }
+  if (p.plan && ctx.sunday && planOf_(u).vision && !((u.daily || {})[today] || {}).vision) out.push({ key: 'vision' });   // Sundays: read my vision again
   if (p.plan && ctx.monday) {
     const mon = monthOf_(today), q = quarterOf_(today);
     let n = 0;
@@ -1894,7 +1910,7 @@ async function runReminders(now) {
     const run = await readJSON('pushRun', {});
     if (run.slot === today + 'T' + hour) return { ok: true, sent: 0, skipped: 'already_ran' };
     await writeJSON('pushRun', { slot: today + 'T' + hour, at: at.toISOString(), running: true });
-    const ctx = { today: today, hour: hour, monday: local.getUTCDay() === 1, teams: {} }, byUid = {};
+    const ctx = { today: today, hour: hour, monday: local.getUTCDay() === 1, sunday: local.getUTCDay() === 0, teams: {} }, byUid = {};
     subs.forEach(function (r) { (byUid[r.uid] = byUid[r.uid] || []).push(r); });
     let sent = 0, people = 0; const gone = [];
     for (const uid of Object.keys(byUid)) {

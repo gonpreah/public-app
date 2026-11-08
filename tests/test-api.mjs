@@ -512,6 +512,15 @@ await H.saveApest(AP.uid, AP.token, { share: true }); await H.saveProfile(AP.uid
 ok('… or when “Your gifts” is off in What others see', !('apest' in (await H.person(B.uid, B.token, AP.uid)).person));
 ok('the tests count takes in the gifts', (await H.boot(AP.uid, AP.token)).me.stats.tests === 1);
 
+/* ---------- 18c. the Sunday reset ---------- */
+const RS = await H.registerPassword({ username: 'resa', name: 'Resa Lim', birthYear: 2002, password: 'resa password', lang: 'en' });
+const thisMon = __test.weekOf_(today), nextMon = new Date(Date.parse(thisMon) + 7 * 864e5).toISOString().slice(0, 10);
+ok('a reset is for this week or next only', (await H.weekReset(RS.uid, RS.token, '2020-01-06', {})).err === 'week' && (await H.weekReset(RS.uid, RS.token, today === thisMon ? nextMon.replace(/-\d\d$/, '-15') : today, {})).err === 'week');
+let rsr = await H.weekReset(RS.uid, RS.token, nextMon, { good: 'Finished my essay', hard: 'Too late on my phone', area: 'health' });
+ok('it keeps what went well, what was hard and the part of life to care for, with 30 XP', rsr.ok && rsr.me.resets[nextMon].good === 'Finished my essay' && rsr.me.resets[nextMon].area === 'health' && rsr.me.level.xp === 30);
+ok('… once a week', (await H.weekReset(RS.uid, RS.token, nextMon, { area: 'moon' })).me.level.xp === 30 && (await H.boot(RS.uid, RS.token)).me.resets[nextMon].area === '');
+ok('… and nobody else sees it', !/essay|phone|resets/.test(JSON.stringify(await H.person(B.uid, B.token, RS.uid))));
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

@@ -127,6 +127,7 @@ mem.delete('pushRun'); sent = [];
 await runReminders(new Date(sun + 'T01:00:00Z'));
 const vb = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
 ok('on Sundays, someone with a vision is reminded to read it again', /read your vision again/.test(vb), vb);
+ok('… and everyone is invited to the Sunday reset', /Sunday reset/.test(vb), vb);
 mem.delete('pushRun'); sent = [];
 await runReminders(new Date(mon + 'T01:00:00Z'));
 const vb2 = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';

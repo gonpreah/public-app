@@ -524,7 +524,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u)
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), resets: u.resets || {}
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -871,6 +871,27 @@ async function saveWeek(uid, tok, week, goals) {
     if (clean.length) u.weeks[week] = clean; else delete u.weeks[week];
     if (weekPct_(clean) === 100) { addPost_(u, 'week', week); xpAdd_(u, 'w|' + week, 30); }
     Object.keys(u.weeks).sort().slice(0, -60).forEach(function (k) { delete u.weeks[k]; });
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+
+/* ---------------- the Sunday reset ----------------
+   Once a week (Saturday to Monday) a few minutes: look back (what went well, what was hard), look
+   up (which part of life needs care this week) and look ahead (the week's three goals, saved with
+   saveWeek). u.resets[monday] = { good, hard, area, at }, the last 26 weeks — private, like the
+   rest of the plan. 30 XP once a week. `week` is the Monday of the week being planned. */
+async function weekReset(uid, tok, week, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const t = weekOf_(today_());
+  if (!isDay_(week) || weekOf_(week) !== week || (week !== t && week !== addDays_(t, 7))) return { ok: false, err: 'week' };
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: false };
+    u.resets = u.resets && typeof u.resets === 'object' ? u.resets : {};
+    u.resets[week] = { good: str_(a.good, 300), hard: str_(a.hard, 300), area: AREAS.indexOf(a.area) > -1 ? a.area : '', at: today_() };
+    Object.keys(u.resets).sort().slice(0, -26).forEach(function (k) { delete u.resets[k]; });
+    xpAdd_(u, 'wr|' + week, 30);
     return { ok: true };
   });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
@@ -1749,6 +1770,7 @@ const PUSH_TEXT = {
   coachOffer: { en: '{name} offered to be your coach.', km: '{name} បានស្នើធ្វើជាអ្នកណែនាំរបស់អ្នក។' },
   teamTask: { en: 'A new task for you in {team}.', km: 'មានកិច្ចការថ្មីសម្រាប់អ្នកនៅក្នុង {team}។' },
   planDay: { en: 'Good morning ☀️ What are your 3 things for today?', km: 'អរុណសួស្តី ☀️ តើរឿងទាំង ៣ របស់អ្នកសម្រាប់ថ្ងៃនេះជាអ្វី?' },
+  reset: { en: 'Sunday reset: 5 minutes to set up your week 🔄', km: 'កំណត់សប្តាហ៍ឡើងវិញនៅថ្ងៃអាទិត្យ៖ ៥ នាទីដើម្បីរៀបចំសប្តាហ៍របស់អ្នក 🔄' },
   vision: { en: 'It’s Sunday: read your vision again 📜', km: 'ថ្ងៃនេះជាថ្ងៃអាទិត្យ៖ អានចក្ខុវិស័យរបស់អ្នកម្តងទៀត 📜' },
   reading: { en: 'Today’s Bible reading is waiting 📖', km: 'ការអានព្រះគម្ពីរថ្ងៃនេះកំពុងរង់ចាំ 📖' },
   challenges: { en: '{n} team challenges to tick today 🏁', km: 'ការប្រកួតក្រុម {n} ដែលត្រូវគូសថ្ងៃនេះ 🏁' },
@@ -1898,6 +1920,7 @@ async function reminderItems_(u, ctx) {
     const m = (u.days || {})[today];
     if (!(m && Object.keys(m).some(function (k) { return m[k]; }))) { const st = streakOf_(u.days || {}, u.frozen); out.push(st ? { key: 'habits', params: { n: st } } : { key: 'habitsNew' }); }
   }
+  if (p.plan && ctx.sunday && !((u.resets || {})[addDays_(weekOf_(today), 7)])) out.push({ key: 'reset' });   // Sundays: set up the week
   if (p.plan && ctx.sunday && planOf_(u).vision && !((u.daily || {})[today] || {}).vision) out.push({ key: 'vision' });   // Sundays: read my vision again
   if (p.plan && ctx.monday) {
     const mon = monthOf_(today), q = quarterOf_(today);
@@ -2110,7 +2133,7 @@ async function signOut(uid, tok) {
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveHabits, tickHabit, saveWeek,
-  savePlanWhy, saveGoal, goalAct, myTask, teamTask, journey,
+  savePlanWhy, saveGoal, goalAct, myTask, teamTask, journey, weekReset,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,

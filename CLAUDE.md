@@ -128,6 +128,25 @@ on a quick double tap: so text boxes are 16px on touch screens (`pointer:coarse`
 focus and the visible screen is clearly shorter), `body.typing` hides the bottom bar so it can't
 sit on the box. tests/test-app-ui.mjs holds both.
 
+## The five gifts (APEST), and going deeper on every test (Me → How God made you)
+Nov 2026, Uriah: "an APEST test for 5 fold ministry with explanation of results" and "a deeper
+understanding part for each of the personality tests including what … career sphere their gift
+might be most effective in". **Five gifts** (Ephesians 4:11; view `atest`, results `agift`):
+`public/apest.js` — this app's own 30 statements (6 a gift, ids `a1`…`t6`, answered 1–5) and five
+descriptions in English and Khmer (what it is, how it builds others up, at its best / unhealthy,
+strengths, watch-outs, the gifts it needs, growth steps, spheres, example work, how Jesus showed it,
+references only). The server scores (`apestScore_`, `saveApest`; 50 XP once): `u.apest` =
+{answers, scores 0–100, top (all five, strongest first), share}. Others see only the two strongest,
+behind `share.apest` and its own `share` flag; taking it is a feed moment naming only the gift.
+Not copied from any published APEST test. **Going deeper**: `public/deeper-types.js` (`GP_PDEEP`:
+for each of the 16 types — at your best, with people, under stress, with God, ways to grow, spheres
+and why, example work) and `public/deeper-strengths.js` (`GP_GSDEEP`: for each of the 34 — use it,
+a partner strength, spheres, example work), shown on my own results only (they speak to "you").
+**Spheres** (`SPHERES` in app.js): family, church, education, government, media, arts, business,
+health. Me → "Where your gifts may shine" adds up the spheres of my type, Top 5 and two strongest
+gifts (`sphereVotes_`). These three files load only when a screen needs them (`needJs_`); they are
+drafts by Claude, English and Khmer, unreviewed. tests/test-library.mjs checks their shape.
+
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan
 (the mentee lets the coach see their life plan), meetings (a check-in 1–5 on the six areas,

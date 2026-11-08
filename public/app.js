@@ -15,6 +15,7 @@
       friends · pulse            — my friends (asks, list); a leader's view of their team
       devo                       — today's devotional (devotions.js, one for each day of the month)
       journey · vision           — the Life Journey (seven stops of questions → a vision); my vision
+      atest · agift              — the five gifts test (APEST, apest.js) and its results
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -118,7 +119,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -158,6 +159,8 @@ function render(){
     else if(V==='friends') h=friendsHtml();
     else if(V==='devo') h=devoHtml();
     else if(V==='journey') h=journeyHtml();
+    else if(V==='atest') h=atestHtml();
+    else if(V==='agift') h=agiftHtml();
     else if(V==='vision') h=visionHtml();
     else if(V==='pulse') h=pulseHtml();
     else if(V==='report') h=reportHtml();
@@ -323,13 +326,22 @@ function homeHtml(){
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
   h+=whyLineHtml()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
-  if(!me.personality || !me.gstrengths){
+  if(!me.personality || !me.gstrengths || !me.apest){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
     if(!me.gstrengths) h+=entryCardHtml('goGtest','💪',t('Find your top 5 strengths'),t('102 quick choices · about 15 minutes'));
+    if(!me.apest) h+=apEntryHtml_();
   }
   if(!(S.teams||[]).length) h+='<h3>👥 '+esc(t('Your team'))+'</h3>'+entryCardHtml('goTeamsHome','👥',t('Join or start a team'),t('Grow together with your friends, club or group.'));
   return h;
+}
+/* The five gifts on Me (and Home): my two strongest, or the way in. */
+function apEntryHtml_(){
+  var A=S.me.apest;
+  if(!A) return entryCardHtml('goAtest','🔥',t('Find your ministry gift (APEST)'),t('30 statements · about 5 minutes'));
+  var have=typeof GP_APEST!=='undefined', g1=have && apById_(A.top[0]), g2=have && apById_(A.top[1]);
+  if(!have) needJs_('apest.js','GP_APEST');
+  return '<button class="card pEntry" id="seeMyAp"><span class="pEntryArt"><span class="pQ">'+(g1?g1.icon:'🔥')+'</span></span><span style="flex:1"><div style="font-size:16px;font-weight:800">'+(g1?esc(fld_(g1,'name'))+(g2?' · '+esc(fld_(g2,'name')):''):esc(t('Your gifts (APEST)')))+'</div><div class="pmeta">'+esc(t('Your strongest gifts — tap to read more'))+'</div></span><span class="chev">›</span></button>';
 }
 function entryCardHtml(id, icon, title, meta){
   return '<button class="card pEntry" id="'+id+'"><span class="pEntryArt"><span class="pQ">'+icon+'</span></span>'+
@@ -465,6 +477,8 @@ function personHtml(){
   if(tiles) h+='<div class="card statTiles">'+tiles+'</div>';
   if(p.type && GP_PTYPES[p.type]){ var g=gpPGroupOf(p.type);
     h+='<h3>🧭 '+esc(t('Personality'))+'</h3><button class="card pEntry" id="seePType"><span class="pEntryArt">'+gpPAvatar(p.type,p.sex||'',64)+'</span><span style="flex:1"><div class="pCode" style="color:'+g.ink+'">'+esc(p.type)+'</div><div style="font-size:16px;font-weight:800">'+esc(pTheName(p.type))+'</div><div class="pmeta">'+esc(gpT('How to work well with {name}',{name:firstName_(p.name)}))+'</div></span><span class="chev">›</span></button>'; }
+  if(p.apest && p.apest.length){ var pa=typeof GP_APEST!=='undefined'; if(!pa) needJs_('apest.js','GP_APEST');
+    h+='<h3>🔥 '+esc(t('Gifts'))+'</h3><button class="card pEntry" id="seeAp"><span style="flex:1"><div class="sChips">'+p.apest.map(function(id){ var g=pa && apById_(id); return g ? '<span class="sChip" style="background:'+g.tint+';color:'+g.ink+'">'+g.icon+' '+esc(fld_(g,'name'))+'</span>' : ''; }).join('')+'</div><div class="pmeta" style="margin-top:6px">'+esc(gpT('How {name} builds others up',{name:firstName_(p.name)}))+'</div></span><span class="chev">›</span></button>'; }
   if(p.strengths && p.strengths.length) h+='<h3>💪 '+esc(t('Strengths'))+'</h3><button class="card pEntry" id="seeGs" style="align-items:flex-start"><span style="flex:1"><div class="sChips">'+p.strengths.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</div></span><span class="chev">›</span></button>';
   if((p.sharedTeams||[]).length) h+='<p class="hint">'+esc(t('In your teams:'))+' '+esc(p.sharedTeams.map(function(x){ return x.emoji+' '+x.name; }).join(', '))+'</p>';
   if(S.team && S.team.leader && !p.leader && p.id!==S.me.id && (S.team.people||[]).some(function(x){ return x.id===p.id; })){
@@ -516,10 +530,12 @@ function meHtml(){
   } else h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
   if(me.gstrengths) h+='<button class="card pEntry" id="seeMyGs" style="align-items:flex-start"><span style="flex:1"><div class="sChips">'+me.gstrengths.top.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</div><div class="pmeta" style="margin-top:6px">'+esc(t('Your top 5 strengths'))+'</div></span><span class="chev">›</span></button>';
   else h+=entryCardHtml('goGtest','💪',t('Find your top 5 strengths'),t('102 quick choices · about 15 minutes'));
+  h+=apEntryHtml_();
+  h+=spheresMeHtml_();
 
   h+='<h3>👁 '+esc(t('What others see'))+'</h3><div class="card">'+
     '<p class="sub" style="margin:0 0 8px">'+esc(t('People see your progress, never the details: not your goals, your habits or your answers.'))+'</p>';
-  [['type','Your personality type'],['strengths','Your top 5 strengths'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['level','My level'],['focus','My focus time this week (never what I worked on)'],['feed','My moments in my teams’ feed (👏)'],['teams','How many teams you’re in']].forEach(function(x){
+  [['type','Your personality type'],['strengths','Your top 5 strengths'],['apest','Your gifts (APEST)'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['level','My level'],['focus','My focus time this week (never what I worked on)'],['feed','My moments in my teams’ feed (👏)'],['teams','How many teams you’re in']].forEach(function(x){
     h+='<label class="switchRow"><span>'+esc(t(x[1]))+'</span><input type="checkbox" data-share="'+x[0]+'"'+(sh[x[0]]!==false?' checked':'')+'></label>';
   });
   h+=(me.minor?'<div class="hint">🔒 '+esc(t('You’re under 18, so only people in your teams can see you, by your first name.'))+'</div>':'')+'</div>';
@@ -928,6 +944,7 @@ function ptypeHtml(){
   }
   h+='<h3>🤝 '+esc(mine?t('How others can work well with you'):gpT('Working with {name}',{name:firstName_(other.name)}))+'</h3><div class="card"><ul class="pList">'+
     ty.workWith.map(function(x){ return '<li><span class="pMark" style="background:'+g.color+'">→</span>'+esc(t(x))+'</li>'; }).join('')+'</ul></div>';
+  if(mine) h+=typeDeeperHtml_(P.type);
   if(mine) h+='<button class="btn ghost" id="pRetake">'+esc(t('Take the test again'))+'</button>';
   return h+pFineHtml();
 }
@@ -975,7 +992,12 @@ function gstrHtml(){
       '<p style="margin:8px 0 6px;font-size:15px;line-height:1.55">'+esc(t(s.about))+'</p><ul class="pList">'+
       s.best.map(function(x){ return '<li><span class="pMark" style="background:var(--pGood)">✓</span>'+esc(t(x))+'</li>'; }).join('')+
       s.watch.map(function(x){ return '<li><span class="pMark" style="background:var(--pBad)">!</span>'+esc(t(x))+'</li>'; }).join('')+
-      '<li><span class="pMark" style="background:'+g.ink+'">→</span><b>'+esc(mine?t('For the team:'):t('Working together:'))+'</b> '+esc(t(s.give))+'</li></ul></div>'; });
+      '<li><span class="pMark" style="background:'+g.ink+'">→</span><b>'+esc(mine?t('For the team:'):t('Working together:'))+'</b> '+esc(t(s.give))+'</li></ul>'+(mine?strengthDeeperHtml_(id):'')+'</div>'; });
+  if(mine && needJs_('deeper-strengths.js','GP_GSDEEP')){
+    var votes={}; G.top.forEach(function(id){ var D=GP_GSDEEP[id]; if(D) D.spheres.forEach(function(sp, i){ votes[sp]=(votes[sp]||0)+(i?1:2); }); });
+    var tops=Object.keys(votes).sort(function(a,b){ return votes[b]-votes[a]; }).slice(0,3);
+    if(tops.length) h+='<h3>🌍 '+esc(t('Where your top 5 may shine'))+'</h3><div class="card">'+sphereChipsHtml_(tops)+'<p class="pmeta" style="margin:8px 0 0">'+esc(t('Each strength below says more: how to use it, a partner strength, and work where it may shine.'))+'</p></div>';
+  }
   if(mine) h+='<button class="btn ghost" id="gsRetake">'+esc(t('Take the test again'))+'</button>';
   return h+gsFineHtml();
 }
@@ -1067,8 +1089,8 @@ function bind(){
   on('focusAgain', function(){ S.focusDone=null; render(); });
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
-  /* the Life Journey, and my vision */
-  bindJourney_(); bindVision_();
+  /* the Life Journey, and my vision; the five gifts */
+  bindJourney_(); bindVision_(); bindApest_();
 
   /* today's devotional */
   on('goDevo', function(){ go('devo'); });
@@ -1328,7 +1350,7 @@ function bindGTest_(){
 
 /* ---------------- the feed: 👏 for each other ---------------- */
 /* Moments from the people in my teams (api.js feed): what happened, never their own words. */
-var FEED_LINES = { journey:'{name} finished the Life Journey and wrote a vision for their life 🗺️', streak:'{name} reached a {n}-day streak 🔥', goal:'{name} reached a life goal 🏆', type:'{name} found their personality type: {n} 🧭',
+var FEED_LINES = { apest:'{name} took the five gifts test (APEST) 🔥', journey:'{name} finished the Life Journey and wrote a vision for their life 🗺️', streak:'{name} reached a {n}-day streak 🔥', goal:'{name} reached a life goal 🏆', type:'{name} found their personality type: {n} 🧭',
   strengths:'{name} found their top 5 strengths 💪', week:'{name} did everything they planned this week ✅', joined:'{name} joined {team} 👋', joinedSome:'{name} joined a new team 👋', focus:'{name} focused for {n} hours this week ⏱', challenge:'{name} finished the challenge {team}', challengeSome:'{name} finished a team challenge 🏁', level:'{name} reached level {n} {icon}', reading:'{name} finished the reading plan {plan} 📖' };
 function feedLine_(x){ var k = x.kind==='joined' && !x.team ? 'joinedSome' : x.kind==='challenge' && !x.team ? 'challengeSome' : x.kind; return gpT(FEED_LINES[k]||'{name}',{ name:firstName_(x.who.name), n:x.n, team:x.team||'', icon:x.icon||'', plan:x.kind==='reading' && PLAN_INFO[x.n] ? t(PLAN_INFO[x.n][1]) : '' }); }
 function whenLabel_(iso){ var d=todayStr(); return iso===d ? t('Today') : iso===addDays(d,-1) ? t('Yesterday') : dayLabel(iso); }
@@ -1347,7 +1369,7 @@ function feedHtml(){
   if(S.feed.length>8 && !S.feedMore) h+='<button class="linkbtn" id="feedMore">'+esc(t('Show more'))+'</button>';
   return h;
 }
-var CHEER_WHAT = { journey:'you finishing the Life Journey', streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus', challenge:'you finishing a challenge', level:'you reaching level {n}', reading:'you finishing a reading plan' };
+var CHEER_WHAT = { apest:'you taking the five gifts test', journey:'you finishing the Life Journey', streak:'your {n}-day streak', goal:'your life goal', type:'your personality type', strengths:'your top 5 strengths', week:'your week', joined:'you joining a team', focus:'your {n} hours of focus', challenge:'you finishing a challenge', level:'you reaching level {n}', reading:'you finishing a reading plan' };
 function cheersHtml(){
   var c=S.cheers||[]; if(!c.length) return '';
   return '<div class="card cheerCard">'+c.slice(0,3).map(function(x){
@@ -1540,6 +1562,145 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- spheres of influence, and files that load when they're needed ----------------
+   Eight places a gift can be used in the world. The deeper parts of the three tests (apest.js,
+   deeper-types.js, deeper-strengths.js — this app's own words, English and Khmer) say which
+   spheres fit; they load only when a screen needs them. */
+var SPHERES={ family:['🏠','Family & community','Homes, villages and neighbourhoods: strong families and caring communities.'],
+  church:['⛪','Church & mission','Churches, ministries and missions, here and in other nations.'],
+  education:['🎓','Education','Schools, universities and training: helping people learn and grow.'],
+  government:['⚖️','Government & justice','Public service, law and justice: fair and honest leadership.'],
+  media:['📱','Media & communication','News, social media, film and writing: telling true and good stories.'],
+  arts:['🎨','Arts, music & sport','Music, art, design and sport: beauty, joy and creativity.'],
+  business:['💼','Business & economy','Shops, companies and start-ups: good work, jobs and provision for families.'],
+  health:['🩺','Health & science','Hospitals, clinics, research and technology: healing and discovery.'] };
+function sphereChipsHtml_(ids){ return '<div class="sphChips">'+(ids||[]).filter(function(id){ return SPHERES[id]; }).map(function(id){ return '<span class="sphChip">'+SPHERES[id][0]+' '+esc(t(SPHERES[id][1]))+'</span>'; }).join('')+'</div>'; }
+function rolesHtml_(list){ return '<div class="jrTags rolesList">'+(list||[]).map(function(r){ return '<span>'+esc(r)+'</span>'; }).join('')+'</div>'; }
+function fld_(o, f){ return LANG==='km' && o[f+'_km'] ? o[f+'_km'] : o[f+'_en']; }
+var JS_STATE={};
+/* true once the file's global is there; otherwise starts loading it (once) and redraws when it lands. */
+function needJs_(src, name){
+  if(typeof window[name]!=='undefined') return true;
+  if(!JS_STATE[src]){ JS_STATE[src]='loading'; var sc=document.createElement('script'); sc.src=src; sc.setAttribute('data-optional','');
+    sc.onload=function(){ JS_STATE[src]='done'; if(!typing_()) render(); }; sc.onerror=function(){ JS_STATE[src]=null; sc.remove(); }; document.head.appendChild(sc); }
+  return false;
+}
+function loadingHtml_(){ return '<p class="sub">'+esc(t('Loading…'))+'</p>'; }
+
+/* ---------------- the five gifts (APEST, Ephesians 4:11; api.js saveApest) ---------------- */
+var AP_PAGE=5, AP_DRAFT='gpa-atest';
+function apById_(id){ return (typeof GP_APEST!=='undefined' ? GP_APEST : []).filter(function(g){ return g.id===id; })[0]||null; }
+function apDraft_(){ try { return JSON.parse(lsGet(AP_DRAFT)||'{}')||{}; } catch(e){ return {}; } }
+function apFineHtml_(){ return '<p class="pFine">'+esc(t('Our own short questionnaire on the five gifts in Ephesians 4:11. A gift isn’t a title or a job: it’s how God made you to build others up. Everyone can grow in all five.'))+'</p>'; }
+function atestHtml(){
+  var h=backBtn(t('Back'));
+  if(!needJs_('apest.js','GP_APEST')) return h+loadingHtml_();
+  var T=S.atest||(S.atest={ stage:'intro', answers:apDraft_(), page:0 }), Q=GP_APEST_Q, total=Q.length;
+  if(T.stage==='intro'){
+    var started=Object.keys(T.answers).length;
+    return h+'<h2>🔥 '+esc(t('Five gifts (APEST)'))+'</h2><div class="card">'+
+      '<p style="margin:2px 0 10px;font-size:15px;line-height:1.55">'+esc(t('In Ephesians 4:11–13, Jesus gives his people five kinds of gifts to build each other up: apostles, prophets, evangelists, shepherds and teachers. Everyone has some of each; most of us lead with one or two.'))+'</p>'+
+      '<div class="apRow">'+GP_APEST.map(function(g){ return '<span class="apMini" style="background:'+g.tint+';color:'+g.ink+'"><b>'+g.icon+'</b>'+esc(fld_(g,'name'))+'</span>'; }).join('')+'</div>'+
+      '<p class="sub" style="margin:10px 0 12px">'+esc(gpT('{n} statements · about 5 minutes. Answer how you really are, not how you wish you were.',{n:total}))+'</p>'+
+      '<button class="btn" id="apBegin">'+esc(started?gpT('Carry on — {n} of {total} answered',{n:started,total:total}):t('Start'))+'</button></div>'+apFineHtml_();
+  }
+  var pages=Math.ceil(total/AP_PAGE), page=Math.max(0,Math.min(pages-1,T.page));
+  var answered=Q.filter(function(q){ return T.answers[q.id]!==undefined; }).length;
+  h+='<div class="pProg"><div class="pTrack"><div style="width:'+Math.round(answered/total*100)+'%"></div></div><div class="pProgTxt">'+esc(gpT('{n} of {total}',{n:answered,total:total}))+'</div></div>';
+  var qs=Q.slice(page*AP_PAGE, page*AP_PAGE+AP_PAGE), pageDone=qs.every(function(q){ return T.answers[q.id]!==undefined; });
+  var dots=[[5,'s3 ag','Very like me'],[4,'s1 ag','Like me'],[3,'s0 mid','Sometimes'],[2,'s1 dis','Not much like me'],[1,'s3 dis','Not like me']];
+  qs.forEach(function(q){ var v=T.answers[q.id], tx=LANG==='km' && q.km ? q.km : q.en;
+    h+='<div class="pStmt'+(v!==undefined?' done':'')+'" id="aq_'+q.id+'"><div class="pText">'+esc(tx)+'</div><div class="pScale" role="radiogroup" aria-label="'+esc(tx)+'">'+
+      dots.map(function(d){ return '<button class="pDot '+d[1]+(v===d[0]?' on':'')+'" data-apans="'+q.id+'|'+d[0]+'" role="radio" aria-checked="'+(v===d[0])+'" aria-label="'+esc(t(d[2]))+'"></button>'; }).join('')+
+      '</div><div class="pScaleEnds"><span class="ag">'+esc(t('Very like me'))+'</span><span class="dis">'+esc(t('Not like me'))+'</span></div></div>';
+  });
+  var last=page===pages-1;
+  return h+'<div style="display:flex;gap:10px;margin:18px 0 6px">'+(page>0?'<button class="btn ghost" id="apPrev" style="flex:1">'+esc(t('Back'))+'</button>':'')+
+    (last?'<button class="btn" id="apFinish" style="flex:2"'+(answered===total?'':' disabled')+'>'+esc(t('See my gifts'))+'</button>'
+         :'<button class="btn" id="apNext" style="flex:2"'+(pageDone?'':' disabled')+'>'+esc(t('Next'))+'</button>')+'</div>';
+}
+function apListHtml_(list, mark, color){ return '<ul class="pList">'+(list||[]).map(function(x){ return '<li><span class="pMark" style="background:'+color+'">'+mark+'</span>'+esc(x)+'</li>'; }).join('')+'</ul>'; }
+function agiftHtml(){
+  var other=S.agOther, mine=!other, A=mine?S.me.apest:other, h=backBtn(t('Back'));
+  if(!A || !A.top || !A.top.length) return h+'<p class="sub">'+esc(t('No gifts yet.'))+'</p>';
+  if(!needJs_('apest.js','GP_APEST')) return h+loadingHtml_();
+  var g1=apById_(A.top[0]), g2=apById_(A.top[1]);
+  h+='<div class="pHero apHero" style="background:'+g1.tint+'"><div class="pWho">'+esc(mine?t('Your strongest gift'):gpT('{name}’s strongest gifts',{name:firstName_(other.name)}))+'</div>'+
+    '<div class="apBig">'+g1.icon+'</div><div class="pBig" style="color:'+g1.ink+'">'+esc(fld_(g1,'name'))+'</div><div class="pName">'+esc(fld_(g1,'short'))+'</div><div class="pTag">'+esc(fld_(g1,'tagline'))+'</div>'+
+    (g2?'<div class="apSecond" style="color:'+g2.ink+'">'+esc(gpT('with {gift} close behind',{gift:g2.icon+' '+fld_(g2,'name')}))+'</div>':'')+'</div>';
+  if(mine && A.scores){
+    h+='<h3>📊 '+esc(t('Your mix'))+'</h3><div class="card">'+A.top.map(function(id){ var g=apById_(id), n=A.scores[id]||0;
+      return '<div class="apBar"><span class="apBarL">'+g.icon+' '+esc(fld_(g,'name'))+'</span><span class="wheelTrack"><i style="width:'+Math.max(3,n)+'%;background:'+g.color+'"></i></span><b>'+n+'</b></div>'; }).join('')+
+      '<div class="pmeta" style="margin-top:6px">'+esc(t('Out of 100. Your top two are the ones to lean into; the others still grow when you use them.'))+'</div></div>';
+  }
+  h+='<div class="card apCard" style="border-left-color:'+g1.color+'"><p class="apAbout">'+esc(fld_(g1,'about'))+'</p><p class="apEquips"><b>'+esc(t('How it builds others up:'))+'</b> '+esc(fld_(g1,'equips'))+'</p></div>';
+  if(!mine){
+    if(g2) h+='<div class="card apCard" style="border-left-color:'+g2.color+'"><div class="gsName">'+g2.icon+' '+esc(fld_(g2,'name'))+'</div><p class="apAbout">'+esc(fld_(g2,'about'))+'</p></div>';
+    return h+'<h3>🤝 '+esc(t('Working together'))+'</h3><div class="card"><p style="margin:0;line-height:1.55">'+esc(fld_(g1,'needs'))+'</p></div>'+apFineHtml_();
+  }
+  h+='<div class="apHealth"><div class="card"><div class="pmeta">🌿 '+esc(t('At its best'))+'</div><p>'+esc(fld_(g1,'healthy'))+'</p></div><div class="card"><div class="pmeta">🥀 '+esc(t('When it’s unhealthy'))+'</div><p>'+esc(fld_(g1,'unhealthy'))+'</p></div></div>';
+  h+='<h3>'+esc(t('Strengths'))+'</h3><div class="card">'+apListHtml_(fld_(g1,'strengths'),'✓','var(--pGood)')+'</div>';
+  h+='<h3>'+esc(t('Watch out for'))+'</h3><div class="card">'+apListHtml_(fld_(g1,'watch'),'!','var(--pBad)')+'</div>';
+  h+='<h3>🧩 '+esc(t('You need the other gifts'))+'</h3><div class="card"><p style="margin:0;line-height:1.55">'+esc(fld_(g1,'needs'))+'</p></div>';
+  h+='<h3>🌍 '+esc(t('Where your gift could shine'))+'</h3><div class="card">'+sphereChipsHtml_(g1.spheres)+'<div class="pmeta" style="margin:10px 0 6px">'+esc(t('For example'))+'</div>'+rolesHtml_(fld_(g1,'roles'))+'</div>';
+  h+='<h3>✝️ '+esc(t('How Jesus showed it'))+'</h3><div class="card"><p style="margin:0 0 8px;line-height:1.55">'+esc(fld_(g1,'jesus'))+'</p><div class="pmeta">📖 '+esc(t('Read:'))+' '+(g1.refs||[]).map(function(r){ return esc(refLabel_(r)); }).join(' · ')+'</div></div>';
+  h+='<h3>🌱 '+esc(t('Grow it this month'))+'</h3><div class="card">'+apListHtml_(fld_(g1,'grow'),'→',g1.color)+'</div>';
+  if(g2) h+='<h3>'+g2.icon+' '+esc(gpT('Your second gift: {gift}',{gift:fld_(g2,'name')}))+'</h3><div class="card apCard" style="border-left-color:'+g2.color+'"><p class="apAbout">'+esc(fld_(g2,'about'))+'</p>'+apListHtml_(fld_(g2,'strengths'),'✓','var(--pGood)')+
+    '<div class="pmeta" style="margin:8px 0 4px">🌍 '+esc(t('Where it could shine'))+'</div>'+sphereChipsHtml_(g2.spheres)+'</div>';
+  h+='<h3>✋ '+esc(t('All five gifts'))+'</h3><div class="card">'+GP_APEST.map(function(g){ return '<div class="apAll"><span class="apAllIc" style="background:'+g.tint+'">'+g.icon+'</span><span><b style="color:'+g.ink+'">'+esc(fld_(g,'name'))+'</b> · '+esc(fld_(g,'short'))+'<div class="pmeta">'+esc(fld_(g,'tagline'))+'</div></span></div>'; }).join('')+
+    '<p class="pmeta" style="margin-top:8px">'+esc(t('A church or a team needs all five. Look for people with the gifts you don’t have, and make room for them.'))+'</p></div>';
+  h+='<button class="btn ghost" id="apRetake">'+esc(t('Take the test again'))+'</button>';
+  return h+apFineHtml_();
+}
+function bindApest_(){
+  on('goAtest', function(){ S.atest=null; go('atest'); });
+  on('seeMyAp', function(){ S.agOther=null; go('agift'); });
+  on('apBegin', function(){ var T=S.atest; T.stage='q'; var i=GP_APEST_Q.findIndex(function(q){ return T.answers[q.id]===undefined; });
+    T.page = i<0 ? Math.ceil(GP_APEST_Q.length/AP_PAGE)-1 : Math.floor(i/AP_PAGE); render(); window.scrollTo(0,0); });
+  all('[data-apans]', function(b){ var p=b.getAttribute('data-apans').split('|'), T=S.atest; T.answers[p[0]]=Number(p[1]); lsSet(AP_DRAFT, JSON.stringify(T.answers)); gpTap(); render();
+    var qs=GP_APEST_Q.slice(T.page*AP_PAGE, T.page*AP_PAGE+AP_PAGE), next=qs.filter(function(q){ return T.answers[q.id]===undefined; })[0];
+    var el=next?$('aq_'+next.id):($('apFinish')||$('apNext')); if(el && el.scrollIntoView) try { el.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(e){} });
+  on('apNext', function(){ S.atest.page++; render(); window.scrollTo(0,0); });
+  on('apPrev', function(){ S.atest.page--; render(); window.scrollTo(0,0); });
+  on('apFinish', busyOnce_(function(){ var A=S.atest.answers; if(GP_APEST_Q.some(function(q){ return A[q.id]===undefined; })){ showMsg(t('Answer every statement first.')); return; }
+    return call('saveApest', { answers:A }).then(function(d){ if(d && d.ok){ lsDel(AP_DRAFT); S.me=d.me; S.atest=null; S.agOther=null; S.view='agift'; render(); window.scrollTo(0,0); } else failMsg(d); }); }));
+  on('apRetake', function(){ lsDel(AP_DRAFT); S.atest={ stage:'intro', answers:{}, page:0 }; S.view='atest'; render(); window.scrollTo(0,0); });
+  on('seeAp', function(){ S.agOther={ name:S.person.name, top:S.person.apest }; go('agift'); });
+}
+
+/* ---------------- going deeper: the personality type, and the strengths ---------------- */
+function typeDeeperHtml_(code){
+  if(!needJs_('deeper-types.js','GP_PDEEP')) return loadingHtml_();
+  var D=GP_PDEEP[code]; if(!D) return '';
+  var box=function(icon, title, body){ return '<div class="card deepCard"><div class="pmeta">'+icon+' '+esc(t(title))+'</div><p>'+esc(body)+'</p></div>'; };
+  return '<h3>🔎 '+esc(t('Go deeper'))+'</h3>'+box('⭐','You at your best',fld_(D,'best'))+box('🤝','With friends, family and teams',fld_(D,'people'))+box('🌧️','Under stress',fld_(D,'stress'))+box('🙏','With God',fld_(D,'god'))+
+    '<div class="card deepCard"><div class="pmeta">🌱 '+esc(t('Ways to grow'))+'</div>'+apListHtml_(fld_(D,'grow'),'→','var(--accent)')+'</div>'+
+    '<h3>🌍 '+esc(t('Where your gifts may shine'))+'</h3><div class="card">'+sphereChipsHtml_(D.spheres)+'<p style="margin:10px 0 8px;line-height:1.55">'+esc(fld_(D,'why'))+'</p><div class="pmeta" style="margin:0 0 6px">'+esc(t('Work that may fit you'))+'</div>'+rolesHtml_(fld_(D,'roles'))+
+    '<p class="pmeta" style="margin-top:8px">'+esc(t('Any type can do any work well. These are places your natural way of working may help you most.'))+'</p></div>';
+}
+function strengthDeeperHtml_(id){
+  if(typeof GP_GSDEEP==='undefined' || !GP_GSDEEP[id]) return '';
+  var D=GP_GSDEEP[id];
+  return '<div class="gsDeep"><div><b>'+esc(t('Use it:'))+'</b> '+esc(fld_(D,'use'))+'</div><div><b>'+esc(t('Partner:'))+'</b> '+esc(fld_(D,'pair'))+'</div>'+sphereChipsHtml_(D.spheres)+rolesHtml_(fld_(D,'roles'))+'</div>';
+}
+/* Where all my results point: spheres weighted by the type, the Top 5 and the two strongest gifts. */
+function sphereVotes_(){
+  var me=S.me, v={}, add=function(ids, w){ (ids||[]).forEach(function(id, i){ if(SPHERES[id]) v[id]=(v[id]||0)+(w[i]||w[w.length-1]); }); }, from=[];
+  if(me.personality && typeof GP_PDEEP!=='undefined' && GP_PDEEP[me.personality.type]){ add(GP_PDEEP[me.personality.type].spheres, [3,2,1]); from.push(t('your type')); }
+  if(me.gstrengths && typeof GP_GSDEEP!=='undefined'){ me.gstrengths.top.forEach(function(id){ if(GP_GSDEEP[id]) add(GP_GSDEEP[id].spheres, [2,1,1]); }); from.push(t('your top 5 strengths')); }
+  if(me.apest && typeof GP_APEST!=='undefined'){ var a=apById_(me.apest.top[0]), b=apById_(me.apest.top[1]); if(a) add(a.spheres, [3,2,1]); if(b) add(b.spheres, [1]); from.push(t('your gifts')); }
+  return { top:Object.keys(v).sort(function(x, y){ return (v[y]-v[x]) || (Object.keys(SPHERES).indexOf(x)-Object.keys(SPHERES).indexOf(y)); }).slice(0,3), from:from };
+}
+function spheresMeHtml_(){
+  var me=S.me; if(!me.personality && !me.gstrengths && !me.apest) return '';
+  var ok=(!me.personality || needJs_('deeper-types.js','GP_PDEEP')) & (!me.gstrengths || needJs_('deeper-strengths.js','GP_GSDEEP')) & (!me.apest || needJs_('apest.js','GP_APEST'));
+  if(!ok) return '';
+  var R=sphereVotes_(); if(!R.top.length) return '';
+  return '<h3>🌍 '+esc(t('Where your gifts may shine'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(gpT('From {list}: the parts of society where how God made you may help most.',{list:jrList_(R.from)}))+'</p>'+
+    R.top.map(function(id, i){ var x=SPHERES[id]; return '<div class="sphRow"><span class="sphRank">'+(i+1)+'</span><span class="sphIc">'+x[0]+'</span><span><b>'+esc(t(x[1]))+'</b><div class="pmeta">'+esc(t(x[2]))+'</div></span></div>'; }).join('')+
+    '<p class="pmeta" style="margin-top:8px">'+esc(t('God can use you anywhere. Talk about this with someone who knows you well, and try things out.'))+'</p></div>';
 }
 
 /* ---------------- the Life Journey (api.js "the Life Journey") ----------------

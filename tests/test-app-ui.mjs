@@ -495,6 +495,39 @@ await a.click('[data-back]');
   await ctx.close();
 }
 
+/* ---------- 17b. the five gifts, and going deeper ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const g = await ctx.newPage(); g.on('pageerror', x => errors.push('gifts: ' + x.message));
+  await g.goto(base + '/'); await g.click('#liNew'); await g.waitForSelector('#suPass');
+  await g.fill('#suUser', 'gifty'); await g.fill('#suPass', 'gifty password'); await g.fill('#suPass2', 'gifty password');
+  await g.fill('#suName', 'Gifty Chan'); await g.selectOption('#suYear', '2001'); await g.click('#suGo');
+  await g.waitForSelector('#goAtest'); await g.click('#goAtest'); await g.waitForSelector('#apBegin');
+  ok('the five gifts test explains itself first', /Ephesians 4:11/.test(await text(g)) && /Apostle/.test(await text(g)) && /Teacher/.test(await text(g)));
+  await g.click('#apBegin');
+  for (let pg = 0; pg < 6; pg++) {
+    const ids = await g.$$eval('[data-apans]', bs => [...new Set(bs.map(b => b.getAttribute('data-apans').split('|')[0]))]);
+    for (const id of ids) await g.click(`[data-apans="${id}|${id[0] === 'e' ? 5 : id[0] === 'p' ? 4 : 2}"]`);
+    if (await g.$('#apNext')) await g.click('#apNext'); else { await g.click('#apFinish'); break; }
+  }
+  await g.waitForSelector('.apHero');
+  ok('the results name the strongest gift and the second', /Your strongest gift/.test(await text(g)) && /Evangelist/.test(await g.$eval('.apHero', e => e.innerText)) && /Prophet/.test(await g.$eval('.apSecond', e => e.innerText)));
+  ok('… with the mix, what it is, at its best and unhealthy, and where it could shine', (await g.$$('.apBar')).length === 5 && /At its best/.test(await text(g)) && /When it’s unhealthy/.test(await text(g)) && /Where your gift could shine/.test(await text(g)) && (await g.$$('.apCard .sphChip, .sphChip')).length >= 2);
+  ok('… and passages to read, as references', /Read:/.test(await text(g)));
+  await g.evaluate(() => call('savePersonality', { type: 'ENFJ', sex: 'female' }).then(d => { S.me = d.me; }));
+  const gsAns = {}; for (let i = 0; i < 102; i++) gsAns['p' + i] = 0;
+  await g.evaluate(a => call('saveStrengths', { answers: a }).then(d => { S.me = d.me; }), gsAns);
+  await g.click('nav.bottom button[data-tab="me"]'); await g.waitForSelector('#seeMyAp'); await g.waitForTimeout(800);
+  ok('Me shows the gifts and where all three tests say my gifts may shine', /Evangelist · Prophet/.test(await g.$eval('#seeMyAp', e => e.innerText)) && (await g.$$('.sphRow')).length === 3);
+  if (await g.$('#levelOk')) await g.click('#levelOk');
+  await g.click('#seeMyType'); await g.waitForSelector('.deepCard');
+  ok('my type goes deeper: at my best, under stress, with God, and work that may fit', /You at your best/.test(await text(g)) && /Under stress/.test(await text(g)) && /With God/.test(await text(g)) && /Work that may fit you/.test(await text(g)));
+  await g.click('[data-back]'); await g.waitForSelector('#seeMyGs'); await g.click('#seeMyGs'); await g.waitForSelector('.gsDeep');
+  ok('each of my top 5 strengths goes deeper, with where they may shine', (await g.$$('.gsDeep')).length === 5 && /Where your top 5 may shine/.test(await text(g)));
+  await ctx.close();
+}
+
 /* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

@@ -172,7 +172,7 @@ function cleanUsername_(v) {
 }
 
 /* ---------------- what each person may show ---------------- */
-const SHARE_KEYS = ['type', 'strengths', 'streak', 'week', 'teams', 'plan', 'feed', 'focus', 'level'];
+const SHARE_KEYS = ['type', 'strengths', 'apest', 'streak', 'week', 'teams', 'plan', 'feed', 'focus', 'level'];
 function shareOf_(u) {
   const s = (u && u.share) || {}; const o = {};
   SHARE_KEYS.forEach(function (k) { o[k] = s[k] !== false; });
@@ -313,7 +313,7 @@ function statsOf_(u) {
   return {
     streak: streakOf_(days, u.frozen), best: bestStreakOf_(days), freezes: u.freezes || 0,
     week: weekPct_((u.weeks || {})[wk]), habits: (u.habits || []).length,
-    tests: (u.personality ? 1 : 0) + (u.gstrengths ? 1 : 0),
+    tests: (u.personality ? 1 : 0) + (u.gstrengths ? 1 : 0) + (u.apest ? 1 : 0),
     focusWeek: focusWeek_(u, wk)
   };
 }
@@ -496,7 +496,7 @@ function xpDrop_(u, key) {
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { journey: 'plan', streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
+const POST_SHARE = { apest: 'apest', journey: 'plan', streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -510,6 +510,7 @@ function postShown_(u, x) {
   if (!sh.feed || sh[POST_SHARE[x.kind]] === false) return false;
   if (x.kind === 'type') return !!(u.personality && u.personality.share !== false);
   if (x.kind === 'strengths') return !!(u.gstrengths && u.gstrengths.share !== false);
+  if (x.kind === 'apest') return !!(u.apest && u.apest.share !== false);
   return true;
 }
 
@@ -519,7 +520,7 @@ function selfOut_(u) {
   return {
     id: u.id, username: u.username, name: u.name, birthYear: u.birthYear, minor: isMinor_(u),
     lang: u.lang || 'km', sex: u.sex || '', bio: u.bio || '', share: shareOf_(u),
-    personality: u.personality || null, gstrengths: u.gstrengths || null,
+    personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
@@ -532,6 +533,7 @@ function cardOut_(u, close) {
   const o = { id: u.id, username: u.username, name: minor ? firstName_(u.name) : u.name, hasPhoto: !!u.hasPhoto, minor: minor };
   if (sh.type && u.personality && u.personality.share !== false) { o.type = u.personality.type; o.sex = u.sex || ''; }
   if (sh.strengths && u.gstrengths && u.gstrengths.share !== false) o.strengths = u.gstrengths.top.slice();
+  if (sh.apest && u.apest && u.apest.share !== false) o.apest = u.apest.top.slice(0, 2);   // the two strongest gifts, never the answers or numbers
   if (sh.streak) { o.streak = st.streak; o.best = st.best; }
   if (sh.week && st.week !== null) o.week = st.week;
   if (sh.teams && close) o.teamCount = (u.teams || []).length;
@@ -769,6 +771,40 @@ async function savePersonality(uid, tok, p) {
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 
+/* ---------------- the five gifts (APEST: Ephesians 4:11) ----------------
+   30 statements (public/apest.js, this app's own), 6 for each gift, each answered 1–5. The page
+   sends the answers; the sums are worked out here, so what others see follows from the answers.
+   A statement's id starts with its gift: a apostle, p prophet, e evangelist, s shepherd, t teacher. */
+const APEST_IDS = ['a', 'p', 'e', 's', 't'];
+function apestScore_(answers) {
+  if (!answers || typeof answers !== 'object') return null;
+  const sum = {}, clean = {};
+  APEST_IDS.forEach(function (g) { sum[g] = 0; });
+  for (const g of APEST_IDS) for (let i = 1; i <= 6; i++) {
+    const k = g + i, v = Number(answers[k]);
+    if ([1, 2, 3, 4, 5].indexOf(v) === -1) return null;
+    clean[k] = v; sum[g] += v;
+  }
+  const scores = {}; APEST_IDS.forEach(function (g) { scores[g] = Math.round((sum[g] - 6) / 24 * 100); });
+  const top = APEST_IDS.slice().sort(function (x, y) { return (sum[y] - sum[x]) || (APEST_IDS.indexOf(x) - APEST_IDS.indexOf(y)); });
+  return { answers: clean, scores: scores, top: top };
+}
+async function saveApest(uid, tok, p) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  p = p && typeof p === 'object' ? p : {};
+  let scored = null;
+  if (p.answers) { scored = apestScore_(p.answers); if (!scored) return { ok: false, err: 'answers' }; }
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    if (scored && !u.apest) addPost_(u, 'apest', scored.top[0]);
+    if (scored) { xpAdd_(u, 'ap', 50); u.apest = { answers: scored.answers, scores: scored.scores, top: scored.top, at: today_(), share: !(u.apest && u.apest.share === false) }; }
+    else if (!u.apest) return { abort: true, ok: false, err: 'answers' };
+    if (typeof p.share === 'boolean') u.apest.share = p.share;
+    return { ok: true };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
 async function saveStrengths(uid, tok, p) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
   p = p && typeof p === 'object' ? p : {};
@@ -1539,6 +1575,7 @@ function postOut_(u, x, viewer, teamNames) {
   if (x.kind === 'level') { o.n = x.n; const lv = levelOf_(xpForLevel_(x.n)); o.title = lv.title; o.icon = lv.icon; }
   if (x.kind === 'challenge') o.team = teamNames['ch:' + x.n] || null;   // the challenge's title only for people in that team
   if (x.kind === 'type') o.n = x.n;
+  if (x.kind === 'apest' && APEST_IDS.indexOf(x.n) > -1) o.n = x.n;   // which gift: the app's own word, not theirs
   if (x.kind === 'joined') o.team = teamNames[x.n] || null;   // the team's name only for someone in it
   return o;
 }
@@ -2072,7 +2109,7 @@ async function signOut(uid, tok) {
 
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
-  savePersonality, saveStrengths, saveHabits, tickHabit, saveWeek,
+  savePersonality, saveStrengths, saveApest, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, journey,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
@@ -2081,7 +2118,7 @@ export const HANDLERS = {
   friendAsk, friendAnswer, friendDrop, friendsList, friendNudge, teamPulse, leaderCheer,
   searchPeople, person, createTeam, joinTeam, team, leaveTeam, teamManage, inviteToTeam, answerInvite, signOut
 };
-export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, monthOf_, quarterOf_, levelOf_, xpForLevel_ };
+export const __test = { isMinor_, weekOf_, today_, streakOf_, gsScore_, apestScore_, monthOf_, quarterOf_, levelOf_, xpForLevel_ };
 export { runReminders, pushEncrypt_, vapidJwt_ };
 
 export default async function (req) {

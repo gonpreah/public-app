@@ -494,6 +494,24 @@ ok('finishing is a feed moment that carries none of their words', ju.posts.some(
 const jc = await H.person(B.uid, B.token, JN.uid);
 ok('nobody else sees the vision or the journey’s answers', jc.ok && !/child of God|farm|nurse|Drums|story|vision|Brave/.test(JSON.stringify(jc)));
 
+/* ---------- 18b. the five gifts (APEST) ---------- */
+const AP = await H.registerPassword({ username: 'abby', name: 'Abby Sok', birthYear: 2002, password: 'abby password', lang: 'en' });
+const apAns = {}; for (const g of 'apest') for (let i = 1; i <= 6; i++) apAns[g + i] = g === 's' ? 5 : g === 't' ? (i < 4 ? 5 : 4) : g === 'e' ? 3 : 2;
+ok('the gifts test needs every answer', (await H.saveApest(AP.uid, AP.token, { answers: { a1: 5 } })).err === 'answers');
+ok('… each from 1 to 5', (await H.saveApest(AP.uid, AP.token, { answers: Object.assign({}, apAns, { p3: 9 }) })).err === 'answers');
+let apr = await H.saveApest(AP.uid, AP.token, { answers: apAns, top: ['a', 'a'], scores: { a: 100 } });
+ok('the server works out the gifts from the answers, not what the page says', apr.ok && apr.me.apest.top.join('') === 'steap' && apr.me.apest.scores.s === 100 && apr.me.apest.scores.a === 25 && apr.me.apest.scores.t === 88);
+ok('… 50 XP, once', apr.me.level.xp === 50 && (await H.saveApest(AP.uid, AP.token, { answers: apAns })).me.level.xp === 50);
+const apu = JSON.parse(globalThis.__gpaStore._m.get('u:' + AP.uid));
+ok('… and it’s a feed moment naming only the gift', apu.posts.some(x => x.kind === 'apest' && x.n === 's'));
+let apc = await H.person(B.uid, B.token, AP.uid);
+ok('others see the two strongest gifts — never the answers or numbers', JSON.stringify(apc.person.apest) === '["s","t"]' && !/"scores"|"answers"|"s1"/.test(JSON.stringify(apc)));
+await H.saveApest(AP.uid, AP.token, { share: false });
+ok('… and nothing when it’s switched off', !('apest' in (await H.person(B.uid, B.token, AP.uid)).person));
+await H.saveApest(AP.uid, AP.token, { share: true }); await H.saveProfile(AP.uid, AP.token, { share: { apest: false } });
+ok('… or when “Your gifts” is off in What others see', !('apest' in (await H.person(B.uid, B.token, AP.uid)).person));
+ok('the tests count takes in the gifts', (await H.boot(AP.uid, AP.token)).me.stats.tests === 1);
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

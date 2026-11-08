@@ -2360,12 +2360,31 @@ if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.service
 function start_(){ if(AUTH) bootNow_(); else render();
   api('authConfig').then(function(c){ S.authCfg=c||{}; if(!AUTH && !typing_()) render(); }); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();
+/* ---------------- staying up to date by itself ----------------
+   A phone keeps an app from the Home Screen in memory for days, so a fix that's live doesn't reach
+   it until it's closed for good — and iPhones sometimes stop opening the keyboard for a web app
+   that has been in the background. So: coming back to the app, it asks whether app.js has changed
+   (its ETag, a HEAD request the service worker doesn't touch) and reloads if it has; and after 30
+   minutes away it reloads anyway. Never while someone is typing; the tab they were on is kept. */
+var APP_TAG=null, HIDDEN_AT=0;
+function appTag_(){ return fetch('app.js', { method:'HEAD', cache:'no-store' }).then(function(r){ return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified')) : null; }).catch(function(){ return null; }); }
+function reloadNow_(){ if(typing_() || focusActive_()) return false; try { if(S.view && VIEWS_TABS[S.view]===S.view) sessionStorage.setItem('gpa-view', S.view); } catch(e){} location.reload(); return true; }
+appTag_().then(function(tag){ APP_TAG=tag; });
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='hidden'){ HIDDEN_AT=Date.now(); return; }
+  var away=HIDDEN_AT ? Date.now()-HIDDEN_AT : 0; HIDDEN_AT=0;
+  if(away > 30*60000 && reloadNow_()) return;
+  appTag_().then(function(tag){ if(tag && APP_TAG && tag!==APP_TAG) reloadNow_(); });
+});
+(function(){ try { var v=sessionStorage.getItem('gpa-view'); sessionStorage.removeItem('gpa-view'); if(v && VIEWS_TABS[v]===v) S.view=v; } catch(e){} })();
+
 /* A panel for finding what a real phone does (Nov 2026: on an iPhone the keyboard wouldn't come up,
-   and no test browser shows it). Open the app with ?debug (?debug=0 to stop; the phone remembers
-   it, so it works from the Home Screen too): taps, focus, clicks, redraws and errors, newest first.
+   and no test browser shows it). Open the app with ?debug in the address: taps, focus, clicks,
+   redraws and errors, newest first. Only while ?debug is there — nothing is remembered.
    It reads nothing private and sends nothing anywhere. */
 (function(){
-  try { var q=location.search; if(/[?&]debug=0/.test(q)) localStorage.removeItem('gpa-debug'); else if(/[?&]debug\b/.test(q)) localStorage.setItem('gpa-debug','1'); if(localStorage.getItem('gpa-debug')!=='1') return; } catch(e){ return; }
+  try { localStorage.removeItem('gpa-debug'); } catch(e){}   // an older version remembered it; nobody should have to turn it off
+  if(!/[?&]debug(?!=0)\b/.test(location.search)) return;
   var box=document.createElement('div'), lines=[], t0=Date.now();
   box.id='dbgBox'; box.setAttribute('style','position:fixed;left:4px;right:4px;top:calc(env(safe-area-inset-top) + 66px);max-height:42vh;overflow:hidden;z-index:99999;background:rgba(0,0,0,.84);color:#9BFF8A;font:10.5px/1.35 ui-monospace,Menlo,monospace;padding:6px 8px;border-radius:8px;pointer-events:none;white-space:pre-wrap;word-break:break-all');
   var desc=function(el){ if(!el || !el.tagName) return String(el); return el.tagName.toLowerCase()+(el.id?'#'+el.id:'')+(typeof el.className==='string' && el.className?'.'+el.className.trim().split(/\s+/).slice(0,2).join('.'):''); };

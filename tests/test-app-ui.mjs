@@ -520,6 +520,7 @@ await a.click('[data-back]');
   await g.evaluate(a => call('saveStrengths', { answers: a }).then(d => { S.me = d.me; }), gsAns);
   await g.click('nav.bottom button[data-tab="me"]'); await g.waitForSelector('#seeMyAp'); await g.waitForTimeout(800);
   ok('Me shows the gifts and where all three tests say my gifts may shine', /Evangelist · Prophet/.test(await g.$eval('#seeMyAp', e => e.innerText)) && (await g.$$('.sphRow')).length === 3);
+  if (await g.$('#levelOk')) await g.click('#levelOk');
   await g.click('#seeMyType'); await g.waitForSelector('.deepCard');
   ok('my type goes deeper: at my best, under stress, with God, and work that may fit', /You at your best/.test(await text(g)) && /Under stress/.test(await text(g)) && /With God/.test(await text(g)) && /Work that may fit you/.test(await text(g)));
   await g.click('[data-back]'); await g.waitForSelector('#seeMyGs'); await g.click('#seeMyGs'); await g.waitForSelector('.gsDeep');

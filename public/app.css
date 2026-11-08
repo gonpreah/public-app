@@ -952,7 +952,10 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
    Safari zooms into any text box under 16px and leaves the page zoomed, so it slides about
    under your finger; and a quick second tap (on a chip, say) zooms too. 16px on touch screens
    and no double-tap zoom keep the page still. Pinch-to-zoom still works. */
-html { touch-action:manipulation; }
+/* No double-tap zoom on things people tap quickly — but only on those: the whole page set this
+   way may be what stopped an iPhone opening the keyboard (Nov 2026), so text boxes keep the
+   phone's own handling. */
+button, .jrChip, .wheelB, .pDot, .habitTile, .catChip, [data-tab] { touch-action:manipulation; }
 html, body { overscroll-behavior-x:none; }
 @media (pointer:coarse) {
   input, textarea, select, .jrVisionIn, .jrQ textarea { font-size:16px !important; }

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 /* Shared test set-up: an in-memory Blobs store and a stand-in for Google's
    tokeninfo, so the real api.js runs with no network.
    A Google "token" in tests is "test:<sub>:<name>" — only this stand-in reads it. */
@@ -63,7 +64,8 @@ export async function startServer(port) {
     let f = path.join(ROOT, 'public', decodeURIComponent(u.pathname));
     if (u.pathname.endsWith('/')) f = path.join(f, 'index.html');
     if (!f.startsWith(path.join(ROOT, 'public')) || !fs.existsSync(f)) { res.writeHead(404); res.end('not found'); return; }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' }); res.end(fs.readFileSync(f));
+    const buf = fs.readFileSync(f), etag = '"' + crypto.createHash('sha1').update(buf).digest('hex') + '"';   // like Netlify's, so the app can tell versions apart
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', ETag: etag }); res.end(req.method === 'HEAD' ? undefined : buf);
   });
   await new Promise(r => srv.listen(port || 0, r));
   return { srv, base: 'http://localhost:' + srv.address().port };

@@ -535,8 +535,27 @@ await a.click('[data-back]');
   await d.goto(base + '/?debug'); await d.waitForSelector('#liUser'); await d.tap('#liUser'); await d.waitForTimeout(600);
   const log = await d.$eval('#dbgBox', e => e.textContent);
   ok('?debug shows a panel of what the phone does: taps, focus, redraws', /touchstart input#liUser/.test(log) && /focusin input#liUser/.test(log) && /redraw/.test(log) && await d.$eval('#dbgBox', e => getComputedStyle(e).pointerEvents) === 'none', log.slice(0, 300));
-  await d.goto(base + '/?debug=0'); await d.waitForSelector('#liUser');
-  ok('… and ?debug=0 turns it off', !(await d.$('#dbgBox')));
+  await d.goto(base + '/'); await d.waitForSelector('#liUser');
+  ok('… only while ?debug is in the address: nothing to turn off', !(await d.$('#dbgBox')));
+  await ctx.close();
+}
+
+/* ---------- 17d. staying up to date by itself ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const u = await ctx.newPage(); u.on('pageerror', x => errors.push('update: ' + x.message));
+  await u.goto(base + '/'); await u.click('#liNew'); await u.waitForSelector('#suPass');
+  await u.fill('#suUser', 'fresh'); await u.fill('#suPass', 'fresh password'); await u.fill('#suPass2', 'fresh password');
+  await u.fill('#suName', 'Fresh Ly'); await u.selectOption('#suYear', '2002'); await u.click('#suGo'); await u.waitForSelector('nav.bottom');
+  await u.click('nav.bottom button[data-tab="plan"]'); await u.waitForTimeout(500);
+  await u.waitForFunction(() => APP_TAG !== null);
+  const away = async () => { await u.evaluate(() => { window.__old = 1; Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')); }); await u.waitForTimeout(1500); };
+  await away();
+  ok('coming back to the app with nothing new, it stays as it is', await u.evaluate(() => window.__old === 1));
+  await u.evaluate(() => { APP_TAG = 'an older version'; }); await away(); await u.waitForSelector('nav.bottom');
+  ok('… with a new version out, it reloads itself, on the same tab', await u.evaluate(() => window.__old === undefined && S.view === 'plan'));
   await ctx.close();
 }
 

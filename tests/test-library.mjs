@@ -36,5 +36,18 @@ ok('a devotional for each day of the month, in order', DV.length === 31 && DV.ev
 ok('… each with a real passage to read (a reference only)', DV.every(d => BOOKS.includes(d.ref.replace(/\s+\d.*$/, ''))), DV.filter(d => !BOOKS.includes(d.ref.replace(/\s+\d.*$/, ''))).map(d => d.ref).join(' '));
 ok('… in English and Khmer, every part', DV.every(d => ['title', 'body', 'ask', 'pray'].every(k => d[k + '_en'] && /[ក-៿]/.test(d[k + '_km']))));
 ok('… quoting no Bible text', DV.every(d => !/["“”]/.test(d.body_en)));
+/* the five gifts (apest.js) and going deeper (deeper-types.js, deeper-strengths.js) */
+for (const f of ['apest.js', 'deeper-types.js', 'deeper-strengths.js', 'personality.js', 'gpstrengths.js']) vm.runInContext(fs.readFileSync(new URL('../public/' + f, import.meta.url), 'utf8'), ctx);
+const SPH = ['family', 'church', 'education', 'government', 'media', 'arts', 'business', 'health'], KH = /[ក-៿]/;
+const kmOk = (o, fields) => fields.every(f => Array.isArray(o[f + '_en']) ? o[f + '_en'].length && o[f + '_km'].length === o[f + '_en'].length && o[f + '_km'].every(x => KH.test(x)) : o[f + '_en'] && KH.test(o[f + '_km'] || ''));
+const AG = ctx.GP_APEST, AQ = ctx.GP_APEST_Q;
+ok('five gifts, a p e s t, each in English and Khmer', AG.map(g => g.id).join('') === 'apest' && AG.every(g => kmOk(g, ['name', 'short', 'tagline', 'about', 'equips', 'healthy', 'unhealthy', 'strengths', 'watch', 'needs', 'grow', 'roles', 'jesus'])));
+ok('… with spheres from the list and passages to read (references only)', AG.every(g => g.spheres.length >= 2 && g.spheres.every(x => SPH.includes(x)) && g.refs.length >= 2 && g.refs.every(r => BOOKS.includes(r.replace(/\s+\d.*$/, '')))));
+ok('thirty statements, six for each gift, in English and Khmer', AQ.length === 30 && 'apest'.split('').every(g => AQ.filter(q => q.id[0] === g).length === 6) && new Set(AQ.map(q => q.id)).size === 30 && AQ.every(q => /^[apest][1-6]$/.test(q.id) && q.en && KH.test(q.km)));
+const PD = ctx.GP_PDEEP;
+ok('going deeper for all sixteen types, in English and Khmer', ctx.GP_PTYPE_CODES.every(c => PD[c] && kmOk(PD[c], ['best', 'people', 'stress', 'god', 'grow', 'why', 'roles']) && PD[c].spheres.length >= 2 && PD[c].spheres.every(x => SPH.includes(x))));
+const GD = ctx.GP_GSDEEP, GIDS = ctx.GP_GSTRENGTHS.map(x => x.id);
+ok('going deeper for all 34 strengths, in English and Khmer', GIDS.every(id => GD[id] && kmOk(GD[id], ['use', 'pair', 'roles']) && GD[id].spheres.length >= 2 && GD[id].spheres.every(x => SPH.includes(x))) && Object.keys(GD).length === GIDS.length);
+ok('none of it says YWAM', !/YWAM/i.test(JSON.stringify([AG, AQ, PD, GD])));
 ok('none of the staff guides came across', !B.some(b => b.original || b.shelf === 'gp' || b.shelf === 'ywam'));
 ok.done();

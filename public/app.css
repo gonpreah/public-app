@@ -947,3 +947,39 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 .dreamRow { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
 .dreamRow:first-of-type { border-top:0; }
 .dreamRow .btn { flex:none; width:auto; margin:0; }
+
+/* ---------- phones in a browser (iPhone Safari above all) ----------
+   Safari zooms into any text box under 16px and leaves the page zoomed, so it slides about
+   under your finger; and a quick second tap (on a chip, say) zooms too. 16px on touch screens
+   and no double-tap zoom keep the page still. Pinch-to-zoom still works. */
+html { touch-action:manipulation; }
+html, body { overscroll-behavior-x:none; }
+@media (pointer:coarse) {
+  input, textarea, select, .jrVisionIn, .jrQ textarea { font-size:16px !important; }
+}
+/* While typing, the bottom bar goes: Safari keeps fixed bars above the keyboard, where it
+   would sit on top of the box being typed in. */
+body.typing nav.bottom { display:none; }
+body.typing { padding-bottom:24px; }
+
+/* ---------- the Life Journey: moving between questions, the recap, the life wheel ---------- */
+.jrQ, .jrIntro, .jrDone, .jrReveal { animation:jrIn .32s var(--ease, ease) both; }
+@keyframes jrIn { from { transform:translateX(26px); opacity:0; } to { transform:none; opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .jrQ, .jrIntro, .jrDone, .jrReveal { animation:none; } }
+.jrRecap { text-align:left; margin-top:6px; }
+.jrRecap .jrLine { font-size:14px; margin:4px 0 8px; }
+.wheelRows { margin:6px 0 4px; }
+.wheelRow { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 0; border-top:1px solid var(--line); }
+.wheelRow:first-child { border-top:0; }
+.wheelL { font-size:14px; min-width:0; flex:1; }
+.wheelBtns { display:flex; gap:5px; flex:none; }
+.wheelB { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--border2); background:var(--surface); color:var(--ink); font:inherit; font-weight:800; cursor:pointer; }
+.wheelB.on { background:var(--accent); border-color:var(--accent); color:var(--accentInk); transform:scale(1.08); }
+.wheelKey { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; }
+.wheelBar { display:grid; grid-template-columns:minmax(0,1.3fr) 1fr 18px 30px; align-items:center; gap:8px; padding:5px 0; font-size:14px; }
+.wheelTrack { height:10px; border-radius:999px; background:var(--line); overflow:hidden; }
+.wheelTrack i { display:block; height:100%; border-radius:999px; background:var(--accent); }
+.wheelTrack i.w1 { background:#E5484D; } .wheelTrack i.w2 { background:#F28C28; } .wheelTrack i.w3 { background:#E6B800; } .wheelTrack i.w4 { background:#5BB974; } .wheelTrack i.w5 { background:var(--good); }
+.wheelD { font-size:12px; font-weight:800; color:var(--muted); }
+.wheelD.up { color:var(--good); } .wheelD.down { color:var(--bad); }
+@media (max-width:360px) { .wheelB { width:32px; height:32px; } .wheelBtns { gap:3px; } }

@@ -1118,9 +1118,10 @@ function bind(){
   on('obDone', obFinish_);
 
   /* share my week */
-  on('goShare', function(){ S.shareImg=null; go('share'); drawShareCard_(function(blob, url){ S.shareImg={ blob:blob, url:url }; if(S.view==='share') render(); }); });
-  on('shareGo', function(){ var I=S.shareImg; if(!I) return; var link=location.origin+'/', text=gpT('My week on GonPreah 🔥 Grow with me: {link}',{link:link});
-    try { var file=new File([I.blob], 'gonpreah-my-week.png', { type:'image/png' });
+  on('goShare', function(){ S.shareKind='week'; S.shareImg=null; go('share'); drawShareCard_(function(blob, url){ S.shareImg={ blob:blob, url:url }; if(S.view==='share') render(); }); });
+  on('shareGo', function(){ var I=S.shareImg; if(!I) return; var link=location.origin+'/', word=S.shareKind==='word';
+    var text=word ? gpT('My word for {y}: {word} ✨ Find yours on GonPreah: {link}',{y:todayStr().slice(0,4), word:planOf().word, link:link}) : gpT('My week on GonPreah 🔥 Grow with me: {link}',{link:link});
+    try { var file=new File([I.blob], word?'gonpreah-my-word.png':'gonpreah-my-week.png', { type:'image/png' });
       if(navigator.canShare && navigator.canShare({ files:[file] })){ navigator.share({ files:[file], text:text }).catch(function(){}); return; }
       if(navigator.share){ navigator.share({ title:'GonPreah', text:text, url:link }).catch(function(){}); return; } } catch(e){}
     showMsg(t('Save the picture, then post it from your gallery.')); });
@@ -1568,6 +1569,7 @@ var JR_STOPS = [
     { k:'walk', type:'chips', max:3, q:'Who do you want walking with you now?' },
     { k:'guideFor', type:'text', q:'One day you’ll be someone’s guide. Who would you love to help grow?', ph:'e.g. The kids at my church, my little brother' } ] },
   { id:'future', icon:'🏔️', title:'The future you want', intro:'Now dream. Not only what you want to do — who you want to become.', qs:[
+    { k:'wheel', type:'wheel', q:'First, where are you now? How is each part of your life going?', note:'Be honest: 1 is really hard, 5 is great. You can check again every month and watch it change.' },
     { k:'areas', type:'areas', q:'Five years from now, what do you hope is true in each part of your life?', note:'Fill in the ones that matter most to you. Two or three is fine.' },
     { k:'year', type:'text', q:'One year from today, what’s the one thing you most want to be different?', ph:'e.g. I read my Bible every day and I’ve passed grade 12' } ] },
   { id:'legacy', icon:'🏆', title:'Your legacy', intro:'At the end of the story the hero comes home changed — carrying something good for other people.', qs:[
@@ -1588,7 +1590,7 @@ var JR_OPTS = {
   word:[['grow','Grow'],['brave','Brave'],['focus','Focus'],['faith','Faith'],['rest','Rest'],['discipline','Discipline'],['joy','Joy'],['serve','Serve'],['learn','Learn'],['begin','Begin'],['trust','Trust'],['pray','Pray']]
 };
 var JR_AREA_PH = { faith:'e.g. I lead a small group and pray every day', family:'e.g. I’m close to my parents and help my brothers and sisters', study:'e.g. I’ve finished university and work as a nurse', health:'e.g. I play football twice a week and sleep well', money:'e.g. I save every month and give to my church', serve:'e.g. I teach English to children in my village' };
-function storyOf_(){ var s=(S.me && S.me.story)||{}; return { a:s.a||{}, done:s.done||[], finished:s.finished||'' }; }
+function storyOf_(){ var s=(S.me && S.me.story)||{}; return { a:s.a||{}, done:s.done||[], finished:s.finished||'', wheels:s.wheels||[] }; }
 function jrClone_(o){ return JSON.parse(JSON.stringify(o||{})); }
 /* A chip answer as words, in the person's language: the chips they picked, then their own. */
 function jrWords_(A, k){ var v=A[k]; if(!v || typeof v!=='object') return [];
@@ -1658,7 +1660,7 @@ function journeyHtml(){
   if(J.phase==='done'){
     var nx=JR_STOPS[J.s+1];
     return top+'<div class="jrDone"><div class="obBig">'+X.icon+'</div><h2>'+esc(gpT('{stop}: done!',{stop:t(X.title)}))+'</h2>'+(J.xp?'<div class="jrXp">+'+J.xp+' XP</div>':'')+
-      '<p class="sub">'+esc(gpT('{n} of {m} stops on your journey',{n:storyOf_().done.length, m:JR_STOPS.length}))+'</p>'+
+      '<p class="sub">'+esc(gpT('{n} of {m} stops on your journey',{n:storyOf_().done.length, m:JR_STOPS.length}))+'</p>'+jrRecapHtml_(X, J.a)+
       (nx ? '<div class="card jrNextCard"><span class="jrNextIc">'+nx.icon+'</span><span><div class="pmeta">'+esc(t('Next stop'))+'</div><b>'+esc(t(nx.title))+'</b></span></div><button class="btn" id="jrOn">'+esc(t('Keep going'))+' →</button>'
         : '<button class="btn" id="jrOn">✨ '+esc(t('Write my vision'))+'</button>')+'<button class="linkbtn" id="jrLater2">'+esc(t('Finish later'))+'</button></div>';
   }
@@ -1673,6 +1675,7 @@ function journeyHtml(){
   var Q=X.qs[J.q], v=J.a[Q.k], h=top+'<div class="jrQ"><div class="pmeta">'+X.icon+' '+esc(t(X.title))+' · '+esc(gpT('{n} of {m}',{n:J.q+1, m:X.qs.length}))+'</div>'+
     '<div class="miniTrack"><div style="width:'+Math.round((J.q+1)/X.qs.length*100)+'%"></div></div><h2 class="jrQt">'+esc(t(Q.q))+'</h2>'+(Q.note?'<p class="sub">'+(Q.lock?'🔒 ':'')+esc(t(Q.note))+'</p>':'');
   if(Q.type==='text') h+='<textarea id="jrText" rows="4" maxlength="300" placeholder="'+esc(t(Q.ph||''))+'">'+esc(typeof v==='string'?v:'')+'</textarea>';
+  else if(Q.type==='wheel') h+=wheelRowsHtml_(v||{}, 'data-jrw');
   else if(Q.type==='areas'){ var ar=v||{}; h+=AREAS.map(function(a){ return '<label class="f jrAreaL" for="jrA_'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</label><input type="text" id="jrA_'+a[0]+'" data-jrarea="'+a[0]+'" maxlength="160" placeholder="'+esc(t(JR_AREA_PH[a[0]]))+'" value="'+esc(ar[a[0]]||'')+'">'; }).join(''); }
   else { var c=(v&&v.c)||[];
     h+='<div class="pmeta jrPick">'+esc(Q.max===1?t('Pick one'):gpT('Pick up to {n}',{n:Q.max}))+'</div><div class="jrChips'+(Q.k==='truth'?' long':'')+'">'+JR_OPTS[Q.k].map(function(o){ var on=c.indexOf(o[0])>-1; return '<button class="jrChip'+(on?' on':'')+'" data-jrc="'+o[0]+'" aria-pressed="'+on+'">'+esc(t(o[1]))+'</button>'; }).join('')+'</div>'+
@@ -1680,7 +1683,16 @@ function journeyHtml(){
   }
   return h+'<div class="btnRow jrNav"><button class="btn ghost" id="jrBack">← '+esc(t('Back'))+'</button><button class="btn" id="jrNext">'+esc(jrEmpty_(Q, J.a[Q.k]) ? t('Skip') : t('Next'))+' →</button></div></div>';
 }
-function jrEmpty_(Q, v){ if(Q.type==='text') return !(v && String(v).trim()); if(Q.type==='areas') return !v || !Object.keys(v).some(function(k){ return v[k] && String(v[k]).trim(); }); return !v || (!(v.c||[]).length && !(v.o||'').trim()); }
+/* What you said at a stop, short, on its done screen. */
+function jrRecapHtml_(X, A){
+  var rows=X.qs.map(function(Q){ var v=A[Q.k], x='';
+    if(Q.type==='text') x=jrText_(A,Q.k); else if(Q.type==='chips') x=jrWords_(A,Q.k).join(' · ');
+    else if(Q.type==='areas'){ var ar=v||{}; x=AREAS.filter(function(a){ return ar[a[0]]; }).map(function(a){ return a[1]; }).join(' '); }
+    else if(Q.type==='wheel'){ var w=v||{}; x=AREAS.filter(function(a){ return w[a[0]]; }).map(function(a){ return a[1]+' '+w[a[0]]; }).join('  '); }
+    return x ? '<div class="jrLine"><div class="pmeta">'+esc(t(Q.q))+'</div>'+esc(x.length>120?x.slice(0,118)+'…':x)+'</div>' : ''; }).join('');
+  return rows ? '<div class="card jrRecap"><div class="pmeta" style="margin-bottom:4px">💬 '+esc(t('What you said'))+'</div>'+rows+'</div>' : '';
+}
+function jrEmpty_(Q, v){ if(Q.type==='text') return !(v && String(v).trim()); if(Q.type==='wheel') return !v || !Object.keys(v).length; if(Q.type==='areas') return !v || !Object.keys(v).some(function(k){ return v[k] && String(v[k]).trim(); }); return !v || (!(v.c||[]).length && !(v.o||'').trim()); }
 /* Read what's on screen into the answers. */
 function jrKeep_(){
   var J=S.jr; if(!J) return;
@@ -1707,6 +1719,7 @@ function bindJourney_(){
   on('jrNext', busyOnce_(function(){ jrKeep_(); gpTap(); var X=JR_STOPS[J.s];
     if(J.q<X.qs.length-1){ J.q++; render(); window.scrollTo(0,0); return; }
     var b=$('jrNext'); return jrSave_(true).then(function(d){ if(d && d.ok){ J.phase='done'; render(); window.scrollTo(0,0); confettiAt_($('jrOn')||b); } }); }));
+  all('[data-jrw]', function(b){ jrKeep_(); var p=b.getAttribute('data-jrw').split('|'); J.a.wheel=J.a.wheel||{}; J.a.wheel[p[0]]=Number(p[1]); gpTap(); render(); });
   all('[data-jrc]', function(b){ jrKeep_(); var Q=JR_STOPS[J.s].qs[J.q], v=J.a[Q.k], id=b.getAttribute('data-jrc'), i=v.c.indexOf(id);
     if(i>-1) v.c.splice(i,1); else { if(Q.max===1) v.c=[]; else if(v.c.length>=Q.max) v.c.shift(); v.c.push(id); }
     gpTap(); render(); });
@@ -1733,7 +1746,9 @@ function visionHtml(){
   var h=backBtn(t('Back'))+'<div class="visionHead"><h2>'+esc(t('My vision'))+'</h2>'+(P.word?'<span class="wordBadge">🔑 '+esc(LANG==='en'?P.word.toUpperCase():P.word)+'</span>':'')+'</div>'+
     '<p class="sub">🔒 '+esc(t('Only you see this. Read it often — it’s the story you’re choosing.'))+'</p>'+
     '<div class="card visionText">'+esc(P.vision)+'</div>'+
-    (read ? '<div class="allDone">✓ '+esc(t('Read today. See you tomorrow!'))+'</div>' : '<button class="btn" id="visionRead">🙏 '+esc(t('I read my vision today'))+' · +5 XP</button>');
+    (read ? '<div class="allDone">✓ '+esc(t('Read today. See you tomorrow!'))+'</div>' : '<button class="btn" id="visionRead">🙏 '+esc(t('I read my vision today'))+' · +5 XP</button>')+
+    (P.word ? '<button class="btn ghost" id="shareWord">📤 '+esc(t('Share my word for the year'))+'</button>' : '');
+  h+=wheelSectionHtml_();
   h+=sec('🏔️','Five years from now', areas+line('One year from now','year'));
   h+=sec('🔥','My call', chips('heart')+chips('who')+line('My dream','dream'));
   h+=sec('🧭','Who I am', chips('gifts')+line('I lose track of time when…','flow'));
@@ -1742,6 +1757,26 @@ function visionHtml(){
   h+=sec('🏆','My legacy', chips('known')+line('What I hope they’ll say','remember'));
   h+=sec('🏡','Where I come from', chips('pastWords')+line('When I felt most alive','best')+line('A hard time that shaped me','hard')+line('What it taught me','lesson'));
   return h+'<div class="btnRow" style="margin-top:16px"><button class="btn ghost" id="visionEdit">✏️ '+esc(t('Change my vision'))+'</button><button class="btn ghost" id="jrAgain">🗺️ '+esc(t('Take the journey again'))+'</button></div>';
+}
+/* The life wheel: six areas, 1–5. Rows of buttons, for the journey and for checking again. */
+var WHEEL_FACES=['','😣','😕','😐','🙂','😄'];
+function wheelRowsHtml_(v, attr){
+  return '<div class="wheelRows">'+AREAS.map(function(a){ var n=v[a[0]]||0;
+    return '<div class="wheelRow"><span class="wheelL">'+a[1]+' '+esc(t(a[2]))+'</span><span class="wheelBtns">'+[1,2,3,4,5].map(function(i){ return '<button class="wheelB'+(n===i?' on':'')+'" '+attr+'="'+a[0]+'|'+i+'" aria-pressed="'+(n===i)+'" aria-label="'+esc(t(a[2]))+' '+i+'">'+i+'</button>'; }).join('')+'</span></div>'; }).join('')+
+    '<div class="wheelKey"><span>1 '+WHEEL_FACES[1]+' '+esc(t('really hard'))+'</span><span>5 '+WHEEL_FACES[5]+' '+esc(t('great'))+'</span></div></div>';
+}
+function wheelLast_(){ var w=storyOf_().wheels; return w.length ? w[w.length-1] : null; }
+function wheelDue_(){ var L=wheelLast_(); return !!(planOf().vision && (!L || addDays(L.d, 30)<=todayStr())); }
+function wheelSectionHtml_(){
+  var W=storyOf_().wheels, L=W[W.length-1], prev=W.length>1 ? W[W.length-2] : null, E=S.wheelEdit;
+  var h='<h3>📊 '+esc(t('My life now'))+'</h3><div class="card">';
+  if(E) return h+'<p class="sub" style="margin:0 0 8px">'+esc(t('How is each part of your life going right now?'))+'</p>'+wheelRowsHtml_(E, 'data-wh')+
+    '<div class="btnRow" style="margin-top:10px"><button class="btn small" id="wheelSave">'+esc(t('Save'))+'</button><button class="btn small ghost" id="wheelCancel">'+esc(t('Cancel'))+'</button></div></div>';
+  if(!L) return h+'<p class="sub" style="margin:0 0 8px">'+esc(t('Rate each part of your life from 1 to 5, then check again every month to see it grow.'))+'</p><button class="btn ghost" id="wheelAgain">📊 '+esc(t('How’s my life now?'))+'</button></div>';
+  h+=AREAS.map(function(a){ var n=L.v[a[0]]||0, p=prev && prev.v[a[0]], d=p ? n-p : 0;
+    return '<div class="wheelBar"><span class="wheelL">'+a[1]+' '+esc(t(a[2]))+'</span><span class="wheelTrack"><i style="width:'+(n*20)+'%" class="w'+n+'"></i></span><b>'+n+'</b><span class="wheelD'+(d>0?' up':d<0?' down':'')+'">'+(d>0?'▲'+d:d<0?'▼'+(-d):'')+'</span></div>'; }).join('');
+  h+='<div class="pmeta" style="margin-top:6px">'+esc(gpT('Checked {d}',{d:dayLabel(L.d)}))+(prev?' · '+esc(gpT('compared with {d}',{d:dayLabel(prev.d)})):'')+'</div>';
+  return h+'<button class="btn ghost" id="wheelAgain" style="margin-top:10px">📊 '+esc(wheelDue_() ? t('It’s been a month — check again') : t('Check again'))+'</button></div>';
 }
 /* On Home: my word, my why, and one thing from the vision for today (a different one each day). */
 function visionHomeHtml_(){
@@ -1754,6 +1789,7 @@ function visionHomeHtml_(){
     (P.why?'<span class="whyLineTx">“'+esc(P.why)+'”</span>':'')+
     (known.length?'<span class="becoming">'+esc(t('Becoming'))+': <b>'+esc(known.join(' · '))+'</b></span>':'')+
     (pick?'<span class="visionToday"><span class="pmeta">'+esc(t('For today'))+'</span>'+pick[0]+' '+esc(pick[1])+'</span>':'')+
+    (wheelDue_() && storyOf_().wheels.length ? '<span class="visionToday">📊 '+esc(t('It’s been a month — how’s your life now?'))+'</span>' : '')+
     '<span class="visionRead">'+(read?'✓ '+esc(t('Read today')):'📜 '+esc(t('Read my vision'))+' · +5 XP')+' ›</span></button>';
 }
 /* The Plan tab's top: the journey (to start, to finish) or my vision. */
@@ -1784,6 +1820,12 @@ function bindVision_(){
   on('visionEdit', function(){ jrStart_(); S.jr.phase='reveal'; S.jr.draft=planOf().vision; S.jr.mission=missionMake_(S.jr.a); S.jr.useWhy=false; go('journey'); });
   on('visionRead', busyOnce_(function(){ var b=$('visionRead'); confettiAt_(b); gpTap();
     return call('journey','read',{ date:todayStr() }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
+  on('wheelAgain', function(){ var L=wheelLast_(); S.wheelEdit=jrClone_(L ? L.v : {}); render(); });
+  on('wheelCancel', function(){ S.wheelEdit=null; render(); });
+  all('[data-wh]', function(b){ var p=b.getAttribute('data-wh').split('|'); S.wheelEdit[p[0]]=Number(p[1]); gpTap(); render(); });
+  on('wheelSave', busyOnce_(function(){ var E=S.wheelEdit; if(Object.keys(E).length<AREAS.length){ showMsg(t('Give each part of life a number first.')); return; }
+    var b=$('wheelSave'); return call('journey','wheel',{ wheel:E }).then(function(d){ if(d && d.ok){ S.me=d.me; S.wheelEdit=null; confettiAt_(b); render(); } else failMsg(d); }); }));
+  on('shareWord', function(){ S.shareKind='word'; S.shareImg=null; go('share'); drawWordCard_(function(blob, url){ S.shareImg={ blob:blob, url:url }; if(S.view==='share') render(); }); });
   all('[data-dream]', function(b){ var a=b.getAttribute('data-dream'), ar=storyOf_().a.areas||{};
     S.goalDraft={ area:a, title:String(ar[a]||'').slice(0,100), measure:'', help:'', why:'', by:addMonths(monthKey(todayStr()), 12) }; go('goaledit'); });
 }
@@ -2043,11 +2085,32 @@ function drawShareCard_(cb){
   };
   var f=document.fonts; if(f && f.load) Promise.all([f.load("400 64px 'Koulen'"), f.load("400 64px 'Kantumruy Pro'"), f.load("700 40px 'Kantumruy Pro'")]).then(go, go); else go();
 }
+/* My word for the year, as a picture (1080×1920): first name, the word, who I'm becoming. */
+function drawWordCard_(cb){
+  var W=1080, H=1920, c=document.createElement('canvas'); c.width=W; c.height=H; var x=c.getContext('2d'), me=S.me, P=planOf(), known=jrWords_(storyOf_().a,'known');
+  var go=function(){
+    var g=x.createLinearGradient(0,0,W,H); g.addColorStop(0,'#17150F'); g.addColorStop(.6,'#1430B0'); g.addColorStop(1,'#1F44FF'); x.fillStyle=g; x.fillRect(0,0,W,H);
+    x.fillStyle='rgba(255,179,35,.14)'; x.beginPath(); x.arc(W/2,900,430,0,Math.PI*2); x.fill();
+    var font=function(sz, w, fam){ x.font=(w||'700')+' '+sz+'px '+(fam||"'Kantumruy Pro', system-ui, sans-serif"); };
+    x.textAlign='center';
+    font(64,'400',"'Koulen', system-ui, sans-serif"); x.fillStyle='#FAF6F0'; x.fillText('កូនព្រះ  GONPREAH', W/2, 210);
+    font(48,'500'); x.fillStyle='rgba(250,246,240,.8)'; x.fillText(gpT('{name}’s word for {y}',{name:firstName_(me.name), y:todayStr().slice(0,4)}), W/2, 560, W-120);
+    var w=LANG==='en' ? P.word.toUpperCase() : P.word, sz=230; font(sz,'400',"'Koulen', system-ui, sans-serif"); while(x.measureText(w).width>W-140 && sz>90){ sz-=10; font(sz,'400',"'Koulen', system-ui, sans-serif"); }
+    x.fillStyle='#FFB323'; x.fillText(w, W/2, 960);
+    if(known.length){ font(44,'600'); x.fillStyle='rgba(250,246,240,.75)'; x.fillText(t('Becoming'), W/2, 1250);
+      font(64,'700'); x.fillStyle='#FFFFFF'; x.fillText(known.join(' · '), W/2, 1350, W-120); }
+    font(40,'600'); x.fillStyle='rgba(250,246,240,.8)'; x.fillText(t('What did God make you for? Find your word:'), W/2, H-190, W-120);
+    font(40,'600'); x.fillStyle='#FFB323'; x.fillText(location.host || 'app.gonpreah.org', W/2, H-120);
+    c.toBlob(function(b){ cb(b, c.toDataURL('image/png')); }, 'image/png');
+  };
+  var f=document.fonts; if(f && f.load) Promise.all([f.load("400 64px 'Koulen'"), f.load("400 64px 'Kantumruy Pro'"), f.load("700 40px 'Kantumruy Pro'")]).then(go, go); else go();
+}
 function shareHtml(){
-  var h=backBtn(t('Home'))+'<h2>📤 '+esc(t('Share my week'))+'</h2><p class="sub">'+esc(t('A picture for your story or your friends. Only your first name and your numbers — nothing private.'))+'</p>';
+  var word=S.shareKind==='word';
+  var h=backBtn(word?t('My vision'):t('Home'))+'<h2>📤 '+esc(word?t('Share my word for the year'):t('Share my week'))+'</h2><p class="sub">'+esc(word?t('A picture for your story: your first name, your word and who you’re becoming. Nothing else from your vision.'):t('A picture for your story or your friends. Only your first name and your numbers — nothing private.'))+'</p>';
   if(!S.shareImg) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
   return h+'<img class="shareImg" src="'+S.shareImg.url+'" alt="">'+
-    '<div class="btnRow" style="margin-top:12px"><button class="btn" id="shareGo">📤 '+esc(t('Share'))+'</button><a class="btn ghost" id="shareSave" download="gonpreah-my-week.png" href="'+S.shareImg.url+'">'+esc(t('Save the picture'))+'</a></div>';
+    '<div class="btnRow" style="margin-top:12px"><button class="btn" id="shareGo">📤 '+esc(t('Share'))+'</button><a class="btn ghost" id="shareSave" download="'+(word?'gonpreah-my-word.png':'gonpreah-my-week.png')+'" href="'+S.shareImg.url+'">'+esc(t('Save the picture'))+'</a></div>';
 }
 
 /* ---------------- the focus timer ----------------
@@ -2136,3 +2199,13 @@ if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.service
 function start_(){ if(AUTH) bootNow_(); else render();
   api('authConfig').then(function(c){ S.authCfg=c||{}; if(!AUTH && !typing_()) render(); }); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();
+/* While the keyboard is up, the bottom bar steps aside: phones keep fixed bars above the
+   keyboard, where it would sit on the box being typed in. The keyboard is "up" when a text box
+   has focus and the visible screen is clearly shorter than it was without it. */
+(function(){ var vv=window.visualViewport, full=0, isText=function(e){ return !!e && (e.tagName==='TEXTAREA' || (e.tagName==='INPUT' && !/^(checkbox|radio|range|button|submit|month|date|time)$/.test(e.type))); };
+  var upd=function(){ var h=vv ? vv.height : window.innerHeight; if(!isText(document.activeElement)) full=Math.max(full, h);
+    if(!full) full=h; document.body.classList.toggle('typing', isText(document.activeElement) && h < full*0.78); };
+  if(vv) vv.addEventListener('resize', upd); window.addEventListener('resize', upd);
+  document.addEventListener('focusin', function(){ setTimeout(upd, 60); setTimeout(upd, 400); });
+  document.addEventListener('focusout', function(){ setTimeout(upd, 60); });
+  upd(); })();

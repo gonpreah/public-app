@@ -482,6 +482,13 @@ jr = await H.journey(JN.uid, JN.token, 'vision', { vision: 'I’m Jona, a child 
 ok('the vision is kept with its lines, my word and my why — and 60 XP', jr.ok && jr.me.plan.vision === 'I’m Jona, a child of God.\n\nFive years from now:\n🎓 A nurse' && jr.me.plan.word === 'Brave' && jr.me.plan.why === 'To help young people' && jr.me.story.finished === today && jr.me.level.xp === 80);
 jr = await H.journey(JN.uid, JN.token, 'read', { date: today });
 ok('reading it again: 5 XP, once a day', jr.me.daily[today].vision === true && jr.me.level.xp === 85 && (await H.journey(JN.uid, JN.token, 'read', { date: today })).me.level.xp === 85);
+jr = await H.journey(JN.uid, JN.token, 'save', { answers: { wheel: { faith: 3, study: 9, money: 2, moon: 4 } }, stop: 'future' });
+ok('the life wheel keeps 1–5 for the six areas only, and goes into its history', JSON.stringify(jr.me.story.a.wheel) === '{"faith":3,"money":2}' && jr.me.story.wheels.length === 1 && jr.me.story.wheels[0].d === today);
+ok('checking the wheel again needs all six', (await H.journey(JN.uid, JN.token, 'wheel', { wheel: { faith: 4 } })).err === 'wheel');
+const six = { faith: 4, family: 3, study: 4, health: 2, money: 3, serve: 5 };
+jr = await H.journey(JN.uid, JN.token, 'wheel', { wheel: six });
+ok('… then it’s kept (one a day) with 10 XP', jr.ok && jr.me.story.a.wheel.serve === 5 && jr.me.story.wheels.length === 1 && jr.me.level.xp === 115);
+ok('… once a month', (await H.journey(JN.uid, JN.token, 'wheel', { wheel: six })).me.level.xp === 115);
 const ju = JSON.parse(globalThis.__gpaStore._m.get('u:' + JN.uid));
 ok('finishing is a feed moment that carries none of their words', ju.posts.some(x => x.kind === 'journey' && x.n === null));
 const jc = await H.person(B.uid, B.token, JN.uid);

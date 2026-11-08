@@ -114,6 +114,19 @@ vision (once ever), 5 a day for reading it again. Home shows my vision (word, wh
 one five-year line or the truth for today, rotating by day); the Plan tab offers each five-year
 line as a goal ("Turn your dreams into goals"). Finishing is a feed moment (no words). In Khmer
 the "dragons" are ឧបសគ្គ (obstacles): the naga is a good figure in Cambodia.
+**The life wheel** (Living Forward's "where am I now"): the future stop opens with each area rated
+1–5 (`a.wheel`); `journey` 'wheel' checks again (all six, 10 XP once a month), kept in
+`u.story.wheels` (last 12, one a day); my vision shows the bars and the change since last time,
+and Home nudges a month on. Each stop's done screen shows "What you said". **Share my word**
+(view `share`, `S.shareKind='word'`): a 1080×1920 picture — first name, the word, "Becoming" —
+nothing else from the vision. Sundays' reminder adds "read your vision again" (`vision`).
+
+## Phones in a browser (iPhone Safari)
+Safari zooms into a text box under 16px and leaves the page zoomed and sliding about, and zooms
+on a quick double tap: so text boxes are 16px on touch screens (`pointer:coarse`) and the page is
+`touch-action:manipulation` (pinch-zoom still works). While the keyboard is up (a text box has
+focus and the visible screen is clearly shorter), `body.typing` hides the bottom bar so it can't
+sit on the box. tests/test-app-ui.mjs holds both.
 
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan

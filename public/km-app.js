@@ -854,5 +854,25 @@ var APP_KM = {
   "e.g. I save every month and give to my church": "ឧ. ខ្ញុំសន្សំលុយរាល់ខែ ហើយថ្វាយដល់ក្រុមជំនុំរបស់ខ្ញុំ",
   "e.g. I teach English to children in my village": "ឧ. ខ្ញុំបង្រៀនភាសាអង់គ្លេសដល់កុមារនៅភូមិរបស់ខ្ញុំ",
   "{name} finished the Life Journey and wrote a vision for their life 🗺️": "{name} បានបញ្ចប់ដំណើរជីវិត ហើយបានសរសេរចក្ខុវិស័យសម្រាប់ជីវិតរបស់គាត់ 🗺️",
-  "you finishing the Life Journey": "អ្នកបានបញ្ចប់ដំណើរជីវិត"
+  "you finishing the Life Journey": "អ្នកបានបញ្ចប់ដំណើរជីវិត",
+  /* the life wheel, the recap, my word to share */
+  "My word for {y}: {word} ✨ Find yours on GonPreah: {link}": "ពាក្យរបស់ខ្ញុំសម្រាប់ឆ្នាំ {y}៖ {word} ✨ ស្វែងរកពាក្យរបស់អ្នកនៅលើកូនព្រះ៖ {link}",
+  "What you said": "អ្វីដែលអ្នកបាននិយាយ",
+  "Share my word for the year": "ចែករំលែកពាក្យរបស់ខ្ញុំសម្រាប់ឆ្នាំនេះ",
+  "really hard": "ពិបាកណាស់",
+  "great": "ល្អណាស់",
+  "My life now": "ជីវិតរបស់ខ្ញុំឥឡូវនេះ",
+  "Rate each part of your life from 1 to 5, then check again every month to see it grow.": "ដាក់ពិន្ទុផ្នែកនីមួយៗនៃជីវិតរបស់អ្នកពី ១ ដល់ ៥ ហើយពិនិត្យម្តងទៀតរៀងរាល់ខែ ដើម្បីមើលវាលូតលាស់។",
+  "How’s my life now?": "តើជីវិតរបស់ខ្ញុំឥឡូវនេះយ៉ាងម៉េចដែរ?",
+  "Checked {d}": "បានពិនិត្យនៅ {d}",
+  "compared with {d}": "ធៀបនឹង {d}",
+  "It’s been a month — check again": "មួយខែហើយ — ពិនិត្យម្តងទៀត",
+  "Check again": "ពិនិត្យម្តងទៀត",
+  "It’s been a month — how’s your life now?": "មួយខែហើយ — តើជីវិតរបស់អ្នកឥឡូវនេះយ៉ាងម៉េចដែរ?",
+  "Give each part of life a number first.": "សូមដាក់លេខឱ្យផ្នែកនីមួយៗនៃជីវិតជាមុនសិន។",
+  "{name}’s word for {y}": "ពាក្យរបស់ {name} សម្រាប់ឆ្នាំ {y}",
+  "What did God make you for? Find your word:": "តើព្រះបង្កើតអ្នកមកដើម្បីអ្វី? ស្វែងរកពាក្យរបស់អ្នក៖",
+  "A picture for your story: your first name, your word and who you’re becoming. Nothing else from your vision.": "រូបភាពមួយសម្រាប់ story របស់អ្នក៖ នាមខ្លួន ពាក្យរបស់អ្នក និងមនុស្សដែលអ្នកកំពុងក្លាយជា។ មិនមានអ្វីផ្សេងទៀតពីចក្ខុវិស័យរបស់អ្នកទេ។",
+  "First, where are you now? How is each part of your life going?": "ជាដំបូង តើអ្នកនៅត្រង់ណាឥឡូវនេះ? តើផ្នែកនីមួយៗនៃជីវិតរបស់អ្នកដំណើរការយ៉ាងម៉េចដែរ?",
+  "Be honest: 1 is really hard, 5 is great. You can check again every month and watch it change.": "និយាយដោយស្មោះត្រង់៖ ១ គឺពិបាកណាស់ ៥ គឺល្អណាស់។ អ្នកអាចពិនិត្យម្តងទៀតរៀងរាល់ខែ ហើយមើលវាផ្លាស់ប្តូរ។"
 };

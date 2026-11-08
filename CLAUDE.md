@@ -124,9 +124,10 @@ nothing else from the vision. Sundays' reminder adds "read your vision again" (`
 ## Phones in a browser (iPhone Safari)
 Safari zooms into a text box under 16px and leaves the page zoomed and sliding about, and zooms
 on a quick double tap: so text boxes are 16px on touch screens (`pointer:coarse`) and the page is
-`touch-action:manipulation` (pinch-zoom still works). While the keyboard is up (a text box has
+`touch-action:manipulation` on buttons and chips only — not the whole page (pinch-zoom still works). While the keyboard is up (a text box has
 focus and the visible screen is clearly shorter), `body.typing` hides the bottom bar so it can't
-sit on the box. tests/test-app-ui.mjs holds both.
+sit on the box. tests/test-app-ui.mjs holds both. **Debugging on a real phone**: open the app with
+`?debug` (`?debug=0` to stop) — a panel shows taps, focus, clicks, redraws and errors.
 
 ## The five gifts (APEST), and going deeper on every test (Me → How God made you)
 Nov 2026, Uriah: "an APEST test for 5 fold ministry with explanation of results" and "a deeper

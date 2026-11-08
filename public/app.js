@@ -2360,6 +2360,29 @@ if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.service
 function start_(){ if(AUTH) bootNow_(); else render();
   api('authConfig').then(function(c){ S.authCfg=c||{}; if(!AUTH && !typing_()) render(); }); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();
+/* A panel for finding what a real phone does (Nov 2026: on an iPhone the keyboard wouldn't come up,
+   and no test browser shows it). Open the app with ?debug (?debug=0 to stop; the phone remembers
+   it, so it works from the Home Screen too): taps, focus, clicks, redraws and errors, newest first.
+   It reads nothing private and sends nothing anywhere. */
+(function(){
+  try { var q=location.search; if(/[?&]debug=0/.test(q)) localStorage.removeItem('gpa-debug'); else if(/[?&]debug\b/.test(q)) localStorage.setItem('gpa-debug','1'); if(localStorage.getItem('gpa-debug')!=='1') return; } catch(e){ return; }
+  var box=document.createElement('div'), lines=[], t0=Date.now();
+  box.id='dbgBox'; box.setAttribute('style','position:fixed;left:4px;right:4px;top:calc(env(safe-area-inset-top) + 66px);max-height:42vh;overflow:hidden;z-index:99999;background:rgba(0,0,0,.84);color:#9BFF8A;font:10.5px/1.35 ui-monospace,Menlo,monospace;padding:6px 8px;border-radius:8px;pointer-events:none;white-space:pre-wrap;word-break:break-all');
+  var desc=function(el){ if(!el || !el.tagName) return String(el); return el.tagName.toLowerCase()+(el.id?'#'+el.id:'')+(typeof el.className==='string' && el.className?'.'+el.className.trim().split(/\s+/).slice(0,2).join('.'):''); };
+  var head=function(){ return 'DEBUG '+(navigator.standalone?'home-screen':'browser')+' · '+((navigator.userAgent.match(/(iPhone OS [\d_]+|Android [\d.]+|Version\/[\d.]+|CriOS\/[\d.]+)/g)||[]).join(' '))+' · view '+(window.S&&S.view)+' · active '+desc(document.activeElement); };
+  var log=function(x){ lines.unshift(((Date.now()-t0)/1000).toFixed(1)+' '+x); lines=lines.slice(0,24); box.textContent=head()+'\n'+lines.join('\n'); };
+  ['touchstart','touchend','mousedown','click','focusin','focusout'].forEach(function(ty){
+    document.addEventListener(ty, function(e){ var tc=(e.changedTouches&&e.changedTouches[0]), at=tc?document.elementFromPoint(tc.clientX, tc.clientY):null;
+      log(ty+' '+desc(e.target)+(at && at!==e.target?' (on top: '+desc(at)+')':'')); if(ty==='focusin') setTimeout(function(){ log('  …0.4s later active '+desc(document.activeElement)); }, 400); }, true);
+    window.addEventListener(ty, function(e){ if(e.defaultPrevented) log('  '+ty+' was PREVENTED'); });
+  });
+  if(window.visualViewport) visualViewport.addEventListener('resize', function(){ log('screen '+Math.round(visualViewport.width)+'x'+Math.round(visualViewport.height)); });
+  window.addEventListener('error', function(e){ log('ERROR '+(e.message||desc(e.target))); }, true);
+  var R=window.render; if(typeof R==='function') window.render=function(){ log('redraw '+(window.S&&S.view)); return R.apply(this, arguments); };
+  var put=function(){ document.body.appendChild(box); log('debug on — tap a text box'); };
+  if(document.body) put(); else document.addEventListener('DOMContentLoaded', put);
+})();
+
 /* While the keyboard is up, the bottom bar steps aside: phones keep fixed bars above the
    keyboard, where it would sit on the box being typed in. The keyboard is "up" when a text box
    has focus and the visible screen is clearly shorter than it was without it. */

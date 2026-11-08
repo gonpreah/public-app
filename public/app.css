@@ -1011,3 +1011,6 @@ body.typing { padding-bottom:24px; }
 .sphRow:first-of-type { border-top:0; }
 .sphRank { width:22px; height:22px; border-radius:50%; background:var(--accent); color:var(--accentInk); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none; }
 .sphIc { font-size:24px; flex:none; }
+
+/* Text boxes always take text, whatever their containers say (an iPhone opens no keyboard for a box it can't select in). */
+input, textarea, select { -webkit-user-select:text; user-select:text; }

@@ -528,6 +528,18 @@ await a.click('[data-back]');
   await ctx.close();
 }
 
+/* ---------- 17c. the debug panel (?debug) ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+  const d = await ctx.newPage(); d.on('pageerror', x => errors.push('debug: ' + x.message));
+  await d.goto(base + '/?debug'); await d.waitForSelector('#liUser'); await d.tap('#liUser'); await d.waitForTimeout(600);
+  const log = await d.$eval('#dbgBox', e => e.textContent);
+  ok('?debug shows a panel of what the phone does: taps, focus, redraws', /touchstart input#liUser/.test(log) && /focusin input#liUser/.test(log) && /redraw/.test(log) && await d.$eval('#dbgBox', e => getComputedStyle(e).pointerEvents) === 'none', log.slice(0, 300));
+  await d.goto(base + '/?debug=0'); await d.waitForSelector('#liUser');
+  ok('… and ?debug=0 turns it off', !(await d.$('#dbgBox')));
+  await ctx.close();
+}
+
 /* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

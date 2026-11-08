@@ -559,6 +559,39 @@ await a.click('[data-back]');
   await ctx.close();
 }
 
+/* ---------- 17e. the Sunday reset, badges, and the walkthrough's way to the Life Journey ---------- */
+{
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); } catch (e) {} });
+  const w = await ctx.newPage(); w.on('pageerror', x => errors.push('reset: ' + x.message));
+  await w.goto(base + '/'); await w.click('#liNew'); await w.waitForSelector('#suPass');
+  await w.fill('#suUser', 'resetter'); await w.fill('#suPass', 'resetter password'); await w.fill('#suPass2', 'resetter password');
+  await w.fill('#suName', 'Reset Ter'); await w.selectOption('#suYear', '2001'); await w.click('#suGo');
+  await w.waitForSelector('#obNext'); await w.click('#obNext'); await w.waitForSelector('#obJourney');
+  ok('the walkthrough offers the Life Journey for finding my why', /Find it with the Life Journey/.test(await text(w)));
+  await w.click('#obJourney'); await w.waitForSelector('[data-obh]'); await w.click('#obNext'); await w.waitForSelector('#obDone'); await w.click('#obDone');
+  await w.waitForSelector('#jrGo');
+  ok('… and it opens right after the walkthrough', /Where you come from/.test(await text(w)));
+  await w.click('#jrLater'); await w.waitForTimeout(400);
+  await w.evaluate(() => { resetWeek_ = () => mondayOf(todayStr()); render(); });   // as if it were Monday
+  await w.click('nav.bottom button[data-tab="home"]'); await w.waitForSelector('#goReset');
+  ok('on a Monday, Home offers the Sunday reset', /Sunday reset/.test(await text(w)));
+  await w.click('#goReset'); await w.waitForSelector('#rsText');
+  ok('… which looks back at the week first', /what went well this week/.test(await text(w)) && /days with habits/.test(await text(w)));
+  await w.fill('#rsText', 'Helped my sister'); await w.click('#rsNext'); await w.fill('#rsText', 'Late nights'); await w.click('#rsNext');
+  await w.waitForSelector('[data-rsarea]'); await w.click('[data-rsarea="health"]'); await w.click('#rsNext');
+  await w.waitForSelector('[data-rsgoal]'); await w.fill('[data-rsgoal="0"]', 'Sleep by 11'); await w.fill('[data-rsgoal="1"]', 'Run twice');
+  ok('… suggests a goal for the part of life I chose', /Maybe one for/.test(await text(w)) && /Health/.test(await text(w)));
+  await w.click('#rsNext'); await w.waitForSelector('#rsNext'); ok('… and ends by giving the week to God', /Give the week to God/.test(await text(w)) && /Sleep by 11/.test(await text(w)));
+  await w.click('#rsNext'); await w.waitForTimeout(900);
+  ok('the week is set: its goals, the reset kept, and it leaves Home', await w.evaluate(() => { const wk = mondayOf(todayStr()); return S.view === 'home' && (S.me.weeks[wk] || []).map(g => g.text).join() === 'Sleep by 11,Run twice' && S.me.resets[wk].area === 'health'; }) && !(await w.$('#goReset')));
+  await w.click('nav.bottom button[data-tab="me"]'); await w.waitForSelector('#goBadges'); await w.click('#goBadges'); await w.waitForSelector('.badgeGrid');
+  ok('badges: twenty, with what each one takes and how close I am', (await w.$$('.badge')).length === 20 && /A 7-day streak/.test(await text(w)) && /0 \/ 7/.test(await text(w)));
+  await w.evaluate(() => { S.me.stats.best = 7; render(); }); await w.waitForTimeout(300);
+  ok('… and a new one pops up once', /New badge/.test(await w.$eval('.badgePop', e => e.innerText)) && (await w.$$('.badge.got')).length >= 1);
+  await ctx.close();
+}
+
 /* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

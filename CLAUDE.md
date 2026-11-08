@@ -151,6 +151,20 @@ health. Me → "Where your gifts may shine" adds up the spheres of my type, Top 
 gifts (`sphereVotes_`). These three files load only when a screen needs them (`needJs_`); they are
 drafts by Claude, English and Khmer, unreviewed. tests/test-library.mjs checks their shape.
 
+## The Sunday reset, badges, and the first day
+**Sunday reset** (view `reset`; Home shows it Saturday to Monday until done, `resetWeek_`): five
+steps — look back (the week's numbers, what went well), what was hard, look up (my word and why;
+which part of life needs care), look ahead (three goals, with my plan's open steps to tap in),
+give the week to God (a short prayer in our own words). It saves the week's goals (`saveWeek`)
+and `weekReset` keeps `u.resets[monday]` = {good, hard, area} (26 weeks, private; 30 XP a week).
+Sunday's reminder adds "Sunday reset" until it's done. **Badges** (Me → Badges, view `badges`):
+twenty, worked out on the phone from what's already there (`badgeList_`: streaks, Today's 3,
+focus hours, the three tests, the journey, vision reads, the wheel, resets, steps, goals,
+devotionals, a reading plan, answered prayers, check-ins, a team, friends, level 10) — nothing new
+stored or shared; a new one pops up once (`badgeWatch_`, the phone remembers `gpa-badges`). **The
+walkthrough** offers the Life Journey for finding my why; it opens right after. Screens that slide
+in slide only when the question changes (`body.still`), not on every redraw.
+
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan
 (the mentee lets the coach see their life plan), meetings (a check-in 1–5 on the six areas,

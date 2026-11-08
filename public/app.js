@@ -16,6 +16,7 @@
       devo                       — today's devotional (devotions.js, one for each day of the month)
       journey · vision           — the Life Journey (seven stops of questions → a vision); my vision
       atest · agift              — the five gifts test (APEST, apest.js) and its results
+      reset · badges             — the Sunday reset (five steps to set up the week); my badges
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -119,7 +120,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -160,6 +161,8 @@ function render(){
     else if(V==='devo') h=devoHtml();
     else if(V==='journey') h=journeyHtml();
     else if(V==='atest') h=atestHtml();
+    else if(V==='reset') h=resetHtml();
+    else if(V==='badges') h=badgesHtml();
     else if(V==='agift') h=agiftHtml();
     else if(V==='vision') h=visionHtml();
     else if(V==='pulse') h=pulseHtml();
@@ -171,7 +174,11 @@ function render(){
     else { S.view='home'; h=homeHtml(); }
     document.body.classList.toggle('libReading', V==='library' && !!S.libBook && S.libStep!=null);
     m.innerHTML=h;
-    xpWatch_();
+    /* Screens that slide in (the journey, the reset) slide only when the question changes — not on
+       every redraw, like a tap on a chip. */
+    var animKey=V+'|'+(V==='journey' && S.jr ? S.jr.s+'.'+S.jr.q+'.'+S.jr.phase : '')+'|'+(V==='reset' && S.reset ? S.reset.step : '');
+    document.body.classList.toggle('still', animKey===S.animKey); S.animKey=animKey;
+    xpWatch_(); if(AUTH && S.me) badgeWatch_();
     navHtml_();
     bind();
   } catch(e){
@@ -325,7 +332,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=whyLineHtml()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  h+=whyLineHtml()+resetCardHtml_()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths || !me.apest){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -532,6 +539,7 @@ function meHtml(){
   else h+=entryCardHtml('goGtest','💪',t('Find your top 5 strengths'),t('102 quick choices · about 15 minutes'));
   h+=apEntryHtml_();
   h+=spheresMeHtml_();
+  h+='<h3>🏅 '+esc(t('Badges'))+'</h3>'+badgesEntryHtml_();
 
   h+='<h3>👁 '+esc(t('What others see'))+'</h3><div class="card">'+
     '<p class="sub" style="margin:0 0 8px">'+esc(t('People see your progress, never the details: not your goals, your habits or your answers.'))+'</p>';
@@ -1090,7 +1098,8 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_();
+  on('goBadges', function(){ go('badges'); });
 
   /* today's devotional */
   on('goDevo', function(){ go('devo'); });
@@ -1129,6 +1138,7 @@ function bind(){
   /* the walkthrough */
   on('obSkip', obFinish_);
   on('obLater', function(){ S.ob.step=3; render(); });
+  on('obJourney', function(){ S.ob.journey=true; S.ob.step=3; render(); });
   all('[data-obh]', function(b){ var id=b.getAttribute('data-obh'), H=S.ob.habits, i=H.indexOf(id); if(i>-1) H.splice(i,1); else if(H.length<MAX_HABITS) H.push(id); gpTap(); render(); });
   on('obNext', busyOnce_(function(){ var O=S.ob;
     if(O.step===1){ O.step=2; render(); return; }
@@ -1562,6 +1572,108 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- the Sunday reset (api.js weekReset) ----------------
+   Saturday to Monday: look back, look up, look ahead — five short steps, then the week's three
+   goals are saved (saveWeek) with what went well, what was hard and the part of life to care for. */
+function resetWeek_(){ var d=todayStr(), dow=new Date(d+'T00:00:00Z').getUTCDay(); return dow===1 ? mondayOf(d) : (dow===0 || dow===6) ? addDays(mondayOf(d),7) : null; }
+function resetDue_(){ var w=resetWeek_(); return !!(w && !(S.me.resets||{})[w]); }
+function lastWeekNums_(){
+  var d=todayStr(), dow=new Date(d+'T00:00:00Z').getUTCDay(), mon=dow===1 ? addDays(mondayOf(d),-7) : mondayOf(d), me=S.me, n={ habit:0, focus:0, top:0, steps:0 };
+  for(var i=0;i<7;i++){ var x=addDays(mon,i); if(x>d) break; var m=(me.days||{})[x]; if(m && Object.keys(m).some(function(k){ return m[k]; })) n.habit++; var D=dayOf_(x); n.focus+=D.focus||0; if(D.top && D.top.length && D.top.every(function(y){ return y.done; })) n.top++; }
+  planOf().goals.forEach(function(g){ (g.steps||[]).forEach(function(st){ if(st.done && st.done>=mon && st.done<=addDays(mon,6)) n.steps++; }); });
+  return n;
+}
+function resetCardHtml_(){
+  if(!resetDue_()) return '';
+  return '<button class="card resetCard" id="goReset"><span class="resetIc">🔄</span><span style="flex:1"><b>'+esc(t('Sunday reset'))+'</b><div class="pmeta">'+esc(t('5 minutes: look back, look up, and set up your week.'))+'</div></span><span class="resetXp">+30 XP ›</span></button>';
+}
+function resetHtml(){
+  var R=S.reset; if(!R) return backBtn(t('Home'));
+  var week=R.week, steps=5, h=backBtn(t('Home'))+'<div class="obDots">'+[1,2,3,4,5].map(function(i){ return '<span class="'+(i<=R.step?'on':'')+'"></span>'; }).join('')+'</div><div class="jrQ">';
+  if(R.step===1){ var n=lastWeekNums_();
+    h+='<div class="jrBig">🎉</div><h2 class="jrQt">'+esc(t('Look back: what went well this week?'))+'</h2>'+
+      '<div class="statTiles recapTiles">'+[[n.habit+'/7','✅ '+t('days with habits')],[focusShort_(n.focus),'⏱ '+t('focus')],[String(n.top),'☀️ '+t('days all 3 done')],[String(n.steps),'🪜 '+t('steps done')]].map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
+      '<textarea id="rsText" rows="3" maxlength="300" placeholder="'+esc(t('e.g. I finished my essay and helped my sister with her homework'))+'">'+esc(R.good||'')+'</textarea>';
+  } else if(R.step===2){
+    h+='<div class="jrBig">🌱</div><h2 class="jrQt">'+esc(t('What was hard — or what would you do differently?'))+'</h2><p class="sub">🔒 '+esc(t('Only you see this.'))+'</p>'+
+      '<textarea id="rsText" rows="3" maxlength="300" placeholder="'+esc(t('e.g. I stayed up too late on my phone, so mornings were hard'))+'">'+esc(R.hard||'')+'</textarea>';
+  } else if(R.step===3){ var P=planOf();
+    h+='<div class="jrBig">✦</div><h2 class="jrQt">'+esc(t('Look up: remember what it’s all for.'))+'</h2>'+
+      (P.vision||P.why ? '<div class="card visionMini">'+(P.word?'<span class="wordBadge">🔑 '+esc(LANG==='en'?P.word.toUpperCase():P.word)+'</span>':'')+(P.why?'<p class="whyText">“'+esc(P.why)+'”</p>':'')+'</div>'
+        : '<div class="card"><p class="sub" style="margin:0">'+esc(t('You haven’t written your vision yet. The Life Journey helps — find it in the Plan tab.'))+'</p></div>')+
+      '<div class="pmeta" style="margin:12px 0 8px">'+esc(t('Which part of your life needs the most care this week?'))+'</div><div class="catChips">'+
+      AREAS.map(function(a){ return '<button class="catChip'+(R.area===a[0]?' on':'')+'" data-rsarea="'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</button>'; }).join('')+'</div>';
+  } else if(R.step===4){
+    var open=[]; planOf().goals.forEach(function(g){ if(!g.done) (g.steps||[]).forEach(function(st){ if(!st.done && (isNow_(st.when) || isPast_(st.when))) open.push(st.text); }); });
+    h+='<div class="jrBig">🎯</div><h2 class="jrQt">'+esc(t('Look ahead: three things for this week.'))+'</h2>'+(R.area?'<p class="sub">'+esc(gpT('Maybe one for {area}.',{area:areaOf(R.area).icon+' '+areaOf(R.area).name}))+'</p>':'')+
+      [0,1,2].map(function(i){ return '<input type="text" class="wkIn" data-rsgoal="'+i+'" maxlength="120" placeholder="'+esc(gpT('Goal {n}',{n:i+1}))+'" value="'+esc(R.goals[i]||'')+'" style="margin-bottom:8px">'; }).join('')+
+      (open.length?'<div class="pmeta" style="margin:6px 0">'+esc(t('From your life plan — tap to add:'))+'</div><div class="catChips">'+open.slice(0,6).map(function(x){ return '<button class="catChip" data-rsstep="'+esc(x)+'">＋ '+esc(x)+'</button>'; }).join('')+'</div>':'');
+  } else {
+    h+='<div class="jrBig">🙏</div><h2 class="jrQt">'+esc(t('Give the week to God.'))+'</h2><div class="card devoPray"><p>'+esc(t('Lord, thank you for last week — the good and the hard. Here is this week: my plans, my time and my heart. Lead me, and help me love people well. Amen.'))+'</p></div>'+
+      '<div class="card"><div class="pmeta">🎯 '+esc(t('This week'))+'</div>'+(R.goals.filter(Boolean).map(function(g){ return '<div class="jrLine">• '+esc(g)+'</div>'; }).join('')||'<p class="sub" style="margin:4px 0 0">'+esc(t('No goals — that’s fine. Today’s 3 will carry you.'))+'</p>')+'</div>';
+  }
+  return h+'<div class="btnRow jrNav">'+(R.step>1?'<button class="btn ghost" id="rsBack">← '+esc(t('Back'))+'</button>':'')+'<button class="btn" id="rsNext">'+esc(R.step<steps?t('Next')+' →':'✓ '+t('Start my week'))+'</button></div></div>';
+}
+function rsKeep_(){ var R=S.reset; if(!R) return; var x=$('rsText'); if(x){ if(R.step===1) R.good=x.value; if(R.step===2) R.hard=x.value; }
+  document.querySelectorAll('[data-rsgoal]').forEach(function(e){ R.goals[Number(e.getAttribute('data-rsgoal'))]=e.value; }); }
+function bindReset_(){
+  on('goReset', function(){ var w=resetWeek_(); S.reset={ week:w, step:1, good:'', hard:'', area:'', goals:((S.me.weeks||{})[w]||[]).map(function(g){ return g.text; }) }; go('reset'); });
+  if(S.view!=='reset' || !S.reset) return;
+  var R=S.reset;
+  on('rsBack', function(){ rsKeep_(); R.step--; render(); window.scrollTo(0,0); });
+  all('[data-rsarea]', function(b){ var a=b.getAttribute('data-rsarea'); R.area=R.area===a?'':a; gpTap(); render(); });
+  all('[data-rsstep]', function(b){ rsKeep_(); var x=b.getAttribute('data-rsstep'), i=[0,1,2].filter(function(k){ return !(R.goals[k]||'').trim(); })[0]; if(i===undefined){ showMsg(t('Three is enough — change one if you like.')); return; } R.goals[i]=x; gpTap(); render(); });
+  on('rsNext', busyOnce_(function(){ rsKeep_(); if(R.step<5){ R.step++; render(); window.scrollTo(0,0); return; }
+    var b=$('rsNext'), old=(S.me.weeks||{})[R.week]||[], goals=R.goals.map(function(x){ return String(x||'').trim(); }).filter(Boolean).map(function(x){ var o=old.filter(function(g){ return g.text===x; })[0]; return { text:x, pct:o?o.pct:0 }; });
+    return call('saveWeek', R.week, goals).then(function(d){ if(!(d && d.ok)){ failMsg(d); return; }
+      return call('weekReset', R.week, { good:R.good, hard:R.hard, area:R.area }).then(function(d2){ if(d2 && d2.ok){ S.me=d2.me; confettiAt_(b); S.reset=null; S.back=[]; S.view='home'; render(); window.scrollTo(0,0); showMsg(t('Your week is set. Go for it! 🚀')); } else failMsg(d2); }); }); }));
+}
+
+/* ---------------- badges ----------------
+   Worked out on the phone from what's already there — nothing new is stored or shared. A new one
+   pops up once (the phone remembers which it has shown: gpa-badges). */
+function badgeList_(){
+  var me=S.me, st=me.stats||{}, daily=me.daily||{}, P=planOf(), story=storyOf_(), cnt=function(f){ return Object.keys(daily).filter(function(k){ return f(daily[k]); }).length; };
+  var focus=Object.keys(daily).reduce(function(a,k){ return a+(daily[k].focus||0); },0), steps=0;
+  P.goals.forEach(function(g){ (g.steps||[]).forEach(function(s){ if(s.done) steps++; }); });
+  var reached=P.goals.filter(function(g){ return g.done; }).length, best=Math.max(st.best||0, st.streak||0), tests=(me.personality?1:0)+(me.gstrengths?1:0)+(me.apest?1:0);
+  var plans=Object.keys(me.reading||{}).filter(function(k){ return me.reading[k].finished; }).length, answered=(me.prayers||[]).filter(function(x){ return x.answered; }).length;
+  return [
+    ['streak7','🔥','One week strong','A 7-day streak',best,7], ['streak30','🔥','A month of days','A 30-day streak',best,30], ['streak100','💯','Hundred','A 100-day streak',best,100],
+    ['top7','☀️','Day finisher','All of Today’s 3 done on 7 days',cnt(function(D){ return D.top && D.top.length && D.top.every(function(y){ return y.done; }); }),7],
+    ['focus10','⏱','Deep worker','10 hours of focus',Math.floor(focus/60),10],
+    ['tests3','🧭','Know yourself','All three tests: type, strengths and gifts',tests,3],
+    ['journey','🗺️','Hero’s journey','The Life Journey, all the way to a vision',story.finished?1:0,1],
+    ['vision30','📜','Vision keeper','Read your vision on 30 days',cnt(function(D){ return D.vision; }),30],
+    ['wheel3','📊','Growing','Check your life wheel 3 times',story.wheels.length,3],
+    ['reset4','🔄','Weekly rhythm','4 Sunday resets',Object.keys(me.resets||{}).length,4],
+    ['steps20','🪜','Step by step','20 steps of your life plan done',steps,20],
+    ['goal1','🏆','Goal getter','Reach a life goal',reached,1], ['goal5','👑','Dream builder','Reach 5 life goals',reached,5],
+    ['devo10','🕊️','Quiet time','10 devotionals read',cnt(function(D){ return D.devo; }),10],
+    ['reading1','📖','Finisher','Finish a Bible reading plan',plans,1],
+    ['prayer3','🙏','Answered','Mark 3 prayers answered',answered,3],
+    ['checkin7','🌙','Grateful heart','7 evening check-ins',cnt(function(D){ return D.mood; }),7],
+    ['team','👥','Team player','Join a team',(me.teams||[]).length?1:0,1],
+    ['friends3','👯','Better together','3 friends',(S.friends||[]).length,3],
+    ['level10','⭐','Level 10','Reach level 10',(me.level||{}).level||1,10]
+  ].map(function(b){ return { id:b[0], icon:b[1], name:b[2], desc:b[3], cur:Math.min(b[4],b[5]), goal:b[5], got:b[4]>=b[5] }; });
+}
+function badgesHtml(){
+  var L=badgeList_(), got=L.filter(function(b){ return b.got; }).length;
+  return backBtn(t('Me'))+'<h2>🏅 '+esc(t('Badges'))+'</h2><p class="sub">'+esc(gpT('{n} of {m} — each one is a small step that adds up.',{n:got, m:L.length}))+' 🔒 '+esc(t('Only you see these.'))+'</p><div class="badgeGrid">'+
+    L.map(function(b){ return '<div class="badge'+(b.got?' got':'')+'"><span class="badgeIc">'+b.icon+'</span><b>'+esc(t(b.name))+'</b><span class="pmeta">'+esc(t(b.desc))+'</span>'+(b.got?'<span class="badgeOk">✓</span>':'<span class="miniTrack"><div style="width:'+Math.round(b.cur/b.goal*100)+'%"></div></span><span class="pmeta">'+b.cur+' / '+b.goal+'</span>')+'</div>'; }).join('')+'</div>';
+}
+function badgesEntryHtml_(){ var L=badgeList_(), got=L.filter(function(b){ return b.got; }); return '<button class="card pEntry" id="goBadges"><span class="pEntryArt"><span class="pQ">🏅</span></span><span style="flex:1"><div style="font-size:16px;font-weight:800">'+esc(t('Badges'))+'</div><div class="pmeta">'+esc(gpT('{n} of {m}',{n:got.length,total:L.length,m:L.length}))+' '+got.slice(-6).map(function(b){ return b.icon; }).join('')+'</div></span><span class="chev">›</span></button>'; }
+function badgeWatch_(){
+  if(!S.me || !S.me.stats) return;
+  var got=badgeList_().filter(function(b){ return b.got; }), seen; try { seen=JSON.parse(lsGet('gpa-badges')||'null'); } catch(e){ seen=null; }
+  if(!Array.isArray(seen)){ lsSet('gpa-badges', JSON.stringify(got.map(function(b){ return b.id; }))); return; }   // first time on this phone: no shower of old badges
+  var fresh=got.filter(function(b){ return seen.indexOf(b.id)<0; }); if(!fresh.length) return;
+  lsSet('gpa-badges', JSON.stringify(seen.concat(fresh.map(function(b){ return b.id; }))));
+  var b=fresh[0], o=document.createElement('div'); o.className='badgePop'; o.innerHTML='<span>'+b.icon+'</span><div><div class="pmeta">'+esc(t('New badge!'))+'</div><b>'+esc(t(b.name))+'</b></div>';
+  document.body.appendChild(o); gpTap(); setTimeout(function(){ confettiAt_(o); }, 100); setTimeout(function(){ o.remove(); }, 3200);
 }
 
 /* ---------------- spheres of influence, and files that load when they're needed ----------------
@@ -2201,7 +2313,9 @@ function welcomeHtml(){
     '<button class="btn" id="obNext">'+esc(t('Let’s start'))+'</button><button class="linkbtn" id="obSkip">'+esc(t('Skip for now'))+'</button></div>';
   if(O.step===2) return h+'<div class="obBox"><div class="obBig">✦</div><h2>'+esc(t('Your why'))+'</h2><p class="sub">'+esc(t('What do you think God made you for? A sentence is enough — you can change it any time.'))+'</p>'+
     '<textarea id="obWhy" rows="3" maxlength="300" placeholder="'+esc(t('e.g. To care for people the way Jesus did.'))+'">'+esc(O.why||'')+'</textarea>'+
-    '<button class="btn" id="obNext" style="margin-top:12px">'+esc(t('Next'))+'</button><button class="linkbtn" id="obLater">'+esc(t('I’ll do it later'))+'</button></div>';
+    '<button class="btn" id="obNext" style="margin-top:12px">'+esc(t('Next'))+'</button>'+
+    '<button class="btn ghost" id="obJourney" style="margin-top:10px">🗺️ '+esc(t('Not sure? Find it with the Life Journey'))+'</button><div class="pmeta">'+esc(t('Seven stops, about 15 minutes — right after this walkthrough.'))+'</div>'+
+    '<button class="linkbtn" id="obLater">'+esc(t('I’ll do it later'))+'</button></div>';
   if(O.step===3) return h+'<div class="obBox"><div class="obBig">✅</div><h2>'+esc(t('Pick a few small habits'))+'</h2><p class="sub">'+esc(t('Two or three is perfect. Tick them each day to grow your streak.'))+'</p><div class="habitGrid">'+
     HABITS.map(function(x){ var on=O.habits.indexOf(x[0])>-1; return '<button class="habitTile'+(on?' on':'')+'" data-obh="'+x[0]+'"><span class="hIc">'+esc(x[1])+'</span><span class="hLb">'+esc(t(x[2]))+'</span>'+(on?'<span class="hOk">✓</span>':'')+'</button>'; }).join('')+'</div>'+
     '<button class="btn" id="obNext" style="margin-top:12px">'+esc(O.habits.length?gpT('Next ({n})',{n:O.habits.length}):t('Next'))+'</button></div>';
@@ -2210,7 +2324,9 @@ function welcomeHtml(){
       : '<p class="sub">'+esc(t('Have a code from your leader? Join your team now. No code? You can do it later on the Teams tab.'))+'</p><div class="atRow"><input type="text" id="obCode" maxlength="6" autocapitalize="characters" placeholder="ABC123"><button class="btn small" id="obJoin">'+esc(t('Join'))+'</button></div>')+
     '<button class="btn" id="obDone" style="margin-top:14px">🚀 '+esc(t('Start using GonPreah'))+'</button></div>';
 }
-function obFinish_(){ lsSet('gpa-onboarded','1'); S.ob=null; S.back=[]; S.view='home'; render(); window.scrollTo(0,0); }
+function obFinish_(){ var j=S.ob && S.ob.journey; lsSet('gpa-onboarded','1'); S.ob=null; S.back=[]; S.view='home';
+  if(j){ S.jr=null; jrStart_(); S.back=['home']; S.view='journey'; }   // they chose to find their why with the Life Journey
+  render(); window.scrollTo(0,0); }
 
 /* ---------------- a picture of my week, to share ----------------
    Drawn on the phone (canvas, 1080×1920 like a story), never uploaded by the app: the person

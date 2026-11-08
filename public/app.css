@@ -1017,3 +1017,21 @@ body.typing { padding-bottom:24px; }
 
 /* Text boxes always take text, whatever their containers say (an iPhone opens no keyboard for a box it can't select in). */
 input, textarea, select { -webkit-user-select:text; user-select:text; }
+
+/* ---------- the Sunday reset, badges ---------- */
+.resetCard { display:flex; align-items:center; gap:12px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--onDark); background:linear-gradient(135deg, var(--headerBg), #1430B0); border:0; }
+.resetCard .pmeta { color:var(--onDark); opacity:.85; }
+.resetIc { font-size:30px; }
+.resetXp { font-weight:800; font-size:13px; color:#FFB323; white-space:nowrap; }
+.visionMini { text-align:left; display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.badgeGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.badge { position:relative; display:flex; flex-direction:column; gap:3px; align-items:center; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:var(--r, 16px); padding:14px 10px 12px; filter:grayscale(1); opacity:.7; }
+.badge.got { filter:none; opacity:1; border-color:#FFB323; box-shadow:0 0 0 2px rgba(255,179,35,.25); }
+.badge b { font-size:14px; } .badge .pmeta { font-size:12px; margin:0; }
+.badge .miniTrack { width:80%; }
+.badgeIc { font-size:36px; line-height:1.1; }
+.badgeOk { position:absolute; top:8px; right:10px; color:var(--good); font-weight:900; }
+.badgePop { position:fixed; left:50%; top:18%; transform:translateX(-50%); z-index:80; display:flex; gap:12px; align-items:center; background:var(--headerBg); color:var(--onDark); border:2px solid #FFB323; border-radius:18px; padding:12px 18px; box-shadow:var(--shadow); animation:jrPop .4s var(--ease, ease) both; pointer-events:none; }
+.badgePop span { font-size:36px; } .badgePop .pmeta { color:#FFB323; margin:0; }
+
+body.still .jrQ, body.still .jrIntro, body.still .jrDone, body.still .jrReveal, body.still .jrBig { animation:none; }

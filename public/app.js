@@ -16,6 +16,7 @@
       devo                       — today's devotional (devotions.js, one for each day of the month)
       journey · vision           — the Life Journey (seven stops of questions → a vision); my vision
       atest · agift              — the five gifts test (APEST, apest.js) and its results
+      clifton                    — my StrengthsFinder (CliftonStrengths) Top 5, typed in
       reset · badges             — the Sunday reset (five steps to set up the week); my badges
       habitcal                   — my habit calendar (12 weeks)
       journal · homecfg          — my journal (private); customize Home (order, hide; on this phone)
@@ -122,7 +123,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -175,6 +176,7 @@ function render(){
     else if(V==='devo') h=devoHtml();
     else if(V==='journey') h=journeyHtml();
     else if(V==='atest') h=atestHtml();
+    else if(V==='clifton') h=cliftonHtml();
     else if(V==='reset') h=resetHtml();
     else if(V==='habitcal') h=habitCalHtml();
     else if(V==='journal') h=journalHtml();
@@ -353,6 +355,39 @@ function homeHtml(){
   if(!(S.teams||[]).length) h+='<h3>👥 '+esc(t('Your team'))+'</h3>'+entryCardHtml('goTeamsHome','👥',t('Join or start a team'),t('Grow together with your friends, club or group.'));
   return h;
 }
+/* ---------------- StrengthsFinder results someone already has (api.js saveClifton) ----------------
+   The 34 theme names in their four groups — names only; the app carries no Gallup text. */
+var CLIFTON_GROUPS=[['Executing','#7B4FA0','#EFE6F6',['Achiever','Arranger','Belief','Consistency','Deliberative','Discipline','Focus','Responsibility','Restorative']],
+  ['Influencing','#C9800F','#FBF0DC',['Activator','Command','Communication','Competition','Maximizer','Self-Assurance','Significance','Woo']],
+  ['Relationship Building','#2D6CB0','#E3EDF8',['Adaptability','Connectedness','Developer','Empathy','Harmony','Includer','Individualization','Positivity','Relator']],
+  ['Strategic Thinking','#1F8A6F','#E2F3EE',['Analytical','Context','Futuristic','Ideation','Input','Intellection','Learner','Strategic']]];
+function cfGroup_(name){ return CLIFTON_GROUPS.filter(function(g){ return g[3].indexOf(name)>-1; })[0]||CLIFTON_GROUPS[0]; }
+function cfChipsHtml_(top){ return '<span class="sChips">'+(top||[]).map(function(n,i){ var g=cfGroup_(n); return '<span class="sChip" style="background:'+g[2]+';color:'+g[1]+'"><b>'+(i+1)+'</b> '+esc(n)+'</span>'; }).join('')+'</span>'; }
+function cfFineHtml_(){ return '<p class="pFine">'+esc(t('CliftonStrengths® and StrengthsFinder® are Gallup’s. GonPreah only keeps the five theme names you enter.'))+'</p>'; }
+function cliftonHtml(){
+  var C=S.cf||(S.cf={ top:((S.me.clifton||{}).top||[]).slice() }), h=backBtn(t('Back'));
+  h+='<h2>💪 '+esc(t('My StrengthsFinder Top 5'))+'</h2><p class="sub">'+esc(t('Already took StrengthsFinder (CliftonStrengths)? Tap your five themes in order — your #1 first.'))+'</p>';
+  h+='<div class="card cfPicked"><div class="pmeta">'+esc(gpT('{n} of 5 chosen',{n:C.top.length}))+'</div>'+(C.top.length?cfChipsHtml_(C.top):'<p class="sub" style="margin:6px 0 0">'+esc(t('Nothing yet — tap a theme below.'))+'</p>')+'</div>';
+  CLIFTON_GROUPS.forEach(function(g){
+    h+='<h3 style="color:'+g[1]+'">'+esc(t(g[0]))+'</h3><div class="catChips">'+g[3].map(function(n){ var i=C.top.indexOf(n); return '<button class="catChip cfChip'+(i>-1?' on':'')+'" data-cf="'+esc(n)+'"'+(i>-1?' style="background:'+g[1]+';border-color:'+g[1]+'"':'')+'>'+(i>-1?'<b>'+(i+1)+'</b> ':'')+esc(n)+'</button>'; }).join('')+'</div>';
+  });
+  h+='<button class="btn" id="cfSave"'+(C.top.length===5?'':' disabled')+'>'+esc(t('Save my Top 5'))+'</button>';
+  if(S.me.clifton) h+='<button class="linkbtn" id="cfClear" style="color:var(--bad)">'+esc(t('Remove my StrengthsFinder results'))+'</button>';
+  return h+cfFineHtml_();
+}
+function cliftonEntryHtml_(){
+  var C=S.me.clifton;
+  if(!C) return entryCardHtml('goClifton','🏅',t('Already took StrengthsFinder?'),t('Add your CliftonStrengths Top 5'));
+  return '<button class="card pEntry" id="goClifton" style="align-items:flex-start"><span style="flex:1">'+cfChipsHtml_(C.top)+'<div class="pmeta" style="margin-top:6px">'+esc(t('My StrengthsFinder Top 5'))+' · '+esc(t('tap to change'))+'</div></span><span class="chev">›</span></button>';
+}
+function bindClifton_(){
+  on('goClifton', function(){ S.cf=null; go('clifton'); });
+  if(S.view!=='clifton' || !S.cf) return;
+  all('[data-cf]', function(b){ var n=b.getAttribute('data-cf'), T=S.cf.top, i=T.indexOf(n); if(i>-1) T.splice(i,1); else if(T.length<5) T.push(n); else { showMsg(t('Five is the most — tap one to take it off.')); return; } gpTap(); render(); });
+  on('cfSave', busyOnce_(function(){ var b=$('cfSave'); return call('saveClifton', { top:S.cf.top }).then(function(d){ if(d && d.ok){ S.me=d.me; confettiAt_(b); showMsg(t('Saved. Your Top 5 is on Home and Me.')); S.cf=null; goBack('me'); } else failMsg(d); }); }));
+  on('cfClear', busyOnce_(function(){ if(!confirm(t('Remove your StrengthsFinder results?'))) return; return call('saveClifton', { clear:true }).then(function(d){ if(d && d.ok){ S.me=d.me; S.cf=null; goBack('me'); } else failMsg(d); }); }));
+}
+
 /* Home → How God made you: what my tests found (each opens its full results), then the tests
    not taken yet. "May shine in" appears once the deeper files are on the phone (Me loads them). */
 function testsHomeHtml_(){
@@ -360,6 +395,7 @@ function testsHomeHtml_(){
   if(me.personality && GP_PTYPES[me.personality.type]){ var g=gpPGroupOf(me.personality.type);
     rows+='<button class="gmRow" id="seeMyType"><span class="gmArt">'+gpPAvatar(me.personality.type, me.sex||'', 44)+'</span><span class="gmTx"><span class="pmeta">'+esc(t('Personality'))+'</span><b style="color:'+g.ink+'">'+esc(me.personality.type)+' · '+esc(pTheName(me.personality.type))+'</b></span><span class="chev">›</span></button>'; }
   if(me.gstrengths) rows+='<button class="gmRow" id="seeMyGs"><span class="gmArt"><span class="pQ">💪</span></span><span class="gmTx"><span class="pmeta">'+esc(t('Your top 5 strengths'))+'</span><span class="sChips">'+me.gstrengths.top.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</span></span><span class="chev">›</span></button>';
+  if(me.clifton) rows+='<button class="gmRow" id="goClifton"><span class="gmArt"><span class="pQ">🏅</span></span><span class="gmTx"><span class="pmeta">'+esc(t('My StrengthsFinder Top 5'))+'</span>'+cfChipsHtml_(me.clifton.top)+'</span><span class="chev">›</span></button>';
   if(me.apest){ var have=typeof GP_APEST!=='undefined'; if(!have) needJs_('apest.js','GP_APEST'); var g1=have&&apById_(me.apest.top[0]), g2=have&&apById_(me.apest.top[1]);
     rows+='<button class="gmRow" id="seeMyAp"><span class="gmArt"><span class="pQ">'+(g1?g1.icon:'🔥')+'</span></span><span class="gmTx"><span class="pmeta">'+esc(t('Your gifts'))+'</span><b>'+(g1?esc(fld_(g1,'name'))+(g2?' · '+esc(fld_(g2,'name')):''):'…')+'</b></span><span class="chev">›</span></button>'; }
   if(rows){
@@ -541,6 +577,7 @@ function personHtml(){
   if(p.apest && p.apest.length){ var pa=typeof GP_APEST!=='undefined'; if(!pa) needJs_('apest.js','GP_APEST');
     h+='<h3>🔥 '+esc(t('Gifts'))+'</h3><button class="card pEntry" id="seeAp"><span style="flex:1"><div class="sChips">'+p.apest.map(function(id){ var g=pa && apById_(id); return g ? '<span class="sChip" style="background:'+g.tint+';color:'+g.ink+'">'+g.icon+' '+esc(fld_(g,'name'))+'</span>' : ''; }).join('')+'</div><div class="pmeta" style="margin-top:6px">'+esc(gpT('How {name} builds others up',{name:firstName_(p.name)}))+'</div></span><span class="chev">›</span></button>'; }
   if(p.journey) h+='<h3>🗺️ '+esc(t('Life Journey'))+'</h3>'+journeyLineHtml_(p.journey);
+  if(p.clifton && p.clifton.length) h+='<h3>🏅 '+esc(t('StrengthsFinder Top 5'))+'</h3><div class="card">'+cfChipsHtml_(p.clifton)+'</div>';
   if(p.strengths && p.strengths.length) h+='<h3>💪 '+esc(t('Strengths'))+'</h3><button class="card pEntry" id="seeGs" style="align-items:flex-start"><span style="flex:1"><div class="sChips">'+p.strengths.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</div></span><span class="chev">›</span></button>';
   if((p.sharedTeams||[]).length) h+='<p class="hint">'+esc(t('In your teams:'))+' '+esc(p.sharedTeams.map(function(x){ return x.emoji+' '+x.name; }).join(', '))+'</p>';
   if(S.team && S.team.leader && !p.leader && p.id!==S.me.id && (S.team.people||[]).some(function(x){ return x.id===p.id; })){
@@ -592,6 +629,7 @@ function meHtml(){
   } else h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
   if(me.gstrengths) h+='<button class="card pEntry" id="seeMyGs" style="align-items:flex-start"><span style="flex:1"><div class="sChips">'+me.gstrengths.top.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</div><div class="pmeta" style="margin-top:6px">'+esc(t('Your top 5 strengths'))+'</div></span><span class="chev">›</span></button>';
   else h+=entryCardHtml('goGtest','💪',t('Find your top 5 strengths'),t('102 quick choices · about 15 minutes'));
+  h+=cliftonEntryHtml_();
   h+=apEntryHtml_();
   h+=spheresMeHtml_();
   h+='<h3>🏅 '+esc(t('Badges'))+'</h3>'+badgesEntryHtml_();
@@ -1156,7 +1194,7 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_();
   all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
   all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });

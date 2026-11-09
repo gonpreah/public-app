@@ -571,6 +571,16 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   await H.saveProfile(P2.uid, P2.token, { share: { level: false } });
   ok('… and not when it’s off', !('xpWeek' in (await H.friendsList(P1.uid, P1.token)).friends.find(f => f.id === P2.uid))); }
 
+/* ---------- 18h. StrengthsFinder results someone already has ---------- */
+{ const CF = await H.registerPassword({ username: 'cliff', name: 'Cliff Ton', birthYear: 1999, password: 'cliff password' });
+  ok('a StrengthsFinder Top 5 needs five real theme names', (await H.saveClifton(CF.uid, CF.token, { top: ['Achiever', 'Woo'] })).err === 'top' && (await H.saveClifton(CF.uid, CF.token, { top: ['Achiever', 'Woo', 'Focus', 'Learner', 'Magic'] })).err === 'top');
+  const cr = await H.saveClifton(CF.uid, CF.token, { top: ['Strategic', 'Learner', 'Achiever', 'Relator', 'Futuristic'] });
+  ok('… kept in order', cr.ok && cr.me.clifton.top.join() === 'Strategic,Learner,Achiever,Relator,Futuristic');
+  ok('others see it with the strengths', JSON.stringify((await H.person(B.uid, B.token, CF.uid)).person.clifton) === '["Strategic","Learner","Achiever","Relator","Futuristic"]');
+  await H.saveProfile(CF.uid, CF.token, { share: { strengths: false } });
+  ok('… and not when strengths are hidden', !('clifton' in (await H.person(B.uid, B.token, CF.uid)).person));
+  ok('it can be taken off again', !(await H.saveClifton(CF.uid, CF.token, { clear: true })).me.clifton); }
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

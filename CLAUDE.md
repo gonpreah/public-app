@@ -205,6 +205,13 @@ account as I see it, my teams, my friends' names, and every journal page.
 its full results, "May shine in" (`sphereVotes_`) once the deeper files are on the phone, and the
 tests not taken yet underneath.
 
+## StrengthsFinder results someone already has
+(Uriah, Nov 2026: "let me manually put in my strength finders if I have them".) Me → "Already took
+StrengthsFinder?" → view `clifton`: tap the five CliftonStrengths themes in order (`CLIFTON_GROUPS`,
+the 34 names in their four groups — names only, no Gallup text; a note says the names are
+Gallup's). `saveClifton` checks five real names (`CLIFTON`), keeps `u.clifton` = {top, at}; shown on
+Me, Home's "How God made you", and a person's card behind `share.strengths`.
+
 ## A classroom (Nov 2026: a DTS class joins on day one)
 The team page's join link is the app's own address (`joinLink_`: `location.origin` + `?join=`),
 not a domain that may not be live yet. **QR code** (leaders, team page → "QR code"): the join link

@@ -1108,5 +1108,16 @@ var APP_KM = {
   "Evening check-in": "ការពិនិត្យខ្លួនពេលល្ងាច",
   "Seven pages": "ប្រាំពីរទំព័រ",
   "Write in your journal on 7 days": "សរសេរកំណត់ហេតុរបស់អ្នកក្នុង ៧ ថ្ងៃ",
-  "Always on Home": "នៅលើទំព័រដើមជានិច្ច"
+  "Always on Home": "នៅលើទំព័រដើមជានិច្ច",
+  /* streak saver, friends this week, text size, my data */
+  "Your data is saved to your phone’s downloads.": "ទិន្នន័យរបស់អ្នកត្រូវបានរក្សាទុកក្នុងកន្លែងទាញយករបស់ទូរស័ព្ទ។",
+  "Text size": "ទំហំអក្សរ",
+  "Normal": "ធម្មតា",
+  "Large": "ធំ",
+  "Larger": "ធំជាង",
+  "Download my data": "ទាញយកទិន្នន័យរបស់ខ្ញុំ",
+  "Getting your data ready…": "កំពុងរៀបចំទិន្នន័យរបស់អ្នក…",
+  "Streak saver: 9 pm, if my streak is about to end": "អ្នកការពារការធ្វើជាប់ៗគ្នា៖ ម៉ោង ៩ យប់ បើការធ្វើជាប់ៗគ្នារបស់ខ្ញុំជិតបញ្ចប់",
+  "Friends this week": "មិត្តភក្តិក្នុងសប្តាហ៍នេះ",
+  "XP this week. A new week starts on Monday.": "XP ក្នុងសប្តាហ៍នេះ។ សប្តាហ៍ថ្មីចាប់ផ្តើមនៅថ្ងៃច័ន្ទ។"
 };

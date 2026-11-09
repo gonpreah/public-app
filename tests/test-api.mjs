@@ -557,6 +557,16 @@ ok('nobody else ever sees it', !/saw God|journal/.test(JSON.stringify(await H.pe
 jn = await H.journal(JR.uid, JR.token, 'save', { date: today, text: '' });
 ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0 && jn.me.level.xp === 0);
 
+/* ---------- 18g. friends this week ---------- */
+{ const P1 = await H.registerPassword({ username: 'pal.one', name: 'Pal One', birthYear: 2000, password: 'pal1 password' });
+  const P2 = await H.registerPassword({ username: 'pal.two', name: 'Pal Two', birthYear: 2000, password: 'pal2 password' });
+  await H.friendAsk(P1.uid, P1.token, 'pal.two'); await H.friendAnswer(P2.uid, P2.token, P1.uid, true);
+  await H.saveHabits(P2.uid, P2.token, [{ id: 'bible' }]); await H.tickHabit(P2.uid, P2.token, today, 'bible', true);
+  const ff = (await H.friendsList(P1.uid, P1.token)).friends.find(f => f.id === P2.uid);
+  ok('friends see each other’s XP this week — a number, behind the level switch', ff && ff.xpWeek === 5 && (await H.boot(P2.uid, P2.token)).me.xpWeek === 5);
+  await H.saveProfile(P2.uid, P2.token, { share: { level: false } });
+  ok('… and not when it’s off', !('xpWeek' in (await H.friendsList(P1.uid, P1.token)).friends.find(f => f.id === P2.uid))); }
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

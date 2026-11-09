@@ -132,6 +132,24 @@ mem.delete('pushRun'); sent = [];
 await runReminders(new Date(mon + 'T01:00:00Z'));
 const vb2 = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
 ok('… only on Sundays', !/read your vision/.test(vb2), vb2);
+/* ---------- 4b. the streak saver ---------- */
+await H.saveHabits(M.uid, M.token, [{ id: 'bible' }]);
+const sd = n => new Date(Date.parse(today) + n * 864e5).toISOString().slice(0, 10);
+{ const u = JSON.parse(mem.get('u:' + M.uid)); u.days = { [sd(-2)]: { bible: true }, [sd(-1)]: { bible: true } }; mem.set('u:' + M.uid, JSON.stringify(u)); }
+await H.pushSavePrefs(M.uid, M.token, { hour: 8 });
+mem.delete('pushRun'); sent = [];
+await runReminders(new Date(today + 'T14:00:00Z'));   // 21:00 in Phnom Penh
+const sv = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
+ok('at 9 pm, a streak about to end gets the streak saver', /2-day streak ends at midnight/.test(sv), sv);
+await H.tickHabit(M.uid, M.token, today, 'bible', true);
+mem.delete('pushRun'); sent = [];
+await runReminders(new Date(today + 'T14:00:00Z'));
+ok('… not once a habit is ticked', sent.length === 0);
+await H.tickHabit(M.uid, M.token, today, 'bible', false); await H.pushSavePrefs(M.uid, M.token, { hour: 8, saver: false });
+mem.delete('pushRun'); sent = [];
+await runReminders(new Date(today + 'T14:00:00Z'));
+ok('… and never when it’s switched off', sent.length === 0);
+
 /* ---------- 5. team meetups ---------- */
 await H.pushSavePrefs(M.uid, M.token, { hour: 8, alerts: true });
 const MT = await H.createTeam(A.uid, A.token, { name: 'Choir' }); await H.joinTeam(M.uid, M.token, MT.team.code);

@@ -514,12 +514,14 @@ function postShown_(u, x) {
   return true;
 }
 
-/* ---------------- what goes out ---------------- */
+/* ---------------- what goes out ----------------
+   lang: English first (Uriah, Nov 2026) — Khmer only when someone chose it; older accounts were saved
+   as 'km' by default, not by choice, so they read as English until Khmer is picked. */
 /* What I see of myself. */
 function selfOut_(u) {
   return {
     id: u.id, username: u.username, name: u.name, birthYear: u.birthYear, minor: isMinor_(u),
-    lang: u.lang || 'km', sex: u.sex || '', bio: u.bio || '', share: shareOf_(u),
+    lang: u.langChosen && u.lang === 'km' ? 'km' : 'en', sex: u.sex || '', bio: u.bio || '', share: shareOf_(u),
     personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
@@ -660,7 +662,7 @@ async function register(token, p, pw) {
   if (await readJSON('uname:' + username, null)) return { ok: false, err: 'taken' };
   const id = 'u' + crypto.randomBytes(9).toString('hex');
   const u = {
-    id: id, username: username, name: name, birthYear: by, lang: p.lang === 'en' ? 'en' : 'km',
+    id: id, username: username, name: name, birthYear: by, lang: p.lang === 'km' ? 'km' : 'en', langChosen: p.lang === 'km' && p.langChosen === true,
     created: new Date().toISOString(), seen: today_(), teams: [], habits: [], days: {}, weeks: {}, share: {},
     eh: g && g.email ? sha_(g.email) : ''
   };
@@ -684,19 +686,21 @@ async function boot(uid, tok) {
     await mutate_('u:' + uid, null, function (r) { if (r) { r.seen = today_(); froze = applyFreezes_(r); } return { ok: true }; });
     if (froze.length) Object.assign(u, await readJSON('u:' + uid, u));
   }
-  const teams = [], teamTasks = [], myChallenges = [];
+  const teams = [], teamTasks = [], myChallenges = [], myMeets = [];
   for (const tid of (u.teams || [])) {
     const t = await readJSON('t:' + tid, null);
     if (!t) continue;
     teams.push(teamBrief_(t, uid));
     teamTasksOut_(t, uid, {}).forEach(function (k) { if (k.forMe && !k.mine) teamTasks.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, k)); });
+    meetsOut_(t, uid, null).forEach(function (m) { if (m.date <= addDays_(today_(), 14) && m.mine !== 'no') myMeets.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, m)); });
     challengesOut_(t, uid, {}).forEach(function (c) { if (c.joined && c.state === 'on') myChallenges.push(Object.assign({ teamName: t.name, teamEmoji: t.emoji || '✦' }, c, { people: undefined, others: c.people.length - 1 })); });
   }
   const co = await coachings(uid, tok);
   const pk = await pushKeys_(true);
   const fr = await friendsList(uid, tok);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
-    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, friends: fr.ok ? fr.friends : [], friendAsks: fr.ok ? fr.asks : [], today: today_() };
+    push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, friends: fr.ok ? fr.friends : [], friendAsks: fr.ok ? fr.asks : [], today: today_(),
+    meets: myMeets.sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }) };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -707,7 +711,7 @@ async function saveProfile(uid, tok, p) {
     if (!u) return { abort: true, ok: false, err: 'auth' };
     if (p.name !== undefined) { const n = str_(p.name, 60); if (n.length < 2) return { abort: true, ok: false, err: 'name' }; u.name = n; }
     if (p.bio !== undefined) u.bio = str_(p.bio, 160);
-    if (p.lang === 'km' || p.lang === 'en') u.lang = p.lang;
+    if (p.lang === 'km' || p.lang === 'en') { u.lang = p.lang; u.langChosen = true; }
     if (p.sex !== undefined) u.sex = (p.sex === 'male' || p.sex === 'female') ? p.sex : '';
     if (p.share && typeof p.share === 'object') {
       u.share = Object.assign({}, u.share || {});
@@ -1195,6 +1199,7 @@ async function team(uid, tok, tid) {
   const names = {}; people.forEach(function (p) { names[p.id] = p.name; });
   out.tasks = teamTasksOut_(t, uid, names);
   out.challenges = challengesOut_(t, uid, names);
+  out.meets = meetsOut_(t, uid, names);
   return { ok: true, team: out };
 }
 async function leaveTeam(uid, tok, tid) {
@@ -1581,6 +1586,63 @@ async function teamTask(uid, tok, tid, act, a) {
   return team(uid, tok, tid);
 }
 
+/* ---------------- team meetups ----------------
+   A leader (an adult) posts when and where the team meets next; everyone in the team sees it and
+   answers going / maybe / can't. Only the team sees it — like team tasks, every member sees every
+   one, so it is never a private channel. t.meets = [{ id, title, date, time, place, by, made,
+   rsvp: { uid: 'yes'|'maybe'|'no' } }]; kept until the day after. A new one alerts the members
+   (the team's name only), and the daily reminder mentions it on the day. */
+const MAX_MEETS = 10;
+function isTime_(x) { return typeof x === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x); }
+function meetsOut_(t, uid, names) {
+  const lead = (t.leaders || []).indexOf(uid) > -1, today = today_();
+  return (t.meets || []).filter(function (m) { return m.date >= today; }).sort(function (a, b) { return (a.date + (a.time || '')) < (b.date + (b.time || '')) ? -1 : 1; }).map(function (m) {
+    const r = m.rsvp || {}, ids = Object.keys(r).filter(function (k) { return t.members.indexOf(k) > -1; });
+    const o = { id: m.id, title: m.title, date: m.date, time: m.time || '', place: m.place || '', going: ids.filter(function (k) { return r[k] === 'yes'; }).length, maybe: ids.filter(function (k) { return r[k] === 'maybe'; }).length, mine: r[uid] || '', lead: lead };
+    if (lead && names) o.who = ids.filter(function (k) { return r[k] === 'yes'; }).map(function (k) { return names[k] || ''; }).filter(Boolean);   // leaders see who's coming
+    return o;
+  });
+}
+async function meetup(uid, tok, tid, act, a) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  if (typeof tid !== 'string' || (me.teams || []).indexOf(tid) === -1) return { ok: false, err: 'none' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('t:' + tid, null, function (t) {
+    if (!t || t.members.indexOf(uid) === -1) return { abort: true, ok: false, err: 'none' };
+    const lead = t.leaders.indexOf(uid) > -1;
+    t.meets = (Array.isArray(t.meets) ? t.meets : []).filter(function (m) { return m.date >= addDays_(today_(), -1); });
+    if (act === 'add') {
+      if (!lead) return { abort: true, ok: false, err: 'not_leader' };
+      const title = str_(a.title, 80);
+      if (!title) return { abort: true, ok: false, err: 'text' };
+      if (!isDay_(a.date) || a.date < today_() || a.date > addDays_(today_(), 180)) return { abort: true, ok: false, err: 'date' };
+      if (t.meets.length >= MAX_MEETS) return { abort: true, ok: false, err: 'too_many' };
+      t.meets.push({ id: 'm' + crypto.randomBytes(5).toString('hex'), title: title, date: a.date, time: isTime_(a.time) ? a.time : '', place: str_(a.place, 80), by: uid, made: today_(), rsvp: { [uid]: 'yes' } });
+      return { ok: true };
+    }
+    const m = t.meets.filter(function (x) { return x.id === a.id; })[0];
+    if (!m) return { abort: true, ok: false, err: 'none' };
+    if (act === 'rsvp') {
+      m.rsvp = m.rsvp || {};
+      if (['yes', 'maybe', 'no'].indexOf(a.answer) > -1) m.rsvp[uid] = a.answer; else delete m.rsvp[uid];
+      return { ok: true };
+    }
+    if (act === 'drop') {
+      if (!lead) return { abort: true, ok: false, err: 'not_leader' };
+      t.meets = t.meets.filter(function (x) { return x.id !== a.id; });
+      return { ok: true };
+    }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  if (act === 'add') {
+    const t = await readJSON('t:' + tid, null);
+    if (t) for (const mid of t.members) if (mid !== uid) await pushNow_(mid, 'meetup', { team: (t.emoji || '') + ' ' + t.name });
+  }
+  return team(uid, tok, tid);
+}
+
 /* ---------------- the feed: 👏 for each other ----------------
    Moments from the people in my teams over the last two weeks — nobody else's. A moment says
    what happened, never anyone's own words (see addPost_). No comments: only 👏. */
@@ -1770,6 +1832,8 @@ const PUSH_TEXT = {
   coachOffer: { en: '{name} offered to be your coach.', km: '{name} បានស្នើធ្វើជាអ្នកណែនាំរបស់អ្នក។' },
   teamTask: { en: 'A new task for you in {team}.', km: 'មានកិច្ចការថ្មីសម្រាប់អ្នកនៅក្នុង {team}។' },
   planDay: { en: 'Good morning ☀️ What are your 3 things for today?', km: 'អរុណសួស្តី ☀️ តើរឿងទាំង ៣ របស់អ្នកសម្រាប់ថ្ងៃនេះជាអ្វី?' },
+  meetup: { en: '📅 {team} has a new meetup — are you coming?', km: '📅 {team} មានការជួបជុំថ្មី — តើអ្នកនឹងមកទេ?' },
+  meetupToday: { en: '📅 {team} meets today {time}', km: '📅 {team} ជួបជុំគ្នាថ្ងៃនេះ {time}' },
   reset: { en: 'Sunday reset: 5 minutes to set up your week 🔄', km: 'កំណត់សប្តាហ៍ឡើងវិញនៅថ្ងៃអាទិត្យ៖ ៥ នាទីដើម្បីរៀបចំសប្តាហ៍របស់អ្នក 🔄' },
   vision: { en: 'It’s Sunday: read your vision again 📜', km: 'ថ្ងៃនេះជាថ្ងៃអាទិត្យ៖ អានចក្ខុវិស័យរបស់អ្នកម្តងទៀត 📜' },
   reading: { en: 'Today’s Bible reading is waiting 📖', km: 'ការអានព្រះគម្ពីរថ្ងៃនេះកំពុងរង់ចាំ 📖' },
@@ -1876,7 +1940,7 @@ async function pushSubscribe(uid, tok, sub, lang) {
     for (let i = rows.length - 1; i >= 0; i--) if (rows[i].endpoint === endpoint) rows.splice(i, 1);
     const mine = rows.filter(function (r) { return r.uid === uid; }).sort(function (a, b) { return a.at < b.at ? -1 : 1; });
     if (mine.length >= PUSH_MAX_SUBS) rows.splice(rows.indexOf(mine[0]), 1);
-    rows.push({ uid: uid, endpoint: endpoint, p256dh: String(k.p256dh), auth: String(k.auth), lang: lang === 'en' ? 'en' : 'km', at: new Date().toISOString() });
+    rows.push({ uid: uid, endpoint: endpoint, p256dh: String(k.p256dh), auth: String(k.auth), lang: lang === 'km' ? 'km' : 'en', at: new Date().toISOString() });
     return { ok: true };
   });
   return { ok: true, prefs: pushPrefsOf_(await readJSON('u:' + uid, null)) };
@@ -1936,6 +2000,11 @@ async function reminderItems_(u, ctx) {
       (t.challenges || []).forEach(function (c) { const mine = (c.members || {})[u.id]; if (mine && today >= c.start && today <= chEnd_(c) && mine.indexOf(today) === -1) ch++; });
     }
     if (ch) out.push({ key: 'challenges', params: { n: ch } });
+    for (const tid of (u.teams || [])) {
+      const t = ctx.teams[tid]; if (!t) continue;
+      const m = (t.meets || []).filter(function (x) { return x.date === today && (x.rsvp || {})[u.id] !== 'no'; })[0];
+      if (m) out.push({ key: 'meetupToday', params: { team: (t.emoji || '') + ' ' + t.name, time: m.time || '' } });
+    }
   }
   if (p.team) {
     let n = 0; const soon = addDays_(today, 1);
@@ -2133,7 +2202,7 @@ async function signOut(uid, tok) {
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveHabits, tickHabit, saveWeek,
-  savePlanWhy, saveGoal, goalAct, myTask, teamTask, journey, weekReset,
+  savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, weekReset,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,

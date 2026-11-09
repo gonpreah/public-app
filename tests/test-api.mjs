@@ -521,6 +521,30 @@ ok('it keeps what went well, what was hard and the part of life to care for, wit
 ok('… once a week', (await H.weekReset(RS.uid, RS.token, nextMon, { area: 'moon' })).me.level.xp === 30 && (await H.boot(RS.uid, RS.token)).me.resets[nextMon].area === '');
 ok('… and nobody else sees it', !/essay|phone|resets/.test(JSON.stringify(await H.person(B.uid, B.token, RS.uid))));
 
+/* ---------- 18d. English first ---------- */
+ok('a new account is English unless Khmer was chosen', (await H.registerPassword({ username: 'eng1', name: 'En Glish', birthYear: 2002, password: 'eng1 password', lang: 'km' })).me.lang === 'en');
+const KMU = await H.registerPassword({ username: 'khm1', name: 'Kh Mer', birthYear: 2002, password: 'khm1 password', lang: 'km', langChosen: true });
+ok('… and Khmer when it was', KMU.me.lang === 'km');
+setU(KMU.uid, u => { delete u.langChosen; });
+ok('an older account saved as Khmer by default reads as English', (await H.boot(KMU.uid, KMU.token)).me.lang === 'en');
+ok('… until Khmer is picked again', (await H.saveProfile(KMU.uid, KMU.token, { lang: 'km' })).ok && (await H.boot(KMU.uid, KMU.token)).me.lang === 'km');
+
+/* ---------- 18e. team meetups ---------- */
+const tmw = new Date(Date.parse(today) + 864e5).toISOString().slice(0, 10);
+ok('only a leader posts a meetup', (await H.meetup(Q.uid, Q.token, QT.team.id, 'add', { title: 'Study night', date: tmw })).err === 'not_leader');
+ok('someone outside the team can’t', (await H.meetup(B.uid, B.token, QT.team.id, 'add', { title: 'x', date: tmw })).err === 'none');
+ok('a meetup needs a day from today on', (await H.meetup(Q2.uid, Q2.token, QT.team.id, 'add', { title: 'x', date: '2020-01-01' })).err === 'date');
+let mt = await H.meetup(Q2.uid, Q2.token, QT.team.id, 'add', { title: 'Study night', date: tmw, time: '18:30', place: 'Room 4' });
+const mt0 = mt.team.meets[0];
+ok('the leader posts it: what, when, where — and is going', mt.ok && mt0.title === 'Study night' && mt0.time === '18:30' && mt0.place === 'Room 4' && mt0.going === 1 && mt0.mine === 'yes');
+mt = await H.meetup(Q.uid, Q.token, QT.team.id, 'rsvp', { id: mt0.id, answer: 'maybe' });
+ok('a member answers maybe, and sees the counts', mt.team.meets[0].going === 1 && mt.team.meets[0].maybe === 1 && mt.team.meets[0].mine === 'maybe' && !('who' in mt.team.meets[0]));
+ok('the leader sees who is going', JSON.stringify((await H.team(Q2.uid, Q2.token, QT.team.id)).team.meets[0].who) === '["Vanna Ly"]');
+ok('it’s on Home for the team, coming up', (await H.boot(Q.uid, Q.token)).meets.some(m => m.id === mt0.id && m.teamName === 'Study crew'));
+await H.meetup(Q.uid, Q.token, QT.team.id, 'rsvp', { id: mt0.id, answer: 'no' });
+ok('… but not once they can’t come', !(await H.boot(Q.uid, Q.token)).meets.some(m => m.id === mt0.id));
+ok('only a leader cancels it', (await H.meetup(Q.uid, Q.token, QT.team.id, 'drop', { id: mt0.id })).err === 'not_leader' && (await H.meetup(Q2.uid, Q2.token, QT.team.id, 'drop', { id: mt0.id })).team.meets.length === 0);
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

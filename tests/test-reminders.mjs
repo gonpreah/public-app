@@ -132,4 +132,15 @@ mem.delete('pushRun'); sent = [];
 await runReminders(new Date(mon + 'T01:00:00Z'));
 const vb2 = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
 ok('… only on Sundays', !/read your vision/.test(vb2), vb2);
+/* ---------- 5. team meetups ---------- */
+await H.pushSavePrefs(M.uid, M.token, { hour: 8, alerts: true });
+const MT = await H.createTeam(A.uid, A.token, { name: 'Choir' }); await H.joinTeam(M.uid, M.token, MT.team.code);
+sent = [];
+await H.meetup(A.uid, A.token, MT.team.id, 'add', { title: 'Practice at the pastor’s house', date: today, time: '17:00', place: 'Street 271' });
+const ma = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
+ok('a new meetup alerts the team — the team’s name only', /Choir has a new meetup/.test(ma) && !/pastor|Street|Practice/.test(ma), ma);
+mem.delete('pushRun'); sent = [];
+await runReminders(new Date(today + 'T01:00:00Z'));
+const md = sent.length ? decrypt(pm2, sent[0].opts.body).body : '';
+ok('on the day, the reminder says the team meets today', /Choir meets today 17:00/.test(md), md);
 ok.done();

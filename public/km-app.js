@@ -1134,5 +1134,8 @@ var APP_KM = {
   "All time": "គ្រប់ពេល",
   "Lv {n}": "កម្រិត {n}",
   "Only people who show their level are here. XP comes from habits, focus, the tests, the Life Journey and more.": "មានតែអ្នកដែលបង្ហាញកម្រិតរបស់ខ្លួនប៉ុណ្ណោះនៅទីនេះ។ XP បានមកពីទម្លាប់ ការផ្តោតអារម្មណ៍ តេស្ត ដំណើរជីវិត និងច្រើនទៀត។",
-  "My Life Journey: how far, my word, who I’m becoming (never my answers)": "ដំណើរជីវិតរបស់ខ្ញុំ៖ ទៅដល់ណា ពាក្យរបស់ខ្ញុំ និងមនុស្សដែលខ្ញុំកំពុងក្លាយជា (មិនដែលបង្ហាញចម្លើយរបស់ខ្ញុំទេ)"
+  "My Life Journey: how far, my word, who I’m becoming (never my answers)": "ដំណើរជីវិតរបស់ខ្ញុំ៖ ទៅដល់ណា ពាក្យរបស់ខ្ញុំ និងមនុស្សដែលខ្ញុំកំពុងក្លាយជា (មិនដែលបង្ហាញចម្លើយរបស់ខ្ញុំទេ)",
+  /* Home: how God made you */
+  "Your gifts": "អំណោយទានរបស់អ្នក",
+  "May shine in": "អាចភ្លឺចែងចាំងក្នុង"
 };

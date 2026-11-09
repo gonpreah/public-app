@@ -350,13 +350,25 @@ function homeHtml(){
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
   var HC=homeCfg_(); HC.order.forEach(function(id){ if(HC.hide.indexOf(id)<0) h+=homePartHtml_(id); });   // Me → Customize Home
-  if(!me.personality || !me.gstrengths || !me.apest){
-    h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
-    if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
-    if(!me.gstrengths) h+=entryCardHtml('goGtest','💪',t('Find your top 5 strengths'),t('102 quick choices · about 15 minutes'));
-    if(!me.apest) h+=apEntryHtml_();
-  }
   if(!(S.teams||[]).length) h+='<h3>👥 '+esc(t('Your team'))+'</h3>'+entryCardHtml('goTeamsHome','👥',t('Join or start a team'),t('Grow together with your friends, club or group.'));
+  return h;
+}
+/* Home → How God made you: what my tests found (each opens its full results), then the tests
+   not taken yet. "May shine in" appears once the deeper files are on the phone (Me loads them). */
+function testsHomeHtml_(){
+  var me=S.me, h='<h3>✦ '+esc(t('How God made you'))+'</h3>', rows='';
+  if(me.personality && GP_PTYPES[me.personality.type]){ var g=gpPGroupOf(me.personality.type);
+    rows+='<button class="gmRow" id="seeMyType"><span class="gmArt">'+gpPAvatar(me.personality.type, me.sex||'', 44)+'</span><span class="gmTx"><span class="pmeta">'+esc(t('Personality'))+'</span><b style="color:'+g.ink+'">'+esc(me.personality.type)+' · '+esc(pTheName(me.personality.type))+'</b></span><span class="chev">›</span></button>'; }
+  if(me.gstrengths) rows+='<button class="gmRow" id="seeMyGs"><span class="gmArt"><span class="pQ">💪</span></span><span class="gmTx"><span class="pmeta">'+esc(t('Your top 5 strengths'))+'</span><span class="sChips">'+me.gstrengths.top.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</span></span><span class="chev">›</span></button>';
+  if(me.apest){ var have=typeof GP_APEST!=='undefined'; if(!have) needJs_('apest.js','GP_APEST'); var g1=have&&apById_(me.apest.top[0]), g2=have&&apById_(me.apest.top[1]);
+    rows+='<button class="gmRow" id="seeMyAp"><span class="gmArt"><span class="pQ">'+(g1?g1.icon:'🔥')+'</span></span><span class="gmTx"><span class="pmeta">'+esc(t('Your gifts'))+'</span><b>'+(g1?esc(fld_(g1,'name'))+(g2?' · '+esc(fld_(g2,'name')):''):'…')+'</b></span><span class="chev">›</span></button>'; }
+  if(rows){
+    var R=(typeof GP_PDEEP!=='undefined' || typeof GP_GSDEEP!=='undefined' || typeof GP_APEST!=='undefined') ? sphereVotes_() : null;
+    h+='<div class="card godMade">'+rows+(R && R.top.length ? '<div class="gmShine">🌍 '+esc(t('May shine in'))+': <b>'+esc(R.top.map(function(id){ return t(SPHERES[id][1]); }).join(' · '))+'</b></div>' : '')+'</div>';
+  }
+  if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
+  if(!me.gstrengths) h+=entryCardHtml('goGtest','💪',t('Find your top 5 strengths'),t('102 quick choices · about 15 minutes'));
+  if(!me.apest) h+=apEntryHtml_();
   return h;
 }
 /* The five gifts on Me (and Home): my two strongest, or the way in. */
@@ -1699,11 +1711,11 @@ function focusSound_(kind){
 function focusSoundsHtml_(){ return '<div class="fsRow">'+[['','🔇',t('Quiet')],['brown','🟤',t('Brown noise')],['rain','🌧️',t('Rain')]].map(function(s){ return '<button class="rsvpB'+(FS.kind===s[0]?' on':'')+'" data-fsound="'+s[0]+'">'+s[1]+' '+esc(s[2])+'</button>'; }).join('')+'</div>'; }
 
 /* ---------------- customize Home: order and hide sections (kept on this phone) ---------------- */
-var HOME_PARTS=[['vision','✦','My vision or why'],['reset','🔄','Sunday reset'],['meets','📅','Coming up (meetups)'],['devo','🕊️','Today’s devotional'],['recap','📊','Your week'],['cheers','👏','Cheers'],['today','☀️','Today’s 3 and focus'],['reading','📖','Bible reading'],['friends','👯','Friends'],['challenges','🏁','Challenges'],['habits','✅','Habits'],['checkin','🌙','Evening check-in'],['coach','🤝','1-on-1s'],['plan','🎯','Steps for now'],['week','🗒️','This week’s goals']];
+var HOME_PARTS=[['vision','✦','My vision or why'],['tests','🧭','How God made you'],['reset','🔄','Sunday reset'],['meets','📅','Coming up (meetups)'],['devo','🕊️','Today’s devotional'],['recap','📊','Your week'],['cheers','👏','Cheers'],['today','☀️','Today’s 3 and focus'],['reading','📖','Bible reading'],['friends','👯','Friends'],['challenges','🏁','Challenges'],['habits','✅','Habits'],['checkin','🌙','Evening check-in'],['coach','🤝','1-on-1s'],['plan','🎯','Steps for now'],['week','🗒️','This week’s goals']];
 function homeCfg_(){ var c; try { c=JSON.parse(lsGet('gpa-home')||'null'); } catch(e){ c=null; } c=c&&typeof c==='object'?c:{}; var ids=HOME_PARTS.map(function(p){ return p[0]; });
   var order=(Array.isArray(c.order)?c.order:[]).filter(function(id){ return ids.indexOf(id)>-1; }); ids.forEach(function(id){ if(order.indexOf(id)<0) order.splice(ids.indexOf(id), 0, id); });
   return { order:order, hide:(Array.isArray(c.hide)?c.hide:[]).filter(function(id){ return ids.indexOf(id)>-1 && id!=='today'; }) }; }
-function homePartHtml_(id){ return ({ vision:whyLineHtml, reset:resetCardHtml_, meets:meetupsHomeHtml_, devo:devoCardHtml, recap:recapCardHtml, cheers:cheersHtml, today:todayCardHtml, reading:readingHomeHtml, friends:friendsHomeHtml, challenges:myChallengesHtml, habits:habitsCardHtml, checkin:checkinCardHtml, coach:coachHomeHtml, plan:planHomeHtml, week:weekCardHtml })[id](); }
+function homePartHtml_(id){ return ({ tests:testsHomeHtml_, vision:whyLineHtml, reset:resetCardHtml_, meets:meetupsHomeHtml_, devo:devoCardHtml, recap:recapCardHtml, cheers:cheersHtml, today:todayCardHtml, reading:readingHomeHtml, friends:friendsHomeHtml, challenges:myChallengesHtml, habits:habitsCardHtml, checkin:checkinCardHtml, coach:coachHomeHtml, plan:planHomeHtml, week:weekCardHtml })[id](); }
 function homeCfgHtml(){
   var C=homeCfg_(), h=backBtn(t('Me'))+'<h2>🏠 '+esc(t('Customize Home'))+'</h2><p class="sub">'+esc(t('Put what matters most at the top, and hide what you don’t use. Kept on this phone.'))+'</p><div class="card">';
   C.order.forEach(function(id, i){ var P=HOME_PARTS.filter(function(p){ return p[0]===id; })[0], on=C.hide.indexOf(id)<0;

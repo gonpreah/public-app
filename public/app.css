@@ -1090,3 +1090,14 @@ html.textXL #main { zoom:1.25; }
 .wordTile { display:flex; flex-direction:column; align-items:center; background:var(--headerBg); color:#FFB323; border-radius:14px; padding:8px 12px; min-width:76px; }
 .wordTile b { font-size:15px; letter-spacing:.6px; }
 .wordTile span { color:var(--onDark); font-size:11.5px; opacity:.85; }
+
+/* ---------- Home: how God made you (my results) ---------- */
+.godMade { padding:6px 14px; }
+.gmRow { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--line); padding:10px 0; font:inherit; color:var(--ink); cursor:pointer; }
+.gmRow:first-child { border-top:0; }
+.gmArt { flex:none; width:48px; height:48px; display:flex; align-items:center; justify-content:center; }
+.gmArt .pQ { font-size:28px; }
+.gmTx { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.gmTx b { font-size:15.5px; }
+.gmShine { border-top:1px dashed var(--border2); padding:10px 0 6px; font-size:13.5px; color:var(--muted); }
+.gmShine b { color:var(--ink); }

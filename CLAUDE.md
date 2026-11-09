@@ -199,6 +199,12 @@ this week for me (`selfOut_` xpWeek) and friends who show their level — number
 `html.textL/.textXL #main`). **Download my data** (Me): one JSON file made on the phone — my
 account as I see it, my teams, my friends' names, and every journal page.
 
+## Home: how God made you
+(Uriah, Nov 2026: "when you finish the tests display them on the dashboard".) A Home part
+(`tests`, second by default, in Customize Home): my type, Top 5 and two strongest gifts, each opening
+its full results, "May shine in" (`sphereVotes_`) once the deeper files are on the phone, and the
+tests not taken yet underneath.
+
 ## A classroom (Nov 2026: a DTS class joins on day one)
 The team page's join link is the app's own address (`joinLink_`: `location.origin` + `?join=`),
 not a domain that may not be live yet. **QR code** (leaders, team page → "QR code"): the join link

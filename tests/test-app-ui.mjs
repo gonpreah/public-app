@@ -519,6 +519,10 @@ await a.click('[data-back]');
   await g.evaluate(() => call('savePersonality', { type: 'ENFJ', sex: 'female' }).then(d => { S.me = d.me; }));
   const gsAns = {}; for (let i = 0; i < 102; i++) gsAns['p' + i] = 0;
   await g.evaluate(a => call('saveStrengths', { answers: a }).then(d => { S.me = d.me; }), gsAns);
+  await g.click('nav.bottom button[data-tab="home"]'); await g.waitForSelector('.godMade');
+  ok('Home shows what the tests found: type, Top 5 and gifts, each opening its results', /ENFJ/.test(await g.$eval('.godMade', e => e.innerText)) && (await g.$$('.godMade .sChip')).length === 5 && /Evangelist · Prophet/.test(await g.$eval('.godMade', e => e.innerText)) && !(await g.$('#goPtest')) && !(await g.$('#goAtest')));
+  if (await g.$('#levelOk')) await g.click('#levelOk');
+  await g.click('.godMade #seeMyType'); await g.waitForSelector('.pHero'); await g.click('[data-back]'); await g.waitForTimeout(200);
   await g.click('nav.bottom button[data-tab="me"]'); await g.waitForSelector('#seeMyAp'); await g.waitForTimeout(800);
   ok('Me shows the gifts and where all three tests say my gifts may shine', /Evangelist · Prophet/.test(await g.$eval('#seeMyAp', e => e.innerText)) && (await g.$$('.sphRow')).length === 3);
   if (await g.$('#levelOk')) await g.click('#levelOk');
@@ -526,6 +530,8 @@ await a.click('[data-back]');
   ok('my type goes deeper: at my best, under stress, with God, and work that may fit', /You at your best/.test(await text(g)) && /Under stress/.test(await text(g)) && /With God/.test(await text(g)) && /Work that may fit you/.test(await text(g)));
   await g.click('[data-back]'); await g.waitForSelector('#seeMyGs'); await g.click('#seeMyGs'); await g.waitForSelector('.gsDeep');
   ok('each of my top 5 strengths goes deeper, with where they may shine', (await g.$$('.gsDeep')).length === 5 && /Where your top 5 may shine/.test(await text(g)));
+  await g.click('nav.bottom button[data-tab="home"]'); await g.waitForSelector('.gmShine');
+  ok('… and once the deeper parts are on the phone, Home says where my gifts may shine', /May shine in/.test(await g.$eval('.godMade', e => e.innerText)));
   await ctx.close();
 }
 

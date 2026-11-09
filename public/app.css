@@ -1057,3 +1057,20 @@ body.still .jrQ, body.still .jrIntro, body.still .jrDone, body.still .jrReveal, 
 .calKey { display:flex; align-items:center; justify-content:flex-end; gap:4px; font-size:11px; color:var(--muted); margin-top:8px; }
 .calKey .calCell { width:14px; height:14px; }
 .linkbtn.inline { width:auto; margin:0; }
+
+/* ---------- my journal, focus sounds, customize Home ---------- */
+.jnCard textarea { font-size:16px; line-height:1.6; }
+.jnTop { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.jnPrompt { font-size:18px; font-weight:800; line-height:1.4; margin:8px 0 10px; }
+.jnPast { display:flex; flex-direction:column; gap:4px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer; }
+.jnText { white-space:pre-wrap; line-height:1.55; font-size:15px; }
+.jnText.clip { max-height:4.7em; overflow:hidden; -webkit-mask-image:linear-gradient(#000 55%, transparent); mask-image:linear-gradient(#000 55%, transparent); }
+.fsRow { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:6px 0 10px; }
+.hcRow { display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--line); }
+.hcRow:first-child { border-top:0; }
+.hcRow.off { opacity:.5; }
+.hcIc { width:26px; text-align:center; font-size:18px; }
+.hcB { width:34px; height:34px; border-radius:10px; border:1.5px solid var(--border2); background:var(--surface); color:var(--ink); font:inherit; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.hcB:disabled { opacity:.3; }
+.hcRow input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
+.hcFix { width:22px; text-align:center; font-size:14px; }

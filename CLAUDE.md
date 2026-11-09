@@ -177,6 +177,16 @@ make). Up to 10 per team, kept until the day after. **My habit calendar** (Home 
 `habitcal`): twelve weeks of days, darker for more habits done, and each habit over the last 30
 days — from the phone's own data, private.
 
+## My journal, goal ideas, focus sounds, customize Home
+**Journal** (Me or the evening check-in → view `journal`; `journal` handler): a page a day with a
+question to start from (`JOURNAL_PROMPTS`, by day; 🎲 for another), `u.journal[date]` = {t, p},
+365 days, private — fetched only when the journal is open ('get', 60 at a time); boot sends only
+`journalDays`. 5 XP a day for a page of 20+ characters; badge "Seven pages". **Goal ideas**
+(`GOAL_IDEAS`): three starters per part of life in a new goal; one tap fills the title and measure.
+**Focus sounds**: brown noise or rain made on the phone with Web Audio (`focusSound_`), off when the
+focus pauses or ends. **Customize Home** (Me → view `homecfg`): order and hide Home's parts
+(`HOME_PARTS`, kept on the phone as `gpa-home`; Today's 3 always stays).
+
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan
 (the mentee lets the coach see their life plan), meetings (a check-in 1–5 on the six areas,

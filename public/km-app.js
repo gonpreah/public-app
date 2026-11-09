@@ -1169,5 +1169,5 @@ var APP_KM = {
   "Big screen: show the team on a projector": "អេក្រង់ធំ៖ បង្ហាញក្រុមលើម៉ាស៊ីនបញ្ចាំង",
   "all 3 tests done": "ធ្វើតេស្តទាំង ៣ រួច",
   "finished the Life Journey": "បានបញ្ចប់ដំណើរជីវិត",
-  "🧭💪🔥 = the personality, strengths and gifts tests they’ve taken. 🗺️ = how far on the Life Journey, if they show it.": "🧭💪🔥 = តេស្តបុគ្គលិកលក្ខណៈ ចំណុចខ្លាំង និងអំណោយទាន ដែលពួកគេបានធ្វើ។ 🗺️ = ដំណើរជីវិតទៅដល់ណា បើពួកគេបង្ហាញវា។"
+  "📝 = how many of the three tests (personality, strengths, gifts) they’ve taken. 🗺️ = how far on the Life Journey, if they show it.": "📝 = ចំនួនតេស្តក្នុងចំណោមបី (បុគ្គលិកលក្ខណៈ ចំណុចខ្លាំង អំណោយទាន) ដែលពួកគេបានធ្វើ។ 🗺️ = ដំណើរជីវិតទៅដល់ណា បើពួកគេបង្ហាញវា។"
 };

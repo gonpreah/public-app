@@ -706,7 +706,7 @@ await a.click('[data-back]');
   await a.click('[data-back]'); await a.waitForTimeout(300);
   ok('… and leaving it brings the bar back and stops the refresh', await a.evaluate(() => !document.body.classList.contains('bigScreen') && SCREEN_TIMER === null));
   await a.click('#goPulse'); await a.waitForSelector('[data-cheer]');
-  ok('the pulse shows tests taken and how many finished them all', /all 3 tests done/.test(await text(a)) && /🧭|💪|🔥|·/.test(await a.$eval('.list', e => e.innerText)));
+  ok('the pulse shows tests taken and how many finished them all', /all 3 tests done/.test(await text(a)) && /📝 \d\/3/.test(await a.$eval('.list', e => e.innerText)));
   await a.click('[data-back]'); await a.waitForTimeout(200); await a.click('[data-back]'); await a.waitForTimeout(200);
 }
 

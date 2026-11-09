@@ -2470,12 +2470,12 @@ function pulseHtml(){
   if(!P.rows.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('No one else in the team yet.'))+'</p></div>';
   h+='<div class="card list">'+P.rows.map(function(r){
     var bits=[]; if(r.streak!=null) bits.push('🔥 '+r.streak); if(r.habitDays!=null) bits.push('✅ '+r.habitDays+'/7'); if(r.focusWeek) bits.push('⏱ '+focusShort_(r.focusWeek)); if(r.xpWeek) bits.push('+'+r.xpWeek+' XP');
-    if(r.tests) bits.push((r.tests.type?'🧭':'·')+(r.tests.strengths?'💪':'·')+(r.tests.gifts?'🔥':'·'));
+    if(r.tests) bits.push('📝 '+((r.tests.type?1:0)+(r.tests.strengths?1:0)+(r.tests.gifts?1:0))+'/3');
     if(r.journey) bits.push('🗺️ '+(r.journey.finished?'✓':r.journey.stops+'/'+JR_STOPS.length));
     var quiet=r.seenAgo==null || r.seenAgo>=4;
     return '<div class="feedRow'+(quiet?' quietRow':'')+'">'+faceHtml(r,40)+'<span class="feedTx"><b>'+esc(r.name)+'</b><div class="pmeta">'+esc(agoLabel_(r.seenAgo))+(bits.length?' · '+esc(bits.join(' · ')):'')+'</div></span>'+
       '<button class="btn small'+(quiet?'':' ghost')+'" data-cheer="'+esc(r.id)+'"'+(r.cheered?' disabled':'')+'>'+(r.cheered?'💛 ✓':'💛 '+esc(t('Cheer')))+'</button></div>';
-  }).join('')+'</div><p class="hint">'+esc(t('🧭💪🔥 = the personality, strengths and gifts tests they’ve taken. 🗺️ = how far on the Life Journey, if they show it.'))+'</p><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
+  }).join('')+'</div><p class="hint">'+esc(t('📝 = how many of the three tests (personality, strengths, gifts) they’ve taken. 🗺️ = how far on the Life Journey, if they show it.'))+'</p><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
   return h;
 }
 

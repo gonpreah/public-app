@@ -439,21 +439,45 @@ function personRowHtml(p, extra){
   if(p.streak) bits.push('🔥 '+p.streak);
   if(p.week!=null) bits.push('🗒️ '+p.week+'%');
   if(p.type) bits.push(p.type);
+  if(p.journey) bits.push('🗺️ '+(p.journey.finished?'✓':p.journey.stops+'/'+JR_STOPS.length));
   return '<button class="personRow" data-person="'+esc(p.id)+'">'+faceHtml(p,44)+'<span style="flex:1;min-width:0;text-align:left"><b>'+esc(p.name)+'</b>'+(p.leader?' <span class="leadTag">'+esc(t('Leader'))+'</span>':'')+
     '<div class="pmeta">@'+esc(p.username)+(bits.length?' · '+esc(bits.join(' · ')):'')+'</div></span>'+(extra||'<span class="chev">›</span>')+'</button>';
+}
+/* Joining: a link to this app as it is being used right now, with the team's code. */
+function joinLink_(code){ return (location.origin && /^https?:/.test(location.origin) ? location.origin : 'https://gonpreah-app.netlify.app')+'/?join='+code; }
+/* A big QR code of the join link, for a classroom's projector (qrcode.js, MIT, loads when asked for). */
+function qrHtml_(link, code){
+  if(!needJs_('qrcode.js','qrcode')) return loadingHtml_();
+  var svg=''; try { var q=qrcode(0,'M'); q.addData(link); q.make(); svg=q.createSvgTag({ cellSize:8, margin:2, scalable:true }); } catch(e){ return ''; }
+  return '<div class="qrBox">'+svg+'<div class="qrHow">'+esc(t('Point your phone camera here, open the link, and make your account — you’ll join the team.'))+'</div><div class="pmeta">'+esc(t('Or open'))+' <b>'+esc(link.replace(/^https?:\/\//,'').replace(/\/\?join=.*/,''))+'</b> '+esc(t('and enter the code'))+' <b>'+esc(code)+'</b></div></div>';
+}
+/* Our words for the year: the team's words, from those who show their Life Journey. */
+function teamWordsHtml_(T){
+  var rows=(T.people||[]).filter(function(p){ return p.journey && p.journey.word; });
+  if(!rows.length) return '';
+  return '<h3>🔑 '+esc(gpT('Our words for {y}',{y:todayStr().slice(0,4)}))+'</h3><div class="card"><div class="wordWall">'+rows.map(function(p){ return '<span class="wordTile"><b>'+esc(LANG==='en'?p.journey.word.toUpperCase():p.journey.word)+'</b><span>'+esc(firstName_(p.name))+'</span></span>'; }).join('')+'</div></div>';
+}
+function journeyLineHtml_(J){
+  var known=(J.becoming||[]).map(function(id){ var o=(JR_OPTS.known||[]).filter(function(x){ return x[0]===id; })[0]; return o ? t(o[1]) : ''; }).filter(Boolean);
+  return '<div class="card"><div class="pmeta">🗺️ '+esc(J.finished ? t('Finished the Life Journey') : gpT('{n} of {m} stops on the Life Journey',{n:J.stops, m:JR_STOPS.length}))+'</div>'+
+    '<div class="miniTrack"><div style="width:'+Math.round((J.finished?JR_STOPS.length:J.stops)/JR_STOPS.length*100)+'%"></div></div>'+
+    (J.word?'<div style="margin-top:10px"><span class="wordBadge">🔑 '+esc(LANG==='en'?J.word.toUpperCase():J.word)+'</span></div>':'')+
+    (known.length?'<div class="becoming" style="margin-top:8px">'+esc(t('Becoming'))+': <b>'+esc(known.join(' · '))+'</b></div>':'')+'</div>';
 }
 function teamHtml(){
   var T=S.team;
   if(!T) return backBtn(t('Teams'))+'<p class="sub">'+esc(t('Loading…'))+'</p>';
   var h=backBtn(t('Teams'))+'<h2>'+esc(T.emoji)+' '+esc(T.name)+'</h2><p class="sub">'+esc(peopleN_(T.people.length))+'</p>';
   if(T.leader){
-    var link='https://app.gonpreah.org/?join='+T.code;
+    var link=joinLink_(T.code);
     h+='<div class="card codeCard"><div class="pmeta">'+esc(t('Join code'))+'</div><div class="bigCode">'+esc(T.code)+'</div>'+
-      '<div class="btnRow"><button class="btn small" id="shareCode" data-link="'+esc(link)+'">'+esc(t('Share the link'))+'</button><button class="btn small ghost" id="newCode">'+esc(t('New code'))+'</button></div>'+
+      '<div class="btnRow"><button class="btn small" id="shareCode" data-link="'+esc(link)+'">'+esc(t('Share the link'))+'</button><button class="btn small" id="showQr">📱 '+esc(S.qrShow?t('Hide the QR code'):t('QR code'))+'</button><button class="btn small ghost" id="newCode">'+esc(t('New code'))+'</button></div>'+
+      (S.qrShow ? qrHtml_(link, T.code) : '')+
       '<div class="hint">'+esc(t('Anyone with the code can join. Make a new one if it gets passed around.'))+'</div></div>';
   }
   if(T.leader) h+='<button class="btn ghost" id="goPulse" style="margin-bottom:12px">📊 '+esc(t('Team pulse: who’s active, who’s gone quiet'))+'</button>';
   h+=leaderboardHtml_(T);
+  h+=teamWordsHtml_(T);
   h+=meetupsHtml(T);
   h+=challengesHtml(T);
   h+=teamTasksHtml(T);
@@ -504,6 +528,7 @@ function personHtml(){
     h+='<h3>🧭 '+esc(t('Personality'))+'</h3><button class="card pEntry" id="seePType"><span class="pEntryArt">'+gpPAvatar(p.type,p.sex||'',64)+'</span><span style="flex:1"><div class="pCode" style="color:'+g.ink+'">'+esc(p.type)+'</div><div style="font-size:16px;font-weight:800">'+esc(pTheName(p.type))+'</div><div class="pmeta">'+esc(gpT('How to work well with {name}',{name:firstName_(p.name)}))+'</div></span><span class="chev">›</span></button>'; }
   if(p.apest && p.apest.length){ var pa=typeof GP_APEST!=='undefined'; if(!pa) needJs_('apest.js','GP_APEST');
     h+='<h3>🔥 '+esc(t('Gifts'))+'</h3><button class="card pEntry" id="seeAp"><span style="flex:1"><div class="sChips">'+p.apest.map(function(id){ var g=pa && apById_(id); return g ? '<span class="sChip" style="background:'+g.tint+';color:'+g.ink+'">'+g.icon+' '+esc(fld_(g,'name'))+'</span>' : ''; }).join('')+'</div><div class="pmeta" style="margin-top:6px">'+esc(gpT('How {name} builds others up',{name:firstName_(p.name)}))+'</div></span><span class="chev">›</span></button>'; }
+  if(p.journey) h+='<h3>🗺️ '+esc(t('Life Journey'))+'</h3>'+journeyLineHtml_(p.journey);
   if(p.strengths && p.strengths.length) h+='<h3>💪 '+esc(t('Strengths'))+'</h3><button class="card pEntry" id="seeGs" style="align-items:flex-start"><span style="flex:1"><div class="sChips">'+p.strengths.map(function(id,i){ return gsChipHtml(id,i+1); }).join('')+'</div></span><span class="chev">›</span></button>';
   if((p.sharedTeams||[]).length) h+='<p class="hint">'+esc(t('In your teams:'))+' '+esc(p.sharedTeams.map(function(x){ return x.emoji+' '+x.name; }).join(', '))+'</p>';
   if(S.team && S.team.leader && !p.leader && p.id!==S.me.id && (S.team.people||[]).some(function(x){ return x.id===p.id; })){
@@ -562,7 +587,7 @@ function meHtml(){
 
   h+='<h3>👁 '+esc(t('What others see'))+'</h3><div class="card">'+
     '<p class="sub" style="margin:0 0 8px">'+esc(t('People see your progress, never the details: not your goals, your habits or your answers.'))+'</p>';
-  [['type','Your personality type'],['strengths','Your top 5 strengths'],['apest','Your gifts (APEST)'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['level','My level'],['focus','My focus time this week (never what I worked on)'],['feed','My moments in my teams’ feed (👏)'],['teams','How many teams you’re in']].forEach(function(x){
+  [['type','Your personality type'],['strengths','Your top 5 strengths'],['apest','Your gifts (APEST)'],['journey','My Life Journey: how far, my word, who I’m becoming (never my answers)'],['streak','Your streak'],['week','This week’s %'],['plan','How many life goals and steps (never the words)'],['level','My level'],['focus','My focus time this week (never what I worked on)'],['feed','My moments in my teams’ feed (👏)'],['teams','How many teams you’re in']].forEach(function(x){
     h+='<label class="switchRow"><span>'+esc(t(x[1]))+'</span><input type="checkbox" data-share="'+x[0]+'"'+(sh[x[0]]!==false?' checked':'')+'></label>';
   });
   h+=(me.minor?'<div class="hint">🔒 '+esc(t('You’re under 18, so only people in your teams can see you, by your first name.'))+'</div>':'')+'</div>';
@@ -1295,6 +1320,8 @@ function bind(){
   all('[data-ntkind]', function(b){ keepNt_(); S.newTeam.kind=b.getAttribute('data-ntkind'); render(); });
   all('[data-ntemoji]', function(b){ keepNt_(); S.newTeam.emoji=b.getAttribute('data-ntemoji'); render(); });
   on('ntGo', busyOnce_(function(){ keepNt_(); return call('createTeam', S.newTeam).then(function(d){ if(d && d.ok){ S.newTeam=null; refresh_().then(function(){ S.back=['teams']; openTeam_(d.team.id, true); }); } else failMsg(d); }); }));
+  on('showQr', function(){ S.qrShow=!S.qrShow; render(); });
+  all('[data-lball]', function(b){ S.lbAll=b.getAttribute('data-lball')==='1'; render(); });
   on('shareCode', function(){ var b=$('shareCode'), link=b.getAttribute('data-link'), text=gpT('Join my team on GonPreah: {link}',{link:link});
     if(navigator.share){ navigator.share({ title:'GonPreah', text:text, url:link }).catch(function(){}); return; }
     try { navigator.clipboard.writeText(link).then(function(){ showMsg(t('Link copied.')); }); } catch(e){ showMsg(link); } });
@@ -2368,12 +2395,13 @@ function pulseHtml(){
 /* ---------------- the team's week: who earned the most XP ----------------
    Numbers only, from people who show their level (share.level). */
 function leaderboardHtml_(T){
-  var rows=(T.people||[]).filter(function(p){ return p.xpWeek>0; }).sort(function(a,b){ return b.xpWeek-a.xpWeek; }).slice(0,5);
-  if(rows.length<2) return '';
-  var medal=['🥇','🥈','🥉','4','5'];
-  return '<h3>🏆 '+esc(t('This week'))+'</h3><div class="card list">'+rows.map(function(p,i){
-    return '<div class="feedRow lbRow'+(p.id===S.me.id?' me':'')+'"><span class="lbRank">'+medal[i]+'</span>'+faceHtml(p,36)+'<span class="feedTx"><b>'+esc(firstName_(p.name))+'</b>'+(p.level?'<div class="pmeta">'+esc(p.level.icon+' '+gpT('Level {n}',{n:p.level.level}))+'</div>':'')+'</span><b class="lbXp">+'+p.xpWeek+' XP</b></div>';
-  }).join('')+'</div>';
+  var all=!!S.lbAll, rows=(T.people||[]).filter(function(p){ return p.level; }).sort(function(a,b){ return all ? ((b.level.level-a.level.level) || ((b.xpWeek||0)-(a.xpWeek||0))) : (((b.xpWeek||0)-(a.xpWeek||0)) || (b.level.level-a.level.level)); });
+  if(!rows.length) return '';
+  var medal=['🥇','🥈','🥉'];
+  return '<h3>🏆 '+esc(t('Leaderboard'))+'</h3><div class="seg lbTabs"><button data-lball="0" class="'+(all?'':'on')+'">'+esc(t('This week'))+'</button><button data-lball="1" class="'+(all?'on':'')+'">'+esc(t('All time'))+'</button></div><div class="card list">'+rows.map(function(p,i){
+    return '<div class="feedRow lbRow'+(p.id===S.me.id?' me':'')+'"><span class="lbRank">'+(medal[i]||String(i+1))+'</span>'+faceHtml(p,36)+'<span class="feedTx"><b>'+esc(firstName_(p.name))+'</b><div class="pmeta">'+esc(p.level.icon+' '+gpT('Level {n}',{n:p.level.level})+' · '+t(p.level.title))+'</div></span>'+
+      '<b class="lbXp">'+(all?esc(gpT('Lv {n}',{n:p.level.level})):'+'+(p.xpWeek||0)+' XP')+'</b></div>';
+  }).join('')+'</div><div class="pmeta" style="margin:-6px 2px 14px">'+esc(t('Only people who show their level are here. XP comes from habits, focus, the tests, the Life Journey and more.'))+'</div>';
 }
 
 /* ---------------- team challenges ----------------

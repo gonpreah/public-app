@@ -55,7 +55,10 @@ Held by tests/test-api.mjs against the real handlers.
 - **Progress, not details** (`cardOut_`): others see a streak, the week's %, type, Top 5,
   team count, and the life plan as counts (goals, steps this month, goals reached) — each
   behind its own switch (`share.*`). Never goals, the why, steps, tasks, habit names,
-  answers, scores, birth year or email.
+  answers, scores, birth year or email. Since Nov 2026 (Uriah, for a DTS class: "see each
+  other's journey a bit") also the Life Journey, a little, behind `share.journey`: how many
+  stops, finished or not, the word for the year and the three "becoming" words (chip ids) —
+  never the answers or the vision.
 - **Team tasks** are set only by leaders (adults) and every member sees every one — no
   private channel between two people, on purpose. Members tick only tasks for everyone or for them.
 - The page sends test answers; the server scores strengths (`gsScore_`) and refuses
@@ -195,6 +198,16 @@ this week for me (`selfOut_` xpWeek) and friends who show their level — number
 **Text size** (Me → Profile): Normal / Large / Larger, the screen's content zoomed (`gpa-text`,
 `html.textL/.textXL #main`). **Download my data** (Me): one JSON file made on the phone — my
 account as I see it, my teams, my friends' names, and every journal page.
+
+## A classroom (Nov 2026: a DTS class joins on day one)
+The team page's join link is the app's own address (`joinLink_`: `location.origin` + `?join=`),
+not a domain that may not be live yet. **QR code** (leaders, team page → "QR code"): the join link
+drawn big for a projector (`public/qrcode.js` — qrcode-generator 1.4.4, MIT, loaded when asked).
+A student who opens the link sees the code, makes an account, and is in the team (register's
+`code`). **Leaderboard** (team page): everyone who shows their level — every card carries a level
+from day one, 0 XP included — this week by XP or all time by level. **Our words for the year**:
+the team's words, from those who show their Life Journey; cards and member rows show the
+journey's progress (🗺️ 3/7).
 
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan

@@ -1079,3 +1079,14 @@ body.still .jrQ, body.still .jrIntro, body.still .jrDone, body.still .jrReveal, 
 html.textL #main { zoom:1.12; }
 html.textXL #main { zoom:1.25; }
 .fwRow.me .apBarL { font-weight:800; color:var(--accent); }
+
+/* ---------- a classroom: the QR code, the leaderboard, our words ---------- */
+.qrBox { margin-top:12px; text-align:center; background:#fff; border-radius:16px; padding:14px; }
+.qrBox svg { width:100%; max-width:320px; height:auto; display:block; margin:0 auto; }
+.qrHow { color:#17150F; font-weight:700; margin:10px 0 4px; line-height:1.45; }
+.qrBox .pmeta { color:#555; }
+.lbTabs { margin-bottom:8px; }
+.wordWall { display:flex; flex-wrap:wrap; gap:8px; }
+.wordTile { display:flex; flex-direction:column; align-items:center; background:var(--headerBg); color:#FFB323; border-radius:14px; padding:8px 12px; min-width:76px; }
+.wordTile b { font-size:15px; letter-spacing:.6px; }
+.wordTile span { color:var(--onDark); font-size:11.5px; opacity:.85; }

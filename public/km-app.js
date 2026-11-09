@@ -1119,5 +1119,20 @@ var APP_KM = {
   "Getting your data ready…": "កំពុងរៀបចំទិន្នន័យរបស់អ្នក…",
   "Streak saver: 9 pm, if my streak is about to end": "អ្នកការពារការធ្វើជាប់ៗគ្នា៖ ម៉ោង ៩ យប់ បើការធ្វើជាប់ៗគ្នារបស់ខ្ញុំជិតបញ្ចប់",
   "Friends this week": "មិត្តភក្តិក្នុងសប្តាហ៍នេះ",
-  "XP this week. A new week starts on Monday.": "XP ក្នុងសប្តាហ៍នេះ។ សប្តាហ៍ថ្មីចាប់ផ្តើមនៅថ្ងៃច័ន្ទ។"
+  "XP this week. A new week starts on Monday.": "XP ក្នុងសប្តាហ៍នេះ។ សប្តាហ៍ថ្មីចាប់ផ្តើមនៅថ្ងៃច័ន្ទ។",
+  /* a classroom: QR code, leaderboard, our words, the journey on cards */
+  "Point your phone camera here, open the link, and make your account — you’ll join the team.": "បើកកាមេរ៉ាទូរស័ព្ទរបស់អ្នកមកទីនេះ បើកតំណ ហើយបង្កើតគណនីរបស់អ្នក — អ្នកនឹងចូលក្រុមភ្លាម។",
+  "Or open": "ឬបើក",
+  "and enter the code": "ហើយបញ្ចូលលេខកូដ",
+  "Our words for {y}": "ពាក្យរបស់យើងសម្រាប់ឆ្នាំ {y}",
+  "Finished the Life Journey": "បានបញ្ចប់ដំណើរជីវិត",
+  "{n} of {m} stops on the Life Journey": "{n} ក្នុងចំណោម {m} ចំណតនៃដំណើរជីវិត",
+  "Hide the QR code": "លាក់កូដ QR",
+  "QR code": "កូដ QR",
+  "Life Journey": "ដំណើរជីវិត",
+  "Leaderboard": "តារាងចំណាត់ថ្នាក់",
+  "All time": "គ្រប់ពេល",
+  "Lv {n}": "កម្រិត {n}",
+  "Only people who show their level are here. XP comes from habits, focus, the tests, the Life Journey and more.": "មានតែអ្នកដែលបង្ហាញកម្រិតរបស់ខ្លួនប៉ុណ្ណោះនៅទីនេះ។ XP បានមកពីទម្លាប់ ការផ្តោតអារម្មណ៍ តេស្ត ដំណើរជីវិត និងច្រើនទៀត។",
+  "My Life Journey: how far, my word, who I’m becoming (never my answers)": "ដំណើរជីវិតរបស់ខ្ញុំ៖ ទៅដល់ណា ពាក្យរបស់ខ្ញុំ និងមនុស្សដែលខ្ញុំកំពុងក្លាយជា (មិនដែលបង្ហាញចម្លើយរបស់ខ្ញុំទេ)"
 };

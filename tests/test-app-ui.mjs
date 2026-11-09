@@ -648,6 +648,34 @@ await a.click('[data-back]');
   ok('download my data: my account and my journal, in one file', file.app === 'GonPreah' && file.me.username === 'sokha' && file.journal.some(j => /answered my prayer/.test(j.text)));
 }
 
+/* ---------- 17i. a classroom: a QR code to join, the leaderboard, our words ---------- */
+{
+  await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(400); await a.click('[data-team]'); await a.waitForSelector('#showQr');
+  const link = await a.$eval('#shareCode', b => b.getAttribute('data-link'));
+  ok('the join link points at this app, wherever it is', link.startsWith(base + '/?join='));
+  await a.click('#showQr'); await a.waitForSelector('.qrBox svg');
+  ok('a big QR code of the join link, for a projector', /Point your phone camera here/.test(await text(a)));
+  const code = link.split('join=')[1];
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const st = await ctx.newPage(); st.on('pageerror', x => errors.push('student: ' + x.message));
+  await st.goto(link); await st.waitForSelector('#liNew');
+  ok('a student opening the link is told they have a team code', new RegExp(code).test(await text(st)));
+  await st.click('#liNew'); await st.waitForSelector('#suPass');
+  await st.fill('#suUser', 'student1'); await st.fill('#suPass', 'student1 password'); await st.fill('#suPass2', 'student1 password');
+  await st.fill('#suName', 'Bopha Lim'); await st.selectOption('#suYear', '2004'); await st.click('#suGo'); await st.waitForSelector('nav.bottom'); await st.waitForTimeout(900);
+  ok('… makes an account and is in the team straight away', await st.evaluate(() => (S.teams || []).length === 1));
+  await st.click('nav.bottom button[data-tab="teams"]'); await st.waitForTimeout(500); await st.click('[data-team]'); await st.waitForSelector('.lbTabs');
+  ok('… and sees the class leaderboard — everyone who shows their level, from day one', (await st.$$('.lbRow')).length >= 3 && /Leaderboard/.test(await text(st)));
+  await st.click('[data-lball="1"]'); await st.waitForTimeout(200);
+  ok('… this week or all time', /Lv \d/.test(await text(st)));
+  await ctx.close();
+  await a.evaluate(() => call('journey', 'vision', { vision: 'I am Sokha, a child of God.', word: 'Faithful' }).then(d => { S.me = d.me; }));
+  await a.click('[data-back]'); await a.waitForTimeout(300); await a.click('[data-team]'); await a.waitForSelector('.wordWall');
+  ok('our words for the year, on the team page', /FAITHFUL/.test(await a.$eval('.wordWall', e => e.innerText)));
+  await a.click('[data-back]'); await a.waitForTimeout(200);
+}
+
 /* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

@@ -172,7 +172,7 @@ function cleanUsername_(v) {
 }
 
 /* ---------------- what each person may show ---------------- */
-const SHARE_KEYS = ['type', 'strengths', 'apest', 'streak', 'week', 'teams', 'plan', 'feed', 'focus', 'level'];
+const SHARE_KEYS = ['type', 'strengths', 'apest', 'journey', 'streak', 'week', 'teams', 'plan', 'feed', 'focus', 'level'];
 function shareOf_(u) {
   const s = (u && u.share) || {}; const o = {};
   SHARE_KEYS.forEach(function (k) { o[k] = s[k] !== false; });
@@ -565,13 +565,17 @@ function cardOut_(u, close) {
   const o = { id: u.id, username: u.username, name: minor ? firstName_(u.name) : u.name, hasPhoto: !!u.hasPhoto, minor: minor };
   if (sh.type && u.personality && u.personality.share !== false) { o.type = u.personality.type; o.sex = u.sex || ''; }
   if (sh.strengths && u.gstrengths && u.gstrengths.share !== false) o.strengths = u.gstrengths.top.slice();
-  if (sh.apest && u.apest && u.apest.share !== false) o.apest = u.apest.top.slice(0, 2);   // the two strongest gifts, never the answers or numbers
+  if (sh.apest && u.apest && u.apest.share !== false) o.apest = u.apest.top.slice(0, 2);
+  if (sh.journey) {   // the Life Journey, a little: how far, the word for the year, who I'm becoming (chip ids) — never the answers or the vision
+    const st = storyOf_(u), pl = planOf_(u), known = (st.a.known && Array.isArray(st.a.known.c)) ? st.a.known.c.slice(0, 3) : [];
+    if (st.done.length || pl.word) o.journey = { stops: st.done.length, finished: !!st.finished, word: pl.word || '', becoming: known };
+  }   // the two strongest gifts, never the answers or numbers
   if (sh.streak) { o.streak = st.streak; o.best = st.best; }
   if (sh.week && st.week !== null) o.week = st.week;
   if (sh.teams && close) o.teamCount = (u.teams || []).length;
   if (sh.plan) { const ps = planStats_(u); if (ps.goals || ps.reached) o.plan = ps; }   // counts, never the words
   if (sh.focus && st.focusWeek) o.focusWeek = st.focusWeek;   // minutes, never what they worked on
-  if (sh.level && u.xp) { const lv = levelOf_(u.xp); o.level = { level: lv.level, title: lv.title, icon: lv.icon }; o.xpWeek = (u.xpWeeks || {})[weekOf_(today_())] || 0; }
+  if (sh.level) { const lv = levelOf_(u.xp || 0); o.level = { level: lv.level, title: lv.title, icon: lv.icon }; o.xpWeek = (u.xpWeeks || {})[weekOf_(today_())] || 0; }   // everyone, from day one (a new class's leaderboard)
   o.tests = st.tests;
   if (!minor && u.bio) o.bio = u.bio;
   return o;

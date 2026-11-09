@@ -492,7 +492,11 @@ ok('… once a month', (await H.journey(JN.uid, JN.token, 'wheel', { wheel: six 
 const ju = JSON.parse(globalThis.__gpaStore._m.get('u:' + JN.uid));
 ok('finishing is a feed moment that carries none of their words', ju.posts.some(x => x.kind === 'journey' && x.n === null));
 const jc = await H.person(B.uid, B.token, JN.uid);
-ok('nobody else sees the vision or the journey’s answers', jc.ok && !/child of God|farm|nurse|Drums|story|vision|Brave/.test(JSON.stringify(jc)));
+ok('nobody else sees the vision or the journey’s answers', jc.ok && !/child of God|farm|nurse|Drums|story|vision|"why"/.test(JSON.stringify(jc)));
+ok('… only how far they’ve come and their word for the year (Uriah: “see each other’s journey a bit”)', jc.person.journey && jc.person.journey.word === 'Brave' && jc.person.journey.finished === true && jc.person.journey.stops === 2);
+await H.saveProfile(JN.uid, JN.token, { share: { journey: false } });
+ok('… and nothing of it when that switch is off', !('journey' in (await H.person(B.uid, B.token, JN.uid)).person));
+await H.saveProfile(JN.uid, JN.token, { share: { journey: true } });
 
 /* ---------- 18b. the five gifts (APEST) ---------- */
 const AP = await H.registerPassword({ username: 'abby', name: 'Abby Sok', birthYear: 2002, password: 'abby password', lang: 'en' });

@@ -532,7 +532,9 @@ await a.click('[data-back]');
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'] });
   const d = await ctx.newPage(); d.on('pageerror', x => errors.push('debug: ' + x.message));
-  await d.goto(base + '/?debug'); await d.waitForSelector('#liUser'); await d.tap('#liUser'); await d.waitForTimeout(600);
+  await d.goto(base + '/?debug'); await d.waitForSelector('#liUser');
+  ok('a first visit is in English, with Khmer one tap away', /Sign in/.test(await text(d)) && await d.$eval('#langBtn', b => b.textContent) === 'ខ្មែរ' && await d.evaluate(() => document.documentElement.lang) === 'en');
+  await d.tap('#liUser'); await d.waitForTimeout(600);
   const log = await d.$eval('#dbgBox', e => e.textContent);
   ok('?debug shows a panel of what the phone does: taps, focus, redraws', /touchstart input#liUser/.test(log) && /focusin input#liUser/.test(log) && /redraw/.test(log) && await d.$eval('#dbgBox', e => getComputedStyle(e).pointerEvents) === 'none', log.slice(0, 300));
   await d.goto(base + '/'); await d.waitForSelector('#liUser');
@@ -590,6 +592,20 @@ await a.click('[data-back]');
   await w.evaluate(() => { S.me.stats.best = 7; render(); }); await w.waitForTimeout(300);
   ok('… and a new one pops up once', /New badge/.test(await w.$eval('.badgePop', e => e.innerText)) && (await w.$$('.badge.got')).length >= 1);
   await ctx.close();
+}
+
+/* ---------- 17f. team meetups, and my habit calendar ---------- */
+{
+  await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(400); await a.click('[data-team]'); await a.waitForSelector('#mtNew');
+  await a.click('#mtNew'); await a.fill('#mtTitle', 'Youth night'); await a.fill('#mtPlace', 'The church hall'); await a.click('#mtSave'); await a.waitForTimeout(700);
+  ok('a leader posts a meetup on the team page', /Youth night/.test(await text(a)) && /The church hall/.test(await text(a)) && /1 going/.test(await text(a)));
+  await d.click('nav.bottom button[data-tab="teams"]'); await d.waitForTimeout(300); await d.click('nav.bottom button[data-tab="home"]'); await d.waitForTimeout(800);
+  ok('the team sees it on Home, coming up', /Coming up/.test(await text(d)) && /Youth night/.test(await text(d)));
+  await d.click('[data-rsvp$="|yes"]'); await d.waitForTimeout(900);
+  ok('… and says they’re going', await d.evaluate(() => (S.meets || []).some(m => m.title === 'Youth night' && m.mine === 'yes')));
+  await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('#goHabitCal'); await a.click('#goHabitCal'); await a.waitForSelector('.calGrid');
+  ok('my habit calendar: twelve weeks of days, a ticked day coloured, and each habit over 30 days', (await a.$$('.calGrid .calCell')).length === 84 && (await a.$$('.calGrid .calCell.l1, .calGrid .calCell.l2, .calGrid .calCell.l3, .calGrid .calCell.l4')).length >= 1 && /The last 30 days/.test(await text(a)));
+  await a.click('[data-back]'); await a.waitForTimeout(200);
 }
 
 /* ---------- 18. Khmer ---------- */

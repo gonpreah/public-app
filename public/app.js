@@ -17,6 +17,7 @@
       journey · vision           — the Life Journey (seven stops of questions → a vision); my vision
       atest · agift              — the five gifts test (APEST, apest.js) and its results
       reset · badges             — the Sunday reset (five steps to set up the week); my badges
+      habitcal                   — my habit calendar (12 weeks)
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -35,7 +36,7 @@
 function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
 function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
 function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
-var LANG = lsGet('gpa-lang') === 'en' ? 'en' : 'km';
+var LANG = lsGet('gpa-lang') === 'km' ? 'km' : 'en';   // English first (Uriah, Nov 2026); Khmer when chosen
 var KM = (function(){ var o={}; try { if(typeof BUILTIN_KM==='object') Object.assign(o, BUILTIN_KM); } catch(e){} try { if(typeof APP_KM==='object') Object.keys(APP_KM).forEach(function(k){ if(!o[k]) o[k]=APP_KM[k]; }); } catch(e){} return o; })();   // km.js's (partly reviewed) words win over km-app.js
 function t(s){ return LANG==='km' ? (KM[s] || s) : s; }
 function gpT(s, v){ return String(t(s)).replace(/\{(\w+)\}/g, function(w, n){ return v && Object.prototype.hasOwnProperty.call(v, n) ? String(v[n]) : w; }); }
@@ -86,7 +87,7 @@ function failMsg(d){
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -120,7 +121,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -162,6 +163,7 @@ function render(){
     else if(V==='journey') h=journeyHtml();
     else if(V==='atest') h=atestHtml();
     else if(V==='reset') h=resetHtml();
+    else if(V==='habitcal') h=habitCalHtml();
     else if(V==='badges') h=badgesHtml();
     else if(V==='agift') h=agiftHtml();
     else if(V==='vision') h=visionHtml();
@@ -285,7 +287,7 @@ function bindSignup_(){
     if(!F.birthYear){ showMsg(t('Please choose the year you were born.')); return; }
     if(!S.google){ if((F.password||'').length<8){ showMsg(t('Use at least 8 characters for your password.')); return; } if(F.password!==F.password2){ showMsg(t('The two passwords aren’t the same.')); return; } }
     S.busy=true; render();
-    var info={ username:F.username, name:F.name, birthYear:Number(F.birthYear), code:F.code, lang:LANG };
+    var info={ username:F.username, name:F.name, birthYear:Number(F.birthYear), code:F.code, lang:LANG, langChosen:LANG==='km' };
     if(!S.google) info.password=F.password;
     (S.google ? api('register',[S.google, info]) : api('registerPassword',[info])).then(function(d){
       S.busy=false;
@@ -332,7 +334,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=whyLineHtml()+resetCardHtml_()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  h+=whyLineHtml()+resetCardHtml_()+meetupsHomeHtml_()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
   if(!me.personality || !me.gstrengths || !me.apest){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -365,7 +367,7 @@ function habitsCardHtml(){
   });
   var fz=(me.stats||{}).freezes||0;
   h+='</div><div class="pmeta frzHint">🧊 '+esc(fz ? gpT('{n} streak freezes — if you miss a day, one saves your streak.',{n:fz}) : t('Every 7 days in a row earns a streak freeze, to save your streak on a day you miss.'))+'</div>';
-  return h+'<button class="linkbtn" id="habitPick">'+esc(t('Change my habits'))+'</button></div>';
+  return h+'<div class="btnRow" style="margin-top:6px"><button class="linkbtn inline" id="goHabitCal">📅 '+esc(t('My habit calendar'))+'</button><button class="linkbtn inline" id="habitPick">'+esc(t('Change my habits'))+'</button></div></div>';
 }
 function weekCardHtml(){
   var wk=mondayOf(todayStr()), goals=((S.me.weeks||{})[wk]||[]).slice();
@@ -437,6 +439,7 @@ function teamHtml(){
   }
   if(T.leader) h+='<button class="btn ghost" id="goPulse" style="margin-bottom:12px">📊 '+esc(t('Team pulse: who’s active, who’s gone quiet'))+'</button>';
   h+=leaderboardHtml_(T);
+  h+=meetupsHtml(T);
   h+=challengesHtml(T);
   h+=teamTasksHtml(T);
   h+=teamMixHtml(T.people);
@@ -551,7 +554,7 @@ function meHtml(){
   h+='<h3>🙂 '+esc(t('Profile'))+'</h3><div class="card">'+
     '<label class="f" for="pfName">'+esc(t('Your name'))+'</label><input type="text" id="pfName" maxlength="60" value="'+esc(me.name)+'">'+
     (!me.minor?'<label class="f" for="pfBio">'+esc(t('A line about you'))+'</label><input type="text" id="pfBio" maxlength="160" value="'+esc(me.bio||'')+'">':'')+
-    '<label class="f">'+esc(t('Language'))+'</label><div class="seg"><button data-lang="km" class="'+(LANG==='km'?'on':'')+'">ខ្មែរ</button><button data-lang="en" class="'+(LANG==='en'?'on':'')+'">English</button></div>'+
+    '<label class="f">'+esc(t('Language'))+'</label><div class="seg"><button data-lang="en" class="'+(LANG==='en'?'on':'')+'">English</button><button data-lang="km" class="'+(LANG==='km'?'on':'')+'">ខ្មែរ</button></div>'+
     '<label class="f">'+esc(t('Appearance'))+'</label><div class="seg">'+[['auto','Auto'],['light','Light'],['dark','Dark']].map(function(x){ var cur=lsGet('gpa-theme')||'auto'; return '<button data-theme="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
     '<button class="btn" id="pfSave">'+esc(t('Save'))+'</button></div>'+
     passwordCardHtml_()+
@@ -1098,7 +1101,8 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_();
+  on('goHabitCal', function(){ go('habitcal'); });
   on('goBadges', function(){ go('badges'); });
 
   /* today's devotional */
@@ -1322,7 +1326,7 @@ function drawFind_(){ var l=$('findList'); if(!l) return; var F=S.find;
   l.innerHTML = F.people===null ? '<p class="sub" style="margin:0">'+esc(t('Type at least two letters.'))+'</p>' : !F.people.length ? '<p class="sub" style="margin:0">'+esc(t('Nobody found.'))+'</p>' : F.people.map(function(p){ return personRowHtml(p); }).join('');
   l.querySelectorAll('[data-person]').forEach(function(b){ b.onclick=function(){ openPerson_(b.getAttribute('data-person')); }; }); }
 function keepNt_(){ var n=$('ntName'); if(n && S.newTeam) S.newTeam.name=n.value; }
-function setLang_(l){ LANG=l==='en'?'en':'km'; lsSet('gpa-lang', LANG); render(); if(AUTH && S.me) call('saveProfile', { lang:LANG }); }
+function setLang_(l){ LANG=l==='km'?'km':'en'; lsSet('gpa-lang', LANG); render(); if(AUTH && S.me) call('saveProfile', { lang:LANG }); }
 function openTeam_(id, keep){ if(!keep) S.back.push(S.view); S.team=null; S.view='team'; render(); window.scrollTo(0,0);
   call('team', id).then(function(d){ if(d && d.ok){ S.team=d.team; render(); } else { failMsg(d); goBack('teams'); } }); }
 function openPerson_(id){ S.back.push(S.view); S.person=null; S.view='person'; render(); window.scrollTo(0,0);
@@ -1572,6 +1576,68 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- team meetups (api.js "team meetups") ----------------
+   Leaders post when and where the team meets; everyone answers going / maybe / can't. */
+function meetWhen_(m){ var d=todayStr(), day=m.date===d ? t('Today') : m.date===addDays(d,1) ? t('Tomorrow') : t(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(m.date+'T00:00:00Z').getUTCDay()])+' '+dayLabel(m.date); return day+(m.time?' · '+m.time:''); }
+function meetRowHtml_(m, tid, withTeam){
+  var ans=[['yes','✅',t('Going')],['maybe','🤔',t('Maybe')],['no','✖️',t('Can’t')]];
+  return '<div class="meetRow"><div class="meetDate"><b>'+esc(String(Number(m.date.slice(8,10))))+'</b><span>'+esc(t(MONTHS[Number(m.date.slice(5,7))-1]))+'</span></div><div style="flex:1;min-width:0">'+
+    '<b>'+esc(m.title)+'</b><div class="pmeta">🕒 '+esc(meetWhen_(m))+(m.place?' · 📍 '+esc(m.place):'')+'</div>'+
+    (withTeam?'<div class="pmeta">'+esc(m.emoji+' '+m.teamName)+'</div>':'')+
+    '<div class="pmeta">'+esc(gpT('{n} going',{n:m.going}))+(m.maybe?' · '+esc(gpT('{n} maybe',{n:m.maybe})):'')+(m.who && m.who.length?' — '+esc(m.who.map(firstName_).join(', ')):'')+'</div>'+
+    '<div class="rsvpRow">'+ans.map(function(a){ return '<button class="rsvpB'+(m.mine===a[0]?' on':'')+'" data-rsvp="'+esc(tid)+'|'+esc(m.id)+'|'+a[0]+'">'+a[1]+' '+esc(a[2])+'</button>'; }).join('')+
+    (m.lead && !withTeam?'<button class="xBtn" data-mtdrop="'+esc(m.id)+'" aria-label="'+esc(t('Delete'))+'">×</button>':'')+'</div></div></div>';
+}
+function meetupsHtml(T){
+  var list=T.meets||[], lead=T.leader;
+  if(!list.length && !lead) return '';
+  var h='<h3>📅 '+esc(t('Meetups'))+'</h3><div class="card">';
+  if(!list.length) h+='<p class="sub" style="margin:0 0 6px">'+esc(t('When does your team meet next? Post it here — everyone sees it and can say if they’re coming.'))+'</p>';
+  list.forEach(function(m){ h+=meetRowHtml_(m, T.id, false); });
+  if(lead){ var N=S.mtNew;
+    if(!N) h+='<button class="btn ghost small" id="mtNew" style="margin-top:8px">＋ '+esc(t('Post a meetup'))+'</button>';
+    else h+='<div class="mtForm"><label class="f" for="mtTitle">'+esc(t('What'))+'</label><input type="text" id="mtTitle" maxlength="80" placeholder="'+esc(t('e.g. Youth night, Bible study, football'))+'" value="'+esc(N.title)+'">'+
+      '<div class="mtTwo"><div><label class="f" for="mtDate">'+esc(t('Day'))+'</label><input type="date" id="mtDate" min="'+todayStr()+'" value="'+esc(N.date)+'"></div><div><label class="f" for="mtTime">'+esc(t('Time'))+'</label><input type="time" id="mtTime" value="'+esc(N.time)+'"></div></div>'+
+      '<label class="f" for="mtPlace">'+esc(t('Where'))+'</label><input type="text" id="mtPlace" maxlength="80" placeholder="'+esc(t('e.g. The church hall'))+'" value="'+esc(N.place)+'">'+
+      '<div class="pmeta" style="margin:6px 0">'+esc(t('Everyone in the team gets a short alert with the team’s name.'))+'</div>'+
+      '<div class="btnRow"><button class="btn small" id="mtSave">'+esc(t('Post'))+'</button><button class="btn small ghost" id="mtCancel">'+esc(t('Cancel'))+'</button></div></div>';
+  }
+  return h+'</div>';
+}
+function meetupsHomeHtml_(){
+  var list=(S.meets||[]).filter(function(m){ return m.date<=addDays(todayStr(),7); }).slice(0,3);
+  if(!list.length) return '';
+  return '<h3>📅 '+esc(t('Coming up'))+'</h3><div class="card">'+list.map(function(m){ return meetRowHtml_(m, m.team, true); }).join('')+'</div>';
+}
+function keepMt_(){ var N=S.mtNew; if(!N || !$('mtTitle')) return; N.title=$('mtTitle').value; N.date=$('mtDate').value; N.time=$('mtTime').value; N.place=$('mtPlace').value; }
+function bindMeetups_(){
+  on('mtNew', function(){ S.mtNew={ title:'', date:addDays(todayStr(),1), time:'18:00', place:'' }; render(); });
+  on('mtCancel', function(){ S.mtNew=null; render(); });
+  on('mtSave', busyOnce_(function(){ keepMt_(); var N=S.mtNew; if(!N.title.trim()){ showMsg(t('What is the meetup?')); return; } if(!N.date){ showMsg(t('Choose a day.')); return; }
+    return call('meetup', S.team.id, 'add', N).then(function(d){ if(d && d.ok){ S.team=d.team; S.mtNew=null; showMsg(t('Posted. Your team will see it.')); render(); refresh_(); } else failMsg(d); }); }));
+  all('[data-rsvp]', function(b){ var p=b.getAttribute('data-rsvp').split('|'), was=b.classList.contains('on'); gpTap();
+    call('meetup', p[0], 'rsvp', { id:p[1], answer:was?'':p[2] }).then(function(d){ if(d && d.ok){ if(S.team && S.team.id===p[0]) S.team=d.team; refresh_().then(function(){ render(); }); } else failMsg(d); }); });
+  all('[data-mtdrop]', busyOnce_(function(b){ if(!confirm(t('Cancel this meetup?'))) return; return call('meetup', S.team.id, 'drop', { id:b.getAttribute('data-mtdrop') }).then(function(d){ if(d && d.ok){ S.team=d.team; render(); refresh_(); } else failMsg(d); }); }));
+}
+
+/* ---------------- my habit calendar ----------------
+   The last 12 weeks of habits, a square a day (darker = more of my habits done that day), and how
+   many days each habit was done in the last 30. All from what the phone already has. */
+function habitCalHtml(){
+  var me=S.me, list=me.habits||[], d=todayStr(), start=addDays(mondayOf(d), -7*11), days=me.days||{}, h=backBtn(t('Home'));
+  h+='<h2>📅 '+esc(t('My habit calendar'))+'</h2><p class="sub">'+esc(t('Twelve weeks of small steps. Every coloured square is a day you showed up.'))+' 🔒 '+esc(t('Only you see this.'))+'</p>';
+  if(!list.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('Pick a few habits on Home first.'))+'</p></div>';
+  var st=me.stats||{}, total=0, cells='';
+  for(var c=0;c<12;c++){ cells+='<div class="calCol">'; for(var r=0;r<7;r++){ var x=addDays(start, c*7+r), m=days[x]||{}, n=list.filter(function(hb){ return m[hb.id]; }).length, lv=x>d ? -1 : n ? Math.min(4, Math.ceil(n/list.length*4)) : 0; if(n) total++;
+    cells+='<span class="calCell l'+(lv<0?'x':lv)+(x===d?' today':'')+'" title="'+esc(x)+'"></span>'; } cells+='</div>'; }
+  h+='<div class="card"><div class="calWrap"><div class="calDays">'+['Mon','','Wed','','Fri','','Sun'].map(function(x){ return '<span>'+esc(x?t(x):'')+'</span>'; }).join('')+'</div><div class="calGrid">'+cells+'</div></div>'+
+    '<div class="calKey"><span>'+esc(t('Less'))+'</span><span class="calCell l0"></span><span class="calCell l1"></span><span class="calCell l2"></span><span class="calCell l3"></span><span class="calCell l4"></span><span>'+esc(t('More'))+'</span></div>'+
+    '<div class="statTiles recapTiles" style="margin-top:12px"><div><b>'+(st.streak||0)+'</b><span>🔥 '+esc(t('day streak'))+'</span></div><div><b>'+(st.best||0)+'</b><span>🏆 '+esc(t('best streak'))+'</span></div><div><b>'+total+'</b><span>✅ '+esc(t('days in 12 weeks'))+'</span></div></div></div>';
+  h+='<h3>'+esc(t('The last 30 days'))+'</h3><div class="card">'+list.map(function(hb){ var meta=habitMeta(hb), n=0; for(var i=0;i<30;i++){ if((days[addDays(d,-i)]||{})[hb.id]) n++; }
+    return '<div class="apBar"><span class="apBarL">'+esc(meta.icon)+' '+esc(meta.label)+'</span><span class="wheelTrack"><i style="width:'+Math.round(n/30*100)+'%"></i></span><b>'+n+'</b></div>'; }).join('')+'</div>';
+  return h;
 }
 
 /* ---------------- the Sunday reset (api.js weekReset) ----------------

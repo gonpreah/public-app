@@ -1035,3 +1035,25 @@ input, textarea, select { -webkit-user-select:text; user-select:text; }
 .badgePop span { font-size:36px; } .badgePop .pmeta { color:#FFB323; margin:0; }
 
 body.still .jrQ, body.still .jrIntro, body.still .jrDone, body.still .jrReveal, body.still .jrBig { animation:none; }
+
+/* ---------- team meetups, the habit calendar ---------- */
+.meetRow { display:flex; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
+.meetRow:first-child { border-top:0; padding-top:2px; }
+.meetDate { flex:none; width:46px; height:52px; border-radius:12px; background:var(--accentSoft); color:var(--accent); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.meetDate b { font-size:20px; } .meetDate span { font-size:11px; font-weight:700; text-transform:uppercase; }
+.rsvpRow { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+.rsvpB { border:1.5px solid var(--border2); background:var(--surface); color:var(--ink); border-radius:999px; padding:6px 11px; font:inherit; font-size:13px; cursor:pointer; touch-action:manipulation; }
+.rsvpB.on { background:var(--accent); border-color:var(--accent); color:var(--accentInk); font-weight:700; }
+.mtForm { margin-top:10px; border-top:1px dashed var(--border2); padding-top:6px; }
+.mtTwo { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.calWrap { display:flex; gap:6px; }
+.calDays { display:grid; grid-template-rows:repeat(7, 1fr); gap:4px; font-size:10px; color:var(--muted); }
+.calDays span { height:18px; line-height:18px; }
+.calGrid { display:grid; grid-template-columns:repeat(12, 1fr); gap:4px; flex:1; }
+.calCol { display:grid; grid-template-rows:repeat(7, 1fr); gap:4px; }
+.calCell { display:block; height:18px; border-radius:4px; background:var(--line); }
+.calCell.l1 { background:#B8E6C9; } .calCell.l2 { background:#6FCB91; } .calCell.l3 { background:#2BB673; } .calCell.l4 { background:var(--good); }
+.calCell.lx { background:transparent; } .calCell.today { outline:2px solid var(--accent); outline-offset:1px; }
+.calKey { display:flex; align-items:center; justify-content:flex-end; gap:4px; font-size:11px; color:var(--muted); margin-top:8px; }
+.calKey .calCell { width:14px; height:14px; }
+.linkbtn.inline { width:auto; margin:0; }

@@ -1009,5 +1009,27 @@ var APP_KM = {
   "Better together": "ល្អជាងពេលនៅជាមួយគ្នា",
   "3 friends": "មិត្តភក្តិ ៣ នាក់",
   "Level 10": "កម្រិត ១០",
-  "Reach level 10": "ឡើងដល់កម្រិត ១០"
+  "Reach level 10": "ឡើងដល់កម្រិត ១០",
+  /* team meetups, the habit calendar */
+  "My habit calendar": "ប្រតិទិនទម្លាប់របស់ខ្ញុំ",
+  "Going": "នឹងទៅ",
+  "Maybe": "ប្រហែល",
+  "{n} going": "{n} នាក់នឹងទៅ",
+  "{n} maybe": "{n} នាក់ប្រហែល",
+  "Meetups": "ការជួបជុំ",
+  "When does your team meet next? Post it here — everyone sees it and can say if they’re coming.": "តើក្រុមរបស់អ្នកនឹងជួបជុំគ្នាពេលណាបន្ទាប់? ដាក់វានៅទីនេះ — មនុស្សគ្រប់គ្នាឃើញ ហើយអាចប្រាប់ថាពួកគេនឹងមកឬអត់។",
+  "Post a meetup": "ដាក់ការជួបជុំមួយ",
+  "e.g. Youth night, Bible study, football": "ឧ. រាត្រីយុវជន ការសិក្សាព្រះគម្ពីរ បាល់ទាត់",
+  "e.g. The church hall": "ឧ. សាលក្រុមជំនុំ",
+  "Everyone in the team gets a short alert with the team’s name.": "មនុស្សគ្រប់គ្នាក្នុងក្រុមនឹងទទួលបានការជូនដំណឹងខ្លីមួយ ដែលមានឈ្មោះក្រុម។",
+  "Post": "ដាក់",
+  "What is the meetup?": "តើការជួបជុំនេះជាអ្វី?",
+  "Choose a day.": "សូមជ្រើសរើសថ្ងៃ។",
+  "Posted. Your team will see it.": "បានដាក់ហើយ។ ក្រុមរបស់អ្នកនឹងឃើញវា។",
+  "Cancel this meetup?": "បោះបង់ការជួបជុំនេះ?",
+  "Twelve weeks of small steps. Every coloured square is a day you showed up.": "ដប់ពីរសប្តាហ៍នៃជំហានតូចៗ។ ការ៉េនីមួយៗដែលមានពណ៌ គឺជាថ្ងៃដែលអ្នកបានធ្វើ។",
+  "Pick a few habits on Home first.": "សូមជ្រើសរើសទម្លាប់ពីរបីនៅលើទំព័រដើមជាមុនសិន។",
+  "Less": "តិច",
+  "days in 12 weeks": "ថ្ងៃក្នុង ១២ សប្តាហ៍",
+  "The last 30 days": "៣០ ថ្ងៃចុងក្រោយ"
 };

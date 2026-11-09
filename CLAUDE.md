@@ -4,7 +4,7 @@ For Cambodian (and some Western) youth, mostly 18–25 but some younger, in semi
 school clubs, YWAM bases, churches and youth groups: find out how God made you
 (personality type, GP Strengths), build a life plan, keep on track with habits and
 goals, and do it together in teams that can see each other's progress — never the
-details. Khmer first, English second. Uriah asked for it, Nov 2026.
+details. English first, Khmer one tap away (Uriah, Nov 2026: "make it English first"). Uriah asked for it, Nov 2026.
 
 It is a separate app from the YWAM GP Impact app (`gonpreah/YWAM-gp-impact`, the
 staff app at impact.gonpreah.org): its own repo, Netlify site, Blobs store ("gpa")
@@ -78,7 +78,9 @@ Held by tests/test-api.mjs against the real handlers.
   moments, nor can 👏, coach or invite; a leader still sees every member of their own team.
 
 ## Khmer
-`km.js` (copied from Impact: REVIEWED_KM read by native speakers, PENDING_KM not) wins;
+**English is the default** (Nov 2026): the app is English unless Khmer is chosen — on the phone
+(`gpa-lang` = 'km') or on the account (`u.lang` 'km' with `u.langChosen`; accounts saved as 'km'
+by default before then read as English until Khmer is picked). `km.js` (copied from Impact: REVIEWED_KM read by native speakers, PENDING_KM not) wins;
 `km-app.js` adds this app's own words — **all drafts by Claude, unreviewed**. Every `t()`
 string must have Khmer; check before shipping a new screen. Have a native speaker review
 km-app.js, the privacy promises first.
@@ -164,6 +166,16 @@ devotionals, a reading plan, answered prayers, check-ins, a team, friends, level
 stored or shared; a new one pops up once (`badgeWatch_`, the phone remembers `gpa-badges`). **The
 walkthrough** offers the Life Journey for finding my why; it opens right after. Screens that slide
 in slide only when the question changes (`body.still`), not on every redraw.
+
+## Team meetups and my habit calendar
+**Meetups** (team page; `meetup` handler, `t.meets`): a leader posts what, which day (today to
+180 days out), what time and where; every member sees it and answers going / maybe / can't
+(`rsvp`); members see the counts, leaders also see who's going. A new one alerts the members (the
+team's name only, `meetup`), and the daily reminder says "{team} meets today" (`meetupToday`).
+Home → "Coming up": the next 7 days across my teams (boot's `meets`, two weeks, not ones I can't
+make). Up to 10 per team, kept until the day after. **My habit calendar** (Home → habits → view
+`habitcal`): twelve weeks of days, darker for more habits done, and each habit over the last 30
+days — from the phone's own data, private.
 
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan

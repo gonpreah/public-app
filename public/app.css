@@ -1101,3 +1101,7 @@ html.textXL #main { zoom:1.25; }
 .gmTx b { font-size:15.5px; }
 .gmShine { border-top:1px dashed var(--border2); padding:10px 0 6px; font-size:13.5px; color:var(--muted); }
 .gmShine b { color:var(--ink); }
+
+/* ---------- StrengthsFinder Top 5 ---------- */
+.cfPicked .sChips { margin-top:6px; }
+.cfChip.on { color:#fff; font-weight:700; }

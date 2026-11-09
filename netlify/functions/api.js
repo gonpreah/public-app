@@ -552,7 +552,7 @@ function selfOut_(u) {
   return {
     id: u.id, username: u.username, name: u.name, birthYear: u.birthYear, minor: isMinor_(u),
     lang: u.langChosen && u.lang === 'km' ? 'km' : 'en', sex: u.sex || '', bio: u.bio || '', share: shareOf_(u),
-    personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null,
+    personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null, clifton: u.clifton || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
@@ -565,6 +565,7 @@ function cardOut_(u, close) {
   const o = { id: u.id, username: u.username, name: minor ? firstName_(u.name) : u.name, hasPhoto: !!u.hasPhoto, minor: minor };
   if (sh.type && u.personality && u.personality.share !== false) { o.type = u.personality.type; o.sex = u.sex || ''; }
   if (sh.strengths && u.gstrengths && u.gstrengths.share !== false) o.strengths = u.gstrengths.top.slice();
+  if (sh.strengths && u.clifton) o.clifton = u.clifton.top.slice();
   if (sh.apest && u.apest && u.apest.share !== false) o.apest = u.apest.top.slice(0, 2);
   if (sh.journey) {   // the Life Journey, a little: how far, the word for the year, who I'm becoming (chip ids) — never the answers or the vision
     const st = storyOf_(u), pl = planOf_(u), known = (st.a.known && Array.isArray(st.a.known.c)) ? st.a.known.c.slice(0, 3) : [];
@@ -841,6 +842,26 @@ async function saveApest(uid, tok, p) {
     return { ok: true };
   });
   if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+/* ---------------- StrengthsFinder results someone already has ----------------
+   (Uriah, Nov 2026: "let me manually put in my strength finders if I have them".) The Top 5 a
+   person got from Gallup's CliftonStrengths, typed in by them: only the five theme names, in
+   order — the app carries no Gallup text. u.clifton = { top: [5 names], at }. Others see it with
+   the strengths, behind share.strengths. */
+const CLIFTON = ['Achiever', 'Arranger', 'Belief', 'Consistency', 'Deliberative', 'Discipline', 'Focus', 'Responsibility', 'Restorative',
+  'Activator', 'Command', 'Communication', 'Competition', 'Maximizer', 'Self-Assurance', 'Significance', 'Woo',
+  'Adaptability', 'Connectedness', 'Developer', 'Empathy', 'Harmony', 'Includer', 'Individualization', 'Positivity', 'Relator',
+  'Analytical', 'Context', 'Futuristic', 'Ideation', 'Input', 'Intellection', 'Learner', 'Strategic'];
+async function saveClifton(uid, tok, p) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  p = p && typeof p === 'object' ? p : {};
+  let top = null;
+  if (!p.clear) {
+    top = Array.isArray(p.top) ? p.top.filter(function (x, i, a) { return CLIFTON.indexOf(x) > -1 && a.indexOf(x) === i; }) : [];
+    if (top.length !== 5) return { ok: false, err: 'top' };
+  }
+  await mutate_('u:' + uid, null, function (u) { if (u) { if (top) u.clifton = { top: top, at: today_() }; else delete u.clifton; } return { ok: true }; });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 async function saveStrengths(uid, tok, p) {
@@ -2251,7 +2272,7 @@ async function signOut(uid, tok) {
 
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
-  savePersonality, saveStrengths, saveApest, saveHabits, tickHabit, saveWeek,
+  savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,

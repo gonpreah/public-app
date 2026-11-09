@@ -682,6 +682,19 @@ await a.click('[data-back]');
   await a.click('[data-back]'); await a.waitForTimeout(200);
 }
 
+/* ---------- 17j. my StrengthsFinder Top 5, typed in ---------- */
+{
+  await a.click('nav.bottom button[data-tab="me"]'); await a.waitForSelector('#goClifton'); await a.click('#goClifton'); await a.waitForSelector('[data-cf]');
+  for (const n of ['Relator', 'Learner', 'Strategic', 'Achiever', 'Empathy']) await a.click(`[data-cf="${n}"]`);
+  ok('StrengthsFinder: tap five themes in order', /5 of 5 chosen/.test(await text(a)) && await a.$eval('#cfSave', b => !b.disabled));
+  await a.click('[data-cf="Woo"]'); await a.waitForTimeout(200);
+  ok('… a sixth is refused', /Five is the most/.test(await a.$eval('#msg', e => e.textContent)));
+  await a.click('#cfSave'); await a.waitForTimeout(800);
+  ok('… saved, and shown on Me', /Relator/.test(await a.$eval('#goClifton', e => e.innerText)) && await a.evaluate(() => S.me.clifton.top[0] === 'Relator'));
+  await a.click('nav.bottom button[data-tab="home"]'); await a.waitForTimeout(400);
+  ok('… and on Home, with the other results', /My StrengthsFinder Top 5/.test(await text(a)) && /Empathy/.test(await text(a)));
+}
+
 /* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

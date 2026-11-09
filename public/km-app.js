@@ -1137,5 +1137,24 @@ var APP_KM = {
   "My Life Journey: how far, my word, who I’m becoming (never my answers)": "ដំណើរជីវិតរបស់ខ្ញុំ៖ ទៅដល់ណា ពាក្យរបស់ខ្ញុំ និងមនុស្សដែលខ្ញុំកំពុងក្លាយជា (មិនដែលបង្ហាញចម្លើយរបស់ខ្ញុំទេ)",
   /* Home: how God made you */
   "Your gifts": "អំណោយទានរបស់អ្នក",
-  "May shine in": "អាចភ្លឺចែងចាំងក្នុង"
+  "May shine in": "អាចភ្លឺចែងចាំងក្នុង",
+  /* StrengthsFinder Top 5 */
+  "CliftonStrengths® and StrengthsFinder® are Gallup’s. GonPreah only keeps the five theme names you enter.": "CliftonStrengths® និង StrengthsFinder® ជារបស់ Gallup។ កូនព្រះរក្សាទុកតែឈ្មោះប្រធានបទទាំងប្រាំដែលអ្នកបញ្ចូលប៉ុណ្ណោះ។",
+  "My StrengthsFinder Top 5": "StrengthsFinder Top 5 របស់ខ្ញុំ",
+  "Already took StrengthsFinder (CliftonStrengths)? Tap your five themes in order — your #1 first.": "ធ្លាប់ធ្វើ StrengthsFinder (CliftonStrengths) ហើយឬនៅ? ចុចប្រធានបទទាំងប្រាំរបស់អ្នកតាមលំដាប់ — លេខ ១ មុនគេ។",
+  "{n} of 5 chosen": "បានជ្រើសរើស {n} ក្នុងចំណោម ៥",
+  "Nothing yet — tap a theme below.": "មិនទាន់មានទេ — ចុចប្រធានបទមួយខាងក្រោម។",
+  "Save my Top 5": "រក្សាទុក Top 5 របស់ខ្ញុំ",
+  "Remove my StrengthsFinder results": "លុបលទ្ធផល StrengthsFinder របស់ខ្ញុំ",
+  "Already took StrengthsFinder?": "ធ្លាប់ធ្វើ StrengthsFinder ហើយឬនៅ?",
+  "Add your CliftonStrengths Top 5": "បញ្ចូល CliftonStrengths Top 5 របស់អ្នក",
+  "tap to change": "ចុចដើម្បីកែ",
+  "Five is the most — tap one to take it off.": "ប្រាំគឺច្រើនបំផុត — ចុចមួយដើម្បីដកវាចេញ។",
+  "Saved. Your Top 5 is on Home and Me.": "បានរក្សាទុក។ Top 5 របស់អ្នកនៅលើទំព័រដើម និងទំព័រខ្ញុំ។",
+  "Remove your StrengthsFinder results?": "លុបលទ្ធផល StrengthsFinder របស់អ្នក?",
+  "StrengthsFinder Top 5": "StrengthsFinder Top 5",
+  "Executing": "ការអនុវត្ត",
+  "Influencing": "ការជះឥទ្ធិពល",
+  "Relationship Building": "ការកសាងទំនាក់ទំនង",
+  "Strategic Thinking": "ការគិតជាយុទ្ធសាស្ត្រ"
 };

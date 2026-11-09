@@ -1,3 +1,4 @@
+import require_fs from 'node:fs';
 /* The app end to end in a phone-sized browser: sign up with a team code, habits,
    the week's goals, a team and its people, an under-18 kept out of the search,
    the personality test, Khmer, and no page errors. */
@@ -633,6 +634,18 @@ await a.click('[data-back]');
   await a.click('#focusStop'); await a.waitForTimeout(300);
   ok('… and quiet when the focus stops', await a.evaluate(() => FS.kind === ''));
   await a.evaluate(() => { S.focusDone = null; lsDel('gpa-focus'); S.view = 'home'; render(); });
+}
+
+/* ---------- 17h. text size, my data ---------- */
+{
+  await a.click('nav.bottom button[data-tab="me"]'); await a.waitForSelector('[data-tsize="xl"]');
+  const w0 = await a.$eval('#main h3', e => e.getBoundingClientRect().height);
+  await a.click('[data-tsize="xl"]'); await a.waitForTimeout(200);
+  ok('text size: Larger makes the screen bigger, and stays', await a.evaluate(() => document.documentElement.classList.contains('textXL') && localStorage.getItem('gpa-text') === 'xl') && (await a.$eval('#main h3', e => e.getBoundingClientRect().height)) > w0 && await a.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await a.click('[data-tsize=""]'); await a.waitForTimeout(200);
+  const [dl] = await Promise.all([a.waitForEvent('download'), a.click('#dlData')]);
+  const file = JSON.parse(require_fs.readFileSync(await dl.path(), 'utf8'));
+  ok('download my data: my account and my journal, in one file', file.app === 'GonPreah' && file.me.username === 'sokha' && file.journal.some(j => /answered my prayer/.test(j.text)));
 }
 
 /* ---------- 18. Khmer ---------- */

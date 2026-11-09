@@ -187,6 +187,15 @@ question to start from (`JOURNAL_PROMPTS`, by day; 🎲 for another), `u.journal
 focus pauses or ends. **Customize Home** (Me → view `homecfg`): order and hide Home's parts
 (`HOME_PARTS`, kept on the phone as `gpa-home`; Today's 3 always stays).
 
+## Streak saver, friends this week, text size, my data
+**Streak saver** (Me → Reminders, on unless switched off; `saver` pref): at 21:00 Phnom Penh, for
+people whose own reminder hour is another time, habits not ticked today and a streak of 2+ →
+"Your {n}-day streak ends at midnight" (`saverItems_`). **Friends this week** (view `friends`): XP
+this week for me (`selfOut_` xpWeek) and friends who show their level — numbers only.
+**Text size** (Me → Profile): Normal / Large / Larger, the screen's content zoomed (`gpa-text`,
+`html.textL/.textXL #main`). **Download my data** (Me): one JSON file made on the phone — my
+account as I see it, my teams, my friends' names, and every journal page.
+
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan
 (the mentee lets the coach see their life plan), meetings (a check-in 1–5 on the six areas,

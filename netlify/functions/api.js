@@ -556,7 +556,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort()
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -1864,6 +1864,7 @@ const PUSH_TEXT = {
   planDay: { en: 'Good morning ☀️ What are your 3 things for today?', km: 'អរុណសួស្តី ☀️ តើរឿងទាំង ៣ របស់អ្នកសម្រាប់ថ្ងៃនេះជាអ្វី?' },
   meetup: { en: '📅 {team} has a new meetup — are you coming?', km: '📅 {team} មានការជួបជុំថ្មី — តើអ្នកនឹងមកទេ?' },
   meetupToday: { en: '📅 {team} meets today {time}', km: '📅 {team} ជួបជុំគ្នាថ្ងៃនេះ {time}' },
+  saver: { en: '🔥 Your {n}-day streak ends at midnight — tick one habit to keep it going!', km: '🔥 ការធ្វើជាប់ៗគ្នា {n} ថ្ងៃរបស់អ្នកនឹងបញ្ចប់នៅពាក់កណ្តាលអធ្រាត្រ — គូសទម្លាប់មួយដើម្បីរក្សាវា!' },
   reset: { en: 'Sunday reset: 5 minutes to set up your week 🔄', km: 'កំណត់សប្តាហ៍ឡើងវិញនៅថ្ងៃអាទិត្យ៖ ៥ នាទីដើម្បីរៀបចំសប្តាហ៍របស់អ្នក 🔄' },
   vision: { en: 'It’s Sunday: read your vision again 📜', km: 'ថ្ងៃនេះជាថ្ងៃអាទិត្យ៖ អានចក្ខុវិស័យរបស់អ្នកម្តងទៀត 📜' },
   reading: { en: 'Today’s Bible reading is waiting 📖', km: 'ការអានព្រះគម្ពីរថ្ងៃនេះកំពុងរង់ចាំ 📖' },
@@ -1933,7 +1934,8 @@ async function pushSend_(sub, message, keys) {
     return res.ok ? 'sent' : 'failed';
   } catch (e) { return 'failed'; }
 }
-const PUSH_PREF_KEYS = ['habits', 'plan', 'team', 'coach', 'alerts'];
+const PUSH_PREF_KEYS = ['habits', 'plan', 'team', 'coach', 'alerts', 'saver'];
+const SAVER_HOUR = 21, SAVER_MIN_STREAK = 2;
 function pushPrefsOf_(u) {
   const p = (u && u.pushPrefs) || {}, h = Number(p.hour), o = { hour: h >= PUSH_HOURS_MIN && h <= PUSH_HOURS_MAX ? Math.round(h) : PUSH_DEFAULT_HOUR };
   PUSH_PREF_KEYS.forEach(function (k) { o[k] = p[k] !== false; });
@@ -2057,6 +2059,15 @@ async function reminderItems_(u, ctx) {
 }
 /* Every hour (netlify/functions/reminders.js): everyone whose hour it is gets one notification
    with whatever applies to them. Nothing to say → nothing sent. `now` is for tests. */
+/* The streak saver (9 pm, on unless switched off): habits not ticked today, and a streak of 2+
+   that ends at midnight. Not for someone whose own reminder hour is 9 pm — that one says it. */
+function saverItems_(u, ctx) {
+  if (!(u.habits || []).length) return [];
+  const m = (u.days || {})[ctx.today];
+  if (m && Object.keys(m).some(function (k) { return m[k]; })) return [];
+  const st = streakOf_(u.days || {}, u.frozen);
+  return st >= SAVER_MIN_STREAK ? [{ key: 'saver', params: { n: st } }] : [];
+}
 async function runReminders(now) {
   return scope.run(new Map(), async function () {
     const at = now || new Date();
@@ -2074,8 +2085,12 @@ async function runReminders(now) {
     let sent = 0, people = 0; const gone = [];
     for (const uid of Object.keys(byUid)) {
       const u = await readJSON('u:' + uid, null);
-      if (gone_(u) || pushPrefsOf_(u).hour !== hour) continue;
-      const items = await reminderItems_(u, ctx);
+      if (gone_(u)) continue;
+      const P = pushPrefsOf_(u);
+      let items;
+      if (P.hour === hour) items = await reminderItems_(u, ctx);
+      else if (hour === SAVER_HOUR && P.saver && P.habits) items = saverItems_(u, ctx);   // the streak saver: 9 pm, only if a streak is about to end
+      else continue;
       if (!items.length) continue;
       people++;
       for (const sub of byUid[uid]) {
@@ -2159,6 +2174,7 @@ async function friendsList(uid, tok) {
     const o = personBrief_(u), sh = shareOf_(u);
     o.since = f.since; o.nudged = (me.nudged || {})[u.id] === t;
     if (sh.streak) { o.streak = streakOf_(u.days || {}, u.frozen); o.doneToday = habitDone_(u, t); o.together = togetherStreak_(me, u); }
+    if (sh.level) o.xpWeek = (u.xpWeeks || {})[weekOf_(t)] || 0;   // friends this week: XP numbers only
     friends.push(o);
   }
   for (const x of (me.friendAsks || [])) {

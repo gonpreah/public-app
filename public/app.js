@@ -127,6 +127,18 @@ function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); w
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
 
+/* Text size (Me → Profile): the screen's content scales, kept on the phone (gpa-text: l, xl). */
+function textSize_(){ var v=lsGet('gpa-text')||''; document.documentElement.classList.toggle('textL', v==='l'); document.documentElement.classList.toggle('textXL', v==='xl'); }
+/* Everything the app keeps about me, as one file on the phone: my account as I see it, and my journal. */
+function myDataFile_(){
+  var out={ app:'GonPreah', made:new Date().toISOString(), me:S.me, teams:S.teams||[], friends:(S.friends||[]).map(function(f){ return { username:f.username, name:f.name, since:f.since }; }), journal:[] };
+  var page=function(before){ return call('journal','get',{ before:before||null }).then(function(d){ if(!(d && d.ok)) return; out.journal=out.journal.concat(d.entries); if(d.more && d.entries.length) return page(d.entries[d.entries.length-1].date); }); };
+  return page().then(function(){
+    var blob=new Blob([JSON.stringify(out, null, 2)], { type:'application/json' }), url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='gonpreah-'+(S.me.username||'me')+'-'+todayStr()+'.json'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 4000);
+    showMsg(t('Your data is saved to your phone’s downloads.'));
+  });
+}
 function render(){
   var m=document.getElementById('main');
   var logo=document.getElementById('brandLogo'), sl=document.getElementById('splashLogo');
@@ -560,10 +572,12 @@ function meHtml(){
     (!me.minor?'<label class="f" for="pfBio">'+esc(t('A line about you'))+'</label><input type="text" id="pfBio" maxlength="160" value="'+esc(me.bio||'')+'">':'')+
     '<label class="f">'+esc(t('Language'))+'</label><div class="seg"><button data-lang="en" class="'+(LANG==='en'?'on':'')+'">English</button><button data-lang="km" class="'+(LANG==='km'?'on':'')+'">ខ្មែរ</button></div>'+
     '<label class="f">'+esc(t('Appearance'))+'</label><div class="seg">'+[['auto','Auto'],['light','Light'],['dark','Dark']].map(function(x){ var cur=lsGet('gpa-theme')||'auto'; return '<button data-theme="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
+    '<label class="f">'+esc(t('Text size'))+'</label><div class="seg">'+[['','Normal'],['l','Large'],['xl','Larger']].map(function(x){ var cur=lsGet('gpa-text')||''; return '<button data-tsize="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
     '<button class="btn" id="pfSave">'+esc(t('Save'))+'</button></div>'+
     passwordCardHtml_()+
     remindersCardHtml_()+
     (me.blocked?'<button class="linkbtn" id="goBlocked">🚫 '+esc(gpT('People you’ve blocked ({n})',{n:me.blocked}))+'</button>':'')+
+    '<button class="linkbtn" id="dlData">📦 '+esc(t('Download my data'))+'</button>'+
     '<button class="linkbtn" id="signOut">'+esc(t('Sign out'))+'</button>';
   if(me.admin) h=entryCardHtml('goAdmin','🛡️',t('Reports'),t('You’re the admin: see what people reported, and act on it.'))+h;
   return h;
@@ -1304,6 +1318,8 @@ function bind(){
   document.querySelectorAll('[data-share]').forEach(function(c){ c.onchange=function(){ var o={}; o[c.getAttribute('data-share')]=c.checked;
     call('saveProfile', { share:o }).then(function(d){ if(d && d.ok){ S.me=d.me; } else { failMsg(d); render(); } }); }; });
   all('[data-lang]', function(b){ setLang_(b.getAttribute('data-lang')); });
+  all('[data-tsize]', function(b){ var v=b.getAttribute('data-tsize'); if(v) lsSet('gpa-text', v); else lsDel('gpa-text'); textSize_(); render(); });
+  on('dlData', busyOnce_(function(){ showMsg(t('Getting your data ready…')); return myDataFile_(); }));
   all('[data-theme]', function(b){ var v=b.getAttribute('data-theme'); if(v==='auto'){ lsDel('gpa-theme'); document.documentElement.removeAttribute('data-theme'); } else { lsSet('gpa-theme', v); document.documentElement.setAttribute('data-theme', v); } render(); });
   on('pfSave', busyOnce_(function(){ var p={ name:$('pfName').value }; if($('pfBio')) p.bio=$('pfBio').value;
     return call('saveProfile', p).then(function(d){ if(d && d.ok){ S.me=d.me; showMsg(t('Saved.')); render(); } else failMsg(d); }); }));
@@ -1493,6 +1509,7 @@ function remindersCardHtml_(){
   return h+'<p class="hint" style="margin:0 0 8px">✓ '+esc(t('Reminders are on for this phone.'))+'</p>'+
     '<label class="f" for="remHour">'+esc(t('Remind me at'))+'</label><select id="remHour">'+opts+'</select>'+
     box('remHabits', pr.habits!==false, t('When today’s habits aren’t ticked'))+
+    box('remSaver', pr.saver!==false, t('Streak saver: 9 pm, if my streak is about to end'))+
     box('remPlan', pr.plan!==false, t('My life plan’s steps for now (Mondays)'))+
     box('remTeam', pr.team!==false, t('Team tasks due soon'))+
     box('remCoach', pr.coach!==false, t('A 1-on-1 today'))+
@@ -1501,7 +1518,7 @@ function remindersCardHtml_(){
 }
 function remSavePrefs_(){
   var g=function(id){ var el=$(id); return el ? !!el.checked : true; };
-  var pr={ hour:Number(($('remHour')||{}).value)||19, habits:g('remHabits'), plan:g('remPlan'), team:g('remTeam'), coach:g('remCoach'), alerts:g('remAlerts') };
+  var pr={ hour:Number(($('remHour')||{}).value)||19, habits:g('remHabits'), plan:g('remPlan'), team:g('remTeam'), coach:g('remCoach'), alerts:g('remAlerts'), saver:g('remSaver') };
   S.push.prefs=pr;
   call('pushSavePrefs', pr).then(function(d){ if(d && d.ok){ S.push.prefs=d.prefs; showMsg(t('Saved.')); } else failMsg(d); });
 }
@@ -1519,7 +1536,7 @@ function bindReminders_(){
             else { sub.unsubscribe().catch(function(){}); fail(); } }); });
     }).catch(function(){ fail(); });
   });
-  ['remHour','remHabits','remPlan','remTeam','remCoach','remAlerts'].forEach(function(id){ var el=$(id); if(el) el.onchange=remSavePrefs_; });
+  ['remHour','remHabits','remSaver','remPlan','remTeam','remCoach','remAlerts'].forEach(function(id){ var el=$(id); if(el) el.onchange=remSavePrefs_; });
   on('remTest', function(){ var b=$('remTest'); b.disabled=true; call('pushTest').then(function(d){ b.disabled=false; showMsg(d && d.ok ? t('Sent — it should arrive in a moment.') : t('It couldn’t be sent. Try turning reminders off and on again.')); }); });
   on('remOff', function(){ var sub=S.pushSub; if(!sub) return; call('pushUnsubscribe', sub.endpoint); sub.unsubscribe().catch(function(){}); S.pushSub=null; render(); showMsg(t('Reminders are off for this phone.')); });
 }
@@ -2312,11 +2329,21 @@ function friendsHomeHtml(){
   if(!F.length) return h;
   return h+'<h3>👯 '+esc(t('Friends'))+'</h3><div class="card list">'+F.map(function(f){ return friendRowHtml_(f,false); }).join('')+'<button class="linkbtn" id="goFriends">'+esc(t('All friends'))+' ›</button></div>';
 }
+/* Friends this week: XP this week for me and the friends who show their level — numbers only. */
+function friendsWeekHtml_(F){
+  var rows=F.filter(function(f){ return f.xpWeek!=null; }).map(function(f){ return { name:firstName_(f.name), xp:f.xpWeek, me:false }; });
+  if(!rows.length) return '';
+  rows.push({ name:t('You'), xp:S.me.xpWeek||0, me:true }); rows.sort(function(a,b){ return b.xp-a.xp; });
+  var top=rows[0].xp||1, medal=['🥇','🥈','🥉'];
+  return '<h3>🏆 '+esc(t('Friends this week'))+'</h3><div class="card">'+rows.map(function(r,i){ return '<div class="apBar fwRow'+(r.me?' me':'')+'"><span class="apBarL">'+(medal[i]||(i+1)+'.')+' '+esc(r.name)+'</span><span class="wheelTrack"><i style="width:'+Math.max(4,Math.round(r.xp/top*100))+'%"></i></span><b>'+r.xp+'</b></div>'; }).join('')+
+    '<div class="pmeta" style="margin-top:6px">'+esc(t('XP this week. A new week starts on Monday.'))+'</div></div>';
+}
 function friendsHtml(){
   var F=S.friends||[], h=backBtn(t('Home'))+'<h2>👯 '+esc(t('Friends'))+'</h2><p class="sub">'+esc(t('A few close friends who keep each other going. You see each other’s streak — never your goals or words.'))+'</p>';
   h+='<div class="card"><label class="f" for="frUser">'+esc(t('Add a friend by username'))+'</label><div class="atRow"><span>@</span><input type="text" id="frUser" autocapitalize="none" maxlength="20"><button class="btn small" id="frAsk">'+esc(t('Ask'))+'</button></div>'+
     '<div class="hint">'+esc(t('They need to say yes. Someone under 18 can only be friends with people in their team.'))+'</div></div>';
   h+=friendAsksHtml_();
+  h+=friendsWeekHtml_(F);
   if(F.length) h+='<div class="card list">'+F.map(function(f){ return friendRowHtml_(f,true); }).join('')+'</div>';
   return h;
 }
@@ -2640,7 +2667,7 @@ function confettiAt_(el){
 /* ---------------- start ---------------- */
 if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.serviceWorker.register('sw.js').catch(function(){}); } catch(e){}
 /* Start once every script is in (library-app.js and learn.js load after this file and use S). */
-function start_(){ if(AUTH) bootNow_(); else render();
+function start_(){ textSize_(); if(AUTH) bootNow_(); else render();
   api('authConfig').then(function(c){ S.authCfg=c||{}; if(!AUTH && !typing_()) render(); }); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();
 /* ---------------- staying up to date by itself ----------------

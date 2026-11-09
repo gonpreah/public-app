@@ -1074,3 +1074,8 @@ body.still .jrQ, body.still .jrIntro, body.still .jrDone, body.still .jrReveal, 
 .hcB:disabled { opacity:.3; }
 .hcRow input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent); }
 .hcFix { width:22px; text-align:center; font-size:14px; }
+
+/* ---------- text size; friends this week ---------- */
+html.textL #main { zoom:1.12; }
+html.textXL #main { zoom:1.25; }
+.fwRow.me .apBarL { font-weight:800; color:var(--accent); }

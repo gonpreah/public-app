@@ -18,6 +18,7 @@
       atest · agift              — the five gifts test (APEST, apest.js) and its results
       reset · badges             — the Sunday reset (five steps to set up the week); my badges
       habitcal                   — my habit calendar (12 weeks)
+      journal · homecfg          — my journal (private); customize Home (order, hide; on this phone)
       plan · goal · goaledit     — the life plan: my why, SMART life goals, their steps, tasks
       coach · meet               — 1-on-1s: a coaching (coach + mentee) and one meeting in it
       report · blocked · admin   — report a person or team, the people I've blocked, the admin's reports
@@ -121,7 +122,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -164,6 +165,8 @@ function render(){
     else if(V==='atest') h=atestHtml();
     else if(V==='reset') h=resetHtml();
     else if(V==='habitcal') h=habitCalHtml();
+    else if(V==='journal') h=journalHtml();
+    else if(V==='homecfg') h=homeCfgHtml();
     else if(V==='badges') h=badgesHtml();
     else if(V==='agift') h=agiftHtml();
     else if(V==='vision') h=visionHtml();
@@ -334,7 +337,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
-  h+=whyLineHtml()+resetCardHtml_()+meetupsHomeHtml_()+devoCardHtml()+recapCardHtml()+cheersHtml()+todayCardHtml()+readingHomeHtml()+friendsHomeHtml()+myChallengesHtml()+habitsCardHtml()+checkinCardHtml()+coachHomeHtml()+planHomeHtml()+weekCardHtml();
+  var HC=homeCfg_(); HC.order.forEach(function(id){ if(HC.hide.indexOf(id)<0) h+=homePartHtml_(id); });   // Me → Customize Home
   if(!me.personality || !me.gstrengths || !me.apest){
     h+='<h3>✦ '+esc(t('How God made you'))+'</h3>';
     if(!me.personality) h+=entryCardHtml('goPtest','🧭',t('Find your personality type'),t('40 statements · about 7 minutes'));
@@ -543,6 +546,7 @@ function meHtml(){
   h+=apEntryHtml_();
   h+=spheresMeHtml_();
   h+='<h3>🏅 '+esc(t('Badges'))+'</h3>'+badgesEntryHtml_();
+  h+=entryCardHtml('goJournal','✍️',t('My journal'),t('A page a day, just for you'))+entryCardHtml('goHomeCfg','🏠',t('Customize Home'),t('Put what matters most at the top'));
 
   h+='<h3>👁 '+esc(t('What others see'))+'</h3><div class="card">'+
     '<p class="sub" style="margin:0 0 8px">'+esc(t('People see your progress, never the details: not your goals, your habits or your answers.'))+'</p>';
@@ -678,7 +682,7 @@ function stepRowHtml(g, s){
 function goalEditHtml(){
   var F=S.goalDraft, d=todayStr();
   var h=backBtn(t('Back'))+'<h2>'+esc(F.id?t('Edit the goal'):t('New life goal'))+'</h2><p class="sub">'+esc(t('A good goal is SMART: Specific, Measurable, Achievable, Relevant and Time-bound.'))+'</p><div class="card">'+
-    '<label class="f">'+esc(t('Which part of life?'))+'</label><div class="catChips">'+AREAS.map(function(a){ return '<button class="catChip'+(F.area===a[0]?' on':'')+'" data-garea="'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</button>'; }).join('')+'</div>'+
+    '<label class="f">'+esc(t('Which part of life?'))+'</label><div class="catChips">'+AREAS.map(function(a){ return '<button class="catChip'+(F.area===a[0]?' on':'')+'" data-garea="'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</button>'; }).join('')+'</div>'+goalIdeasHtml_(F)+
     smartField_('gTitle','S',t('What exactly do you want to do?'),t('e.g. Finish grade 12 with good marks'),F.title,100)+
     smartField_('gMeasure','M',t('How will you know you’ve done it?'),t('e.g. I pass the exam with a B or better'),F.measure,160)+
     smartField_('gHelp','A',t('What or who will help you get there?'),t('e.g. A study group, my teacher, two hours a day'),F.help,160)+
@@ -1091,8 +1095,8 @@ function bind(){
   all('[data-flabel]', function(b){ S.focusSetup.label=b.getAttribute('data-flabel'); render(); });
   on('focusStart', function(){ var l=$('focusLabel'); S.focusSetup.label=l?l.value.trim():''; gpTap();
     lsSet(FOCUS_KEY, JSON.stringify({ dur:S.focusSetup.dur, start:Date.now(), label:S.focusSetup.label, paused:0, pausedAt:0 })); render(); focusEnsureTimer_(); });
-  on('focusPause', function(){ var f=focusState_(); if(!f) return; if(f.pausedAt){ f.paused+=Date.now()-f.pausedAt; f.pausedAt=0; } else f.pausedAt=Date.now(); lsSet(FOCUS_KEY, JSON.stringify(f)); render(); });
-  on('focusStop', function(){ var f=focusState_(); if(!f) return; var min=Math.floor(focusElapsed_(f)/60000);
+  on('focusPause', function(){ var f=focusState_(); if(!f) return; if(!f.pausedAt) focusSound_(''); if(f.pausedAt){ f.paused+=Date.now()-f.pausedAt; f.pausedAt=0; } else f.pausedAt=Date.now(); lsSet(FOCUS_KEY, JSON.stringify(f)); render(); });
+  on('focusStop', function(){ focusSound_(''); var f=focusState_(); if(!f) return; var min=Math.floor(focusElapsed_(f)/60000);
     if(min<5){ if(!confirm(t('Stop now? Less than 5 minutes doesn’t count.'))) return; lsDel(FOCUS_KEY); clearInterval(focusTimer); focusTimer=null; render(); return; }
     if(!confirm(gpT('Stop and count {n} minutes?',{n:min}))) return; focusFinish_(min, f.label); render(); });
   on('focusTick', busyOnce_(function(){ var dn=S.focusDone, d=todayStr(), top=(dayOf_(d).top||[]).map(function(x){ return Object.assign({},x); });
@@ -1101,7 +1105,9 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_();
+  all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
+  all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });
   on('goBadges', function(){ go('badges'); });
 
@@ -1556,7 +1562,7 @@ function checkinCardHtml(){
   var m=S.checkinMood||D.mood||0;
   h+='<label class="f">'+esc(t('How was today?'))+'</label><div class="rateBtns">'+MOODS.map(function(x){ return '<button class="rateBtn'+(m===x[0]?' on':'')+'" data-mood="'+x[0]+'" aria-label="'+esc(t(x[2]))+'">'+x[1]+'</button>'; }).join('')+'</div>'+
     '<label class="f" for="gratefulIn">'+esc(t('One thing you’re thankful for'))+'</label><input type="text" id="gratefulIn" maxlength="200" value="'+esc(D.grateful||'')+'" placeholder="'+esc(t('e.g. My friend helped me with homework'))+'">'+
-    '<div class="hint">🔒 '+esc(t('Only you see this.'))+'</div><button class="btn small" id="checkSave" style="margin-top:8px">'+esc(t('Save'))+'</button></div>';
+    '<div class="hint">🔒 '+esc(t('Only you see this.'))+'</div><button class="btn small" id="checkSave" style="margin-top:8px">'+esc(t('Save'))+'</button>'+jnLinkHtml_()+'</div>';
   return h;
 }
 /* Sunday: this week so far. Monday: the week just gone. */
@@ -1576,6 +1582,99 @@ function recapCardHtml(){
   if(reached) tiles.push([String(reached),'🏆 '+t('goals reached')]);
   return '<div class="card recapCard"><div class="recapHead">📊 '+esc(dow===0?t('Your week so far'):t('Your week'))+'</div><div class="statTiles recapTiles">'+tiles.map(function(x){ return '<div><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>'; }).join('')+'</div>'+
     '<div class="pmeta" style="margin-top:8px">'+esc(dow===0?t('Tomorrow is a fresh start. What will this week be about?'):t('A new week. Set this week’s goals below.'))+'</div></div>';
+}
+
+/* ---------------- my journal (api.js "my journal") ----------------
+   A page a day with a question to start from (JOURNAL_PROMPTS, rotating by day; tap 🎲 for
+   another). Private: the words are fetched only when the journal is open. */
+var JOURNAL_PROMPTS=['Where did you see God today?','What made you smile today?','What is one thing you learned today?','What was hard today, and what helped?','Who do you want to thank, and why?','What are you worried about? Write it, then give it to God.','What did you do today that you are proud of?','What would make tomorrow a good day?','Who needs your help or your prayers this week?','What is God teaching you right now?','Write a prayer for someone you love.','What is one small step toward your dream you took today?','When did you feel most like yourself today?','What do you want to remember about this week?'];
+function jnPromptToday_(){ var d=todayStr(); return Math.round(Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10))/864e5) % JOURNAL_PROMPTS.length; }
+function jnLinkHtml_(){ var w=(S.me.journalDays||[]).indexOf(todayStr())>-1; return '<button class="linkbtn" id="goJournal">✍️ '+esc(w?t('Read today’s journal page'):t('Want to write more? Open my journal'))+'</button>'; }
+function journalHtml(){
+  var J=S.jn, d=todayStr(), h=backBtn(t('Back'))+'<h2>✍️ '+esc(t('My journal'))+'</h2><p class="sub">🔒 '+esc(t('Only you can read your journal. Not your team, not your coach, not your leaders.'))+'</p>';
+  if(!J) return h+loadingHtml_();
+  var mine=(J.entries||[]).filter(function(e){ return e.date===d; })[0], pr=J.prompt!=null ? J.prompt : (mine && mine.prompt>=0 ? mine.prompt : jnPromptToday_());
+  h+='<div class="card jnCard"><div class="jnTop"><span class="pmeta">'+esc(t('Today'))+' · '+esc(dayLabel(d))+'</span><button class="linkbtn inline" id="jnDice" aria-label="'+esc(t('Another question'))+'">🎲 '+esc(t('Another question'))+'</button></div>'+
+    '<div class="jnPrompt">'+esc(t(JOURNAL_PROMPTS[pr]))+'</div>'+
+    '<textarea id="jnText" rows="8" maxlength="3000" placeholder="'+esc(t('Write anything. No one else will see it.'))+'">'+esc(J.draft!=null ? J.draft : (mine ? mine.text : ''))+'</textarea>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="jnSave">'+esc(t('Save'))+'</button></div></div>';
+  var past=(J.entries||[]).filter(function(e){ return e.date!==d; });
+  h+='<h3>📖 '+esc(t('Earlier pages'))+'</h3>';
+  if(!past.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('Your pages will gather here — a story of your days with God.'))+'</p></div>';
+  h+=past.map(function(e){ var open=S.jnOpen===e.date;
+    return '<button class="card jnPast'+(open?' open':'')+'" data-jnopen="'+e.date+'"><span class="pmeta">'+esc(dayLabel(e.date)+' '+e.date.slice(0,4))+(e.prompt>=0 && JOURNAL_PROMPTS[e.prompt]?' · '+esc(t(JOURNAL_PROMPTS[e.prompt])):'')+'</span><span class="jnText'+(open?'':' clip')+'">'+esc(e.text)+'</span></button>'; }).join('');
+  if(J.more) h+='<button class="btn ghost" id="jnMore">'+esc(t('Older pages'))+'</button>';
+  return h;
+}
+function jnLoad_(before){ return call('journal','get',{ before:before||null }).then(function(d){ if(d && d.ok){ var J=S.jn||{ entries:[] }; J.entries = before ? J.entries.concat(d.entries) : d.entries; J.more=d.more; S.jn=J; if(S.view==='journal' && !typing_()) render(); } else failMsg(d); }); }
+function bindJournal_(){
+  on('goJournal', function(){ S.jn=null; S.jnOpen=null; go('journal'); jnLoad_(); });
+  if(S.view!=='journal' || !S.jn) return;
+  var J=S.jn, tx=$('jnText'); if(tx) tx.oninput=function(){ J.draft=tx.value; };
+  on('jnDice', function(){ var cur=J.prompt!=null?J.prompt:jnPromptToday_(); J.prompt=(cur+1+Math.floor(Math.random()*(JOURNAL_PROMPTS.length-1)))%JOURNAL_PROMPTS.length; gpTap(); render(); });
+  on('jnSave', busyOnce_(function(){ var text=(J.draft!=null?J.draft:($('jnText')||{}).value||''), d=todayStr(), pr=J.prompt!=null?J.prompt:jnPromptToday_(), b=$('jnSave');
+    return call('journal','save',{ date:d, text:text, prompt:pr }).then(function(r){ if(r && r.ok){ S.me=r.me; J.draft=null;
+      J.entries=(J.entries||[]).filter(function(e){ return e.date!==d; }); if(text.trim()) J.entries.unshift({ date:d, text:text.trim(), prompt:pr });
+      confettiAt_(b); showMsg(t('Saved. Only you can read it.')); render(); } else failMsg(r); }); }));
+  all('[data-jnopen]', function(b){ var d=b.getAttribute('data-jnopen'); S.jnOpen=S.jnOpen===d?null:d; render(); });
+  on('jnMore', busyOnce_(function(){ var last=J.entries[J.entries.length-1]; return jnLoad_(last && last.date); }));
+}
+
+/* ---------------- goal ideas: a start for each part of life ---------------- */
+var GOAL_IDEAS={
+  faith:[['Read the whole New Testament','I tick off all 260 chapters'],['Pray 10 minutes every morning','5 mornings a week for 3 months'],['Join a small group','I go to 10 meetings']],
+  family:[['Eat dinner with my family 3 times a week','For 2 months in a row'],['Call my grandparents every Sunday','12 Sundays without missing'],['Help at home without being asked','One job every day for a month']],
+  study:[['Pass grade 12 with good marks','I pass the exam with a B or better'],['Learn 500 English words','I know 500 words in Learn English'],['Finish an online course','I get the certificate']],
+  health:[['Run 5 km without stopping','I run 5 km in one go'],['Sleep by 11 pm on school nights','5 nights a week for a month'],['Drink 2 litres of water a day','Every day for 30 days']],
+  money:[['Save $100','$100 in my savings'],['Track every dollar I spend','Every day for 3 months'],['Give 10% to God','Every time I get money, for a year']],
+  serve:[['Volunteer once a month','12 times this year'],['Teach a child to read','They can read a short book alone'],['Help at a church event every month','6 events this year']]
+};
+function goalIdeasHtml_(F){
+  if(F.id || !F.area || !GOAL_IDEAS[F.area] || (F.title||'').trim()) return '';
+  return '<div class="pmeta" style="margin:-4px 0 6px">💡 '+esc(t('Ideas to start from — tap one, then make it yours:'))+'</div><div class="catChips">'+GOAL_IDEAS[F.area].map(function(x,i){ return '<button class="catChip" data-gidea="'+i+'">'+esc(t(x[0]))+'</button>'; }).join('')+'</div>';
+}
+
+/* ---------------- focus sounds: made on the phone (Web Audio), nothing to download ---------------- */
+var FS={ ctx:null, node:null, kind:'' };
+function focusSound_(kind){
+  try {
+    if(FS.node){ FS.node.disconnect(); FS.node=null; } FS.kind='';
+    if(!kind) return;
+    var C=FS.ctx||(FS.ctx=new (window.AudioContext||window.webkitAudioContext)()); if(C.state==='suspended') C.resume();
+    var len=C.sampleRate*4, buf=C.createBuffer(1, len, C.sampleRate), x=buf.getChannelData(0), last=0, b0=0, b1=0, b2=0;
+    for(var i=0;i<len;i++){ var w=Math.random()*2-1;
+      if(kind==='brown'){ last=(last+0.02*w)/1.02; x[i]=last*3.2; }
+      else { b0=0.99765*b0+w*0.0990460; b1=0.96300*b1+w*0.2965164; b2=0.57000*b2+w*1.0526913; x[i]=(b0+b1+b2+w*0.1848)*0.11; } }
+    var src=C.createBufferSource(); src.buffer=buf; src.loop=true;
+    var g=C.createGain(); g.gain.value=kind==='rain'?0.5:0.7;
+    var f=C.createBiquadFilter(); f.type='lowpass'; f.frequency.value=kind==='rain'?5200:900;
+    src.connect(f); f.connect(g); g.connect(C.destination); src.start();
+    FS.node=g; FS.kind=kind;
+  } catch(e){ FS.kind=''; }
+}
+function focusSoundsHtml_(){ return '<div class="fsRow">'+[['','🔇',t('Quiet')],['brown','🟤',t('Brown noise')],['rain','🌧️',t('Rain')]].map(function(s){ return '<button class="rsvpB'+(FS.kind===s[0]?' on':'')+'" data-fsound="'+s[0]+'">'+s[1]+' '+esc(s[2])+'</button>'; }).join('')+'</div>'; }
+
+/* ---------------- customize Home: order and hide sections (kept on this phone) ---------------- */
+var HOME_PARTS=[['vision','✦','My vision or why'],['reset','🔄','Sunday reset'],['meets','📅','Coming up (meetups)'],['devo','🕊️','Today’s devotional'],['recap','📊','Your week'],['cheers','👏','Cheers'],['today','☀️','Today’s 3 and focus'],['reading','📖','Bible reading'],['friends','👯','Friends'],['challenges','🏁','Challenges'],['habits','✅','Habits'],['checkin','🌙','Evening check-in'],['coach','🤝','1-on-1s'],['plan','🎯','Steps for now'],['week','🗒️','This week’s goals']];
+function homeCfg_(){ var c; try { c=JSON.parse(lsGet('gpa-home')||'null'); } catch(e){ c=null; } c=c&&typeof c==='object'?c:{}; var ids=HOME_PARTS.map(function(p){ return p[0]; });
+  var order=(Array.isArray(c.order)?c.order:[]).filter(function(id){ return ids.indexOf(id)>-1; }); ids.forEach(function(id){ if(order.indexOf(id)<0) order.splice(ids.indexOf(id), 0, id); });
+  return { order:order, hide:(Array.isArray(c.hide)?c.hide:[]).filter(function(id){ return ids.indexOf(id)>-1 && id!=='today'; }) }; }
+function homePartHtml_(id){ return ({ vision:whyLineHtml, reset:resetCardHtml_, meets:meetupsHomeHtml_, devo:devoCardHtml, recap:recapCardHtml, cheers:cheersHtml, today:todayCardHtml, reading:readingHomeHtml, friends:friendsHomeHtml, challenges:myChallengesHtml, habits:habitsCardHtml, checkin:checkinCardHtml, coach:coachHomeHtml, plan:planHomeHtml, week:weekCardHtml })[id](); }
+function homeCfgHtml(){
+  var C=homeCfg_(), h=backBtn(t('Me'))+'<h2>🏠 '+esc(t('Customize Home'))+'</h2><p class="sub">'+esc(t('Put what matters most at the top, and hide what you don’t use. Kept on this phone.'))+'</p><div class="card">';
+  C.order.forEach(function(id, i){ var P=HOME_PARTS.filter(function(p){ return p[0]===id; })[0], on=C.hide.indexOf(id)<0;
+    h+='<div class="hcRow'+(on?'':' off')+'"><span class="hcIc">'+P[1]+'</span><span style="flex:1">'+esc(t(P[2]))+'</span>'+
+      '<button class="hcB" data-hcup="'+id+'"'+(i?'':' disabled')+' aria-label="'+esc(t('Move up'))+'">↑</button><button class="hcB" data-hcdown="'+id+'"'+(i<C.order.length-1?'':' disabled')+' aria-label="'+esc(t('Move down'))+'">↓</button>'+
+      (id==='today'?'<span class="hcFix" title="'+esc(t('Always on Home'))+'">🔒</span>':'<input type="checkbox" data-hcshow="'+id+'"'+(on?' checked':'')+' aria-label="'+esc(t('Show'))+'">')+'</div>'; });
+  return h+'</div><button class="linkbtn" id="hcReset">'+esc(t('Back to how it was'))+'</button>';
+}
+function bindHomeCfg_(){
+  on('goHomeCfg', function(){ go('homecfg'); });
+  var save=function(C){ lsSet('gpa-home', JSON.stringify(C)); gpTap(); render(); };
+  all('[data-hcup]', function(b){ var C=homeCfg_(), id=b.getAttribute('data-hcup'), i=C.order.indexOf(id); if(i>0){ C.order.splice(i,1); C.order.splice(i-1,0,id); save(C); } });
+  all('[data-hcdown]', function(b){ var C=homeCfg_(), id=b.getAttribute('data-hcdown'), i=C.order.indexOf(id); if(i<C.order.length-1){ C.order.splice(i,1); C.order.splice(i+1,0,id); save(C); } });
+  document.querySelectorAll('[data-hcshow]').forEach(function(c){ c.onchange=function(){ var C=homeCfg_(), id=c.getAttribute('data-hcshow'); C.hide=C.hide.filter(function(x){ return x!==id; }); if(!c.checked) C.hide.push(id); save(C); }; });
+  on('hcReset', function(){ lsDel('gpa-home'); render(); });
 }
 
 /* ---------------- team meetups (api.js "team meetups") ----------------
@@ -1721,6 +1820,7 @@ function badgeList_(){
     ['reading1','📖','Finisher','Finish a Bible reading plan',plans,1],
     ['prayer3','🙏','Answered','Mark 3 prayers answered',answered,3],
     ['checkin7','🌙','Grateful heart','7 evening check-ins',cnt(function(D){ return D.mood; }),7],
+    ['journal7','✍️','Seven pages','Write in your journal on 7 days',(me.journalDays||[]).length,7],
     ['team','👥','Team player','Join a team',(me.teams||[]).length?1:0,1],
     ['friends3','👯','Better together','3 friends',(S.friends||[]).length,3],
     ['level10','⭐','Level 10','Reach level 10',(me.level||{}).level||1,10]
@@ -2486,7 +2586,7 @@ function focusHtml(){
   var left=focusLeft_(f), pct=1-left/(f.dur*60000), R=110, C=2*Math.PI*R;
   h+='<div class="focusRun"><div class="pmeta">'+esc(f.label||t('Focus'))+'</div>'+
     '<div class="ring"><svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="'+R+'" class="ringBg"/><circle cx="130" cy="130" r="'+R+'" class="ringFg" id="focusArc" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-pct)).toFixed(1)+'"/></svg>'+
-    '<div class="ringTx" id="focusLeft">'+mmss_(left)+'</div></div>'+
+    '<div class="ringTx" id="focusLeft">'+mmss_(left)+'</div></div>'+focusSoundsHtml_()+
     '<p class="sub">📵 '+esc(f.pausedAt?t('Paused'):t('Phone down. You’ve got this.'))+'</p>'+
     '<div class="btnRow"><button class="btn ghost" id="focusPause">'+esc(f.pausedAt?t('Resume'):t('Pause'))+'</button><button class="btn ghost" id="focusStop">'+esc(t('Stop'))+'</button></div></div>';
   return h;
@@ -2500,6 +2600,7 @@ function focusTick_(){
 }
 function focusEnsureTimer_(){ if(!focusTimer && focusActive_()) focusTimer=setInterval(focusTick_, 1000); }
 function focusFinish_(min, label){
+  focusSound_('');
   lsDel(FOCUS_KEY); clearInterval(focusTimer); focusTimer=null;
   var top=dayOf_(todayStr()).top||[], idx=-1; top.forEach(function(x,i){ if(x.text===label && !x.done) idx=i; });
   S.focusDone={ min:min, label:label, topIndex:idx };

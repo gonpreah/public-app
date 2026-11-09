@@ -588,7 +588,7 @@ await a.click('[data-back]');
   await w.click('#rsNext'); await w.waitForTimeout(900);
   ok('the week is set: its goals, the reset kept, and it leaves Home', await w.evaluate(() => { const wk = mondayOf(todayStr()); return S.view === 'home' && (S.me.weeks[wk] || []).map(g => g.text).join() === 'Sleep by 11,Run twice' && S.me.resets[wk].area === 'health'; }) && !(await w.$('#goReset')));
   await w.click('nav.bottom button[data-tab="me"]'); await w.waitForSelector('#goBadges'); await w.click('#goBadges'); await w.waitForSelector('.badgeGrid');
-  ok('badges: twenty, with what each one takes and how close I am', (await w.$$('.badge')).length === 20 && /A 7-day streak/.test(await text(w)) && /0 \/ 7/.test(await text(w)));
+  ok('badges: twenty-one, with what each one takes and how close I am', (await w.$$('.badge')).length === 21 && /A 7-day streak/.test(await text(w)) && /0 \/ 7/.test(await text(w)));
   await w.evaluate(() => { S.me.stats.best = 7; render(); }); await w.waitForTimeout(300);
   ok('… and a new one pops up once', /New badge/.test(await w.$eval('.badgePop', e => e.innerText)) && (await w.$$('.badge.got')).length >= 1);
   await ctx.close();
@@ -606,6 +606,33 @@ await a.click('[data-back]');
   await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('#goHabitCal'); await a.click('#goHabitCal'); await a.waitForSelector('.calGrid');
   ok('my habit calendar: twelve weeks of days, a ticked day coloured, and each habit over 30 days', (await a.$$('.calGrid .calCell')).length === 84 && (await a.$$('.calGrid .calCell.l1, .calGrid .calCell.l2, .calGrid .calCell.l3, .calGrid .calCell.l4')).length >= 1 && /The last 30 days/.test(await text(a)));
   await a.click('[data-back]'); await a.waitForTimeout(200);
+}
+
+/* ---------- 17g. my journal, goal ideas, focus sounds, customize Home ---------- */
+{
+  await a.click('nav.bottom button[data-tab="me"]'); await a.waitForSelector('#goJournal'); await a.click('#goJournal'); await a.waitForSelector('#jnText');
+  ok('my journal opens with a question for today, and says only I can read it', /Only you can read your journal/.test(await text(a)) && (await a.$eval('.jnPrompt', e => e.textContent)).length > 10);
+  const q1 = await a.$eval('.jnPrompt', e => e.textContent); await a.click('#jnDice');
+  ok('… 🎲 gives another question', (await a.$eval('.jnPrompt', e => e.textContent)) !== q1);
+  await a.fill('#jnText', 'God answered my prayer about my exam today.'); await a.click('#jnSave'); await a.waitForTimeout(700);
+  ok('… and a page is saved', await a.evaluate(() => (S.me.journalDays || []).includes(todayStr())));
+  await a.click('[data-back]'); await a.waitForTimeout(200);
+  await a.click('#goHomeCfg'); await a.waitForSelector('[data-hcshow="devo"]');
+  await a.click('[data-hcshow="devo"]');
+  for (let i = 0; i < 12; i++) { const up = await a.$('[data-hcup="habits"]:not([disabled])'); if (!up) break; await up.click(); await a.waitForTimeout(60); }
+  await a.click('nav.bottom button[data-tab="home"]'); await a.waitForTimeout(500);
+  ok('customize Home: a hidden part is gone, and habits moved to the top come before Today’s 3', !(await a.$('#goDevo')) && await a.evaluate(() => { const hb = document.querySelector('[data-habit]'), fc = document.querySelector('#goFocus'); return !!(hb && fc) && !!(hb.compareDocumentPosition(fc) & Node.DOCUMENT_POSITION_FOLLOWING); }));
+  await a.evaluate(() => lsDel('gpa-home')); await a.evaluate(() => render());
+  await a.click('nav.bottom button[data-tab="plan"]'); await a.waitForSelector('#newGoal'); await a.click('#newGoal'); await a.waitForSelector('[data-garea="health"]');
+  await a.click('[data-garea="health"]'); await a.waitForSelector('[data-gidea]'); await a.click('[data-gidea="0"]');
+  ok('a new goal offers ideas for that part of life, and one tap fills it in', await a.$eval('#gTitle', e => e.value) === 'Run 5 km without stopping' && await a.$eval('#gMeasure', e => e.value) === 'I run 5 km in one go');
+  await a.click('[data-back]'); await a.waitForTimeout(200);
+  await a.click('nav.bottom button[data-tab="home"]'); await a.waitForSelector('#goFocus'); await a.click('#goFocus'); await a.waitForSelector('#focusStart'); await a.click('#focusStart'); await a.waitForSelector('[data-fsound]');
+  await a.click('[data-fsound="rain"]'); await a.waitForTimeout(200);
+  ok('focus sounds: rain, made on the phone', await a.evaluate(() => FS.kind === 'rain') && !!(await a.$('[data-fsound="rain"].on')));
+  await a.click('#focusStop'); await a.waitForTimeout(300);
+  ok('… and quiet when the focus stops', await a.evaluate(() => FS.kind === ''));
+  await a.evaluate(() => { S.focusDone = null; lsDel('gpa-focus'); S.view = 'home'; render(); });
 }
 
 /* ---------- 18. Khmer ---------- */

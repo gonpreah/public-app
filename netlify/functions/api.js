@@ -356,6 +356,36 @@ async function saveCheckin(uid, tok, date, c) {
   await mutate_('u:' + uid, null, function (u) { if (u) { dailyMutate_(u, date, function (x) { x.mood = mood; x.grateful = str_(c.grateful, 200); }); xpAdd_(u, 'c|' + date, 5); } return { ok: true }; });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
+/* ---------------- my journal ----------------
+   A page a day, private: u.journal[date] = { t: text (up to 3000, line breaks kept), p: the
+   prompt's number on the phone }. The last JOURNAL_KEEP days. Only the person reads it ('get',
+   the latest 60 or those before a date) — boot sends just the days written (selfOut_ journalDays),
+   never the words. 5 XP a day for a page of 20+ characters. */
+const JOURNAL_KEEP = 365, JOURNAL_PAGE = 60;
+async function journal(uid, tok, act, a) {
+  const u0 = await auth_(uid, tok);
+  if (!u0) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  if (act === 'get') {
+    const J = u0.journal || {}, before = isDay_(a.before) ? a.before : '9999';
+    const days = Object.keys(J).filter(function (d) { return d < before; }).sort().reverse();
+    return { ok: true, entries: days.slice(0, JOURNAL_PAGE).map(function (d) { return { date: d, text: J[d].t, prompt: J[d].p }; }), more: days.length > JOURNAL_PAGE };
+  }
+  if (act !== 'save') return { ok: false, err: 'act' };
+  if (!nearDay_(a.date)) return { ok: false, err: 'day' };
+  const text = strMl_(a.text, 3000), pr = Number(a.prompt);
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: false };
+    u.journal = u.journal && typeof u.journal === 'object' ? u.journal : {};
+    if (text) u.journal[a.date] = { t: text, p: pr >= 0 && pr < 100 ? Math.floor(pr) : -1 }; else delete u.journal[a.date];
+    const cut = addDays_(today_(), -JOURNAL_KEEP);
+    Object.keys(u.journal).forEach(function (d) { if (d < cut) delete u.journal[d]; });
+    if (text.length >= 20) xpAdd_(u, 'jn|' + a.date, 5); else xpDrop_(u, 'jn|' + a.date);
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+
 /* A focus session the phone timed: minutes, added to the day. Hours this week can make a
    feed moment (FOCUS_MILESTONES). */
 async function logFocus(uid, tok, date, minutes) {
@@ -526,7 +556,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), resets: u.resets || {}
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort()
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -2202,7 +2232,7 @@ async function signOut(uid, tok) {
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveHabits, tickHabit, saveWeek,
-  savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, weekReset,
+  savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,

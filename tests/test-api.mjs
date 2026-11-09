@@ -545,6 +545,18 @@ await H.meetup(Q.uid, Q.token, QT.team.id, 'rsvp', { id: mt0.id, answer: 'no' })
 ok('… but not once they can’t come', !(await H.boot(Q.uid, Q.token)).meets.some(m => m.id === mt0.id));
 ok('only a leader cancels it', (await H.meetup(Q.uid, Q.token, QT.team.id, 'drop', { id: mt0.id })).err === 'not_leader' && (await H.meetup(Q2.uid, Q2.token, QT.team.id, 'drop', { id: mt0.id })).team.meets.length === 0);
 
+/* ---------- 18f. my journal ---------- */
+const JR = await H.registerPassword({ username: 'jules', name: 'Jules Kim', birthYear: 2001, password: 'jules password' });
+ok('a journal page is for today, yesterday or tomorrow only', (await H.journal(JR.uid, JR.token, 'save', { date: '2020-01-01', text: 'x' })).err === 'day');
+let jn = await H.journal(JR.uid, JR.token, 'save', { date: today, text: 'Today I saw God in my friend.\n\nShe prayed for me at lunch.', prompt: 0 });
+ok('a page is kept, line breaks and all — 5 XP for a real page', jn.ok && jn.me.journalDays.join() === today && jn.me.level.xp === 5);
+ok('start-up sends only the days written, never the words', !/saw God/.test(JSON.stringify(await H.boot(JR.uid, JR.token))));
+const jg = await H.journal(JR.uid, JR.token, 'get', {});
+ok('the journal reads back its pages, newest first', jg.ok && jg.entries.length === 1 && jg.entries[0].text === 'Today I saw God in my friend.\n\nShe prayed for me at lunch.' && jg.entries[0].prompt === 0);
+ok('nobody else ever sees it', !/saw God|journal/.test(JSON.stringify(await H.person(B.uid, B.token, JR.uid))));
+jn = await H.journal(JR.uid, JR.token, 'save', { date: today, text: '' });
+ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0 && jn.me.level.xp === 0);
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

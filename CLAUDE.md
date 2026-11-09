@@ -222,6 +222,15 @@ from day one, 0 XP included — this week by XP or all time by level. **Our word
 the team's words, from those who show their Life Journey; cards and member rows show the
 journey's progress (🗺️ 3/7).
 
+## Our gifts, the pulse for staff, the big screen
+**Our gifts** (team page): how many lead with each of the five gifts (from `p.apest[0]`, behind their
+switch), and which are missing. **The pulse** also shows, per member, which tests they've taken
+(`tests`: type, strengths or StrengthsFinder, gifts — taken or not, never results) and the
+journey's progress (behind `share.journey`), with totals (`allTests`, `journeys`). **Big screen**
+(team page → view `screen`): for a projector — this week's top 10, the Life Journey count, our gifts,
+our words and, for a leader, the join QR; no bottom bar (`body.bigScreen`); fetches the team every
+30 seconds (`SCREEN_TIMER`, stopped on leaving).
+
 ## 1-on-1s (in the Plan tab)
 `c:<id>` = a coaching: coach, mentee, team, status asked/active/ended, next date, sharePlan
 (the mentee lets the coach see their life plan), meetings (a check-in 1–5 on the six areas,

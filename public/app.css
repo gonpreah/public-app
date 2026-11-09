@@ -1105,3 +1105,17 @@ html.textXL #main { zoom:1.25; }
 /* ---------- StrengthsFinder Top 5 ---------- */
 .cfPicked .sChips { margin-top:6px; }
 .cfChip.on { color:#fff; font-weight:700; }
+
+/* ---------- the big screen (a projector) ---------- */
+body.bigScreen nav.bottom { display:none; }
+body.bigScreen #main { max-width:1200px; }
+.bsHead { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.bsHead h2 { font-size:34px; margin:0; }
+.bsGrid { display:grid; grid-template-columns:1fr; gap:0 24px; }
+@media (min-width:820px) { .bsGrid { grid-template-columns:1fr 1fr; } body.bigScreen .bsCard { font-size:18px; } }
+.bsRow { display:flex; align-items:center; gap:12px; padding:8px 0; border-top:1px solid var(--line); }
+.bsRow:first-child { border-top:0; }
+.bsRow .pmeta { flex:1; }
+.bsRank { width:34px; text-align:center; font-size:22px; font-weight:800; }
+.bsBig b { font-size:28px; }
+.bsCard .qrBox svg { max-width:260px; }

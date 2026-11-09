@@ -17,6 +17,7 @@
       journey · vision           — the Life Journey (seven stops of questions → a vision); my vision
       atest · agift              — the five gifts test (APEST, apest.js) and its results
       clifton                    — my StrengthsFinder (CliftonStrengths) Top 5, typed in
+      screen                     — the team on a projector (leaderboard, gifts, words, QR), refreshing
       reset · badges             — the Sunday reset (five steps to set up the week); my badges
       habitcal                   — my habit calendar (12 weeks)
       journal · homecfg          — my journal (private); customize Home (order, hide; on this phone)
@@ -123,7 +124,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -177,6 +178,7 @@ function render(){
     else if(V==='journey') h=journeyHtml();
     else if(V==='atest') h=atestHtml();
     else if(V==='clifton') h=cliftonHtml();
+    else if(V==='screen') h=screenHtml();
     else if(V==='reset') h=resetHtml();
     else if(V==='habitcal') h=habitCalHtml();
     else if(V==='journal') h=journalHtml();
@@ -499,6 +501,37 @@ function qrHtml_(link, code){
   var svg=''; try { var q=qrcode(0,'M'); q.addData(link); q.make(); svg=q.createSvgTag({ cellSize:8, margin:2, scalable:true }); } catch(e){ return ''; }
   return '<div class="qrBox">'+svg+'<div class="qrHow">'+esc(t('Point your phone camera here, open the link, and make your account — you’ll join the team.'))+'</div><div class="pmeta">'+esc(t('Or open'))+' <b>'+esc(link.replace(/^https?:\/\//,'').replace(/\/\?join=.*/,''))+'</b> '+esc(t('and enter the code'))+' <b>'+esc(code)+'</b></div></div>';
 }
+/* Our gifts: how many in the team lead with each of the five (from those who show their gifts). */
+function teamGiftsHtml_(T, big){
+  var n={}, total=0; (T.people||[]).forEach(function(p){ if(p.apest && p.apest[0]){ n[p.apest[0]]=(n[p.apest[0]]||0)+1; total++; } });
+  if(!total) return '';
+  if(!needJs_('apest.js','GP_APEST')) return '';
+  var max=Math.max.apply(null, GP_APEST.map(function(g){ return n[g.id]||0; }))||1, missing=GP_APEST.filter(function(g){ return !n[g.id]; });
+  return '<h3>🔥 '+esc(t('Our gifts'))+'</h3><div class="card'+(big?' bsCard':'')+'">'+GP_APEST.map(function(g){ var c=n[g.id]||0;
+    return '<div class="apBar"><span class="apBarL">'+g.icon+' '+esc(fld_(g,'name'))+'</span><span class="wheelTrack"><i style="width:'+Math.max(c?6:0, Math.round(c/max*100))+'%;background:'+g.color+'"></i></span><b>'+c+'</b></div>'; }).join('')+
+    '<div class="pmeta" style="margin-top:6px">'+esc(missing.length ? gpT('No one leads with {gifts} yet — every team needs all five.',{ gifts:jrList_(missing.map(function(g){ return fld_(g,'name'); })) }) : t('All five gifts are here. Make room for each one.'))+'</div></div>';
+}
+/* The big screen (view screen): the team for a projector — the leaderboard, our gifts, our words,
+   the journey, and (for a leader) the QR code to join. Every 30 seconds it fetches the team again. */
+var SCREEN_TIMER=null;
+function screenHtml(){
+  var T=S.team; if(!T) return backBtn(t('Back'))+loadingHtml_();
+  var rows=(T.people||[]).filter(function(p){ return p.level; }).sort(function(a,b){ return ((b.xpWeek||0)-(a.xpWeek||0)) || (b.level.level-a.level.level); }).slice(0,10), medal=['🥇','🥈','🥉'];
+  var jp=(T.people||[]).filter(function(p){ return p.journey; }), jf=jp.filter(function(p){ return p.journey.finished; }).length;
+  var h=backBtn(t('Back'))+'<div class="bsHead"><h2>'+esc(T.emoji+' '+T.name)+'</h2><span class="pmeta">'+esc(peopleN_(T.people.length))+' · '+esc(t('updates every 30 seconds'))+'</span></div><div class="bsGrid"><div>';
+  h+='<h3>🏆 '+esc(t('This week'))+'</h3><div class="card bsCard">'+(rows.length?rows.map(function(p,i){ return '<div class="bsRow"><span class="bsRank">'+(medal[i]||String(i+1))+'</span><b>'+esc(firstName_(p.name))+'</b><span class="pmeta">'+esc(p.level.icon+' '+gpT('Level {n}',{n:p.level.level}))+'</span><b class="lbXp">+'+(p.xpWeek||0)+' XP</b></div>'; }).join(''):'<p class="sub">'+esc(t('No one yet.'))+'</p>')+'</div>';
+  if(jp.length) h+='<h3>🗺️ '+esc(t('Life Journey'))+'</h3><div class="card bsCard bsBig"><b>'+jp.length+'</b> '+esc(t('on the journey'))+' · <b>'+jf+'</b> '+esc(t('finished'))+'</div>';
+  h+='</div><div>'+teamGiftsHtml_(T, true)+teamWordsHtml_(T);
+  if(T.leader) h+='<h3>📱 '+esc(t('Join the team'))+'</h3><div class="card bsCard">'+qrHtml_(joinLink_(T.code), T.code)+'</div>';
+  return h+'</div></div>';
+}
+function bindScreen_(){
+  on('goScreen', function(){ go('screen'); document.body.classList.add('bigScreen'); });
+  if(S.view!=='screen'){ document.body.classList.remove('bigScreen'); if(SCREEN_TIMER){ clearInterval(SCREEN_TIMER); SCREEN_TIMER=null; } return; }
+  document.body.classList.add('bigScreen');
+  if(!SCREEN_TIMER) SCREEN_TIMER=setInterval(function(){ if(S.view!=='screen' || !S.team){ clearInterval(SCREEN_TIMER); SCREEN_TIMER=null; return; }
+    call('team', S.team.id).then(function(d){ if(d && d.ok && S.view==='screen'){ S.team=d.team; render(); } }); }, 30000);
+}
 /* Our words for the year: the team's words, from those who show their Life Journey. */
 function teamWordsHtml_(T){
   var rows=(T.people||[]).filter(function(p){ return p.journey && p.journey.word; });
@@ -524,7 +557,9 @@ function teamHtml(){
       '<div class="hint">'+esc(t('Anyone with the code can join. Make a new one if it gets passed around.'))+'</div></div>';
   }
   if(T.leader) h+='<button class="btn ghost" id="goPulse" style="margin-bottom:12px">📊 '+esc(t('Team pulse: who’s active, who’s gone quiet'))+'</button>';
+  h+='<button class="btn ghost" id="goScreen" style="margin-bottom:12px">📺 '+esc(t('Big screen: show the team on a projector'))+'</button>';
   h+=leaderboardHtml_(T);
+  h+=teamGiftsHtml_(T);
   h+=teamWordsHtml_(T);
   h+=meetupsHtml(T);
   h+=challengesHtml(T);
@@ -1194,7 +1229,7 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_();
   all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
   all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });
@@ -2431,14 +2466,16 @@ function pulseHtml(){
   var P=S.pulse, h=backBtn(t('Back'));
   if(!P) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
   h+='<h2>📊 '+esc(t('Team pulse'))+'</h2><p class="sub">'+esc(P.team.emoji+' '+P.team.name)+' · '+esc(t('Only leaders see this. Numbers only — never anyone’s words.'))+'</p>';
-  h+='<div class="card statTiles"><div><b>'+P.today+'</b><span>'+esc(t('in the app today'))+'</span></div><div><b>'+P.week+'</b><span>'+esc(t('this week'))+'</span></div><div><b>'+P.quiet+'</b><span>'+esc(t('quiet 4+ days'))+'</span></div></div>';
+  h+='<div class="card statTiles"><div><b>'+P.today+'</b><span>'+esc(t('in the app today'))+'</span></div><div><b>'+P.week+'</b><span>'+esc(t('this week'))+'</span></div><div><b>'+P.quiet+'</b><span>'+esc(t('quiet 4+ days'))+'</span></div><div><b>'+(P.allTests||0)+'</b><span>'+esc(t('all 3 tests done'))+'</span></div><div><b>'+(P.journeys||0)+'</b><span>'+esc(t('finished the Life Journey'))+'</span></div></div>';
   if(!P.rows.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('No one else in the team yet.'))+'</p></div>';
   h+='<div class="card list">'+P.rows.map(function(r){
     var bits=[]; if(r.streak!=null) bits.push('🔥 '+r.streak); if(r.habitDays!=null) bits.push('✅ '+r.habitDays+'/7'); if(r.focusWeek) bits.push('⏱ '+focusShort_(r.focusWeek)); if(r.xpWeek) bits.push('+'+r.xpWeek+' XP');
+    if(r.tests) bits.push('📝 '+((r.tests.type?1:0)+(r.tests.strengths?1:0)+(r.tests.gifts?1:0))+'/3');
+    if(r.journey) bits.push('🗺️ '+(r.journey.finished?'✓':r.journey.stops+'/'+JR_STOPS.length));
     var quiet=r.seenAgo==null || r.seenAgo>=4;
     return '<div class="feedRow'+(quiet?' quietRow':'')+'">'+faceHtml(r,40)+'<span class="feedTx"><b>'+esc(r.name)+'</b><div class="pmeta">'+esc(agoLabel_(r.seenAgo))+(bits.length?' · '+esc(bits.join(' · ')):'')+'</div></span>'+
       '<button class="btn small'+(quiet?'':' ghost')+'" data-cheer="'+esc(r.id)+'"'+(r.cheered?' disabled':'')+'>'+(r.cheered?'💛 ✓':'💛 '+esc(t('Cheer')))+'</button></div>';
-  }).join('')+'</div><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
+  }).join('')+'</div><p class="hint">'+esc(t('📝 = how many of the three tests (personality, strengths, gifts) they’ve taken. 🗺️ = how far on the Life Journey, if they show it.'))+'</p><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
   return h;
 }
 

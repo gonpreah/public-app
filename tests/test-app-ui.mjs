@@ -695,6 +695,21 @@ await a.click('[data-back]');
   ok('… and on Home, with the other results', /My StrengthsFinder Top 5/.test(await text(a)) && /Empathy/.test(await text(a)));
 }
 
+/* ---------- 17k. our gifts, and the big screen ---------- */
+{
+  await a.evaluate(() => { const ans = {}; 'apest'.split('').forEach(g => { for (let i = 1; i <= 6; i++) ans[g + i] = g === 't' ? 5 : 2; }); return call('saveApest', { answers: ans }).then(d => { S.me = d.me; }); });
+  await a.click('nav.bottom button[data-tab="teams"]'); await a.waitForTimeout(400); if (await a.$('#levelOk')) await a.click('#levelOk');
+  await a.click('[data-team]'); await a.waitForSelector('#goScreen'); await a.waitForTimeout(600);
+  ok('our gifts: how many lead with each of the five, and which are missing', /Our gifts/.test(await text(a)) && /No one leads with/.test(await text(a)));
+  await a.click('#goScreen'); await a.waitForSelector('.bsGrid');
+  ok('the big screen: the leaderboard, our gifts and the join QR, without the bottom bar', (await a.$$('.bsRow')).length >= 2 && !!(await a.$('.bsGrid .qrBox')) && await a.evaluate(() => getComputedStyle(document.getElementById('bottomNav')).display === 'none' && SCREEN_TIMER !== null));
+  await a.click('[data-back]'); await a.waitForTimeout(300);
+  ok('… and leaving it brings the bar back and stops the refresh', await a.evaluate(() => !document.body.classList.contains('bigScreen') && SCREEN_TIMER === null));
+  await a.click('#goPulse'); await a.waitForSelector('[data-cheer]');
+  ok('the pulse shows tests taken and how many finished them all', /all 3 tests done/.test(await text(a)) && /📝 \d\/3/.test(await a.$eval('.list', e => e.innerText)));
+  await a.click('[data-back]'); await a.waitForTimeout(200); await a.click('[data-back]'); await a.waitForTimeout(200);
+}
+
 /* ---------- 18. Khmer ---------- */
 await a.click('#langBtn'); await a.waitForTimeout(300);
 await a.click('nav.bottom button[data-tab="home"]');

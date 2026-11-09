@@ -581,6 +581,10 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   ok('… and not when strengths are hidden', !('clifton' in (await H.person(B.uid, B.token, CF.uid)).person));
   ok('it can be taken off again', !(await H.saveClifton(CF.uid, CF.token, { clear: true })).me.clifton); }
 
+/* ---------- 18i. the pulse: tests and the journey ---------- */
+{ const qp = (await H.teamPulse(Q2.uid, Q2.token, QT.team.id)).pulse, qr = qp.rows.find(r => r.id === Q.uid);
+  ok('the pulse shows which tests each person has taken — taken or not, never the results', qr.tests && typeof qr.tests.type === 'boolean' && !('personality' in qr) && typeof qp.allTests === 'number' && typeof qp.journeys === 'number'); }
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

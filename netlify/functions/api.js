@@ -2243,13 +2243,17 @@ async function teamPulse(uid, tok, tid) {
     }
     if (sh.focus) o.focusWeek = focusWeek_(u, wk);
     if (sh.level) o.xpWeek = (u.xpWeeks || {})[wk] || 0;
+    o.tests = { type: !!u.personality, strengths: !!(u.gstrengths || u.clifton), gifts: !!u.apest };   // taken or not — like the test count on a card
+    if (sh.journey) { const st = storyOf_(u); o.journey = { stops: st.done.length, finished: !!st.finished }; }
     rows.push(o);
   }
   rows.sort(function (a, b) { return (b.seenAgo == null ? 999 : b.seenAgo) - (a.seenAgo == null ? 999 : a.seenAgo); });
   return { ok: true, pulse: { team: { id: t.id, name: t.name, emoji: t.emoji }, rows: rows,
     today: rows.filter(function (r) { return r.seenAgo === 0; }).length,
     week: rows.filter(function (r) { return r.seenAgo != null && r.seenAgo < 7; }).length,
-    quiet: rows.filter(function (r) { return r.seenAgo == null || r.seenAgo >= 4; }).length } };
+    quiet: rows.filter(function (r) { return r.seenAgo == null || r.seenAgo >= 4; }).length,
+    allTests: rows.filter(function (r) { return r.tests.type && r.tests.strengths && r.tests.gifts; }).length,
+    journeys: rows.filter(function (r) { return r.journey && r.journey.finished; }).length } };
 }
 async function leaderCheer(uid, tok, tid, who) {
   const me = await auth_(uid, tok);

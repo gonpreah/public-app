@@ -1156,5 +1156,18 @@ var APP_KM = {
   "Executing": "ការអនុវត្ត",
   "Influencing": "ការជះឥទ្ធិពល",
   "Relationship Building": "ការកសាងទំនាក់ទំនង",
-  "Strategic Thinking": "ការគិតជាយុទ្ធសាស្ត្រ"
+  "Strategic Thinking": "ការគិតជាយុទ្ធសាស្ត្រ",
+  /* our gifts, the pulse, the big screen */
+  "Our gifts": "អំណោយទានរបស់យើង",
+  "No one leads with {gifts} yet — every team needs all five.": "មិនទាន់មាននរណាខ្លាំងជាងគេក្នុង {gifts} នៅឡើយទេ — ក្រុមនីមួយៗត្រូវការអំណោយទានទាំងប្រាំ។",
+  "All five gifts are here. Make room for each one.": "អំណោយទានទាំងប្រាំមាននៅទីនេះ។ ផ្តល់កន្លែងឱ្យអំណោយទាននីមួយៗ។",
+  "updates every 30 seconds": "ធ្វើបច្ចុប្បន្នភាពរៀងរាល់ ៣០ វិនាទី",
+  "No one yet.": "មិនទាន់មាននរណាទេ។",
+  "on the journey": "កំពុងធ្វើដំណើរ",
+  "finished": "បានបញ្ចប់",
+  "Join the team": "ចូលរួមក្រុម",
+  "Big screen: show the team on a projector": "អេក្រង់ធំ៖ បង្ហាញក្រុមលើម៉ាស៊ីនបញ្ចាំង",
+  "all 3 tests done": "ធ្វើតេស្តទាំង ៣ រួច",
+  "finished the Life Journey": "បានបញ្ចប់ដំណើរជីវិត",
+  "🧭💪🔥 = the personality, strengths and gifts tests they’ve taken. 🗺️ = how far on the Life Journey, if they show it.": "🧭💪🔥 = តេស្តបុគ្គលិកលក្ខណៈ ចំណុចខ្លាំង និងអំណោយទាន ដែលពួកគេបានធ្វើ។ 🗺️ = ដំណើរជីវិតទៅដល់ណា បើពួកគេបង្ហាញវា។"
 };

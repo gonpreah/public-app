@@ -592,6 +592,8 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   let r = await H.calling(CL.uid, CL.token, 'save', { answers: { do: { c: ['teach', 'care', 'BAD!'] }, who: { c: ['kids'], o: 'x'.repeat(200) }, sphere: 'nowhere', focus: 'Start a reading club', why: 'Line one\n\n\n\nLine two', m1: 'Ten children', secret: 'no' } });
   ok('my calling keeps only real answers: one way to serve, real ids, short words, a real sphere', r.ok && JSON.stringify(r.me.calling.a.do) === '{"c":["teach"],"o":""}' && r.me.calling.a.who.o.length === 80 && r.me.calling.a.sphere === '' && !('secret' in r.me.calling.a) && r.me.calling.a.why === 'Line one\n\nLine two');
   ok('a calling needs a statement of a few words', (await H.calling(CL.uid, CL.token, 'keep', { statement: 'short' })).err === 'text');
+  r = await H.calling(CL.uid, CL.token, 'save', { step: 12, answers: { spheres: { c: ['tech', 'nowhere', 'land', 'health'], o: 'x' }, roles: { c: ['teacher', 'nurse', 'dev', 'cafe'] }, burden: 'Kids leave school.\n\nThey are clever.', w1: 'God made me curious.', _secret: 'no' } });
+  ok('the deeper calling keeps real spheres (two), three roles, my own words with their line breaks, and where I am', JSON.stringify(r.me.calling.a.spheres) === '{"c":["tech","land"],"o":""}' && r.me.calling.a.roles.c.length === 3 && r.me.calling.a.burden === 'Kids leave school.\n\nThey are clever.' && r.me.calling.a.w1 === 'God made me curious.' && r.me.calling.step === 12 && !('_secret' in r.me.calling.a));
   const xp0 = r.me.level.xp;
   r = await H.calling(CL.uid, CL.token, 'keep', { answers: { sphere: 'education' }, statement: 'I believe God made me to teach and train children.', lang: 'km' });
   ok('kept, with its language and the first of its three years', r.ok && r.me.calling.statement.startsWith('I believe') && r.me.calling.sl === 'km' && r.me.calling.from >= Number(today.slice(0, 4)) && r.me.calling.a.sphere === 'education' && r.me.calling.a.focus === 'Start a reading club');
@@ -604,7 +606,7 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   ok('… and untick takes it back', !(await H.calling(CL.uid, CL.token, 'mile', { m: 'm1', done: false })).me.calling.done.m1);
   ok('… and written fresh again when cleared', (await H.calling(CL.uid, CL.token, 'text', { kind: 'letter', lang: 'en', text: '' })).me.calling.letter.en === '');
   const pc = (await H.person(CO.uid, CO.token, CL.uid)).person;
-  ok('nobody else sees my calling on my card', pc && !JSON.stringify(pc).includes('teach children') && !('calling' in pc));
+  ok('nobody else sees my calling on my card', pc && !JSON.stringify(pc).includes('teach children') && !JSON.stringify(pc).includes('Kids leave school') && !('calling' in pc));
   ok('finding it is a moment in the team feed, with no words', (await H.feed(CO.uid, CO.token)).feed.some(x => x.who.id === CL.uid && x.kind === 'calling' && !JSON.stringify(x).includes('teach')));
   const cc = await H.coachAsk(CL.uid, CL.token, CO.uid, CT.team.id, 'mentee'); await H.coachAnswer(CO.uid, CO.token, cc.id, true);
   ok('a coach doesn’t see it until the plan is shared', !(await H.coaching(CO.uid, CO.token, cc.id)).coaching.calling);

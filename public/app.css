@@ -1160,3 +1160,34 @@ body.bigScreen #main { max-width:1200px; }
 .clYear .tick { flex:none; }
 .clYear.done .stepTx { text-decoration:line-through; color:var(--muted); }
 .jrReveal .clYears, .jrReveal .clFocusTx, .jrReveal .card { text-align:left; }
+/* my calling, the deeper version: parts, starters, roles, the clarity check, the lines */
+.clPartsList { text-align:left; margin:0 0 14px; }
+.clPartRow { display:flex; gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--line); }
+.clPartRow:first-of-type { border-top:0; }
+.clPartRow b { flex:1; }
+.clStarters { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 10px; }
+.clStart { border:1px dashed var(--accent); background:var(--accentSoft); color:var(--ink); border-radius:999px; padding:6px 11px; font:inherit; font-size:13.5px; cursor:pointer; touch-action:manipulation; }
+.clWriteQ { margin-top:6px; }
+.clLead { font-size:24px; }
+.clDesign .clDRow b { display:block; }
+.clCk { display:flex; gap:10px; align-items:flex-start; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--line); padding:10px 0; font:inherit; color:var(--ink); cursor:pointer; touch-action:manipulation; }
+.clCk:first-of-type { border-top:0; }
+.clCk .tick { flex:none; }
+.clCk.on > span:last-child { font-weight:700; }
+.clTip { display:block; margin-top:3px; font-weight:400; }
+.clReadAloud { text-align:left; }
+.clEx { display:block; margin-top:3px; font-style:italic; }
+.clHeart { display:block; margin-top:6px; font-size:13.5px; line-height:1.45; color:var(--ink); background:var(--accentSoft); border-radius:10px; padding:8px 10px; }
+.clHeart i { color:var(--muted); font-style:normal; white-space:nowrap; }
+.clRoleH { margin:14px 0 6px; }
+.clRole { display:flex; flex-direction:column; gap:3px; width:100%; text-align:left; border:1.5px solid var(--border2); background:var(--surface); color:var(--ink); border-radius:14px; padding:10px 12px; margin-bottom:8px; font:inherit; font-size:14px; line-height:1.4; cursor:pointer; touch-action:manipulation; }
+.clRole b { font-size:15px; }
+.clRole.on { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset; }
+.sphHead { display:flex; gap:12px; align-items:center; width:100%; margin-bottom:8px; cursor:pointer; touch-action:manipulation; }
+.sphHead.open { border-color:var(--accent); }
+.sphBody { margin:0 0 14px; }
+.sphBody .clHeart { margin:0 0 10px; }
+.sphRole { margin-bottom:8px; }
+.sphRole p { margin:4px 0 6px; line-height:1.45; }
+.sphRole.mine { border-color:var(--accent); }
+.sphRole .jrTags { margin-top:6px; }

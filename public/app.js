@@ -20,6 +20,7 @@
       screen                     — the team on a projector (leaderboard, gifts, words, QR), refreshing
       callq · calling            — find my calling (six parts, one question a screen), then my calling and the words to send
       spheres                    — the spheres of society and the work in each (spheres.js)
+      cupdate                    — an update for my supporters, written into a letter
       reset · badges             — the Sunday reset (five steps to set up the week); my badges
       habitcal                   — my habit calendar (12 weeks)
       journal · homecfg          — my journal (private); customize Home (order, hide; on this phone)
@@ -126,7 +127,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -184,6 +185,7 @@ function render(){
     else if(V==='callq') h=callqHtml();
     else if(V==='calling') h=callingHtml();
     else if(V==='spheres') h=spheresHtml();
+    else if(V==='cupdate') h=cupdateHtml();
     else if(V==='reset') h=resetHtml();
     else if(V==='habitcal') h=habitCalHtml();
     else if(V==='journal') h=journalHtml();
@@ -1240,7 +1242,7 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_();
   all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
   all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });
@@ -2522,7 +2524,7 @@ var CL_QS=[
   { p:'write', k:'w4', type:'write', lead:'Because…', q:'Why it matters' }
 ];
 var CL_WRITE_FROM={ w1:['me','good'], w2:['who','change','spheres','place'], w3:['focus','first'], w4:['picture','why','burden'] };
-function clOf_(){ var c=(S.me && S.me.calling)||{}; return { a:c.a||{}, statement:c.statement||'', sl:c.sl||'', letter:c.letter||{}, post:c.post||{}, from:c.from||0, at:c.at||'', done:c.done||{}, step:c.step||0 }; }
+function clOf_(){ var c=(S.me && S.me.calling)||{}; return { a:c.a||{}, statement:c.statement||'', sl:c.sl||'', letter:c.letter||{}, post:c.post||{}, from:c.from||0, at:c.at||'', done:c.done||{}, step:c.step||0, updates:c.updates||[] }; }
 function clFrom_(){ var c=clOf_(), d=todayStr(); return c.from || (Number(d.slice(5,7))>=7 ? Number(d.slice(0,4))+1 : Number(d.slice(0,4))); }
 function clOpt_(k, id){ return (CL_OPTS[k]||[]).filter(function(o){ return o[0]===id; })[0]; }
 function clTx_(A, k){ return String(A[k]||'').trim(); }
@@ -2784,6 +2786,7 @@ function callingHtml(){
   h+=clDesignHtml_(A);
   h+=sec('🤝','Who walks with me', line('Mentors and friends', clTx_(A,'mentor')));
   h+=clShareHtml_(c);
+  h+=cuListHtml_(c);
   h+='<div class="btnRow" style="margin-top:16px"><button class="btn ghost" id="clEditWords">✏️ '+esc(t('Change the words'))+'</button><button class="btn ghost" id="goCallq">🔄 '+esc(t('Go through it again'))+'</button></div>';
   h+='<button class="linkbtn" id="goSpheres">🌍 '+esc(t('Explore the spheres of society'))+' ›</button>';
   if(planOf().vision) h+='<button class="linkbtn" id="goVision">📜 '+esc(t('Read my vision'))+' ›</button>';
@@ -2855,7 +2858,7 @@ function clShareHtml_(c){
   h+='<div class="clLangRow"><span class="pmeta">'+esc(t('Write it in'))+'</span><div class="seg">'+[['en','English'],['km','ខ្មែរ']].map(function(x){ return '<button data-cllang="'+x[0]+'" class="'+(lang===x[0]?'on':'')+'">'+x[1]+'</button>'; }).join('')+'</div></div>';
   if(lang!==LANG) h+='<p class="pmeta" style="margin:0 0 8px">'+esc(t('The parts you wrote yourself stay as you wrote them — change them here if you like.'))+'</p>';
   h+='<textarea id="clTx" class="clTx" rows="'+(tab==='letter'?18:7)+'" maxlength="'+(tab==='letter'?6000:1200)+'">'+esc(clText_(c, tab, lang))+'</textarea>';
-  h+='<div class="btnRow clBtns"><button class="btn" id="clSend">📤 '+esc(t('Send'))+'</button><button class="btn ghost" id="clTg">✈️ Telegram</button><button class="btn ghost" id="clCopy">📋 '+esc(t('Copy'))+'</button></div>';
+  h+='<div class="btnRow clBtns"><button class="btn" id="clSend">📤 '+esc(t('Send'))+'</button><button class="btn ghost" id="clTg">✈️ Telegram</button><button class="btn ghost" id="clCopy">📋 '+esc(t('Copy'))+'</button><button class="btn ghost" id="clPrint">🖨️ '+esc(t('Print or PDF'))+'</button></div>';
   h+='<div class="clTxRow"><button class="btn small" id="clTxSave"'+(dirty?'':' hidden')+'>💾 '+esc(t('Save my changes'))+'</button>'+(saved||dirty?'<button class="linkbtn" id="clTxFresh">↻ '+esc(t('Write it fresh from my calling'))+'</button>':'')+'</div>';
   return h+'</div>';
 }
@@ -2911,6 +2914,7 @@ function callingHomeHtml_(){
     (clTx_(A,'focus')?'<span class="visionToday"><span class="pmeta">'+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</span>'+esc(A.focus)+'</span>':'')+
     (m?'<span class="visionToday"><span class="pmeta">'+esc(gpT('By the end of {y}',{y:fr+n-1}))+'</span>'+esc(m)+'</span>':'')+
     '<span class="visionRead">'+esc(t('Open · share it'))+' ›</span></button>'+
+    (cuDue_()?'<button class="card whyLine" id="goCUpdate"><span class="pmeta">📬 '+esc(t('Updates for your supporters'))+'</span><span class="whyLineTx">'+esc(t('It’s been three months — time to tell them how it’s going.'))+' ›</span></button>':'')+
     (P.vision?'<button class="card whyLine" id="goVision"><span class="pmeta">📜 '+esc(t('My vision'))+'</span><span class="whyLineTx">'+(read?'✓ '+esc(t('Read today')):esc(t('Read my vision'))+' · +5 XP')+' ›</span></button>':'');
 }
 function callingPlanHtml_(){
@@ -2985,6 +2989,7 @@ function bindCallingPage_(){
   on('clSend', function(){ var x=cur(); if(navigator.share){ navigator.share({ text:x }).catch(function(){}); } else clCopy_(x); });
   on('clTg', function(){ window.open('https://t.me/share/url?url='+encodeURIComponent(location.origin)+'&text='+encodeURIComponent(cur()), '_blank'); });
   on('clCopy', function(){ clCopy_(cur()); });
+  on('clPrint', function(){ printText_('', cur()); });
   on('clTxSave', busyOnce_(function(){ var k=key(), x=cur(); return call('calling','text',{ kind:S.clTab||'letter', lang:S.clLang||LANG, text:x }).then(function(d){ if(d && d.ok){ S.me=d.me; if(S.clEdit) delete S.clEdit[k]; showMsg(t('Saved.')); render(); } else failMsg(d); }); }));
   on('clTxFresh', busyOnce_(function(){ if(!confirm(t('Write it fresh from your calling? Your changes here will go.'))) return; var k=key(); if(S.clEdit) delete S.clEdit[k];
     return call('calling','text',{ kind:S.clTab||'letter', lang:S.clLang||LANG, text:'' }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
@@ -2997,6 +3002,100 @@ function bindCallingPage_(){
   all('[data-clgoal]', function(b){ var n=Number(b.getAttribute('data-clgoal')), A=clOf_().a, by=(clFrom_()+n-1)+'-12', now=monthKey(todayStr());
     if(by<now) by=addMonths(now, 3);
     S.goalDraft={ area:clArea_(A), title:clTx_(A,'m'+n).slice(0,100), measure:'', help:'', why:clTx_(A,'focus').slice(0,200), by:by }; go('goaledit'); });
+}
+
+/* ---------------- updates for my supporters (view cupdate; api.js calling 'update') ----------------
+   Nov 2026: a calling shared once is a start; people who pray and give want to hear how it's going.
+   A short guided update — what happened, one story, where I am on my plan (the milestones), what's
+   next, how to pray, thanks — written into a letter in English or Khmer, edited, sent by the person
+   (Share, Telegram, Copy, Print), and kept (the last 12). Home nudges after three months. */
+var CU_QS=[
+  ['since','What’s happened since you last shared?','e.g. I finished my training, and started helping at the club every Saturday.',['This month I…','I finished…','I started…','God showed me…']],
+  ['story','Tell one story — a moment that showed you why this matters.','e.g. A girl who couldn’t read in June read a whole page out loud last week. Everyone clapped.',[]],
+  ['next','What’s next?','',[]],
+  ['pray','How can they pray for you?','e.g. For more volunteers, and for my exams in March.',[]],
+  ['thanks','Anything to thank them for?','e.g. Thank you, Aunt Srey, for the books you sent.',[]]
+];
+function cuDue_(){ var c=clOf_(); if(!c.statement) return false; var last=c.updates.length ? c.updates[c.updates.length-1].d : c.at; return !!last && addDays(last, 90)<=todayStr(); }
+function cuNext_(){ var c=clOf_(), A=c.a, fr=clFrom_(), n=[1,2,3].filter(function(i){ return clTx_(A,'m'+i) && !c.done['m'+i]; })[0];
+  return n ? gpT('By the end of {y}: {m}',{y:fr+n-1, m:clTx_(A,'m'+n)}) : clTx_(A,'first'); }
+function cuLetter_(U){
+  var c=clOf_(), A=c.a, fr=clFrom_(), me=S.me, P=[], own=function(k){ return String(U[k]||'').trim(); };
+  P.push(t('Dear friends and family,'));
+  P.push(clTx_(A,'focus') ? gpT('Here’s an update on what I’m focusing on: {focus}',{focus:clEnd_(clTx_(A,'focus'))}) : t('Here’s an update on my calling, and what God is doing.'));
+  if(own('since')) P.push(own('since'));
+  if(own('story')) P.push(gpT('One moment that stayed with me: {x}',{x:clEnd_(own('story'))}));
+  var ms=[1,2,3].map(function(n){ var m=clTx_(A,'m'+n); return m ? (c.done['m'+n]?'✓ ':'○ ')+(fr+n-1)+': '+m : ''; }).filter(Boolean);
+  if(ms.length) P.push(t('Where I am on my plan:')+'\n'+ms.join('\n'));
+  if(own('next')) P.push(gpT('What’s next: {x}',{x:clEnd_(own('next'))}));
+  if(own('pray')) P.push(gpT('Please pray: {x}',{x:clEnd_(own('pray'))}));
+  if(own('thanks')) P.push(own('thanks'));
+  P.push(t('Thank you for walking with me in this.'));
+  P.push(t('With love,')+'\n'+(me.name||''));
+  return P.join('\n\n');
+}
+function cupdateHtml(){
+  var c=clOf_(), U=S.cu; if(!c.statement || !U) return backBtn(t('Back'))+loadingHtml_();
+  var h=backBtn(t('My calling'))+'<h2>📬 '+esc(t('Update your supporters'))+'</h2>';
+  if(U.step!=='letter'){
+    h+='<p class="sub">'+esc(t('People who pray for you and give want to hear how it’s going. Five short answers — we’ll turn them into a letter.'))+'</p>';
+    CU_QS.forEach(function(Q){ var v=U[Q[0]]||'', ph=Q[0]==='next' ? cuNext_() : t(Q[2]);
+      h+='<label class="f" for="cu_'+Q[0]+'">'+esc(t(Q[1]))+'</label>'+(Q[3].length?'<div class="clStarters">'+Q[3].map(function(x, i){ return '<button class="clStart" data-custart="'+Q[0]+'|'+i+'">＋ '+esc(t(x))+'</button>'; }).join('')+'</div>':'')+
+        '<textarea id="cu_'+Q[0]+'" data-cu="'+Q[0]+'" rows="'+(Q[0]==='since'||Q[0]==='story'?4:2)+'" maxlength="800" placeholder="'+esc(ph)+'">'+esc(v)+'</textarea>'; });
+    var A=c.a, fr=clFrom_(), ms=[1,2,3].filter(function(n){ return clTx_(A,'m'+n); });
+    if(ms.length) h+='<div class="card" style="margin-top:12px"><div class="pmeta">'+esc(t('Where you are on your plan goes in too:'))+'</div>'+ms.map(function(n){ return '<div class="pmeta" style="color:var(--ink)">'+(c.done['m'+n]?'✓ ':'○ ')+(fr+n-1)+': '+esc(clTx_(A,'m'+n))+'</div>'; }).join('')+'<button class="linkbtn" id="goCalling">'+esc(t('Tick off a milestone first'))+' ›</button></div>';
+    return h+'<button class="btn" id="cuWrite" style="margin-top:14px">✍️ '+esc(t('Write my update'))+'</button>';
+  }
+  var lang=U.lang||LANG, txt=U.edit!=null ? U.edit : withLang_(lang, function(){ return cuLetter_(U); });
+  h+='<div class="clLangRow"><span class="pmeta">'+esc(t('Write it in'))+'</span><div class="seg">'+[['en','English'],['km','ខ្មែរ']].map(function(x){ return '<button data-culang="'+x[0]+'" class="'+(lang===x[0]?'on':'')+'">'+x[1]+'</button>'; }).join('')+'</div></div>'+
+    '<textarea id="cuTx" class="clTx" rows="18" maxlength="4000">'+esc(txt)+'</textarea>'+
+    '<div class="btnRow clBtns"><button class="btn" id="cuSend">📤 '+esc(t('Send'))+'</button><button class="btn ghost" id="cuTg">✈️ Telegram</button><button class="btn ghost" id="cuCopy">📋 '+esc(t('Copy'))+'</button><button class="btn ghost" id="cuPrint">🖨️ '+esc(t('Print or PDF'))+'</button></div>'+
+    '<button class="btn" id="cuSave" style="margin-top:12px">💾 '+esc(t('Keep it in my updates'))+' · +15 XP</button><button class="linkbtn" id="cuBack">← '+esc(t('Change my answers'))+'</button>';
+  return h;
+}
+/* On my calling: the updates I've kept, newest first. */
+function cuListHtml_(c){
+  var L=c.updates.slice().reverse(), due=cuDue_();
+  var h='<h3>📬 '+esc(t('Updates for your supporters'))+'</h3><div class="card">'+(due?'<div class="cuDue">⏰ '+esc(t('It’s been three months — time to tell them how it’s going.'))+'</div>':'')+
+    (L.length?'':'<p class="sub" style="margin:0 0 8px">'+esc(t('After you share your calling, send a short update every few months. People keep praying when they hear what God is doing.'))+'</p>')+
+    '<button class="btn ghost" id="goCUpdate">✍️ '+esc(t('Write an update'))+'</button>';
+  L.forEach(function(u){ var open=S.cuOpen===u.d;
+    h+='<button class="cuRow" data-cuopen="'+u.d+'"><b>'+esc(dayLabel(u.d)+' '+u.d.slice(0,4))+'</b><span class="pmeta">'+esc(u.t.split('\n').filter(Boolean).slice(1,2).join('').slice(0,70))+'…</span><span class="chev">'+(open?'▾':'›')+'</span></button>'+
+      (open?'<div class="cuOpen"><div class="clWhy">'+esc(u.t)+'</div><div class="btnRow clBtns"><button class="btn small" data-cucopy="'+u.d+'">📋 '+esc(t('Copy'))+'</button><button class="btn small ghost" data-cuprint="'+u.d+'">🖨️ '+esc(t('Print or PDF'))+'</button><button class="linkbtn" data-cudrop="'+u.d+'" style="color:var(--bad)">'+esc(t('Delete'))+'</button></div></div>':''); });
+  return h+'</div>';
+}
+/* Print a letter (or save it as a PDF from the print screen): just the words, on a clean page. */
+function printText_(title, text){
+  var old=$('printArea'); if(old) old.remove();
+  var d=document.createElement('div'); d.id='printArea';
+  d.innerHTML='<div class="prHead">កូនព្រះ · GonPreah</div>'+(title?'<h1>'+esc(title)+'</h1>':'')+'<div class="prBody">'+esc(text)+'</div>';
+  document.body.appendChild(d);
+  var done=function(){ var e=$('printArea'); if(e) e.remove(); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(function(){ try { window.print(); } catch(e){ done(); } }, 50);
+}
+function bindCUpdate_(){
+  on('goCUpdate', function(){ S.cu={ step:'form', since:'', story:'', next:cuNext_(), pray:'', thanks:'' }; go('cupdate'); });
+  all('[data-cuopen]', function(b){ var d=b.getAttribute('data-cuopen'); S.cuOpen=S.cuOpen===d ? null : d; gpTap(); render(); });
+  var upd=function(d){ return clOf_().updates.filter(function(x){ return x.d===d; })[0]; };
+  all('[data-cucopy]', function(b){ var u=upd(b.getAttribute('data-cucopy')); if(u) clCopy_(u.t); });
+  all('[data-cuprint]', function(b){ var u=upd(b.getAttribute('data-cuprint')); if(u) printText_('', u.t); });
+  all('[data-cudrop]', busyOnce_(function(b){ if(!confirm(t('Delete this update?'))) return; return call('calling','dropUpdate',{ d:b.getAttribute('data-cudrop') }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
+  if(S.view!=='cupdate' || !S.cu) return;
+  var U=S.cu, keep=function(){ document.querySelectorAll('[data-cu]').forEach(function(e){ U[e.getAttribute('data-cu')]=e.value; }); };
+  document.querySelectorAll('[data-cu]').forEach(function(e){ e.oninput=keep; });
+  all('[data-custart]', function(b){ var p=b.getAttribute('data-custart').split('|'), Q=CU_QS.filter(function(q){ return q[0]===p[0]; })[0], e=$('cu_'+p[0]); if(!Q || !e) return;
+    var s=t(Q[3][Number(p[1])]).replace(/…$/,''); e.value=(e.value.trim() ? e.value.replace(/\s*$/,'')+' ' : '')+s+' '; keep(); e.focus(); });
+  on('cuWrite', function(){ keep(); if(!['since','story','next'].some(function(k){ return String(U[k]||'').trim(); })){ showMsg(t('Write a little about what’s happened first.')); return; } U.step='letter'; U.edit=null; gpTap(); render(); window.scrollTo(0,0); });
+  on('cuBack', function(){ U.step='form'; render(); window.scrollTo(0,0); });
+  all('[data-culang]', function(b){ if(U.edit!=null && !confirm(t('Write it again in this language? Your changes here will go.'))) return; U.lang=b.getAttribute('data-culang'); U.edit=null; render(); });
+  var tx=$('cuTx'); if(tx) tx.oninput=function(){ U.edit=tx.value; };
+  var cur=function(){ var e=$('cuTx'); return e ? e.value : ''; };
+  on('cuSend', function(){ var x=cur(); if(navigator.share){ navigator.share({ text:x }).catch(function(){}); } else clCopy_(x); });
+  on('cuTg', function(){ window.open('https://t.me/share/url?url='+encodeURIComponent(location.origin)+'&text='+encodeURIComponent(cur()), '_blank'); });
+  on('cuCopy', function(){ clCopy_(cur()); });
+  on('cuPrint', function(){ printText_('', cur()); });
+  on('cuSave', busyOnce_(function(){ var b=$('cuSave'); return call('calling','update',{ text:cur() }).then(function(d){ if(d && d.ok){ S.me=d.me; confettiAt_(b); showMsg(t('Kept. Send it to the people who pray for you.')); S.cu=null; S.cuOpen=todayStr(); goBack('calling'); } else failMsg(d); }); }));
 }
 
 /* ---------------- today's devotional ----------------
@@ -3067,16 +3166,17 @@ function pulseHtml(){
   var P=S.pulse, h=backBtn(t('Back'));
   if(!P) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
   h+='<h2>📊 '+esc(t('Team pulse'))+'</h2><p class="sub">'+esc(P.team.emoji+' '+P.team.name)+' · '+esc(t('Only leaders see this. Numbers only — never anyone’s words.'))+'</p>';
-  h+='<div class="card statTiles"><div><b>'+P.today+'</b><span>'+esc(t('in the app today'))+'</span></div><div><b>'+P.week+'</b><span>'+esc(t('this week'))+'</span></div><div><b>'+P.quiet+'</b><span>'+esc(t('quiet 4+ days'))+'</span></div><div><b>'+(P.allTests||0)+'</b><span>'+esc(t('all 3 tests done'))+'</span></div><div><b>'+(P.journeys||0)+'</b><span>'+esc(t('finished the Life Journey'))+'</span></div></div>';
+  h+='<div class="card statTiles"><div><b>'+P.today+'</b><span>'+esc(t('in the app today'))+'</span></div><div><b>'+P.week+'</b><span>'+esc(t('this week'))+'</span></div><div><b>'+P.quiet+'</b><span>'+esc(t('quiet 4+ days'))+'</span></div><div><b>'+(P.allTests||0)+'</b><span>'+esc(t('all 3 tests done'))+'</span></div><div><b>'+(P.journeys||0)+'</b><span>'+esc(t('finished the Life Journey'))+'</span></div><div><b>'+(P.callings||0)+'</b><span>'+esc(t('found their calling'))+'</span></div></div>';
   if(!P.rows.length) return h+'<div class="card"><p class="sub" style="margin:0">'+esc(t('No one else in the team yet.'))+'</p></div>';
   h+='<div class="card list">'+P.rows.map(function(r){
     var bits=[]; if(r.streak!=null) bits.push('🔥 '+r.streak); if(r.habitDays!=null) bits.push('✅ '+r.habitDays+'/7'); if(r.focusWeek) bits.push('⏱ '+focusShort_(r.focusWeek)); if(r.xpWeek) bits.push('+'+r.xpWeek+' XP');
     if(r.tests) bits.push('📝 '+((r.tests.type?1:0)+(r.tests.strengths?1:0)+(r.tests.gifts?1:0))+'/3');
+    if(r.calling) bits.push('🎯');
     if(r.journey) bits.push('🗺️ '+(r.journey.finished?'✓':r.journey.stops+'/'+JR_STOPS.length));
     var quiet=r.seenAgo==null || r.seenAgo>=4;
     return '<div class="feedRow'+(quiet?' quietRow':'')+'">'+faceHtml(r,40)+'<span class="feedTx"><b>'+esc(r.name)+'</b><div class="pmeta">'+esc(agoLabel_(r.seenAgo))+(bits.length?' · '+esc(bits.join(' · ')):'')+'</div></span>'+
       '<button class="btn small'+(quiet?'':' ghost')+'" data-cheer="'+esc(r.id)+'"'+(r.cheered?' disabled':'')+'>'+(r.cheered?'💛 ✓':'💛 '+esc(t('Cheer')))+'</button></div>';
-  }).join('')+'</div><p class="hint">'+esc(t('📝 = how many of the three tests (personality, strengths, gifts) they’ve taken. 🗺️ = how far on the Life Journey, if they show it.'))+'</p><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
+  }).join('')+'</div><p class="hint">'+esc(t('📝 = how many of the three tests (personality, strengths, gifts) they’ve taken. 🗺️ = how far on the Life Journey, if they show it. 🎯 = they’ve found their calling (never its words).'))+'</p><p class="hint">'+esc(t('A cheer sends them a short notification from you: “… is cheering you on 💛”. Once a day.'))+'</p>';
   return h;
 }
 

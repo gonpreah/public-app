@@ -282,7 +282,7 @@ ok('the admin sees past reports too', (await H.adminReports(F.uid, F.token, true
 delete process.env.GPA_ADMIN_EMAILS;
 
 /* ---------- 11. username and password ---------- */
-ok('a password must be 8 characters or more', (await H.registerPassword({ username: 'kosal', name: 'Kosal Meas', birthYear: 2001, password: 'short' })).err === 'password');
+ok('a password must be 4 characters or more — easy is fine', (await H.registerPassword({ username: 'kosal', name: 'Kosal Meas', birthYear: 2001, password: 'abc' })).err === 'password');
 ok('under 13 can’t make an account with a password either', (await H.registerPassword({ username: 'kidpw', name: 'Kid Pw', birthYear: Y - 12, password: 'longenough' })).err === 'too_young');
 ok('a taken username is refused', (await H.registerPassword({ username: 'sokha', name: 'Someone', birthYear: 2001, password: 'longenough' })).err === 'taken');
 const P = await H.registerPassword({ username: 'Kosal', name: 'Kosal Meas', birthYear: 2001, password: 'my good password' });
@@ -295,19 +295,40 @@ ok('sign in with username (any case) and password', pl.ok && pl.uid === P.uid &&
 ok('a wrong password is refused', (await H.loginPassword('kosal', 'wrong password')).err === 'login');
 ok('an unknown username says the same', (await H.loginPassword('nobody_here', 'my good password')).err === 'login');
 ok('a Google account has no password to sign in with', (await H.loginPassword('sokha', 'anything at all')).err === 'google_only');
-for (let i = 0; i < 6; i++) await H.loginPassword('kosal', 'wrong password');
-ok('after 8 wrong tries the account locks', (await H.loginPassword('kosal', 'wrong password')).err === 'locked' && (await H.loginPassword('kosal', 'my good password')).err === 'locked');
-globalThis.__gpaStore._m.set('u:' + P.uid, JSON.stringify(Object.assign(JSON.parse(globalThis.__gpaStore._m.get('u:' + P.uid)), { pwLock: { n: 8, until: new Date(Date.now() - 1000).toISOString() } })));
-ok('… and opens again after 15 minutes', (await H.loginPassword('kosal', 'my good password')).ok);
-ok('changing it needs the current one', (await H.setPassword(P.uid, P.token, 'not it', 'a new password')).err === 'current');
-ok('… and a long enough new one', (await H.setPassword(P.uid, P.token, 'my good password', 'short')).err === 'password');
-ok('a password is changed', (await H.setPassword(P.uid, P.token, 'my good password', 'a new password')).ok && (await H.loginPassword('kosal', 'a new password')).ok);
+for (let i = 0; i < 12; i++) await H.loginPassword('kosal', 'wrong password');
+ok('no lock after wrong tries — the right one still works', (await H.loginPassword('kosal', 'my good password')).ok);
+ok('a new password needs 4 characters', (await H.setPassword(P.uid, P.token, '', 'abc')).err === 'password');
+ok('signed in, I change mine without the old one', (await H.setPassword(P.uid, P.token, '', '1234')).ok && (await H.loginPassword('@kosal', '1234')).ok);
 ok('a Google account can add a password', (await H.setPassword(A.uid, A.token, '', 'sokha password')).ok && (await H.loginPassword('sokha', 'sokha password')).ok);
-ok('only the admin can reset a password', (await H.adminResetPassword(P.uid, P.token, 'srey')).err === 'not_admin');
+ok('forgot it: a wrong birth year doesn’t open it', (await H.resetOwnPassword('kosal', 1999, 'mynewpw')).err === 'match' && (await H.resetOwnPassword('nobody_here', 2001, 'mynewpw')).err === 'match');
+const own = await H.resetOwnPassword('@Kosal', '2001', 'mynewpw');
+ok('… my username and birth year set a new one and sign me in', own.ok && own.uid === P.uid && (await H.boot(P.uid, own.token)).ok && (await H.loginPassword('kosal', 'mynewpw')).ok);
+for (let i = 0; i < 10; i++) await H.resetOwnPassword('srey', 1900, 'guessing');
+ok('… ten wrong birth years a day at most', (await H.resetOwnPassword('srey', Y - 15, 'right year')).err === 'too_many');
+ok('only the admin or a leader can set someone else’s password', (await H.setUserPassword(P.uid, P.token, 'srey', 'abcd')).err === 'not_admin');
+const Q0 = await H.registerPassword({ username: 'notadmin', name: 'Not Admin', birthYear: 2000, password: 'notadmin password' });
+const LT = await H.createTeam(Q0.uid, Q0.token, { name: 'Password class' });
+const AM = await H.registerPassword({ username: 'adultmember', name: 'Adult Member', birthYear: 2001, password: 'am password' });
+await H.joinTeam(AM.uid, AM.token, LT.team.code); await H.joinTeam(PM.uid, PM.token, LT.team.code);
+ok('a leader sets the password of an adult in their team, to anything', (await H.setUserPassword(Q0.uid, Q0.token, 'adultmember', 'class2026')).password === 'class2026' && (await H.loginPassword('adultmember', 'class2026')).ok);
+ok('… not of someone under 18 — that’s the admin', (await H.setUserPassword(Q0.uid, Q0.token, 'srey', 'abcd')).err === 'not_admin');
 process.env.GPA_ADMIN_USERNAMES = 'kosal';
 ok('an admin named by username', (await H.boot(P.uid, P.token)).me.admin === true);
 const rp = await H.adminResetPassword(P.uid, P.token, 'srey');
-ok('the admin resets a forgotten password: a one-time one, and old sign-ins end', rp.ok && rp.password.length === 10 && (await H.boot(PM.uid, PM.token)).err === 'auth' && (await H.loginPassword('srey', rp.password)).ok);
+ok('the admin sets anyone’s: an easy one (“mango4821”) if none is given — and the old sign-ins carry on', rp.ok && /^[a-z]+\d{4}$/.test(rp.password) && (await H.boot(PM.uid, PM.token)).ok && (await H.loginPassword('srey', rp.password)).ok);
+ok('… or the one they choose', (await H.setUserPassword(P.uid, P.token, 'srey', 'srey2026')).ok && (await H.loginPassword('srey', 'srey2026')).ok);
+await H.setUserPassword(P.uid, P.token, 'srey', rp.password);
+const FG = await H.registerPassword({ username: 'forgot1', name: 'For Got', birthYear: 2000, password: 'forgot1 password' });
+ok('“Tell the admin” answers the same for a name that isn’t there', (await H.forgotPassword('nobody_here')).ok && (await H.adminReports(P.uid, P.token, false)).pwAsks.length === 0);
+ok('… and for a real one, the ask waits for the admin', (await H.forgotPassword('@FORGOT1')).ok && (await H.adminReports(P.uid, P.token, false)).pwAsks.map(x => x.username).join() === 'forgot1');
+await H.forgotPassword('forgot1');
+ok('… once, however many times they tap', (await H.adminReports(P.uid, P.token, false)).pwAsks.length === 1 && (await H.boot(P.uid, P.token)).pwAsks === 1);
+ok('the admin’s phone is remembered, to be told when someone asks', (JSON.parse(globalThis.__gpaStore._m.get('admins') || '[]')).includes(P.uid));
+ok('nobody else sees or clears the asks', (await H.adminReports(Q0.uid, Q0.token, false)).err === 'not_admin' && (await H.dropPwAsk(Q0.uid, Q0.token, FG.uid)).err === 'not_admin');
+const rp2 = await H.setUserPassword(P.uid, P.token, 'forgot1', '');
+ok('setting it clears the ask', rp2.ok && (await H.adminReports(P.uid, P.token, false)).pwAsks.length === 0 && (await H.loginPassword('forgot1', rp2.password)).ok);
+await H.forgotPassword('forgot1'); globalThis.__gpaStore._m.set('pwAsks', JSON.stringify(JSON.parse(globalThis.__gpaStore._m.get('pwAsks')).map(x => Object.assign(x, { at: new Date(Date.now() - 3600e3).toISOString() }))));
+ok('the admin can clear an ask without setting one', (await H.dropPwAsk(P.uid, P.token, FG.uid)).pwAsks.length === 0);
 delete process.env.GPA_ADMIN_USERNAMES;
 
 /* ---------- 12. Today: three things, focus time, the evening check-in ---------- */

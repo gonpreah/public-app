@@ -87,13 +87,13 @@ function failMsg(d){
     title:'Write what you want to do.', area:'Choose a part of life.', by:'Choose a month that hasn’t passed yet.', text:'Write something first.',
     not_leader:'Only a leader can do this.', none:'That isn’t here any more.',
     not_admin:'Only the admin can see this.', what:'Choose what is wrong.', suspended:'This account has been suspended.',
-    password:'Use at least 8 characters for your password.', login:'That username or password isn’t right.',
+    password:'Use at least 4 characters for your password.', login:'That username or password isn’t right.', match:'That username and birth year don’t match.', too_many:'Too many tries today. Ask your team leader or the admin.',
     locked:'Too many tries. Wait 15 minutes and try again.', google_only:'This account signs in with Google.', current:'Your current password isn’t right.',
     once_a_day:'Once a day is enough — try again tomorrow.',
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; if(d && 'pwAsks' in d) S.pwAsks=d.pwAsks; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -232,14 +232,31 @@ function signinHtml(){
     '<p class="sub" style="text-align:center">'+esc(t('Find out how God made you, build a plan for your life, and grow together with your team.'))+'</p>'+
     (JOIN ? '<div class="banner">'+esc(gpT('You have a team code: {code}. Sign in to join.',{code:JOIN}))+'</div>' : '')+
     '<div class="card">'+
-      '<label class="f" for="liUser">'+esc(t('Username'))+'</label><div class="atRow"><span>@</span><input type="text" id="liUser" autocomplete="username" autocapitalize="none" maxlength="20"></div>'+
-      '<label class="f" for="liPass">'+esc(t('Password'))+'</label><input type="password" id="liPass" autocomplete="current-password" maxlength="128">'+
+      '<label class="f" for="liUser">'+esc(t('Username'))+'</label><div class="atRow"><span>@</span><input type="text" id="liUser" autocomplete="username" autocapitalize="none" maxlength="20" value="'+esc(S.liUser!=null ? S.liUser : (lsGet('gpa-lastuser')||''))+'"></div>'+
+      '<label class="f" for="liPass">'+esc(t('Password'))+'</label><div class="pwRow"><input type="'+(S.liShow?'text':'password')+'" id="liPass" autocomplete="current-password" autocapitalize="none" maxlength="128"><button class="pwEye" id="liEye" type="button" aria-label="'+esc(t('Show the password'))+'">'+(S.liShow?'🙈':'👁')+'</button></div>'+
       '<button class="btn" id="liGo"'+(S.busy?' disabled':'')+'>'+esc(S.busy?t('Signing in…'):t('Sign in'))+'</button>'+
       '<button class="btn ghost" id="liNew" style="margin-top:8px">'+esc(t('New here? Make an account'))+'</button>'+
       (S.authCfg && S.authCfg.google ? '<div class="orLine"><span>'+esc(t('or'))+'</span></div><button class="btn gBtn" id="googleBtn"'+(S.busy?' disabled':'')+'><span class="gG">G</span>'+esc(t('Continue with Google'))+'</button>' : '')+
-      '<p class="hint" style="text-align:center;margin-top:10px">'+esc(t('Forgot your password? Ask your team leader to contact the GonPreah admin.'))+'</p>'+
+      forgotHtml_()+
     '</div>'+
     '<p class="pFine" style="text-align:center">'+esc(t('GonPreah is for people 13 and older.'))+'</p></div>';
+}
+/* Forgot my password: ask, by username; the admin is told and gives a one-time password. */
+/* Forgot my password: my username and birth year, then a new one — and I'm in. If I can't
+   remember those, the admin is told and sets one for me. */
+function forgotHtml_(){
+  var F=S.forgot;
+  if(!F) return '<button class="linkbtn" id="liForgot" style="display:block;margin:12px auto 0">🔑 '+esc(t('Forgot your password?'))+'</button>';
+  if(F.sent) return '<div class="banner" style="margin-top:12px">✓ '+esc(t('Sent. The admin has been told and will set a new password for you — ask them or your team leader.'))+'</div>';
+  var y=new Date().getFullYear(), years='<option value="">'+esc(t('Choose…'))+'</option>';
+  for(var i=y-13;i>=y-80;i--) years+='<option value="'+i+'"'+(String(F.y)===String(i)?' selected':'')+'>'+i+'</option>';
+  return '<div class="card forgotBox" style="margin-top:12px"><b>🔑 '+esc(t('Forgot your password?'))+'</b><p class="sub" style="margin:4px 0 8px">'+esc(t('No problem. Your username and the year you were born, then a new password — and you’re back in.'))+'</p>'+
+    '<label class="f" for="fpUser">'+esc(t('Username'))+'</label><div class="atRow"><span>@</span><input type="text" id="fpUser" autocapitalize="none" maxlength="20" value="'+esc(F.u||'')+'"></div>'+
+    '<label class="f" for="fpYear">'+esc(t('The year you were born'))+'</label><select id="fpYear">'+years+'</select>'+
+    '<label class="f" for="fpPass">'+esc(t('New password'))+'</label><input type="text" id="fpPass" autocapitalize="none" autocomplete="new-password" maxlength="128" placeholder="'+esc(t('At least 4 characters'))+'">'+
+    '<button class="btn" id="fpSelf" style="margin-top:10px">'+esc(t('Save it and sign in'))+'</button>'+
+    '<button class="linkbtn" id="fpAsk" style="display:block;margin:8px auto 0">'+esc(t('Can’t remember your username or birth year? Tell the admin'))+'</button>'+
+    '<button class="linkbtn" id="fpCancel" style="display:block;margin:4px auto 0">'+esc(t('Cancel'))+'</button></div>';
 }
 var GSI_URL='https://accounts.google.com/gsi/client';
 function googleToken_(cb){
@@ -273,6 +290,7 @@ function signIn_(){
 }
 function afterSignIn_(d){
   AUTH={ uid:d.uid, token:d.token }; lsSet('gpa-auth', JSON.stringify(AUTH));
+  if(d.me && d.me.username) lsSet('gpa-lastuser', d.me.username);   // the sign-in screen remembers it next time
   adopt_(d); S.view='home'; S.back=[];
   if(S.me && S.me.lang && S.me.lang!==LANG){ LANG=S.me.lang; lsSet('gpa-lang', LANG); }
   bootNow_();
@@ -287,7 +305,7 @@ function signupHtml(){
       '<div class="atRow"><span>@</span><input type="text" id="suUser" autocomplete="off" autocapitalize="none" maxlength="20" value="'+esc(F.username)+'"></div>'+
       '<div class="hint" id="suUserHint">'+esc(F.free===false?t('That username is taken.'):F.free===true?t('✓ Free'):t('3–20 letters, numbers, _ or .'))+'</div>'+
       (S.google ? '' : '<label class="f" for="suPass">'+esc(t('Password'))+'</label><input type="password" id="suPass" autocomplete="new-password" maxlength="128" value="'+esc(F.password||'')+'">'+
-        '<div class="hint">'+esc(t('At least 8 characters. Write it down somewhere safe — there’s no email to reset it.'))+'</div>'+
+        '<div class="hint">'+esc(t('At least 4 characters. Forget it? Your birth year gets you back in.'))+'</div>'+
         '<label class="f" for="suPass2">'+esc(t('The password again'))+'</label><input type="password" id="suPass2" autocomplete="new-password" maxlength="128" value="'+esc(F.password2||'')+'">')+
       '<label class="f" for="suName">'+esc(t('Your name'))+'</label><input type="text" id="suName" maxlength="60" value="'+esc(F.name)+'">'+
       '<label class="f" for="suYear">'+esc(t('The year you were born'))+'</label>'+
@@ -311,7 +329,7 @@ function bindSignup_(){
   document.getElementById('suGo').onclick=function(){
     keep(); clearTimeout(suTimer); var F=S.signup;
     if(!F.birthYear){ showMsg(t('Please choose the year you were born.')); return; }
-    if(!S.google){ if((F.password||'').length<8){ showMsg(t('Use at least 8 characters for your password.')); return; } if(F.password!==F.password2){ showMsg(t('The two passwords aren’t the same.')); return; } }
+    if(!S.google){ if((F.password||'').length<4){ showMsg(t('Use at least 4 characters for your password.')); return; } if(F.password!==F.password2){ showMsg(t('The two passwords aren’t the same.')); return; } }
     S.busy=true; render();
     var info={ username:F.username, name:F.name, birthYear:Number(F.birthYear), code:F.code, lang:LANG, langChosen:LANG==='km' };
     if(!S.google) info.password=F.password;
@@ -360,6 +378,7 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
+  if(me.admin && S.pwAsks) h+='<button class="card whyLine pwAskCard" id="goAdmin"><span class="pmeta">🔑 '+esc(t('Forgotten passwords'))+'</span><span class="whyLineTx">'+esc(S.pwAsks===1?t('1 person asked for a new password'):gpT('{n} people asked for a new password',{n:S.pwAsks}))+' ›</span></button>';
   var HC=homeCfg_(); HC.order.forEach(function(id){ if(HC.hide.indexOf(id)<0) h+=homePartHtml_(id); });   // Me → Customize Home
   if(!(S.teams||[]).length) h+='<h3>👥 '+esc(t('Your team'))+'</h3>'+entryCardHtml('goTeamsHome','👥',t('Join or start a team'),t('Grow together with your friends, club or group.'));
   return h;
@@ -631,6 +650,7 @@ function personHtml(){
   }
   if(p.id!==S.me.id) h+=coachAskHtml_(p);
   if(p.id!==S.me.id && !(S.friends||[]).some(function(f){ return f.id===p.id; })) h+='<button class="btn ghost" data-friendask="'+esc(p.username)+'" style="margin-bottom:12px">👯 '+esc(gpT('Add {name} as a friend',{name:firstName_(p.name)}))+'</button>';
+  if(p.id!==S.me.id && (S.me.admin || (!p.minor && (S.teams||[]).some(function(x){ return x.leader; })))) h+=pwSetHtml_(p.username);
   if(p.id!==S.me.id) h+='<div class="safeRow"><button class="linkbtn" id="reportPerson">🚩 '+esc(t('Report'))+'</button><button class="linkbtn" id="blockPerson">🚫 '+esc(t('Block'))+'</button></div>';
   if(!p.minor && p.id!==S.me.id){
     var mine=(S.teams||[]).filter(function(tm){ return tm.leader && !(p.sharedTeams||[]).some(function(x){ return x.id===tm.id; }); });
@@ -699,7 +719,7 @@ function meHtml(){
     (me.blocked?'<button class="linkbtn" id="goBlocked">🚫 '+esc(gpT('People you’ve blocked ({n})',{n:me.blocked}))+'</button>':'')+
     '<button class="linkbtn" id="dlData">📦 '+esc(t('Download my data'))+'</button>'+
     '<button class="linkbtn" id="signOut">'+esc(t('Sign out'))+'</button>';
-  if(me.admin) h=entryCardHtml('goAdmin','🛡️',t('Reports'),t('You’re the admin: see what people reported, and act on it.'))+h;
+  if(me.admin) h=entryCardHtml('goAdmin','🛡️',t('Reports'),S.pwAsks ? (S.pwAsks===1?t('1 person asked for a new password'):gpT('{n} people asked for a new password',{n:S.pwAsks})) : t('You’re the admin: see what people reported, and act on it.'))+h;
   return h;
 }
 /* A photo shrunk on the phone to a 256px square JPEG before it goes anywhere. */
@@ -1170,7 +1190,16 @@ function bind(){
   on('liGo', function(){ if(S.busy) return; var un=$('liUser').value.trim(), pw=$('liPass').value;
     if(!un || !pw){ showMsg(t('That username or password isn’t right.')); return; }
     S.busy=true; render();
-    api('loginPassword',[un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ afterSignIn_(d); return; } failMsg(d); render(); var x=$('liUser'); if(x) x.value=un; }); });
+    api('loginPassword',[un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ S.forgot=null; S.liUser=null; afterSignIn_(d); return; } S.liUser=un; failMsg(d); render(); }); });
+  on('liEye', function(){ var u=$('liUser'), p=$('liPass'); S.liUser=u ? u.value : null; var v=p ? p.value : ''; S.liShow=!S.liShow; render(); var q=$('liPass'); if(q){ q.value=v; q.focus(); } });
+  var keepForgot=function(){ var F=S.forgot; if(!F || !$('fpUser')) return; F.u=$('fpUser').value.trim().replace(/^@/,''); F.y=$('fpYear').value; };
+  on('liForgot', function(){ var u=$('liUser'); S.liUser=u ? u.value : null; S.forgot={ u:u ? u.value.trim().replace(/^@/,'') : '', y:'' }; render(); var f=$('fpUser'); if(f) (f.value ? $('fpYear') : f).focus(); });
+  on('fpCancel', function(){ S.forgot=null; render(); });
+  on('fpSelf', function(){ keepForgot(); var F=S.forgot, pw=$('fpPass').value; if(S.busy) return;
+    if(!F.u){ showMsg(t('Type your username first.')); return; } if(!F.y){ showMsg(t('Choose the year you were born.')); return; } if(pw.length<4){ showMsg(t('Use at least 4 characters for your password.')); return; }
+    S.busy=true; api('resetOwnPassword',[F.u, F.y, pw]).then(function(d){ S.busy=false; if(d && d.ok){ S.forgot=null; afterSignIn_(d); setTimeout(function(){ showMsg(t('You’re back in. Use your new password next time.')); }, 300); return; } failMsg(d); }); });
+  on('fpAsk', function(){ keepForgot(); var un=S.forgot.u; if(!un){ showMsg(t('Type your username first — or ask your team leader to find it.')); return; } if(S.busy) return;
+    S.busy=true; api('forgotPassword',[un]).then(function(d){ S.busy=false; if(d && d.ok){ S.forgot={ u:un, sent:true }; render(); } else failMsg(d); }); });
   bindSignup_();
   if(!AUTH || !S.me) return;
 
@@ -1457,13 +1486,13 @@ function bind(){
   on('goLearn', function(){ S.back=[]; khOpen_(); });
   if(S.view==='library') bindLibrary_();
   bindReminders_();
-  on('pwSave', busyOnce_(function(){ var nw=$('pwNew').value, cur=$('pwCur') ? $('pwCur').value : '';
-    if(nw.length<8){ showMsg(t('Use at least 8 characters for your password.')); return; }
+  on('pwSave', busyOnce_(function(){ var nw=$('pwNew').value, cur='';
+    if(nw.length<4){ showMsg(t('Use at least 4 characters for your password.')); return; }
     return call('setPassword', cur, nw).then(function(d){ if(d && d.ok){ S.me=d.me; showMsg(t('Saved.')); render(); } else failMsg(d); }); }));
-  on('arGo', busyOnce_(function(){ var un=$('arUser').value.trim(); if(!un) return;
-    if(!confirm(gpT('Reset the password for @{u}? They will be signed out everywhere.',{u:un.replace(/^@/,'')}))) return;
-    return call('adminResetPassword', un).then(function(d){ if(d && d.ok){ S.resetResult=d; render(); } else { S.resetResult=null; failMsg(d); } }); }));
-  bindKhmer_();
+  on('arGo', busyOnce_(function(){ var un=$('arUser').value.trim(), pw=$('arPw').value.trim(); if(!un) return;
+    if(pw && pw.length<4){ showMsg(t('Use at least 4 characters for your password.')); return; }
+    return call('setUserPassword', un, pw).then(function(d){ if(d && d.ok){ S.resetResult=d; if(S.admin) S.admin.pwAsks=(S.admin.pwAsks||[]).filter(function(x){ return x.username!==d.username; }); render(); } else { S.resetResult=null; failMsg(d); } }); }));
+  bindKhmer_(); bindPwReset_();
   if(S.view==='team' && S.team) loadPhotos_(S.team.people);
   if(S.view==='teams' && S.feed===null && (S.teams||[]).length && !S.feedAsked){ S.feedAsked=true; feedLoad_(); }
   if(S.view==='person' && S.person) loadPhotos_([S.person]);
@@ -1561,6 +1590,7 @@ var REPORT_LABEL = { photo:'Their photo', name:'Their name', bio:'The line about
 function adminHtml(){
   var A=S.admin, h=backBtn(t('Me'))+'<h2>🛡️ '+esc(t('Reports'))+'</h2>';
   if(!A) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
+  h+=pwAsksHtml_();
   h+=adminResetHtml_();
   h+='<h3>🚩 '+esc(t('What people reported'))+'</h3>';
   h+='<div class="seg" style="margin-bottom:12px"><button data-adminall="0" class="'+(A.all?'':'on')+'">'+esc(t('Waiting'))+'</button><button data-adminall="1" class="'+(A.all?'on':'')+'">'+esc(t('All'))+'</button></div>';
@@ -1584,22 +1614,62 @@ function adminHtml(){
   });
   return h;
 }
-function adminResetHtml_(){
-  var R=S.resetResult;
-  return '<h3>🔑 '+esc(t('Reset a password'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(t('For someone who forgot theirs: you get a one-time password to give them, and they’re signed out everywhere.'))+'</p>'+
-    '<div class="atRow"><span>@</span><input type="text" id="arUser" autocapitalize="none" maxlength="20" placeholder="'+esc(t('Username'))+'"><button class="btn small" id="arGo">'+esc(t('Reset'))+'</button></div>'+
-    (R ? '<div class="banner" style="margin-top:10px">'+esc(gpT('One-time password for @{u}:',{u:R.username}))+' <b class="bigPw">'+esc(R.password)+'</b><div class="hint">'+esc(t('Give it to them in person. They can change it on Me.'))+'</div></div>' : '')+'</div>';
+function pwAsksHtml_(){
+  var L=(S.admin && S.admin.pwAsks)||[];
+  if(!L.length) return '';
+  return '<h3>🔑 '+esc(t('Asked for a new password'))+'</h3><div class="card list">'+L.map(function(x){ var R=S.resetResult && S.resetResult.username===x.username;
+    return '<div class="pwAskRow"><span style="flex:1;min-width:0"><b>'+esc(x.name)+'</b><div class="pmeta">@'+esc(x.username)+' · '+esc(dayLabel(String(x.at).slice(0,10)))+'</div></span>'+
+      '<button class="btn small" data-pwreset="'+esc(x.username)+'">'+esc(t('New password'))+'</button><button class="xBtn" data-pwdrop="'+esc(x.id)+'" aria-label="'+esc(t('Remove'))+'">×</button></div>'; }).join('')+'</div>'+resetResultHtml_();
 }
-function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all }; render(); } else { failMsg(d); goBack('me'); } }); }
+/* Set someone's password (the admin, or a leader for an adult in their team): an easy one is
+   filled in — change it to anything — then tell them, or Send it. */
+function easyPw_(){ var W=['mango','lotus','river','tiger','rice','star','moon','sun','lime','kite','palm','boat']; return W[Math.floor(Math.random()*W.length)]+(1000+Math.floor(Math.random()*9000)); }
+function pwSetHtml_(un){
+  var P=S.pwSet, R=S.resetResult && S.resetResult.username===un ? S.resetResult : null;
+  if(R) return '<div class="card">'+resetResultHtml_()+'</div>';
+  if(!P || P.u!==un) return '<div class="card"><button class="btn small ghost" data-pwset="'+esc(un)+'">🔑 '+esc(t('Set their password'))+'</button></div>';
+  return '<div class="card"><label class="f" for="psPw">'+esc(gpT('New password for @{u}',{u:un}))+'</label><input type="text" id="psPw" autocapitalize="none" maxlength="128" value="'+esc(P.pw)+'">'+
+    '<div class="hint">'+esc(t('An easy one is filled in — change it to anything (4+ characters).'))+'</div>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="psGo">'+esc(t('Save'))+'</button><button class="btn small ghost" id="psCancel">'+esc(t('Cancel'))+'</button></div></div>';
+}
+/* The new password, ready to pass on: copy it, or send a short message with it. */
+function resetResultHtml_(){
+  var R=S.resetResult; if(!R) return '';
+  return '<div class="banner pwResult" style="margin-top:10px">'+esc(gpT('New password for @{u}:',{u:R.username}))+' <b class="bigPw">'+esc(R.password)+'</b>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="pwCopy">📋 '+esc(t('Copy'))+'</button><button class="btn small ghost" id="pwShare">📤 '+esc(t('Send it'))+'</button></div>'+
+    '<div class="hint">'+esc(t('Tell them, or tap Send. They can change it on Me any time.'))+'</div></div>';
+}
+function pwMsg_(R){ return gpT('Your GonPreah password is now: {pw}\nSign in at {site} as @{u}.',{ pw:R.password, site:location.origin, u:R.username }); }
+function bindPwReset_(){
+  var done=function(d){ if(d && d.ok){ S.resetResult=d; S.pwSet=null; if(S.admin) S.admin.pwAsks=(S.admin.pwAsks||[]).filter(function(x){ return x.username!==d.username; }); S.pwAsks=Math.max(0,(S.pwAsks||0)-1); render(); } else { S.resetResult=null; failMsg(d); } };
+  all('[data-pwreset]', busyOnce_(function(b){ return call('setUserPassword', b.getAttribute('data-pwreset'), '').then(done); }));
+  all('[data-pwset]', function(b){ S.pwSet={ u:b.getAttribute('data-pwset'), pw:easyPw_() }; S.resetResult=null; render(); var e=$('psPw'); if(e) e.select(); });
+  on('psCancel', function(){ S.pwSet=null; render(); });
+  on('psGo', busyOnce_(function(){ var pw=$('psPw').value.trim(); if(pw.length<4){ showMsg(t('Use at least 4 characters for your password.')); return; } return call('setUserPassword', S.pwSet.u, pw).then(done); }));
+  all('[data-pwdrop]', busyOnce_(function(b){ return call('dropPwAsk', b.getAttribute('data-pwdrop')).then(function(d){ if(d && d.ok){ S.admin.pwAsks=d.pwAsks; S.pwAsks=d.pwAsks.length; render(); } else failMsg(d); }); }));
+  on('pwCopy', function(){ var R=S.resetResult; if(R) copyText_(R.password); });
+  on('pwShare', function(){ var R=S.resetResult; if(!R) return; var x=pwMsg_(R); if(navigator.share) navigator.share({ text:x }).catch(function(){}); else copyText_(x); });
+}
+function copyText_(x){ var done=function(){ showMsg(t('Copied.')); };
+  try { if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(x).then(done, function(){ copyOld_(x); done(); }); return; } } catch(e){}
+  copyOld_(x); done(); }
+function copyOld_(x){ var e=document.createElement('textarea'); e.value=x; e.setAttribute('readonly',''); e.style.position='fixed'; e.style.opacity='0'; document.body.appendChild(e); e.select(); try { document.execCommand('copy'); } catch(er){} e.remove(); }
+function adminResetHtml_(){
+  var R=S.resetResult && !((S.admin && S.admin.pwAsks)||[]).length ? S.resetResult : null;
+  return '<h3>🔑 '+esc(t('Set someone’s password'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(t('Their username, and the password you want them to have — or leave it empty for an easy one. Then tell them.'))+'</p>'+
+    '<div class="atRow"><span>@</span><input type="text" id="arUser" autocapitalize="none" maxlength="20" placeholder="'+esc(t('Username'))+'"></div>'+
+    '<div class="atRow" style="margin-top:8px"><input type="text" id="arPw" autocapitalize="none" maxlength="128" placeholder="'+esc(t('New password (or leave empty)'))+'"><button class="btn small" id="arGo">'+esc(t('Save'))+'</button></div>'+
+    (R ? resetResultHtml_() : '')+'</div>';
+}
+function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all, pwAsks:d.pwAsks||[] }; S.pwAsks=(d.pwAsks||[]).length; render(); } else { failMsg(d); goBack('me'); } }); }
 
 /* ---------------- my password (Me) ---------------- */
 function passwordCardHtml_(){
   var has=S.me.hasPassword;
   return '<h3>🔑 '+esc(t('Password'))+'</h3><div class="card">'+
-    (has ? '<label class="f" for="pwCur">'+esc(t('Current password'))+'</label><input type="password" id="pwCur" autocomplete="current-password" maxlength="128">'
-         : '<p class="sub" style="margin:0 0 4px">'+esc(t('Add a password so you can sign in with your username on any phone.'))+'</p>')+
-    '<label class="f" for="pwNew">'+esc(t('New password'))+'</label><input type="password" id="pwNew" autocomplete="new-password" maxlength="128">'+
-    '<div class="hint">'+esc(t('At least 8 characters.'))+'</div>'+
+    (has ? '' : '<p class="sub" style="margin:0 0 4px">'+esc(t('Add a password so you can sign in with your username on any phone.'))+'</p>')+
+    '<label class="f" for="pwNew">'+esc(t('New password'))+'</label><input type="text" id="pwNew" autocapitalize="none" autocomplete="new-password" maxlength="128">'+
+    '<div class="hint">'+esc(t('At least 4 characters.'))+'</div>'+
     '<button class="btn small" id="pwSave" style="margin-top:8px">'+esc(has?t('Change my password'):t('Add a password'))+'</button></div>';
 }
 

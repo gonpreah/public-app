@@ -794,6 +794,16 @@ h2 .khCrowns{font-size:16px; margin-left:4px;}
 .orLine::before, .orLine::after { content:''; flex:1; height:1px; background:var(--line); }
 input[type=password] { width:100%; box-sizing:border-box; }
 .bigPw { font-family:ui-monospace, Menlo, monospace; font-size:20px; letter-spacing:.08em; user-select:all; }
+/* forgotten passwords */
+.pwAskRow { display:flex; gap:8px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+.pwAskRow:first-child { border-top:0; }
+.pwAskRow .btn.small { width:auto; flex:none; }
+.pwAskCard { border-color:var(--accent); }
+.pwResult .bigPw { user-select:all; -webkit-user-select:all; }
+.forgotBox { text-align:left; }
+.pwRow { display:flex; gap:8px; align-items:center; }
+.pwRow input { flex:1; min-width:0; }
+.pwEye { flex:none; border:1.5px solid var(--border2); background:var(--surface); border-radius:12px; padding:0 12px; height:44px; font-size:18px; cursor:pointer; touch-action:manipulation; }
 
 /* ---------- Today: my why, today's 3, focus, the check-in, the recap ---------- */
 .whyLine { display:flex; flex-direction:column; gap:2px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--ink); background:var(--surface); }

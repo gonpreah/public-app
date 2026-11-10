@@ -36,10 +36,19 @@ a file came from.
 ## Accounts
 A **username and password** (`registerPassword` / `loginPassword`; Nov 2026, Uriah: "a basic
 login besides Google") or Google sign-in (`loginGoogle` / `register`), then a username (unique,
-3–20 of a-z 0-9 _ .), a name and a birth year. Passwords: 8+ characters, kept only as a salted
-scrypt hash (`u.pw`); 8 wrong tries lock the account 15 minutes; Me → Password changes it (or
-adds one to a Google account). No email, so the admin resets a forgotten one (Me → Reports →
-Reset a password: a one-time password, and every old sign-in ends). The Google button shows
+3–20 of a-z 0-9 _ .), a name and a birth year. **Easy on purpose** (Uriah, Nov 2026: "no one's hacking
+this … there's not personal information … make it super easy to where I can just get them their
+accounts back"): a password is 4+ characters, kept only as a salted scrypt hash (`u.pw`); no lock after
+wrong tries; the sign-in screen remembers the last username (`gpa-lastuser`) and has a 👁 to show the
+password. **Forgot it?** On the sign-in screen: username + birth year + a new password, and they're
+straight back in (`resetOwnPassword`; 10 wrong years a day at most). Can't remember those? "Tell the
+admin" (`forgotPassword`; the same answer whether the name exists; once per account every 10 minutes)
+puts an ask in `pwAsks` (14 days) and buzzes the admin (`admins`, remembered at boot; push `pwAsk`);
+Home and Me show "n people asked for a new password"; Reports lists them with one tap each.
+**Setting someone's password** (`setUserPassword`): the admin for anyone, a leader for an adult in a
+team they lead — any password they type, or an easy one ("mango4821"); from a person's card or
+Reports; with Copy and Send; other sign-ins carry on. Signed in, I change mine on Me → Password
+without the old one. The Google button shows
 only when `GPA_GOOGLE_CLIENT_ID` is set. An admin is named by Google email (`GPA_ADMIN_EMAILS`)
 or by username (`GPA_ADMIN_USERNAMES` — set only after that account exists). A phone keeps a random device token (hashed on the account); every
 signed-in call is `(uid, token, …)` and starts with `auth_`. Telegram sign-in is planned.

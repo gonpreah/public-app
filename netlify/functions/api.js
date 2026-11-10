@@ -1126,7 +1126,7 @@ function callingAnswer_(k, v) {
 }
 function callingOf_(u) {
   const c = (u && u.calling) || {}, two = function (x) { x = x && typeof x === 'object' ? x : {}; return { en: x.en || '', km: x.km || '' }; };
-  return { a: c.a && typeof c.a === 'object' ? c.a : {}, statement: c.statement || '', sl: c.sl || '', letter: two(c.letter), post: two(c.post), from: c.from || 0, at: c.at || '', upd: c.upd || '', done: c.done && typeof c.done === 'object' ? c.done : {}, step: c.step || 0 };
+  return { a: c.a && typeof c.a === 'object' ? c.a : {}, statement: c.statement || '', sl: c.sl || '', letter: two(c.letter), post: two(c.post), from: c.from || 0, at: c.at || '', upd: c.upd || '', done: c.done && typeof c.done === 'object' ? c.done : {}, step: c.step || 0, updates: Array.isArray(c.updates) ? c.updates : [] };
 }
 /* The three years start this year until June, next year from July. */
 function callFrom_() { const d = today_(); return Number(d.slice(5, 7)) >= 7 ? Number(d.slice(0, 4)) + 1 : Number(d.slice(0, 4)); }
@@ -1155,6 +1155,15 @@ async function calling(uid, tok, act, a) {
       if (a.done) { c.done[a.m] = c.done[a.m] || today_(); xpAdd_(u, 'c|' + a.m, 30); } else { delete c.done[a.m]; xpDrop_(u, 'c|' + a.m); }
       u.calling = c; return { ok: true };
     }
+    if (act === 'update') {   // an update for my supporters, kept (the last 12, one a day): 15 XP once a month
+      if (!c.statement) return { abort: true, ok: false, err: 'none' };
+      const tx = strMl_(a.text, 4000);
+      if (tx.length < 20) return { abort: true, ok: false, err: 'text' };
+      const d = today_(); c.updates = c.updates.filter(function (x) { return x.d !== d; }).concat([{ d: d, t: tx }]).slice(-12);
+      xpAdd_(u, 'cu|' + monthOf_(d), 15);
+      u.calling = c; return { ok: true };
+    }
+    if (act === 'dropUpdate') { c.updates = c.updates.filter(function (x) { return x.d !== a.d; }); u.calling = c; return { ok: true }; }
     if (act === 'text') {   // my own edit of the letter or the post, in one language ('' = write it fresh)
       if (['en', 'km'].indexOf(a.lang) === -1 || ['letter', 'post'].indexOf(a.kind) === -1) return { abort: true, ok: false, err: 'kind' };
       if (!c.statement) return { abort: true, ok: false, err: 'none' };
@@ -2319,6 +2328,7 @@ async function teamPulse(uid, tok, tid) {
     if (sh.focus) o.focusWeek = focusWeek_(u, wk);
     if (sh.level) o.xpWeek = (u.xpWeeks || {})[wk] || 0;
     o.tests = { type: !!u.personality, strengths: !!(u.gstrengths || u.clifton), gifts: !!u.apest };   // taken or not — like the test count on a card
+    if (sh.plan) o.calling = !!callingOf_(u).statement;   // found or not — never its words
     if (sh.journey) { const st = storyOf_(u); o.journey = { stops: st.done.length, finished: !!st.finished }; }
     rows.push(o);
   }
@@ -2328,6 +2338,7 @@ async function teamPulse(uid, tok, tid) {
     week: rows.filter(function (r) { return r.seenAgo != null && r.seenAgo < 7; }).length,
     quiet: rows.filter(function (r) { return r.seenAgo == null || r.seenAgo >= 4; }).length,
     allTests: rows.filter(function (r) { return r.tests.type && r.tests.strengths && r.tests.gifts; }).length,
+    callings: rows.filter(function (r) { return r.calling; }).length,
     journeys: rows.filter(function (r) { return r.journey && r.journey.finished; }).length } };
 }
 async function leaderCheer(uid, tok, tid, who) {

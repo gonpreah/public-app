@@ -167,6 +167,13 @@ a coach the mentee shares their plan with sees the statement, the focus and the 
 answers or the letter. Home leads with it (the next milestone not reached), the Plan tab and Me show
 it, the Sunday reset's "look up" shows it. The three years start this year until June, next year from
 July (`callFrom_`), and start again once they're over.
+**Updates for supporters** (my calling → view `cupdate`; `calling` 'update' / 'dropUpdate'): five short
+answers (`CU_QS`: what's happened, one story, what's next — from the next milestone, how to pray, thanks)
+written into a letter (`cuLetter_`, with where I am on the plan, ✓/○ a milestone) in English or Khmer,
+edited, sent by the person (Share, Telegram, Copy, **Print or PDF** — `printText_`, a clean page by
+`@media print`), and kept in `u.calling.updates` (the last 12, one a day; 15 XP once a month). Home and my
+calling nudge three months after the last one (`cuDue_`). The calling's letter can be printed too. The
+leader's **pulse** shows 🎯 for who has found their calling (yes or no, behind `share.plan`; total `callings`).
 **The spheres of society** (view `spheres`, from Me, my calling and the calling's questions;
 `public/spheres.js`, loaded when needed): ten (`SPHERES`: family, church, education, government, media,
 arts, business, health, tech, land), each with what God cares about there (a reference only) and 8–9

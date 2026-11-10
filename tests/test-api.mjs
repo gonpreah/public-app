@@ -605,6 +605,12 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   ok('… only one that’s written down', (await H.calling(CL.uid, CL.token, 'mile', { m: 'm2', done: true })).err === 'none' && (await H.calling(CL.uid, CL.token, 'mile', { m: 'm9', done: true })).err === 'none');
   ok('… and untick takes it back', !(await H.calling(CL.uid, CL.token, 'mile', { m: 'm1', done: false })).me.calling.done.m1);
   ok('… and written fresh again when cleared', (await H.calling(CL.uid, CL.token, 'text', { kind: 'letter', lang: 'en', text: '' })).me.calling.letter.en === '');
+  ok('an update for supporters needs a few words', (await H.calling(CL.uid, CL.token, 'update', { text: 'Hi' })).err === 'text');
+  const x2 = (await H.calling(CL.uid, CL.token, 'update', { text: 'Dear friends,\n\nThe club started with ten children!' })).me;
+  ok('… kept with the day, and 15 XP once a month', x2.calling.updates.length === 1 && x2.calling.updates[0].d === today && x2.calling.updates[0].t.includes('\n\nThe club') && (await H.calling(CL.uid, CL.token, 'update', { text: 'Dear friends, the same day again, changed.' })).me.level.xp === x2.level.xp);
+  ok('… one a day (the last one wins), and it can be deleted', (await H.calling(CL.uid, CL.token, 'update', { text: 'Dear friends, the same day again, changed.' })).me.calling.updates.length === 1 && (await H.calling(CL.uid, CL.token, 'dropUpdate', { d: today })).me.calling.updates.length === 0);
+  const cp = (await H.teamPulse(CO.uid, CO.token, CT.team.id)).pulse, cr = cp.rows.find(r => r.id === CL.uid);
+  ok('a leader’s pulse shows who has found their calling — never its words', cr.calling === true && cp.callings === 1 && !JSON.stringify(cp).includes('read.'));
   const pc = (await H.person(CO.uid, CO.token, CL.uid)).person;
   ok('nobody else sees my calling on my card', pc && !JSON.stringify(pc).includes('teach children') && !JSON.stringify(pc).includes('Kids leave school') && !('calling' in pc));
   ok('finding it is a moment in the team feed, with no words', (await H.feed(CO.uid, CO.token)).feed.some(x => x.who.id === CL.uid && x.kind === 'calling' && !JSON.stringify(x).includes('teach')));

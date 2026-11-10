@@ -18,7 +18,8 @@
       atest · agift              — the five gifts test (APEST, apest.js) and its results
       clifton                    — my StrengthsFinder (CliftonStrengths) Top 5, typed in
       screen                     — the team on a projector (leaderboard, gifts, words, QR), refreshing
-      callq · calling            — find my calling (one choice a screen), then my calling and the words to send
+      callq · calling            — find my calling (six parts, one question a screen), then my calling and the words to send
+      spheres                    — the spheres of society and the work in each (spheres.js)
       reset · badges             — the Sunday reset (five steps to set up the week); my badges
       habitcal                   — my habit calendar (12 weeks)
       journal · homecfg          — my journal (private); customize Home (order, hide; on this phone)
@@ -125,7 +126,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -182,6 +183,7 @@ function render(){
     else if(V==='screen') h=screenHtml();
     else if(V==='callq') h=callqHtml();
     else if(V==='calling') h=callingHtml();
+    else if(V==='spheres') h=spheresHtml();
     else if(V==='reset') h=resetHtml();
     else if(V==='habitcal') h=habitCalHtml();
     else if(V==='journal') h=journalHtml();
@@ -200,7 +202,7 @@ function render(){
     m.innerHTML=h;
     /* Screens that slide in (the journey, the reset) slide only when the question changes — not on
        every redraw, like a tap on a chip. */
-    var animKey=V+'|'+(V==='journey' && S.jr ? S.jr.s+'.'+S.jr.q+'.'+S.jr.phase : '')+'|'+(V==='reset' && S.reset ? S.reset.step : '')+'|'+(V==='callq' && S.cl ? S.cl.i+'.'+S.cl.phase : '');
+    var animKey=V+'|'+(V==='journey' && S.jr ? S.jr.s+'.'+S.jr.q+'.'+S.jr.phase : '')+'|'+(V==='reset' && S.reset ? S.reset.step : '')+'|'+(V==='callq' && S.cl ? S.cl.i+'.'+S.cl.phase : '')+'|'+(V==='spheres' ? S.sphOpen : '');
     document.body.classList.toggle('still', animKey===S.animKey); S.animKey=animKey;
     xpWatch_(); if(AUTH && S.me) badgeWatch_();
     navHtml_();
@@ -672,6 +674,7 @@ function meHtml(){
   h+=apEntryHtml_();
   h+=spheresMeHtml_();
   var CL=clOf_(); h+='<h3>🎯 '+esc(t('My calling'))+'</h3>'+(CL.statement ? '<button class="card pEntry" id="goCalling"><span style="flex:1"><div class="clStmt small">'+esc(CL.statement)+'</div><div class="pmeta" style="margin-top:6px">'+esc(t('Open · share it'))+'</div></span><span class="chev">›</span></button>' : entryCardHtml('goCalling','🎯',t('Find your calling'),t(CL_INVITE)));
+  h+=entryCardHtml('goSpheres','🌍',t('Explore the spheres of society'),t('Real jobs and skills in ten parts of society — and how to start.'));
   h+='<h3>🏅 '+esc(t('Badges'))+'</h3>'+badgesEntryHtml_();
   h+=entryCardHtml('goJournal','✍️',t('My journal'),t('A page a day, just for you'))+entryCardHtml('goHomeCfg','🏠',t('Customize Home'),t('Put what matters most at the top'));
 
@@ -1993,7 +1996,9 @@ var SPHERES={ family:['🏠','Family & community','Homes, villages and neighbour
   media:['📱','Media & communication','News, social media, film and writing: telling true and good stories.'],
   arts:['🎨','Arts, music & sport','Music, art, design and sport: beauty, joy and creativity.'],
   business:['💼','Business & economy','Shops, companies and start-ups: good work, jobs and provision for families.'],
-  health:['🩺','Health & science','Hospitals, clinics, research and technology: healing and discovery.'] };
+  health:['🩺','Health & science','Hospitals, clinics, research and technology: healing and discovery.'],
+  tech:['💻','Technology & engineering','Apps, machines, roads and buildings: tools that make life better.'],
+  land:['🌾','Farming & environment','Farms, rivers and forests: food for families and care for God’s creation.'] };
 function sphereChipsHtml_(ids){ return '<div class="sphChips">'+(ids||[]).filter(function(id){ return SPHERES[id]; }).map(function(id){ return '<span class="sphChip">'+SPHERES[id][0]+' '+esc(t(SPHERES[id][1]))+'</span>'; }).join('')+'</div>'; }
 function rolesHtml_(list){ return '<div class="jrTags rolesList">'+(list||[]).map(function(r){ return '<span>'+esc(r)+'</span>'; }).join('')+'</div>'; }
 function fld_(o, f){ return LANG==='km' && o[f+'_km'] ? o[f+'_km'] : o[f+'_en']; }
@@ -2118,7 +2123,7 @@ function spheresMeHtml_(){
   var R=sphereVotes_(); if(!R.top.length) return '';
   return '<h3>🌍 '+esc(t('Where your gifts may shine'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(gpT('From {list}: the parts of society where how God made you may help most.',{list:jrList_(R.from)}))+'</p>'+
     R.top.map(function(id, i){ var x=SPHERES[id]; return '<div class="sphRow"><span class="sphRank">'+(i+1)+'</span><span class="sphIc">'+x[0]+'</span><span><b>'+esc(t(x[1]))+'</b><div class="pmeta">'+esc(t(x[2]))+'</div></span></div>'; }).join('')+
-    '<p class="pmeta" style="margin-top:8px">'+esc(t('God can use you anywhere. Talk about this with someone who knows you well, and try things out.'))+'</p></div>';
+    '<p class="pmeta" style="margin-top:8px">'+esc(t('God can use you anywhere. Talk about this with someone who knows you well, and try things out.'))+'</p><button class="linkbtn" id="goSpheres">🌍 '+esc(t('See the work in every sphere'))+' ›</button></div>';
 }
 
 /* ---------------- the Life Journey (api.js "the Life Journey") ----------------
@@ -2130,19 +2135,25 @@ var JR_STOPS = [
     { k:'pastWords', type:'chips', max:3, q:'Pick three words for your life so far.' },
     { k:'best', type:'text', q:'When did you feel most alive? A moment you’ll never forget.', ph:'e.g. The first time I led worship at camp' },
     { k:'hard', type:'text', q:'What’s a hard time that shaped you?', note:'Only you will ever see this. Write as much or as little as you like.', lock:true, ph:'e.g. When my family had to move' },
-    { k:'lesson', type:'text', q:'What did that time teach you — or how did God meet you there?', ph:'e.g. That I’m stronger than I thought, and never alone' } ] },
+    { k:'lesson', type:'text', q:'What did that time teach you — or how did God meet you there?', ph:'e.g. That I’m stronger than I thought, and never alone' },
+    { k:'chapter', type:'text', q:'If your life so far were a book, what would this chapter be called? And what should the next one be called?', ph:'e.g. “Finding my feet” — and next, “Stepping out”' } ] },
   { id:'you', icon:'🧭', title:'Who you are', intro:'Every hero carries something for the road. Let’s see what God has put in your hands.', qs:[
     { k:'gifts', type:'chips', max:3, q:'What do people come to you for?' },
+    { k:'giftStory', type:'text', q:'Tell about a time you did one of those things and it really helped someone.', ph:'e.g. I helped my cousin with maths every night for a month, and she passed her exam' },
     { k:'flow', type:'text', q:'What do you love doing so much that you forget the time?', ph:'e.g. Playing guitar, helping my cousins with homework' },
-    { k:'weak', type:'chips', max:2, other:true, q:'What holds you back the most?', note:'Be honest — only you see this.', lock:true } ] },
+    { k:'weak', type:'chips', max:2, other:true, q:'What holds you back the most?', note:'Be honest — only you see this.', lock:true },
+    { k:'weakFree', type:'text', q:'What would be different in your life if that didn’t hold you back?', ph:'e.g. I’d finish what I start, and sleep before midnight' } ] },
   { id:'call', icon:'🔥', title:'The call', intro:'Some things in the world bother you more than they bother other people. That feeling might be God calling you.', qs:[
     { k:'heart', type:'chips', max:2, other:true, q:'What breaks your heart when you see it?' },
+    { k:'heartSaw', type:'text', q:'What did you see or hear that made you care about this? Describe it.', note:'In your own words. This might become the first line of your story.', ph:'e.g. A boy in my village stopped school to work on a building site. He was eleven' },
     { k:'who', type:'chips', max:2, q:'Who do you most want to help?' },
     { k:'dream', type:'text', q:'If you knew you couldn’t fail and money didn’t matter, what would you do with your life?', ph:'e.g. Open a school in my village' } ] },
   { id:'dragon', icon:'🐉', title:'The dragons', intro:'In every story something tries to stop the hero. When you name it, it loses some of its power.', qs:[
     { k:'fear', type:'chips', max:1, other:true, q:'What fear could stop you?' },
+    { k:'fearStory', type:'text', q:'When has that fear stopped you before? What happened?', note:'Only you see this.', lock:true, ph:'e.g. I didn’t try for the student council because I thought I’d lose' },
     { k:'avoid', type:'text', q:'If your fears and weaknesses win, what does your life look like in five years?', note:'Picture it honestly. Seeing the road you don’t want helps you choose the other one.', ph:'e.g. Stuck on my phone, no plan, far from God' },
-    { k:'truth', type:'chips', max:1, q:'Which truth will you hold on to when that fear comes?' } ] },
+    { k:'truth', type:'chips', max:1, q:'Which truth will you hold on to when that fear comes?' },
+    { k:'brave', type:'text', q:'What would you do this year if you weren’t afraid?', ph:'e.g. Ask to lead the kids’ group at church' } ] },
   { id:'guide', icon:'🧙', title:'Your guides', intro:'No hero makes it alone. Guides help them through — and one day the hero becomes a guide for someone else.', qs:[
     { k:'helped', type:'text', q:'Who has helped you most on your journey so far? What did they do?', ph:'e.g. My aunt — she paid for school and prayed for me' },
     { k:'walk', type:'chips', max:3, q:'Who do you want walking with you now?' },
@@ -2150,11 +2161,13 @@ var JR_STOPS = [
   { id:'future', icon:'🏔️', title:'The future you want', intro:'Now dream. Not only what you want to do — who you want to become.', qs:[
     { k:'wheel', type:'wheel', q:'First, where are you now? How is each part of your life going?', note:'Be honest: 1 is really hard, 5 is great. You can check again every month and watch it change.' },
     { k:'areas', type:'areas', q:'Five years from now, what do you hope is true in each part of your life?', note:'Fill in the ones that matter most to you. Two or three is fine.' },
+    { k:'person5', type:'text', q:'Describe the person you want to be in five years — your character, not just your job.', ph:'e.g. Calm under pressure, honest with money, someone younger people can trust' },
     { k:'year', type:'text', q:'One year from today, what’s the one thing you most want to be different?', ph:'e.g. I read my Bible every day and I’ve passed grade 12' } ] },
   { id:'legacy', icon:'🏆', title:'Your legacy', intro:'At the end of the story the hero comes home changed — carrying something good for other people.', qs:[
     { k:'remember', type:'text', q:'It’s your 70th birthday. The people you love stand up to speak about you. What do you hope they say?', ph:'e.g. They loved God and made everyone feel welcome' },
     { k:'known', type:'chips', max:3, q:'Pick three words you want your life to be known for.' },
-    { k:'word', type:'chips', max:1, other:true, q:'Last one: pick one word for this year.', note:'Your word goes on Home, to remind you every day.' } ] }
+    { k:'word', type:'chips', max:1, other:true, q:'Pick one word for this year.', note:'Your word goes on Home, to remind you every day.' },
+    { k:'wordWhy', type:'text', q:'Last one: why that word? What will it mean for you this year?', ph:'e.g. Focus — fewer things, done well. Less phone, more people' } ] }
 ];
 var JR_OPTS = {
   pastWords:[['happy','Happy'],['hard','Hard'],['busy','Busy'],['changing','Changing'],['searching','Searching'],['blessed','Blessed'],['lonely','Lonely'],['family','Full of family'],['brave','Brave'],['quiet','Quiet'],['messy','Messy'],['growing','Growing']],
@@ -2178,30 +2191,49 @@ function jrWords_(A, k){ var v=A[k]; if(!v || typeof v!=='object') return [];
 function jrLc_(s){ return LANG==='en' && !/^(Jesus|God)\b/.test(s) ? s.charAt(0).toLowerCase()+s.slice(1) : s; }
 function jrList_(arr){ arr=arr.filter(Boolean); if(arr.length<2) return arr.join(''); return arr.slice(0,-1).join(LANG==='km'?' ':', ')+' '+t('and')+' '+arr[arr.length-1]; }   // Khmer lists take spaces, not commas
 function jrText_(A, k){ return typeof A[k]==='string' ? A[k].trim() : ''; }
-/* The vision statement, written from the answers. Each line only when its answers are there. */
-function visionMake_(A){
-  var name=firstName_(S.me.name), L=[], words=function(k){ return jrList_(jrWords_(A,k).map(jrLc_)); };
+/* The vision, in five sections (Nov 2026, Uriah: "in their own words … not just clicky"). Each starts
+   as a draft from the answers — their own sentences first — and they rewrite it before the next. */
+var JR_SECS=[
+  ['who','🧭','Who I am','Who God made you, and who you’re becoming.', ['known','gifts','giftStory','flow']],
+  ['for','🔥','What I live for','What breaks your heart, and what you dream of doing about it.', ['heart','heartSaw','who','dream']],
+  ['future','🏔️','My life in five years','Who you’ll be, and what will be true in each part of your life.', ['person5','areas','year']],
+  ['hard','🛡️','When it’s hard','The fear you’ll face, the truth you’ll hold, and who walks with you.', ['fear','truth','brave','walk']],
+  ['legacy','🏆','My legacy','What you hope people will say one day, and your word for this year.', ['remember','word','wordWhy']]
+];
+function visionParts_(A){
+  var name=firstName_(S.me.name), words=function(k){ return jrList_(jrWords_(A,k).map(jrLc_)); }, own=function(k){ return clEnd_(jrText_(A,k)); };
   var known=words('known'), gifts=words('gifts'), who=words('who'), heart=words('heart'), walk=words('walk');
-  var fear=jrWords_(A,'fear').map(jrLc_)[0]||'', truth=jrWords_(A,'truth')[0]||'', word=jrWords_(A,'word')[0]||'';
-  var p1=[known ? gpT('I’m {name}, a child of God, becoming someone {known}.',{name:name, known:known}) : gpT('I’m {name}, a child of God, made on purpose and for a purpose.',{name:name})];
-  if(gifts && who) p1.push(gpT('God gave me a gift for {gifts}, and I want to use it to help {who}.',{gifts:gifts, who:who}));
-  else if(who) p1.push(gpT('I want to spend my life helping {who}.',{who:who}));
-  else if(gifts) p1.push(gpT('God gave me a gift for {gifts}, and I want to use it well.',{gifts:gifts}));
-  if(heart) p1.push(gpT('What breaks my heart: {heart}. That’s where I want to make a difference.',{heart:heart}));
-  if(jrText_(A,'dream')) p1.push(gpT('My dream: {dream}',{dream:jrText_(A,'dream')}));
-  L.push(p1.join(' '));
-  var ar=A.areas||{}, lines=AREAS.filter(function(a){ return ar[a[0]]; }).map(function(a){ return a[1]+' '+ar[a[0]]; });
-  if(lines.length) L.push(t('Five years from now:')+'\n'+lines.join('\n'));
-  if(jrText_(A,'year')) L.push(gpT('One year from now: {year}',{year:jrText_(A,'year')}));
-  var p3=[];
-  if(fear && truth) p3.push(gpT('When I’m afraid of {fear}, I’ll remember: {truth}',{fear:fear, truth:truth}));
-  else if(truth) p3.push(gpT('Whatever comes, I’ll remember: {truth}',{truth:truth}));
-  if(walk) p3.push(gpT('I won’t walk alone — {walk} will walk with me.',{walk:walk}));
-  if(p3.length) L.push(p3.join(' '));
-  if(jrText_(A,'remember')) L.push(gpT('One day I hope the people I love will say: “{remember}”',{remember:jrText_(A,'remember')}));
-  if(word) L.push(gpT('My word for {y}: {word}',{y:todayStr().slice(0,4), word:LANG==='en'?word.toUpperCase():word}));
-  return L.join('\n\n');
+  var fear=jrWords_(A,'fear').map(jrLc_)[0]||'', truth=jrWords_(A,'truth')[0]||'', word=jrWords_(A,'word')[0]||'', P=[];
+  var s1=[known ? gpT('I’m {name}, a child of God, becoming someone {known}.',{name:name, known:known}) : gpT('I’m {name}, a child of God, made on purpose and for a purpose.',{name:name})];
+  if(gifts && who) s1.push(gpT('God gave me a gift for {gifts}, and I want to use it to help {who}.',{gifts:gifts, who:who}));
+  else if(gifts) s1.push(gpT('God gave me a gift for {gifts}, and I want to use it well.',{gifts:gifts}));
+  if(jrText_(A,'giftStory')) s1.push(own('giftStory'));
+  if(jrText_(A,'flow')) s1.push(gpT('I come alive when I’m {flow}',{flow:clEnd_(jrLc_(jrText_(A,'flow')))}));
+  P.push(s1.join(' '));
+  var s2=[];
+  if(heart) s2.push(gpT('What breaks my heart: {heart}. That’s where I want to make a difference.',{heart:heart}));
+  if(jrText_(A,'heartSaw')) s2.push(own('heartSaw'));
+  if(who && !gifts) s2.push(gpT('I want to spend my life helping {who}.',{who:who}));
+  if(jrText_(A,'dream')) s2.push(gpT('My dream: {dream}',{dream:own('dream')}));
+  P.push(s2.join(' '));
+  var s3=[], ar=A.areas||{}, lines=AREAS.filter(function(a){ return ar[a[0]]; }).map(function(a){ return a[1]+' '+ar[a[0]]; });
+  if(jrText_(A,'person5')) s3.push(gpT('Five years from now, this is who I want to be: {x}',{x:clEnd_(jrLc_(jrText_(A,'person5')))}));
+  if(lines.length) s3.push(t('Five years from now:')+'\n'+lines.join('\n'));
+  if(jrText_(A,'year')) s3.push(gpT('One year from now: {year}',{year:jrText_(A,'year')}));
+  P.push(s3.join('\n\n'));
+  var s4=[];
+  if(fear && truth) s4.push(gpT('When I’m afraid of {fear}, I’ll remember: {truth}',{fear:fear, truth:truth}));
+  else if(truth) s4.push(gpT('Whatever comes, I’ll remember: {truth}',{truth:truth}));
+  if(jrText_(A,'brave')) s4.push(gpT('This year, with God’s help, I’ll be brave: {x}',{x:clEnd_(jrLc_(jrText_(A,'brave')))}));
+  if(walk) s4.push(gpT('I won’t walk alone — {walk} will walk with me.',{walk:walk}));
+  P.push(s4.join(' '));
+  var s5=[];
+  if(jrText_(A,'remember')) s5.push(gpT('One day I hope the people I love will say: “{remember}”',{remember:jrText_(A,'remember')}));
+  if(word) s5.push(gpT('My word for {y}: {word}',{y:todayStr().slice(0,4), word:LANG==='en'?word.toUpperCase():word})+(jrText_(A,'wordWhy')?' — '+jrText_(A,'wordWhy'):''));
+  P.push(s5.join('\n\n'));
+  return P;
 }
+function visionMake_(A){ return visionParts_(A).filter(function(x){ return String(x).trim(); }).join('\n\n'); }
 /* A one-line why, from the call: who, with what, and why it matters. */
 function missionMake_(A){
   var w=function(k){ return jrList_(jrWords_(A,k).map(jrLc_)); }, who=w('who'), gifts=w('gifts'), heart=w('heart'), known=w('known');
@@ -2227,13 +2259,19 @@ function journeyHtml(){
   var J=S.jr; if(!J){ jrStart_(); J=S.jr; }
   var top='<div class="jrTop"><button class="linkbtn backLink" id="jrLater">← '+esc(t('Save and finish later'))+'</button></div>'+jrMapHtml_();
   if(J.phase==='build') return top+'<div class="jrBuild"><div class="jrSpark">✨</div><h2>'+esc(t('Writing your vision…'))+'</h2><p class="sub">'+esc(t('Putting your story, your call and your dreams together.'))+'</p></div>';
+  if(J.phase==='write'){ var W=JR_SECS[J.w];
+    return top+'<div class="jrQ"><div class="pmeta">📜 '+esc(t('Write your vision'))+' · '+esc(gpT('{n} of {m}',{n:J.w+1, m:JR_SECS.length}))+'</div><div class="miniTrack"><div style="width:'+Math.round((J.w+1)/JR_SECS.length*100)+'%"></div></div>'+
+      '<h2 class="jrQt">'+W[1]+' '+esc(t(W[2]))+'</h2><p class="sub">'+esc(t(W[3]))+' '+esc(t('We made a draft from your answers. Rewrite it so it sounds like you — add, cut, change anything.'))+'</p>'+
+      '<textarea id="jrSec" class="jrVisionIn" rows="8" maxlength="600">'+esc(J.secs[J.w]||'')+'</textarea><button class="linkbtn" id="jrSecDraft">↻ '+esc(t('Start again from the draft'))+'</button>'+
+      jrSecFromHtml_(W[4], J.a)+
+      '<div class="btnRow jrNav"><button class="btn ghost" id="jrSecBack">← '+esc(t('Back'))+'</button><button class="btn" id="jrSecNext">'+esc(J.w<JR_SECS.length-1 ? t('Next') : t('See it all'))+' →</button></div></div>'; }
   if(J.phase==='reveal'){
     var P=planOf(), m=J.mission!=null ? J.mission : missionMake_(J.a);
     return top+'<div class="jrReveal"><div class="obBig">📜</div><h2>'+esc(t('Your vision'))+'</h2><p class="sub">'+esc(t('Here’s what we heard in your answers. Make it yours — change any word, then keep it.'))+'</p>'+
       '<textarea id="jrVision" class="jrVisionIn" rows="14" maxlength="1500">'+esc(J.draft||'')+'</textarea>'+
       (m ? '<div class="card jrMission"><div class="pmeta">✦ '+esc(t('Your why, in one line'))+'</div><p class="whyText" style="margin:6px 0">“'+esc(m)+'”</p>'+
         '<label class="jrCheck"><input type="checkbox" id="jrUseWhy"'+((!P.why || J.useWhy) && J.useWhy!==false ? ' checked' : '')+'> '+esc(P.why ? t('Use this as my why (instead of the one I have)') : t('Use this as my why'))+'</label></div>' : '')+
-      '<button class="btn" id="jrKeep">✦ '+esc(t('Keep my vision'))+'</button><button class="linkbtn" id="jrRemake">↻ '+esc(t('Write it again from my answers'))+'</button><button class="linkbtn" id="jrRedo">'+esc(t('Change my answers'))+'</button></div>';
+      '<button class="btn" id="jrKeep">✦ '+esc(t('Keep my vision'))+'</button><button class="linkbtn" id="jrToSecs">✍️ '+esc(t('Write it section by section'))+'</button><button class="linkbtn" id="jrRemake">↻ '+esc(t('Write it again from my answers'))+'</button><button class="linkbtn" id="jrRedo">'+esc(t('Change my answers'))+'</button></div>';
   }
   var X=JR_STOPS[J.s];
   if(J.phase==='done'){
@@ -2261,6 +2299,11 @@ function journeyHtml(){
       (Q.other?'<input type="text" id="jrOther" maxlength="80" placeholder="'+esc(t('Something else? Write it here'))+'" value="'+esc((v&&v.o)||'')+'">':'');
   }
   return h+'<div class="btnRow jrNav"><button class="btn ghost" id="jrBack">← '+esc(t('Back'))+'</button><button class="btn" id="jrNext">'+esc(jrEmpty_(Q, J.a[Q.k]) ? t('Skip') : t('Next'))+' →</button></div></div>';
+}
+/* What I said that a section of the vision is made from. */
+function jrSecFromHtml_(keys, A){
+  var all=[]; JR_STOPS.forEach(function(X){ X.qs.forEach(function(Q){ if(keys.indexOf(Q.k)>-1) all.push(Q); }); });
+  return jrRecapHtml_({ qs:all }, A);
 }
 /* What you said at a stop, short, on its done screen. */
 function jrRecapHtml_(X, A){
@@ -2293,7 +2336,14 @@ function bindJourney_(){
   on('jrLater', busyOnce_(later)); on('jrLater2', function(){ S.jr=null; goBack('plan'); });
   on('jrGo', function(){ J.q=0; gpTap(); render(); window.scrollTo(0,0); });
   on('jrOn', function(){ if(J.s<JR_STOPS.length-1){ J.s++; J.q=-1; J.phase='q'; render(); window.scrollTo(0,0); return; }
-    J.phase='build'; render(); window.scrollTo(0,0); setTimeout(function(){ if(S.jr!==J) return; J.draft=visionMake_(J.a); J.mission=missionMake_(J.a); J.phase='reveal'; render(); }, 1600); });
+    J.phase='build'; render(); window.scrollTo(0,0); setTimeout(function(){ if(S.jr!==J) return; J.secs=visionParts_(J.a); J.w=0; J.mission=missionMake_(J.a); J.phase='write'; render(); window.scrollTo(0,0); }, 1400); });
+  var sec=$('jrSec'); if(sec) sec.oninput=function(){ J.secs[J.w]=sec.value; };
+  on('jrSecNext', function(){ if($('jrSec')) J.secs[J.w]=$('jrSec').value; gpTap();
+    if(J.w<JR_SECS.length-1){ J.w++; render(); window.scrollTo(0,0); return; }
+    J.draft=J.secs.filter(function(x){ return String(x).trim(); }).join('\n\n'); J.phase='reveal'; render(); window.scrollTo(0,0); });
+  on('jrSecBack', function(){ if($('jrSec')) J.secs[J.w]=$('jrSec').value; if(J.w>0) J.w--; else { J.phase='done'; } render(); window.scrollTo(0,0); });
+  on('jrSecDraft', function(){ J.secs[J.w]=visionParts_(J.a)[J.w]; gpTap(); render(); });
+  on('jrToSecs', function(){ jrKeep_(); J.secs=J.secs||visionParts_(J.a); J.w=0; J.phase='write'; render(); window.scrollTo(0,0); });
   on('jrBack', function(){ jrKeep_(); if(J.q>0) J.q--; else if(J.q===0) J.q=-1; else if(J.s>0){ J.s--; J.q=JR_STOPS[J.s].qs.length-1; } render(); window.scrollTo(0,0); });
   on('jrNext', busyOnce_(function(){ jrKeep_(); gpTap(); var X=JR_STOPS[J.s];
     if(J.q<X.qs.length-1){ J.q++; render(); window.scrollTo(0,0); return; }
@@ -2329,13 +2379,13 @@ function visionHtml(){
     (P.word ? '<button class="btn ghost" id="shareWord">📤 '+esc(t('Share my word for the year'))+'</button>' : '');
   h+=callingInviteHtml_();
   h+=wheelSectionHtml_();
-  h+=sec('🏔️','Five years from now', areas+line('One year from now','year'));
-  h+=sec('🔥','My call', chips('heart')+chips('who')+line('My dream','dream'));
-  h+=sec('🧭','Who I am', chips('gifts')+line('I lose track of time when…','flow'));
-  h+=sec('🐉','My dragons', chips('weak')+chips('fear')+(jrWords_(A,'truth')[0]?'<div class="jrLine"><div class="pmeta">'+esc(t('The truth I hold on to'))+'</div>🛡️ '+esc(jrWords_(A,'truth')[0])+'</div>':'')+line('The road I don’t want','avoid'));
+  h+=sec('🏔️','Five years from now', line('Who I want to be','person5')+areas+line('One year from now','year'));
+  h+=sec('🔥','My call', chips('heart')+line('What I saw','heartSaw')+chips('who')+line('My dream','dream'));
+  h+=sec('🧭','Who I am', chips('gifts')+line('A time my gift helped someone','giftStory')+line('I lose track of time when…','flow')+line('If nothing held me back','weakFree'));
+  h+=sec('🐉','My dragons', chips('weak')+chips('fear')+(jrWords_(A,'truth')[0]?'<div class="jrLine"><div class="pmeta">'+esc(t('The truth I hold on to'))+'</div>🛡️ '+esc(jrWords_(A,'truth')[0])+'</div>':'')+line('When fear stopped me','fearStory')+line('If I weren’t afraid','brave')+line('The road I don’t want','avoid'));
   h+=sec('🧙','My guides', line('Who has helped me','helped')+chips('walk')+line('Who I want to help grow','guideFor'));
-  h+=sec('🏆','My legacy', chips('known')+line('What I hope they’ll say','remember'));
-  h+=sec('🏡','Where I come from', chips('pastWords')+line('When I felt most alive','best')+line('A hard time that shaped me','hard')+line('What it taught me','lesson'));
+  h+=sec('🏆','My legacy', chips('known')+line('What I hope they’ll say','remember')+line('Why my word','wordWhy'));
+  h+=sec('🏡','Where I come from', chips('pastWords')+line('When I felt most alive','best')+line('A hard time that shaped me','hard')+line('What it taught me','lesson')+line('This chapter of my life','chapter'));
   return h+'<div class="btnRow" style="margin-top:16px"><button class="btn ghost" id="visionEdit">✏️ '+esc(t('Change my vision'))+'</button><button class="btn ghost" id="jrAgain">🗺️ '+esc(t('Take the journey again'))+'</button></div>';
 }
 /* The life wheel: six areas, 1–5. Rows of buttons, for the journey and for checking again. */
@@ -2412,64 +2462,126 @@ function bindVision_(){
 
 /* ---------------- my calling (api.js "my calling") ----------------
    Nov 2026, Uriah: once the tests are done, be "laser clear on what they're going to focus on in the
-   next few years and why", and have "a compelling vision statement for their life" to send to
-   supporters, friends and family. View callq: one choice a screen (⭐ marks what the tests and the
-   Life Journey point to), then the statement to make their own and keep. View calling: the
-   statement, the three-year focus and a milestone a year (each one tap from a goal), why, what I'm
-   saying no to, how God made me for it — and the words to send: a letter for family and supporters
-   and a short post, in English or Khmer (whichever they'll read), and a picture. Written on the
-   phone from the answers; the person edits them and sends them themselves (Share, Telegram, Copy). */
+   next few years and why", with "a compelling vision statement for their life" to send to supporters,
+   friends and family — and then: "a robust process that will deliver a real effective, in their own
+   words, calling and vision statement … not just clicky", still easy. Six parts (CL_PARTS), one
+   question a screen (CL_QS): how God made you (the tests, then your own words), what moves you (the
+   problem, one real person, the change, why), where you'll serve (spheres and the work in them,
+   spheres.js), your focus (one thing for three years, a clarity check, a milestone a year, the first
+   step, the cost, what to say no to), your people, and the statement written line by line from drafts
+   of their own words. Starters, ideas and examples keep it easy; every question can be skipped; it
+   saves at every part. View calling: the statement, the focus, the rest, and the words to send — a
+   letter for family and supporters and a short message (English or Khmer) and a picture. */
+var CL_PARTS=[
+  ['design','🧭','How God made you','Start with what’s already true: your tests, your story, and what other people see in you.'],
+  ['burden','🔥','What moves you','A calling often starts with something that bothers you more than it bothers other people. Find yours — and give it a face.'],
+  ['where','🌍','Where you’ll serve','Every part of society needs people who follow Jesus. Explore real work and real skills, and notice what draws you.'],
+  ['focus','🎯','Your focus','Now narrow it down: one focus for the next three years, clear enough that you’ll know if you’re doing it.'],
+  ['people','🤝','Your people','No one lives out a calling alone. Who will walk with you, and how can the people who love you help?'],
+  ['write','✍️','In your own words','Now say it, one line at a time. Each line starts as a draft made from what you wrote — make every word yours.']
+];
 var CL_OPTS={
   do:[['start','Start new things','start new things for','a'],['speak','Speak up for what’s right','speak up for','p'],['share','Share Jesus','share Jesus with','e'],['care','Care for people','care for','s'],['teach','Teach and train','teach and train','t'],['lead','Lead and organize','lead',''],['create','Create: art, music, media','make art, music and stories for',''],['heal','Bring healing','bring healing to',''],['build','Build a business that helps','build businesses that serve',''],['fix','Solve problems','solve problems for','']],
   who:[['kids','Children','children'],['youth','Young people','young people'],['students','Students','students'],['families','Families','families'],['poor','Poor families','poor families'],['girls','Girls and women','girls and women'],['sick','Sick people','sick people'],['addicts','People fighting addiction','people fighting addiction'],['unreached','People who don’t know Jesus','people who don’t know Jesus yet'],['leaders','Leaders','leaders'],['workers','Workers','workers'],['church','The church','the church']],
   change:[['jesus','Know Jesus','know Jesus and follow him'],['faith','Grow in faith','grow strong in faith'],['learn','Learn and finish school','learn and finish school'],['hope','Find hope','find hope and a future'],['family','Have strong families','have strong, loving families'],['work','Earn a good living','earn a good living and provide for their families'],['health','Be healthy','be healthy and well'],['safe','Be safe and free','be safe and free'],['fair','Be treated fairly','be treated fairly'],['lead','Become leaders','grow into leaders who serve'],['belong','Know they belong','know they belong and are loved'],['creation','Care for creation','care for God’s creation']],
   place:[['home','My village or province','in my village or province'],['pp','Phnom Penh','in Phnom Penh'],['campus','My school or university','at my school or university'],['church','My church','in my church'],['cambodia','Across Cambodia','across Cambodia'],['online','Online','online'],['nations','Other nations','in other nations']],
   no:[['scroll','Endless scrolling'],['yes','Saying yes to everything'],['money','Choosing only for money'],['compare','Comparing my path with others'],['busy','Being busy but not fruitful'],['late','Late nights'],['wait','Waiting until I feel ready'],['drift','Drifting from God']],
-  help:[['pray','Pray for me','pray for me'],['check','Check in on me','check in on me now and then'],['connect','Introduce me to people','introduce me to people who could help'],['mentor','Mentor or train me','mentor or train me'],['give','Give to support me','give to support me'],['join','Join me','join me']]
+  help:[['pray','Pray for me','pray for me'],['check','Check in on me','check in on me now and then'],['connect','Introduce me to people','introduce me to people who could help'],['mentor','Mentor or train me','mentor or train me'],['give','Give to support me','give to support me'],['join','Join me','join me']],
+  checks:[['who','It says who I’ll serve.','Add who: “…for the children in my village”.'],['what','It says what I’ll actually do.','Add a doing word: teach, start, build, lead, train…'],['measure','In three years I’ll know if I did it.','Add a number or a finish line: “20 children”, “a second club”, “my degree”.'],['gifts','It uses how God made me.','Look back at what you do well — can your focus use it more?'],['start','I could start on it this month.','Make the first part smaller, so you can start now.']]
 };
 var CL_QS=[
-  { k:'do', type:'chips', max:1, other:true, ph:'Something else? e.g. make videos', q:'Which of these is most like you — the way you love to serve?', note:'⭐ = what your tests and your Life Journey point to. Pick the one that makes you come alive.' },
-  { k:'who', type:'chips', max:1, other:true, q:'If you could help only one group of people, who would it be?', note:'Choosing one doesn’t mean you’ll never help anyone else. It means you know where to aim.' },
-  { k:'change', type:'chips', max:1, other:true, q:'What change do you most want to see in their lives?' },
-  { k:'sphere', type:'sphere', q:'Where in society will you do it?', note:'⭐ = where your type, strengths and gifts may shine. God can use you anywhere.' },
-  { k:'place', type:'chips', max:1, other:true, ph:'Somewhere else? e.g. Battambang', q:'Where will you start?' },
-  { k:'focus', type:'focus', q:'Now the big one: for the next three years, what ONE thing will you focus on?', note:'Laser clear, in one sentence. Tap an idea to start from it, then make it yours.' },
-  { k:'years', type:'years', q:'What will be true at the end of each year?', note:'Small and real is better than big and vague.' },
-  { k:'no', type:'chips', max:3, other:true, q:'To say yes to this, what will you say no to?', note:'Focus means saying no — sometimes even to good things.' },
-  { k:'why', type:'why', q:'Why does this matter so much to you?', note:'Tell the story: when did you first care about this? People remember stories.' },
-  { k:'help', type:'chips', max:6, q:'How could the people who love you help?', note:'Your letter will ask them. People want to help when they know how.' }
+  { p:'design', k:'me', type:'text', show:'design', q:'Look at what your tests found. In your own words: what kind of person has God made you?', note:'Not who you should be — who you are. Two or three sentences.', starters:['I’m someone who…','People often come to me when…','I come alive when…'], ph:'e.g. I’m someone who notices the person sitting alone. I learn fast, and I love explaining things until they click.' },
+  { p:'design', k:'good', type:'lines', q:'Name three things you do well — things other people have told you.', note:'Tap one of your strengths to add it, or write your own.', ph:['e.g. Explaining things simply','e.g. Making new people feel welcome','e.g. Organizing events'] },
+  { p:'design', k:'alive', type:'text', hint:['best'], q:'Tell one story: a time you did something and thought, “I was made for this.”', note:'Where were you? What did you do? How did it feel?', ph:'e.g. At camp I led a group of ten kids through a game, and the shy ones started laughing…' },
+  { p:'design', k:'energy', type:'pair', q:'What gives you energy — and what drains it?', note:'Your calling will use the first much more than the second.', labels:['What gives me energy','What drains me'], ph:['e.g. Teaching, being with people, solving problems','e.g. Paperwork, sitting alone all day, arguments'] },
+  { p:'burden', k:'burden', type:'text', heart:true, q:'What problem in the world do you think about most? Describe it like you’re telling a friend.', note:'What do you see? Why is it wrong? Tap something you picked on your journey to start.', ph:'e.g. So many kids in my province stop school at 12 to work. They’re clever, but nobody helps them catch up…' },
+  { p:'burden', k:'who', type:'chips', max:1, other:true, q:'Who are the people you most want to help?', note:'Choosing one doesn’t mean you’ll never help anyone else. It means you know where to aim.' },
+  { p:'burden', k:'person', type:'text', q:'Picture one real person with this problem (no name needed). What is their life like?', note:'A calling gets clear when it has a face.', ph:'e.g. A 13-year-old girl in my village. She’s clever, but she sells vegetables at the market every morning instead of going to school…' },
+  { p:'burden', k:'change', type:'chips', max:1, other:true, q:'What change do you most want to see in their lives?' },
+  { p:'burden', k:'picture', type:'text', q:'Imagine it’s ten years from now and things have changed for them. What do you see?', note:'Dream a little. This picture is what will keep you going.', ph:'e.g. Every child in my village finishes grade 9. The girl I pictured is training to be a nurse…' },
+  { p:'burden', k:'why', type:'text', max:800, hint:['heart','lesson','dream'], q:'Why does this matter so much to you? Where did it start?', note:'Tell the story: when did you first care about this? People remember stories.', ph:'e.g. When I was 12, my cousin had to leave school to work. I still think about her…' },
+  { p:'where', k:'spheres', type:'spheres', q:'Which parts of society draw you most?', note:'Pick one or two. ⭐ = where your type, strengths and gifts may shine. Tap one to see what God cares about there.' },
+  { p:'where', k:'roles', type:'roles', other:true, q:'Which kinds of work draw you?', note:'Pick up to three. Not sure? Pick what you’d love to try — you can change it later.' },
+  { p:'where', k:'draw', type:'text', max:400, q:'What draws you to this work? What would a great day of it look like?', ph:'e.g. Standing in front of a class when it finally clicks for a student who was behind…' },
+  { p:'where', k:'models', type:'line', max:200, q:'Who is already doing this well — someone you could learn from or ask for advice?', note:'Someone you know, or someone you’d love to meet.', ph:'e.g. Teacher Sokha, who started a reading club in Kampot' },
+  { p:'where', k:'skills', type:'skills', other:true, q:'Which skills do you most need to grow for this?', note:'From the work you picked. Choose up to four.' },
+  { p:'focus', k:'do', type:'chips', max:1, other:true, ph:'Something else? e.g. make videos', q:'Which of these is most like you — the way you love to serve?', note:'⭐ = what your tests and your Life Journey point to.' },
+  { p:'focus', k:'place', type:'chips', max:1, other:true, ph:'Somewhere else? e.g. Battambang', q:'Where will you start?' },
+  { p:'focus', k:'focus', type:'focus', q:'Now the big one: for the next three years, what ONE thing will you focus on?', note:'Laser clear, in one sentence. Tap an idea to start from it, then make it yours.' },
+  { p:'focus', k:'checks', type:'check', q:'Is your focus laser clear? Tick what’s true.', note:'Not all ticked? Sharpen it — it’s worth the minute.' },
+  { p:'focus', k:'years', type:'years', q:'What will be true at the end of each year?', note:'Small and real is better than big and vague.' },
+  { p:'focus', k:'first', type:'line', max:200, q:'What’s one step you’ll take in the next 30 days?', note:'Small and real: a call, a class, a visit, a first try.', ph:'e.g. Ask Teacher Sokha if I can help at her club on Saturday.' },
+  { p:'focus', k:'cost', type:'text', max:400, q:'What will this cost you — time, money, comfort, what people think? Is it worth it?', note:'🔒 Only you see this. Counting the cost now makes it easier to keep going later.', ph:'e.g. My Saturdays, and my uncle thinks teaching doesn’t pay. But…' },
+  { p:'focus', k:'no', type:'chips', max:3, other:true, q:'To say yes to this, what will you say no to?', note:'Focus means saying no — sometimes even to good things.' },
+  { p:'people', k:'mentor', type:'line', max:200, q:'Who could walk with you in this — a mentor, a leader, a friend who’ll ask how it’s going?', ph:'e.g. My youth leader, and my friend Dara' },
+  { p:'people', k:'help', type:'chips', max:6, q:'How could the people who love you help?', note:'Your letter will ask them. People want to help when they know how.' },
+  { p:'people', k:'verse', type:'line', max:60, q:'Is there a Bible verse or story that speaks to you about this?', note:'The reference only — your letter will name it.', ph:'e.g. Isaiah 61:1, or Nehemiah rebuilding the wall' },
+  { p:'write', k:'w1', type:'write', lead:'God made me…', q:'Who God made you to be' },
+  { p:'write', k:'w2', type:'write', lead:'I’m called to…', q:'Who you’re called to, and where' },
+  { p:'write', k:'w3', type:'write', lead:'For the next three years, I will…', q:'Your focus' },
+  { p:'write', k:'w4', type:'write', lead:'Because…', q:'Why it matters' }
 ];
-function clOf_(){ var c=(S.me && S.me.calling)||{}; return { a:c.a||{}, statement:c.statement||'', sl:c.sl||'', letter:c.letter||{}, post:c.post||{}, from:c.from||0, at:c.at||'', done:c.done||{} }; }
+var CL_WRITE_FROM={ w1:['me','good'], w2:['who','change','spheres','place'], w3:['focus','first'], w4:['picture','why','burden'] };
+function clOf_(){ var c=(S.me && S.me.calling)||{}; return { a:c.a||{}, statement:c.statement||'', sl:c.sl||'', letter:c.letter||{}, post:c.post||{}, from:c.from||0, at:c.at||'', done:c.done||{}, step:c.step||0 }; }
 function clFrom_(){ var c=clOf_(), d=todayStr(); return c.from || (Number(d.slice(5,7))>=7 ? Number(d.slice(0,4))+1 : Number(d.slice(0,4))); }
 function clOpt_(k, id){ return (CL_OPTS[k]||[]).filter(function(o){ return o[0]===id; })[0]; }
+function clTx_(A, k){ return String(A[k]||'').trim(); }
 /* A choice as the words that go in a sentence, in the language in use. */
 function clPh_(A, k){ var v=A[k]; if(!v || typeof v!=='object') return ''; var id=(v.c||[])[0], o=id && clOpt_(k,id);
   if(o) return t(o[2]); var x=String(v.o||'').trim(); if(!x) return ''; return k==='place' ? gpT('in {place}',{place:x}) : x; }
 function clList_(A, k){ var v=A[k]||{}, out=(v.c||[]).map(function(id){ var o=clOpt_(k,id); return o ? t(o[2]||o[1]) : ''; }).filter(Boolean); if(String(v.o||'').trim()) out.push(String(v.o).trim()); return out; }
 function clLabel_(A, k){ var v=A[k]||{}, out=(v.c||[]).map(function(id){ var o=clOpt_(k,id); return o ? t(o[1]) : ''; }).filter(Boolean); if(String(v.o||'').trim()) out.push(String(v.o).trim()); return out; }
-function clSphere_(A){ return A.sphere && SPHERES[A.sphere] ? jrLc_(t(SPHERES[A.sphere][1])) : ''; }
+function clSpheresOf_(A){ var s=((A.spheres||{}).c||[]).filter(function(id){ return SPHERES[id]; }); if(!s.length && A.sphere && SPHERES[A.sphere]) s=[A.sphere]; return s; }
+function clSphere_(A){ return jrList_(clSpheresOf_(A).map(function(id){ return clLc_(t(SPHERES[id][1])); })); }
+function clRoles_(A){ var v=A.roles||{}, out=(v.c||[]).map(function(id){ var r=typeof gpRoleById==='function' ? gpRoleById(id) : null; return r ? r.t[LANG==='km'?1:0] : ''; }).filter(Boolean); if(String(v.o||'').trim()) out.push(String(v.o).trim()); return out; }
+function clSkills_(A){ var v=A.skills||{}, out=(v.c||[]).map(function(id){ return typeof GP_SKILLS!=='undefined' && GP_SKILLS[id] ? GP_SKILLS[id][LANG==='km'?1:0] : ''; }).filter(Boolean); if(String(v.o||'').trim()) out.push(String(v.o).trim()); return out; }
+/* Lower-case the first letter in English, but not "I", a name like "Jesus", or "UX". */
+function clLc_(s){ s=String(s||''); if(LANG!=='en' || /^(I\b|I’|I'|[A-Z]{2}|Jesus|God|Phnom|Cambodia)/.test(s)) return s; return s.charAt(0).toLowerCase()+s.slice(1); }
 function cap_(s){ return LANG==='en' && s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+function clFirst_(s){ s=String(s||'').trim(); var m=s.match(/^[^.!?។\n]*[.!?។]?/); return m ? m[0].trim() : s; }
+function clEnd_(s){ s=String(s||'').trim(); if(!s) return ''; return /[.!?។…”"]$/.test(s) ? s : s+(LANG==='km'?'។':'.'); }
 /* Write something in another language than the app's (a letter in Khmer for the family). */
 function withLang_(lang, fn){ var o=LANG; LANG=lang; try { return fn(); } finally { LANG=o; } }
-/* The calling statement: who I'm made to serve, how, the change I want for them; then where. */
-function clStatement_(A){
+/* Who I'm called to: how, who, the change — then where. */
+function clCalled_(A, lead){
   var dv=A.do||{}, own=!(dv.c||[]).length && String(dv.o||'').trim(), d=clPh_(A,'do'), w=clPh_(A,'who'), ch=clPh_(A,'change'), sp=clSphere_(A), pl=clPh_(A,'place'), s1='', s2='';
-  if(d && w && own) s1=ch ? gpT('I believe God made me to {do} — for {who}, so they can {change}.',{do:d, who:w, change:ch}) : gpT('I believe God made me to {do} — for {who}.',{do:d, who:w});
-  else if(d && w) s1=ch ? gpT('I believe God made me to {do} {who}, so they can {change}.',{do:d, who:w, change:ch}) : gpT('I believe God made me to {do} {who}.',{do:d, who:w});
-  else if(w) s1=ch ? gpT('I believe God made me to help {who}, so they can {change}.',{who:w, change:ch}) : gpT('I believe God made me to help {who}.',{who:w});
-  else if(ch) s1=gpT('I believe God made me to help people {change}.',{change:ch});
-  else if(own) s1=gpT('I believe God made me to {do}.',{do:d});
+  var L=lead ? 'I’m called to' : 'I believe God made me to';
+  if(d && w && own) s1=ch ? gpT(L+' {do} — for {who}, so they can {change}.',{do:d, who:w, change:ch}) : gpT(L+' {do} — for {who}.',{do:d, who:w});
+  else if(d && w) s1=ch ? gpT(L+' {do} {who}, so they can {change}.',{do:d, who:w, change:ch}) : gpT(L+' {do} {who}.',{do:d, who:w});
+  else if(w) s1=ch ? gpT(L+' help {who}, so they can {change}.',{who:w, change:ch}) : gpT(L+' help {who}.',{who:w});
+  else if(ch) s1=gpT(L+' help people {change}.',{change:ch});
+  else if(own) s1=gpT(L+' {do}.',{do:d});
   if(sp && pl) s2=gpT('I’ll serve through {sphere}, starting {place}.',{sphere:sp, place:pl});
   else if(sp) s2=gpT('I’ll serve through {sphere}.',{sphere:sp});
   else if(pl) s2=gpT('I’ll start {place}.',{place:pl});
   return [s1, s2].filter(Boolean).join(' ');
 }
+function clStatement_(A){ return clCalled_(A, false); }   // the short version, for answers kept before the lines
+/* A draft of each line of the statement, from their own words first. */
+function clDraft_(k, A){
+  var me=S.me;
+  if(k==='w1'){ var parts=[];
+    if(me.personality && GP_PTYPES[me.personality.type]) parts.push(gpT('a {name}',{name:clLc_(pTheName(me.personality.type))}));
+    if(me.apest && typeof GP_APEST!=='undefined'){ var g=apById_(me.apest.top[0]); if(g) parts.push(gpT('with the heart of a {gift}',{gift:clLc_(fld_(g,'name'))})); }
+    var good=['good1','good2','good3'].map(function(x){ return clTx_(A,x); }).filter(Boolean).map(clLc_);
+    if(good.length) parts.push(gpT('good at {list}',{list:jrList_(good)}));
+    var s=parts.length ? gpT('God made me {design}.',{design:parts.join(LANG==='km'?' ':', ')}) : '';
+    return [clEnd_(clFirst_(A.me)), s].filter(Boolean).join(' ') || t('God made me on purpose, for a purpose.'); }
+  if(k==='w2') return clCalled_(A, true);
+  if(k==='w3'){ var f=clTx_(A,'focus'); return f ? gpT('For the next three years, I will {focus}',{focus:clEnd_(clLc_(f))}) : ''; }
+  if(k==='w4'){ var x=clFirst_(A.picture);
+    if(x) return gpT('Because I long to see this: {x}',{x:clEnd_(clLc_(x))});
+    x=clFirst_(A.why)||clFirst_(A.burden); return x ? gpT('Because {x}',{x:clEnd_(clLc_(x))}) : ''; }
+  return '';
+}
+function clJoin_(A){ return ['w1','w2','w3','w4'].map(function(k){ return clTx_(A,k); }).filter(Boolean).join(' '); }
 /* Ideas for the three-year focus, from the answers so far. */
 function clIdeas_(A){
-  var d=clPh_(A,'do'), w=clPh_(A,'who'), ch=clPh_(A,'change'), pl=clPh_(A,'place'), sp=clSphere_(A), out=[];
-  if(d && w && (A.do.c||[]).length) out.push(cap_(pl ? gpT('{do} {who} {place}, every week.',{do:d, who:w, place:pl}) : gpT('{do} {who} every week.',{do:d, who:w})));
+  var d=clPh_(A,'do'), w=clPh_(A,'who'), ch=clPh_(A,'change'), pl=clPh_(A,'place'), sp=clSphere_(A), r=clRoles_(A)[0], out=[];
+  if(d && w && ((A.do||{}).c||[]).length) out.push(cap_(pl ? gpT('{do} {who} {place}, every week.',{do:d, who:w, place:pl}) : gpT('{do} {who} every week.',{do:d, who:w})));
   if(w && ch) out.push(gpT('Start one small thing that helps {who} {change}.',{who:w, change:ch}));
-  if(sp) out.push(gpT('Get ready to serve through {sphere}: study, train and gain experience.',{sphere:sp}));
+  if(r) out.push(w ? gpT('Train to work as a {role}, and start serving {who} while I learn.',{role:clLc_(r), who:w}) : gpT('Train to work as a {role}, and get real experience every year.',{role:clLc_(r)}));
+  if(sp && !r) out.push(gpT('Get ready to serve through {sphere}: study, train and gain experience.',{sphere:sp}));
   return out;
 }
 /* ⭐: what the tests and the journey point to, for each choice. */
@@ -2480,131 +2592,244 @@ function clStars_(k){
   if(k==='who'){ from(J.who, { kids:'kids', youth:'youth', students:'students', family:'families', poor:'poor', sick:'sick', church:'church' }); from(J.heart, { addict:'addicts', lost:'unreached', used:'girls', school:'kids', hope:'youth' }); }
   if(k==='change') from(J.heart, { school:'learn', poor:'work', broken:'family', lost:'jesus', sick:'health', addict:'safe', unjust:'fair', lonely:'belong', earth:'creation', hope:'hope', used:'safe' });
   if(k==='place') from(J.who, { village:'home', khmer:'cambodia', nations:'nations', church:'church', students:'campus' });
-  if(k==='sphere'){ if(!me.personality && !me.gstrengths && !me.apest) return [];
+  if(k==='spheres'){ if(!me.personality && !me.gstrengths && !me.apest) return [];
     var ok=(!me.personality || needJs_('deeper-types.js','GP_PDEEP')) & (!me.gstrengths || needJs_('deeper-strengths.js','GP_GSDEEP')) & (!me.apest || needJs_('apest.js','GP_APEST'));
     return ok ? sphereVotes_().top.slice(0,2) : []; }
   return out;
 }
-function clStart_(at){ S.cl={ i:at==null?-1:at, a:jrClone_(clOf_().a), phase:'q' }; }
+function clStart_(at){ var c=clOf_(); S.cl={ i:at==null?-1:at, a:jrClone_(c.a), phase:'q' }; if(!c.statement && !c.a.spheres && c.a.sphere) S.cl.a.spheres={ c:[c.a.sphere], o:'' }; }
 function clEmpty_(Q, A){ var v=A[Q.k];
-  if(Q.type==='years') return !['m1','m2','m3'].some(function(k){ return String(A[k]||'').trim(); });
-  if(Q.type==='sphere') return !v;
-  if(Q.type==='focus' || Q.type==='why') return !(v && String(v).trim());
+  if(Q.type==='years') return !['m1','m2','m3'].some(function(k){ return clTx_(A,k); });
+  if(Q.type==='lines') return !['good1','good2','good3'].some(function(k){ return clTx_(A,k); });
+  if(Q.type==='pair') return !clTx_(A,'gives') && !clTx_(A,'drains');
+  if(Q.type==='check') return false;
+  if(['text','line','focus','write'].indexOf(Q.type)>-1) return !(v && String(v).trim());
   return !v || (!(v.c||[]).length && !String(v.o||'').trim()); }
+function clPartIx_(p){ for(var i=0;i<CL_PARTS.length;i++) if(CL_PARTS[i][0]===p) return i; return 0; }
+function clMapHtml_(){
+  var C=S.cl, cur=C && C.i>=0 ? clPartIx_(CL_QS[C.i].p) : (C && C.phase==='reveal' ? CL_PARTS.length : -1);
+  return '<div class="jrMap">'+CL_PARTS.map(function(P, i){ var done=i<cur, on=i===cur;
+    return (i?'<span class="jrPath'+(done?' on':'')+'"></span>':'')+'<span class="jrStop'+(done?' done':'')+(on?' cur':'')+'" title="'+esc(t(P[2]))+'">'+P[1]+(done?'<i>✓</i>':'')+'</span>'; }).join('')+'</div>';
+}
 function clIntroHtml_(){
-  var me=S.me, st=storyOf_(), gname=function(id){ var s=gpGSById(id); return s ? t(s.name) : ''; };
+  var me=S.me, st=storyOf_(), c=clOf_(), gname=function(id){ var s=gpGSById(id); return s ? t(s.name) : ''; };
   if(me.apest) needJs_('apest.js','GP_APEST');
   var rows=[
     ['goPtest','🧭',t('Personality type'), me.personality ? me.personality.type+' · '+pTheName(me.personality.type) : ''],
     ['goGtest','💪',t('Top 5 strengths'), me.gstrengths ? me.gstrengths.top.map(gname).join(' · ') : me.clifton ? me.clifton.top.join(' · ') : ''],
     ['goAtest','🔥',t('Ministry gifts (APEST)'), me.apest ? (typeof GP_APEST!=='undefined' ? me.apest.top.slice(0,2).map(function(id){ var g=apById_(id); return g ? fld_(g,'name') : ''; }).join(' · ') : '…') : ''],
     ['goJourney','🗺️',t('Life Journey'), st.finished ? t('Finished') : st.done.length ? gpT('{n} of {m} stops done',{n:st.done.length, m:JR_STOPS.length}) : '']
-  ], done=rows.filter(function(r){ return r[3] && (r[0]!=='goJourney' || st.finished); }).length;
-  return '<div class="jrIntro"><div class="jrBig">🎯</div><h2>'+esc(t('Find your calling'))+'</h2><p class="jrStory">'+esc(t('Your tests show how God made you. Your journey shows what moves you. Now put it together: who you’re called to, the one thing you’ll focus on for the next three years — and why. At the end you’ll have words to share with your family, friends and supporters.'))+'</p>'+
+  ], done=rows.filter(function(r){ return r[3] && (r[0]!=='goJourney' || st.finished); }).length, resume=!c.statement && c.step>0 && c.step<CL_QS.length;
+  return '<div class="jrIntro"><div class="jrBig">🎯</div><h2>'+esc(t('Find your calling'))+'</h2><p class="jrStory">'+esc(t('Your tests show how God made you. Your journey shows what moves you. Now put it together, in your own words: who you’re called to, the one thing you’ll focus on for the next three years — and why. At the end you’ll have a calling statement, and a letter to share with your family, friends and supporters.'))+'</p>'+
     '<div class="card clReady"><div class="pmeta">'+esc(gpT('What you bring · {n} of 4',{n:done}))+'</div>'+rows.map(function(r){ var ok=r[3] && (r[0]!=='goJourney' || st.finished);
       return '<div class="clReadyRow'+(ok?' ok':'')+'"><span class="clReadyIc">'+r[1]+'</span><span style="flex:1;min-width:0"><b>'+esc(r[2])+'</b>'+(r[3]?'<div class="pmeta">'+esc(r[3])+'</div>':'')+'</span>'+(ok?'<span class="clOk">✓</span>':'<button class="btn small ghost" id="'+r[0]+'">'+esc(r[3]?t('Finish'):t('Take it'))+'</button>')+'</div>'; }).join('')+
     (done<4?'<p class="pmeta" style="margin:8px 0 0">'+esc(t('It works best after all four — but you can start now and come back.'))+'</p>':'')+'</div>'+
-    '<button class="btn" id="clGo">'+esc(clOf_().statement ? t('Go through it again') : t('Let’s go'))+' →</button><p class="pmeta" style="text-align:center;margin-top:8px">'+esc(t('About 10 minutes · +60 XP'))+'</p></div>';
+    '<div class="card clPartsList"><div class="pmeta">'+esc(t('Six parts, one question at a time'))+'</div>'+CL_PARTS.map(function(P){ var n=CL_QS.filter(function(q){ return q.p===P[0]; }).length;
+      return '<div class="clPartRow"><span>'+P[1]+'</span><b>'+esc(t(P[2]))+'</b><span class="pmeta">'+esc(gpT('{n} questions',{n:n}))+'</span></div>'; }).join('')+
+    '<p class="pmeta" style="margin:8px 0 0">'+esc(t('About 30–40 minutes. Do a part at a time if you like — it saves as you go.'))+'</p></div>'+
+    (resume ? '<button class="btn" id="clResume">'+esc(gpT('Continue: {part}',{part:t(CL_PARTS[clPartIx_(CL_QS[c.step].p)][2])}))+' →</button><button class="linkbtn" id="clGo">'+esc(t('Start from the beginning'))+'</button>'
+      : '<button class="btn" id="clGo">'+esc(c.statement ? t('Go through it again') : t('Let’s go'))+' →</button>')+
+    '<button class="linkbtn" id="goSpheres">🌍 '+esc(t('Explore the spheres of society first'))+'</button><p class="pmeta" style="text-align:center;margin-top:4px">+60 XP</p></div>';
+}
+/* What the tests found, short, to look at while writing about yourself. */
+function clDesignCardHtml_(){
+  var me=S.me, rows=[];
+  if(me.personality && GP_PTYPES[me.personality.type]){ var ty=GP_PTYPES[me.personality.type]; rows.push(['🧭', me.personality.type+' · '+pTheName(me.personality.type), t(ty.tagline)]); }
+  if(me.gstrengths) rows.push(['💪', t('Your top 5 strengths'), me.gstrengths.top.map(function(id){ var s=gpGSById(id); return s ? t(s.name) : ''; }).join(' · ')]);
+  else if(me.clifton) rows.push(['🏅', t('My StrengthsFinder Top 5'), me.clifton.top.join(' · ')]);
+  if(me.apest && needJs_('apest.js','GP_APEST')){ var g1=apById_(me.apest.top[0]), g2=apById_(me.apest.top[1]); if(g1) rows.push([g1.icon, fld_(g1,'name')+(g2?' · '+fld_(g2,'name'):''), fld_(g1,'tagline')]); }
+  var sp=clStars_('spheres'); if(sp.length) rows.push(['🌍', t('May shine in'), sp.map(function(id){ return t(SPHERES[id][1]); }).join(' · ')]);
+  if(!rows.length) return '<div class="card"><p class="sub" style="margin:0">'+esc(t('No tests yet — that’s fine. Write what you know about yourself, or take a test first and come back.'))+'</p></div>';
+  return '<div class="card clDesign">'+rows.map(function(r){ return '<div class="clDRow"><span>'+r[0]+'</span><span><b>'+esc(r[1])+'</b>'+(r[2]?'<div class="pmeta">'+esc(r[2])+'</div>':'')+'</span></div>'; }).join('')+'</div>';
+}
+function clHintsHtml_(keys){
+  var J=storyOf_().a, hints=[], L={ best:'When I felt most alive', lesson:'What it taught me', dream:'My dream', heart:'What breaks my heart' };
+  (keys||[]).forEach(function(k){ var x=k==='heart' ? jrWords_(J,'heart').join(' · ') : jrText_(J,k); if(x) hints.push([t(L[k]), x]); });
+  return hints.length ? '<div class="card jrRecap"><div class="pmeta" style="margin-bottom:4px">🗺️ '+esc(t('From your Life Journey'))+'</div>'+hints.map(function(x){ return '<div class="jrLine"><div class="pmeta">'+esc(x[0])+'</div>'+esc(x[1])+'</div>'; }).join('')+'</div>' : '';
+}
+/* What I already said, under each line of the statement. */
+function clFromHtml_(k, A){
+  var rows=[], add=function(label, x){ if(x) rows.push([label, x]); };
+  (CL_WRITE_FROM[k]||[]).forEach(function(f){
+    if(f==='good') add(t('What I do well'), ['good1','good2','good3'].map(function(x){ return clTx_(A,x); }).filter(Boolean).join(' · '));
+    else if(f==='who') add(t('Who'), clLabel_(A,'who').join(''));
+    else if(f==='change') add(t('The change'), clLabel_(A,'change').join(''));
+    else if(f==='spheres') add(t('Where'), clSpheresOf_(A).map(function(id){ return t(SPHERES[id][1]); }).concat(clRoles_(A)).join(' · '));
+    else if(f==='place') add(t('Where I’ll start'), clLabel_(A,'place').join(''));
+    else { var L={ me:'In my own words', focus:'My focus', first:'My first step', picture:'What I long to see', why:'Why it matters', burden:'The problem' }; add(t(L[f]), clTx_(A,f)); }
+  });
+  return rows.length ? '<div class="card jrRecap"><div class="pmeta" style="margin-bottom:4px">💬 '+esc(t('What you said'))+'</div>'+rows.map(function(x){ return '<div class="jrLine"><div class="pmeta">'+esc(x[0])+'</div>'+esc(x[1].length>160?x[1].slice(0,158)+'…':x[1])+'</div>'; }).join('')+'</div>' : '';
 }
 function callqHtml(){
   var C=S.cl; if(!C){ clStart_(); C=S.cl; }
-  var top='<div class="jrTop"><button class="linkbtn backLink" id="clLater">← '+esc(t('Save and finish later'))+'</button></div>';
-  if(C.phase==='build') return top+'<div class="jrBuild"><div class="jrSpark">🎯</div><h2>'+esc(t('Putting your calling into words…'))+'</h2><p class="sub">'+esc(t('How God made you, what moves you, and where you’re going.'))+'</p></div>';
+  var top='<div class="jrTop"><button class="linkbtn backLink" id="clLater">← '+esc(t('Save and finish later'))+'</button></div>'+clMapHtml_();
   if(C.phase==='reveal'){
     var A=C.a, fr=clFrom_();
-    return top+'<div class="jrReveal"><div class="obBig">🎯</div><h2>'+esc(t('Your calling'))+'</h2><p class="sub">'+esc(t('Here it is in a sentence or two. Make every word yours, then keep it.'))+'</p>'+
-      '<textarea id="clStmt" class="jrVisionIn clStmtIn" rows="5" maxlength="300">'+esc(C.draft||'')+'</textarea>'+
-      (String(A.focus||'').trim() || A.m1 || A.m2 || A.m3 ? '<div class="card"><div class="pmeta">🎯 '+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</div>'+(String(A.focus||'').trim()?'<p class="clFocusTx">'+esc(A.focus)+'</p>':'')+clYearsHtml_(A, fr, false)+'</div>' : '')+
-      '<button class="btn" id="clKeep">✦ '+esc(t('Keep my calling'))+'</button><button class="linkbtn" id="clRemake">↻ '+esc(t('Write it again from my answers'))+'</button><button class="linkbtn" id="clRedo">'+esc(t('Change my answers'))+'</button></div>';
+    return top+'<div class="jrReveal"><div class="obBig">🎯</div><h2>'+esc(t('Your calling'))+'</h2><p class="sub">'+esc(t('Here are your four lines together. Read it slowly, change anything, then keep it.'))+'</p>'+
+      '<textarea id="clStmt" class="jrVisionIn clStmtIn" rows="9" maxlength="900">'+esc(C.draft||'')+'</textarea>'+
+      '<div class="card clReadAloud"><div class="pmeta">🗣️ '+esc(t('Read it out loud. Is it true?'))+'</div>'+['It sounds like me — not like someone else.','Someone who knows me would recognise me in it.','It says who I’ll serve and what I’ll do.','It would make someone want to help.'].map(function(x, i){ var on=!!(C.read||{})[i];
+        return '<button class="clCk'+(on?' on':'')+'" data-clread="'+i+'"><span class="tick'+(on?' on':'')+'">'+(on?'✓':'')+'</span><span>'+esc(t(x))+'</span></button>'; }).join('')+'</div>'+
+      (clTx_(A,'focus') || A.m1 || A.m2 || A.m3 ? '<div class="card"><div class="pmeta">🎯 '+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</div>'+(clTx_(A,'focus')?'<p class="clFocusTx">'+esc(A.focus)+'</p>':'')+clYearsHtml_(A, fr, false)+'</div>' : '')+
+      '<button class="btn" id="clKeep">✦ '+esc(t('Keep my calling'))+'</button><button class="linkbtn" id="clRemake">↻ '+esc(t('Put my four lines together again'))+'</button><button class="linkbtn" id="clRedo">'+esc(t('Change my answers'))+'</button></div>';
   }
   if(C.i<0) return top+clIntroHtml_();
-  var Q=CL_QS[C.i], v=C.a[Q.k], stars=clStars_(Q.k);
-  var h=top+'<div class="jrQ"><div class="pmeta">🎯 '+esc(t('My calling'))+' · '+esc(gpT('{n} of {m}',{n:C.i+1, m:CL_QS.length}))+'</div><div class="miniTrack"><div style="width:'+Math.round((C.i+1)/CL_QS.length*100)+'%"></div></div><h2 class="jrQt">'+esc(t(Q.q))+'</h2>'+(Q.note?'<p class="sub">'+esc(t(Q.note))+'</p>':'');
-  if(Q.type==='chips'){ var c=(v&&v.c)||[];
-    h+='<div class="pmeta jrPick">'+esc(Q.max===1?t('Pick one'):gpT('Pick up to {n}',{n:Q.max}))+'</div><div class="jrChips">'+CL_OPTS[Q.k].map(function(o){ var on=c.indexOf(o[0])>-1, st=stars.indexOf(o[0])>-1;
-      return '<button class="jrChip'+(on?' on':'')+'" data-clc="'+o[0]+'" aria-pressed="'+on+'">'+(st?'⭐ ':'')+esc(t(o[1]))+'</button>'; }).join('')+'</div>'+
+  var Q=CL_QS[C.i], P=CL_PARTS[clPartIx_(Q.p)];
+  if(C.phase==='part'){ var nq=CL_QS.filter(function(q){ return q.p===P[0]; }).length;
+    return top+'<div class="jrIntro"><div class="pmeta">'+esc(gpT('Part {n} of {m}',{n:clPartIx_(Q.p)+1, m:CL_PARTS.length}))+'</div><div class="jrBig">'+P[1]+'</div><h2>'+esc(t(P[2]))+'</h2><p class="jrStory">'+esc(t(P[3]))+'</p><p class="pmeta">'+esc(gpT('{n} questions',{n:nq}))+'</p>'+
+      '<button class="btn" id="clPartGo">'+esc(t('Let’s go'))+' →</button></div>'; }
+  var v=C.a[Q.k], qn=CL_QS.filter(function(q){ return q.p===Q.p; }), qi=qn.indexOf(Q);
+  var h=top+'<div class="jrQ"><div class="pmeta">'+P[1]+' '+esc(t(P[2]))+' · '+esc(gpT('{n} of {m}',{n:qi+1, m:qn.length}))+'</div><div class="miniTrack"><div style="width:'+Math.round((qi+1)/qn.length*100)+'%"></div></div>';
+  if(Q.type==='write') h+='<div class="pmeta clWriteQ">✍️ '+esc(t(Q.q))+'</div><h2 class="jrQt clLead">'+esc(t(Q.lead))+'</h2>';
+  else h+='<h2 class="jrQt">'+esc(t(Q.q))+'</h2>'+(Q.note?'<p class="sub">'+esc(t(Q.note))+'</p>':'');
+  if(Q.show==='design') h+=clDesignCardHtml_();
+  if(Q.hint) h+=clHintsHtml_(Q.hint);
+  if(Q.type==='text' || Q.type==='line'){
+    var st=(Q.starters||[]).map(function(x){ return t(x); }); if(Q.heart) st=st.concat(jrWords_(storyOf_().a,'heart'));
+    if(st.length) h+='<div class="clStarters">'+st.map(function(x, i){ return '<button class="clStart" data-clst="'+i+'">＋ '+esc(x)+'</button>'; }).join('')+'</div>';
+    h+=Q.type==='line' ? '<input type="text" id="clText" maxlength="'+(Q.max||200)+'" placeholder="'+esc(t(Q.ph||''))+'" value="'+esc(typeof v==='string'?v:'')+'">'
+      : '<textarea id="clText" rows="'+(Q.max>600?7:5)+'" maxlength="'+(Q.max||600)+'" placeholder="'+esc(t(Q.ph||''))+'">'+esc(typeof v==='string'?v:'')+'</textarea>';
+  }
+  else if(Q.type==='lines'){ var seeds=clSeeds_();
+    if(seeds.length) h+='<div class="clStarters">'+seeds.map(function(x, i){ return '<button class="clStart" data-clseed="'+i+'">＋ '+esc(x)+'</button>'; }).join('')+'</div>';
+    h+=[1,2,3].map(function(n){ return '<input type="text" id="clG'+n+'" data-clline="good'+n+'" maxlength="80" placeholder="'+esc(t(Q.ph[n-1]))+'" value="'+esc(C.a['good'+n]||'')+'" style="margin-bottom:8px">'; }).join('');
+  }
+  else if(Q.type==='pair') h+=['gives','drains'].map(function(k, i){ return '<label class="f" for="clP'+i+'">'+(i?'🔋 ':'⚡ ')+esc(t(Q.labels[i]))+'</label><textarea id="clP'+i+'" data-clpair="'+k+'" rows="2" maxlength="200" placeholder="'+esc(t(Q.ph[i]))+'">'+esc(C.a[k]||'')+'</textarea>'; }).join('');
+  else if(Q.type==='chips'){ var c=(v&&v.c)||[], stars=clStars_(Q.k);
+    h+='<div class="pmeta jrPick">'+esc(Q.max===1?t('Pick one'):gpT('Pick up to {n}',{n:Q.max}))+'</div><div class="jrChips">'+CL_OPTS[Q.k].map(function(o){ var on=c.indexOf(o[0])>-1, s=stars.indexOf(o[0])>-1;
+      return '<button class="jrChip'+(on?' on':'')+'" data-clc="'+o[0]+'" aria-pressed="'+on+'">'+(s?'⭐ ':'')+esc(t(o[1]))+'</button>'; }).join('')+'</div>'+
       (Q.other?'<input type="text" id="clOther" maxlength="80" placeholder="'+esc(t(Q.ph||'Something else? Write it here'))+'" value="'+esc((v&&v.o)||'')+'">':'');
     if(Q.k==='help') h+='<label class="f" for="clPray">'+esc(t('Pray especially that…'))+'</label><input type="text" id="clPray" maxlength="200" placeholder="'+esc(t('e.g. my parents will understand and bless this'))+'" value="'+esc(C.a.pray||'')+'">';
   }
-  else if(Q.type==='sphere') h+='<div class="clSph">'+Object.keys(SPHERES).map(function(id){ var x=SPHERES[id], on=v===id, st=stars.indexOf(id)>-1;
-      return '<button class="clSphB'+(on?' on':'')+'" data-clsph="'+id+'" aria-pressed="'+on+'"><span class="clSphIc">'+x[0]+'</span><span><b>'+(st?'⭐ ':'')+esc(t(x[1]))+'</b><span class="pmeta">'+esc(t(x[2]))+'</span></span></button>'; }).join('')+'</div>';
+  else if(Q.type==='spheres') h+=clSpheresPickHtml_(C.a);
+  else if(Q.type==='roles') h+=clRolesPickHtml_(C.a);
+  else if(Q.type==='skills') h+=clSkillsPickHtml_(C.a);
   else if(Q.type==='focus'){ var ideas=clIdeas_(C.a);
+    if(clTx_(C.a,'picture')) h+='<div class="card clFocusMini"><div class="pmeta">🌅 '+esc(t('What you long to see'))+'</div>'+esc(clTx_(C.a,'picture'))+'</div>';
     h+=(ideas.length?'<div class="pmeta jrPick">💡 '+esc(t('Ideas from your answers'))+'</div><div class="clIdeas">'+ideas.map(function(x,i){ return '<button class="clIdea" data-clidea="'+i+'">'+esc(x)+'</button>'; }).join('')+'</div>':'')+
       '<textarea id="clText" rows="3" maxlength="200" placeholder="'+esc(t('e.g. Start a Saturday kids’ club in my village and train two more leaders'))+'">'+esc(typeof v==='string'?v:'')+'</textarea>'; }
+  else if(Q.type==='check'){ var ck=((C.a.checks||{}).c)||[], f=clTx_(C.a,'focus');
+    h+=(f?'<div class="card clFocusMini"><div class="pmeta">🎯 '+esc(t('My focus'))+'</div>'+esc(f)+'</div>':'')+'<div class="card">'+CL_OPTS.checks.map(function(o){ var on=ck.indexOf(o[0])>-1;
+      return '<button class="clCk'+(on?' on':'')+'" data-clck="'+o[0]+'"><span class="tick'+(on?' on':'')+'">'+(on?'✓':'')+'</span><span>'+esc(t(o[1]))+(on?'':'<span class="pmeta clTip">💡 '+esc(t(o[2]))+'</span>')+'</span></button>'; }).join('')+'</div>'+
+      (ck.length<CL_OPTS.checks.length?'<button class="btn ghost" id="clSharpen">✏️ '+esc(t('Sharpen my focus'))+'</button>':'<div class="allDone">✓ '+esc(t('Laser clear. Well done.'))+'</div>'); }
   else if(Q.type==='years'){ var fr=clFrom_(), ph=[t('e.g. Finish my training and start helping every Saturday'), t('e.g. Lead it myself, with 20 children coming'), t('e.g. Two more leaders trained and a second club started')];
-    if(String(C.a.focus||'').trim()) h+='<div class="card clFocusMini"><div class="pmeta">🎯 '+esc(t('My focus'))+'</div>'+esc(C.a.focus)+'</div>';
+    if(clTx_(C.a,'focus')) h+='<div class="card clFocusMini"><div class="pmeta">🎯 '+esc(t('My focus'))+'</div>'+esc(C.a.focus)+'</div>';
     h+=[1,2,3].map(function(n){ return '<label class="f" for="clM'+n+'">'+esc(gpT('By the end of {y}',{y:fr+n-1}))+'</label><input type="text" id="clM'+n+'" data-clm="m'+n+'" maxlength="160" placeholder="'+esc(ph[n-1])+'" value="'+esc(C.a['m'+n]||'')+'">'; }).join(''); }
-  else if(Q.type==='why'){ var J=storyOf_().a, hints=[];
-    if(jrWords_(J,'heart').length) hints.push([t('What breaks my heart'), jrWords_(J,'heart').join(' · ')]);
-    if(jrText_(J,'best')) hints.push([t('When I felt most alive'), jrText_(J,'best')]);
-    if(jrText_(J,'lesson')) hints.push([t('What it taught me'), jrText_(J,'lesson')]);
-    if(jrText_(J,'dream')) hints.push([t('My dream'), jrText_(J,'dream')]);
-    h+=(hints.length?'<div class="card jrRecap"><div class="pmeta" style="margin-bottom:4px">🗺️ '+esc(t('From your Life Journey'))+'</div>'+hints.map(function(x){ return '<div class="jrLine"><div class="pmeta">'+esc(x[0])+'</div>'+esc(x[1])+'</div>'; }).join('')+'</div>':'')+
-      '<textarea id="clText" rows="6" maxlength="800" placeholder="'+esc(t('e.g. When I was 12, my cousin had to leave school to work. I still think about her…'))+'">'+esc(typeof v==='string'?v:'')+'</textarea>'+
-      '<label class="f" for="clVerse">'+esc(t('A Bible verse that speaks to you about this (the reference only)'))+'</label><input type="text" id="clVerse" maxlength="40" placeholder="'+esc(t('e.g. Isaiah 6:8'))+'" value="'+esc(C.a.verse||'')+'">'; }
+  else if(Q.type==='write'){
+    h+='<textarea id="clText" class="clStmtIn" rows="6" maxlength="300">'+esc(typeof v==='string'?v:'')+'</textarea><button class="linkbtn" id="clDraft">↻ '+esc(t('Start again from the draft'))+'</button>'+clFromHtml_(Q.k, C.a); }
   return h+'<div class="btnRow jrNav"><button class="btn ghost" id="clBack">← '+esc(t('Back'))+'</button><button class="btn" id="clNext">'+esc(clEmpty_(Q, C.a) ? t('Skip') : t('Next'))+' →</button></div></div>';
+}
+/* Things I might be good at, from the tests and the journey, to tap into a line. */
+function clSeeds_(){   // things people do (the journey's "what do people come to you for?"), the ones I picked first
+  var out=jrWords_(storyOf_().a,'gifts');
+  JR_OPTS.gifts.forEach(function(o){ var x=t(o[1]); if(out.indexOf(x)<0) out.push(x); });
+  return out.slice(0,12);
+}
+function clSpheresPickHtml_(A){
+  var on=((A.spheres||{}).c)||[], stars=clStars_('spheres'), haveRoles=needJs_('spheres.js','GP_SPHERE_ROLES');
+  return '<div class="pmeta jrPick">'+esc(gpT('Pick up to {n}',{n:2}))+'</div><div class="clSph">'+Object.keys(SPHERES).map(function(id){ var x=SPHERES[id], o=on.indexOf(id)>-1, s=stars.indexOf(id)>-1, I=haveRoles && GP_SPHERE_INFO[id];
+    var ex=haveRoles ? GP_SPHERE_ROLES[id].slice(0,4).map(function(r){ return r.t[LANG==='km'?1:0]; }).join(' · ') : '';
+    return '<button class="clSphB'+(o?' on':'')+'" data-clsph="'+id+'" aria-pressed="'+o+'"><span class="clSphIc">'+x[0]+'</span><span><b>'+(s?'⭐ ':'')+esc(t(x[1]))+'</b><span class="pmeta">'+esc(t(x[2]))+'</span>'+
+      (ex?'<span class="pmeta clEx">'+esc(gpT('e.g. {list}',{list:ex}))+'</span>':'')+
+      (o && I?'<span class="clHeart">✝ '+esc(I.heart[LANG==='km'?1:0])+' <i>'+esc(refsLabel_(I.ref))+'</i></span>':'')+'</span></button>'; }).join('')+'</div>';
+}
+function clRolesPickHtml_(A){
+  if(!needJs_('spheres.js','GP_SPHERE_ROLES')) return loadingHtml_();
+  var sp=clSpheresOf_(A), list=sp.length ? sp : Object.keys(SPHERES), on=((A.roles||{}).c)||[], L=LANG==='km'?1:0, v=A.roles||{};
+  return '<div class="pmeta jrPick">'+esc(gpT('Pick up to {n}',{n:3}))+(sp.length?'':' · '+esc(t('No sphere picked, so here is everything.')))+'</div>'+list.map(function(id){
+    return '<h3 class="clRoleH">'+SPHERES[id][0]+' '+esc(t(SPHERES[id][1]))+'</h3>'+GP_SPHERE_ROLES[id].map(function(r){ var o=on.indexOf(r.id)>-1;
+      return '<button class="clRole'+(o?' on':'')+'" data-clrole="'+r.id+'" aria-pressed="'+o+'"><b>'+(o?'✓ ':'')+esc(r.t[L])+'</b><span>'+esc(r.d[L])+'</span>'+(o?'<span class="pmeta">🚀 '+esc(r.go[L])+'</span>':'')+'</button>'; }).join(''); }).join('')+
+    '<input type="text" id="clOther" maxlength="80" placeholder="'+esc(t('Something else? e.g. pilot, chef, YouTuber'))+'" value="'+esc(v.o||'')+'">'+
+    (sp.length?'<button class="linkbtn" id="goSpheres">🌍 '+esc(t('See every sphere'))+'</button>':'');
+}
+function clSkillsPickHtml_(A){
+  if(!needJs_('spheres.js','GP_SPHERE_ROLES')) return loadingHtml_();
+  var L=LANG==='km'?1:0, on=((A.skills||{}).c)||[], mine=[], v=A.skills||{};
+  (((A.roles||{}).c)||[]).forEach(function(id){ var r=gpRoleById(id); if(r) r.sk.forEach(function(s){ if(mine.indexOf(s)<0) mine.push(s); }); });
+  var rest=Object.keys(GP_SKILLS).filter(function(s){ return mine.indexOf(s)<0; }), chip=function(s){ var o=on.indexOf(s)>-1; return '<button class="jrChip'+(o?' on':'')+'" data-clsk="'+s+'" aria-pressed="'+o+'">'+esc(GP_SKILLS[s][L])+'</button>'; };
+  return '<div class="pmeta jrPick">'+esc(gpT('Pick up to {n}',{n:4}))+'</div>'+(mine.length?'<div class="pmeta">'+esc(t('For the work you picked'))+'</div><div class="jrChips">'+mine.map(chip).join('')+'</div><div class="pmeta" style="margin-top:10px">'+esc(t('Other skills'))+'</div>':'')+
+    '<div class="jrChips">'+rest.map(chip).join('')+'</div><input type="text" id="clOther" maxlength="80" placeholder="'+esc(t('Something else? Write it here'))+'" value="'+esc(v.o||'')+'">';
 }
 /* Read what's on screen into the answers. */
 function clKeep_(){
   var C=S.cl; if(!C) return; if($('clStmt')) C.draft=$('clStmt').value;
   if(C.phase!=='q' || C.i<0) return; var Q=CL_QS[C.i];
-  if((Q.type==='focus' || Q.type==='why') && $('clText')) C.a[Q.k]=$('clText').value;
-  if($('clVerse')) C.a.verse=$('clVerse').value;
+  if(['text','line','focus','write'].indexOf(Q.type)>-1 && $('clText')) C.a[Q.k]=$('clText').value;
   if($('clPray')) C.a.pray=$('clPray').value;
   document.querySelectorAll('[data-clm]').forEach(function(e){ C.a[e.getAttribute('data-clm')]=e.value; });
-  if(Q.type==='chips'){ var v=C.a[Q.k]||{ c:[], o:'' }; v.c=v.c||[]; if($('clOther')) v.o=$('clOther').value; C.a[Q.k]=v; }
+  document.querySelectorAll('[data-clline]').forEach(function(e){ C.a[e.getAttribute('data-clline')]=e.value; });
+  document.querySelectorAll('[data-clpair]').forEach(function(e){ C.a[e.getAttribute('data-clpair')]=e.value; });
+  if(['chips','roles','skills'].indexOf(Q.type)>-1){ var v=C.a[Q.k]||{ c:[], o:'' }; v.c=v.c||[]; if($('clOther')) v.o=$('clOther').value; C.a[Q.k]=v; }
 }
 function clYearsHtml_(A, fr, goals){
   var act=planOf().goals.filter(function(g){ return !g.done; }), dn=clOf_().done;
-  return '<div class="clYears">'+[1,2,3].map(function(n){ var m=String(A['m'+n]||'').trim(); if(!m) return '';
+  return '<div class="clYears">'+[1,2,3].map(function(n){ var m=clTx_(A,'m'+n); if(!m) return '';
     var has=act.some(function(g){ return g.title===m.slice(0,100); }), d=!!dn['m'+n];
     return '<div class="clYear'+(goals && d?' done':'')+'">'+(goals?checkHtml('data-clmile="m'+n+'"', d, m):'')+'<span class="clY">'+(fr+n-1)+'</span><span class="stepTx">'+esc(m)+'</span>'+(d?'':(goals ? (has ? '<span class="pmeta" title="'+esc(t('A life goal'))+'">🎯</span>' : act.length<MAX_LIFE_GOALS ? '<button class="btn small ghost" data-clgoal="'+n+'">＋ '+esc(t('Goal'))+'</button>' : '') : ''))+'</div>'; }).join('')+'</div>';
 }
-/* My calling: the statement, the focus, why, and the words to send. */
+/* My calling: the statement, the focus, the rest, and the words to send. */
 function callingHtml(){
-  var c=clOf_(), A=c.a, fr=clFrom_();
+  var c=clOf_(), A=c.a, fr=clFrom_(), sec=function(icon, title, body){ return body ? '<h3>'+icon+' '+esc(t(title))+'</h3><div class="card">'+body+'</div>' : ''; };
+  var line=function(label, x){ return x ? '<div class="jrLine"><div class="pmeta">'+esc(t(label))+'</div><span class="clWhy">'+esc(x)+'</span></div>' : ''; };
   if(!c.statement){ clStart_(); S.view='callq'; return callqHtml(); }
+  needJs_('spheres.js','GP_SPHERE_ROLES');
   var h=backBtn(t('Back'))+'<div class="clHero"><div class="pmeta">🎯 '+esc(gpT('{name}’s calling',{name:firstName_(S.me.name)}))+'</div><p class="clStmt">'+esc(c.statement)+'</p></div>'+
     '<p class="sub">🔒 '+esc(t('Only you see this here. You choose who to send it to.'))+'</p>';
-  if(String(A.focus||'').trim() || A.m1 || A.m2 || A.m3) h+='<h3>🎯 '+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</h3><div class="card">'+(String(A.focus||'').trim()?'<p class="clFocusTx">'+esc(A.focus)+'</p>':'')+clYearsHtml_(A, fr, true)+'</div>';
-  if(String(A.why||'').trim() || A.verse) h+='<h3>❤️ '+esc(t('Why it matters to me'))+'</h3><div class="card">'+(String(A.why||'').trim()?'<p class="clWhy">'+esc(A.why)+'</p>':'')+(A.verse?'<div class="pmeta">📖 '+esc(A.verse)+'</div>':'')+'</div>';
-  var no=clLabel_(A,'no'); if(no.length) h+='<h3>🚫 '+esc(t('What I’m saying no to'))+'</h3><div class="card"><div class="jrTags">'+no.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div></div>';
-  h+=clDesignHtml_(A)+clShareHtml_(c);
+  if(clTx_(A,'focus') || A.m1 || A.m2 || A.m3) h+='<h3>🎯 '+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</h3><div class="card">'+(clTx_(A,'focus')?'<p class="clFocusTx">'+esc(A.focus)+'</p>':'')+clYearsHtml_(A, fr, true)+(clTx_(A,'first')?'<div class="jrLine"><div class="pmeta">👣 '+esc(t('My first step, this month'))+'</div>'+esc(A.first)+'</div>':'')+'</div>';
+  h+=sec('🔥','What moves me', line('The problem', clTx_(A,'burden'))+line('One person I picture', clTx_(A,'person'))+line('What I long to see', clTx_(A,'picture')));
+  var rl=clRoles_(A), sk=clSkills_(A), sp=clSpheresOf_(A);
+  h+=sec('🌍','Where I’ll serve', (sp.length?sphereChipsHtml_(sp):'')+(rl.length?'<div class="jrLine"><div class="pmeta">'+esc(t('The work that draws me'))+'</div>'+esc(rl.join(' · '))+'</div>':'')+line('What draws me', clTx_(A,'draw'))+(sk.length?'<div class="jrLine"><div class="pmeta">'+esc(t('Skills I’m growing'))+'</div><div class="jrTags">'+sk.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div></div>':'')+line('Who I can learn from', clTx_(A,'models')));
+  h+=sec('❤️','Why it matters to me', line('Why', clTx_(A,'why'))+(A.verse?'<div class="pmeta">📖 '+esc(A.verse)+'</div>':''));
+  var no=clLabel_(A,'no'); h+=sec('🚫','What I’m saying no to', no.length?'<div class="jrTags">'+no.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div>':'');
+  h+=sec('⚖️','What it will cost — and why it’s worth it', clTx_(A,'cost')?'<span class="clWhy">'+esc(A.cost)+'</span>':'');
+  h+=clDesignHtml_(A);
+  h+=sec('🤝','Who walks with me', line('Mentors and friends', clTx_(A,'mentor')));
+  h+=clShareHtml_(c);
   h+='<div class="btnRow" style="margin-top:16px"><button class="btn ghost" id="clEditWords">✏️ '+esc(t('Change the words'))+'</button><button class="btn ghost" id="goCallq">🔄 '+esc(t('Go through it again'))+'</button></div>';
+  h+='<button class="linkbtn" id="goSpheres">🌍 '+esc(t('Explore the spheres of society'))+' ›</button>';
   if(planOf().vision) h+='<button class="linkbtn" id="goVision">📜 '+esc(t('Read my vision'))+' ›</button>';
   return h;
 }
 function clDesignHtml_(A){
-  var me=S.me, rows=[], d=clLabel_(A,'do')[0], w=clLabel_(A,'who')[0];
-  if(d || w) rows.push(['✦', [d, w].filter(Boolean).join(' → ')]);
+  var me=S.me, rows=[], good=['good1','good2','good3'].map(function(x){ return clTx_(A,x); }).filter(Boolean);
+  if(clTx_(A,'me')) rows.push(['💬', clTx_(A,'me')]);
+  if(good.length) rows.push(['⭐', good.join(' · ')]);
   if(me.personality && GP_PTYPES[me.personality.type]) rows.push(['🧭', me.personality.type+' · '+pTheName(me.personality.type)]);
   if(me.gstrengths) rows.push(['💪', me.gstrengths.top.map(function(id){ var s=gpGSById(id); return s ? t(s.name) : ''; }).join(' · ')]);
   if(me.clifton) rows.push(['🏅', me.clifton.top.join(' · ')]);
   if(me.apest && needJs_('apest.js','GP_APEST')) rows.push(['🔥', me.apest.top.slice(0,2).map(function(id){ var g=apById_(id); return g ? fld_(g,'name') : ''; }).join(' · ')]);
-  if(A.sphere && SPHERES[A.sphere]) rows.push([SPHERES[A.sphere][0], t(SPHERES[A.sphere][1])+(clLabel_(A,'place')[0] ? ' · '+clLabel_(A,'place')[0] : '')]);
+  if(clTx_(A,'gives')) rows.push(['⚡', clTx_(A,'gives')]);
   return rows.length ? '<h3>✦ '+esc(t('How God made me for this'))+'</h3><div class="card">'+rows.map(function(r){ return '<div class="clDRow"><span>'+r[0]+'</span><span>'+esc(r[1])+'</span></div>'; }).join('')+'</div>' : '';
 }
-/* The words to send, in English or Khmer: my own edit if I saved one, else written fresh. */
+/* The words to send, in English or Khmer: my own edit if I saved one, else written fresh. Their own
+   words stay as they wrote them. */
 function clText_(c, kind, lang){ var k=kind+lang; if(S.clEdit && S.clEdit[k]!=null) return S.clEdit[k]; var own=(c[kind]||{})[lang]; if(own) return own;
   return withLang_(lang, function(){ return kind==='letter' ? clLetter_(c) : clPost_(c); }); }
-function clStmtIn_(c){ return c.sl===LANG && c.statement ? c.statement : (clStatement_(c.a) || c.statement); }
 function clLetter_(c){
-  var A=c.a, me=S.me, fr=c.from||clFrom_(), P=[], stmt=clStmtIn_(c);
+  var A=c.a, me=S.me, fr=c.from||clFrom_(), P=[], stmt=c.statement, has=function(x){ return x && stmt.toLowerCase().indexOf(clFirst_(x).slice(0,40).toLowerCase())>-1; };
   P.push(t('Dear friends and family,'));
   P.push(t('I want to share something that matters a lot to me: what I believe God made me for, and what I’m going to focus on for the next three years.'));
-  var why=String(A.why||'').trim(), heart=jrList_(jrWords_(storyOf_().a,'heart').map(jrLc_));
-  if(why) P.push(why); else if(heart) P.push(gpT('What breaks my heart is {heart}.',{heart:heart}));
+  var why=clTx_(A,'why'), heart=jrList_(jrWords_(storyOf_().a,'heart').map(jrLc_));
+  if(why) P.push(why); else if(clTx_(A,'alive')) P.push(clTx_(A,'alive')); else if(heart) P.push(gpT('What breaks my heart is {heart}.',{heart:heart}));
+  if(clTx_(A,'burden')) P.push(clTx_(A,'burden'));
+  if(clTx_(A,'person')) P.push(gpT('When I think about it, I picture someone like this: {person}',{person:clEnd_(clTx_(A,'person'))}));
   var d=[], str=me.gstrengths ? me.gstrengths.top.map(function(id){ var s=gpGSById(id); return s ? t(s.name) : ''; }).filter(Boolean) : me.clifton ? me.clifton.top : [];
   if(me.personality && GP_PTYPES[me.personality.type]) d.push(gpT('My personality type is {type} ({name}).',{type:me.personality.type, name:pTheName(me.personality.type)}));
   if(str.length) d.push(gpT('My top strengths are {list}.',{list:jrList_(str)}));
   if(me.apest && typeof GP_APEST!=='undefined'){ var gs=me.apest.top.slice(0,2).map(function(id){ var g=apById_(id); return g ? fld_(g,'name') : ''; }).filter(Boolean); if(gs.length) d.push(gpT('My strongest gifts are {gifts}.',{gifts:jrList_(gs)})); }
   if(d.length) P.push(t('The tests I’ve taken helped me see how God made me.')+' '+d.join(' '));
   if(stmt) P.push(gpT('So this is my calling: {statement}',{statement:stmt}));
-  var f=String(A.focus||'').trim(), ms=[1,2,3].map(function(n){ var m=String(A['m'+n]||'').trim(); return m ? '• '+gpT('By the end of {y}: {m}',{y:fr+n-1, m:m}) : ''; }).filter(Boolean);
-  if(f) P.push(gpT('For the next three years ({from}–{to}), I’m focusing on one thing: {focus}',{from:fr, to:fr+2, focus:f})+(ms.length?'\n'+ms.join('\n'):''));
+  if(clTx_(A,'picture') && !has(A.picture)) P.push(gpT('Here’s what I long to see one day: {x}',{x:clEnd_(clTx_(A,'picture'))}));
+  var rl=clRoles_(A), sk=clSkills_(A), wk=[];
+  if(rl.length) wk.push(gpT('The work that draws me most: {list}.',{list:jrList_(rl)}));
+  if(sk.length) wk.push(gpT('I’m growing these skills: {list}.',{list:jrList_(sk)}));
+  if(wk.length) P.push(wk.join(' '));
+  var f=clTx_(A,'focus'), ms=[1,2,3].map(function(n){ var m=clTx_(A,'m'+n); return m ? '• '+gpT('By the end of {y}: {m}',{y:fr+n-1, m:m}) : ''; }).filter(Boolean);
+  if(f && has(f)) { if(ms.length) P.push(gpT('Here’s the plan, year by year ({from}–{to}):',{from:fr, to:fr+2})+'\n'+ms.join('\n')); }
+  else if(f) P.push(gpT('For the next three years ({from}–{to}), I’m focusing on one thing: {focus}',{from:fr, to:fr+2, focus:f})+(ms.length?'\n'+ms.join('\n'):''));
   else if(ms.length) P.push(ms.join('\n'));
+  if(clTx_(A,'first')) P.push(gpT('My first step, this month: {x}',{x:clEnd_(clTx_(A,'first'))}));
   var no=clLabel_(A,'no').map(jrLc_); if(no.length) P.push(gpT('To stay focused, I’m saying no to {list}.',{list:jrList_(no)}));
-  if(String(A.verse||'').trim()) P.push(gpT('A verse that keeps me going: {verse}.',{verse:String(A.verse).trim()}));
+  if(clTx_(A,'verse')) P.push(gpT('A verse that keeps me going: {verse}.',{verse:clTx_(A,'verse').replace(/[.។]+$/,'')}));
   var asks=clList_(A,'help'), pr=String(A.pray||'').trim().replace(/[.!។]+$/,''), ask=[];
   if(asks.length) ask.push(gpT('I can’t do this alone. Would you {asks}?',{asks:jrList_(asks)}));
   if(pr) ask.push(gpT('Please pray especially that {pray}.',{pray:pr}));
@@ -2614,8 +2839,8 @@ function clLetter_(c){
   return P.join('\n\n');
 }
 function clPost_(c){
-  var A=c.a, f=String(A.focus||'').trim(), asks=clList_(A,'help'), out=[clStmtIn_(c)];
-  if(f) out.push(gpT('For the next three years I’m focusing on: {focus}',{focus:f}));
+  var A=c.a, f=clTx_(A,'focus'), asks=clList_(A,'help'), out=[c.statement];
+  if(f && c.statement.indexOf(clFirst_(f).slice(0,30))<0) out.push(gpT('For the next three years I’m focusing on: {focus}',{focus:f}));
   if(asks.length) out.push(gpT('Would you {asks}? 🙏',{asks:jrList_(asks)}));
   return out.filter(Boolean).join('\n\n');
 }
@@ -2629,7 +2854,7 @@ function clShareHtml_(c){
   var key=tab+lang, saved=(c[tab]||{})[lang]||'', dirty=!!(S.clEdit && S.clEdit[key]!=null);
   h+='<div class="clLangRow"><span class="pmeta">'+esc(t('Write it in'))+'</span><div class="seg">'+[['en','English'],['km','ខ្មែរ']].map(function(x){ return '<button data-cllang="'+x[0]+'" class="'+(lang===x[0]?'on':'')+'">'+x[1]+'</button>'; }).join('')+'</div></div>';
   if(lang!==LANG) h+='<p class="pmeta" style="margin:0 0 8px">'+esc(t('The parts you wrote yourself stay as you wrote them — change them here if you like.'))+'</p>';
-  h+='<textarea id="clTx" class="clTx" rows="'+(tab==='letter'?16:7)+'" maxlength="'+(tab==='letter'?4000:800)+'">'+esc(clText_(c, tab, lang))+'</textarea>';
+  h+='<textarea id="clTx" class="clTx" rows="'+(tab==='letter'?18:7)+'" maxlength="'+(tab==='letter'?6000:1200)+'">'+esc(clText_(c, tab, lang))+'</textarea>';
   h+='<div class="btnRow clBtns"><button class="btn" id="clSend">📤 '+esc(t('Send'))+'</button><button class="btn ghost" id="clTg">✈️ Telegram</button><button class="btn ghost" id="clCopy">📋 '+esc(t('Copy'))+'</button></div>';
   h+='<div class="clTxRow"><button class="btn small" id="clTxSave"'+(dirty?'':' hidden')+'>💾 '+esc(t('Save my changes'))+'</button>'+(saved||dirty?'<button class="linkbtn" id="clTxFresh">↻ '+esc(t('Write it fresh from my calling'))+'</button>':'')+'</div>';
   return h+'</div>';
@@ -2638,7 +2863,9 @@ function clCopy_(x){ var done=function(){ showMsg(t('Copied. Paste it into Teleg
   try { if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(x).then(done, function(){ clCopyOld_(x); done(); }); return; } } catch(e){}
   clCopyOld_(x); done(); }
 function clCopyOld_(x){ var e=document.createElement('textarea'); e.value=x; e.setAttribute('readonly',''); e.style.position='fixed'; e.style.opacity='0'; document.body.appendChild(e); e.select(); try { document.execCommand('copy'); } catch(er){} e.remove(); }
-function clArea_(A){ return ({ church:'faith', education:'study', business:'money', health:'health', family:'family' })[A.sphere]||'serve'; }
+function clArea_(A){ return ({ church:'faith', education:'study', business:'money', health:'health', family:'family' })[clSpheresOf_(A)[0]]||'serve'; }
+/* Several references ("Proverbs 22:6; Proverbs 4:7"), with Khmer book names in Khmer. */
+function refsLabel_(s){ return String(s||'').split(/;\s*/).map(refLabel_).join('; '); }
 /* The picture: first name, the statement and the focus, for a story or a chat. */
 function clImgKey_(c){ return LANG+'|'+c.statement+'|'+(c.a.focus||'')+'|'+(c.from||''); }
 var clDrawing=false;
@@ -2660,14 +2887,14 @@ function drawCallingCard_(c, cb){
     x.fillStyle='rgba(255,179,35,.12)'; x.beginPath(); x.arc(W-140,420,330,0,Math.PI*2); x.fill();
     var font=function(sz, w, fam){ x.font=(w||'700')+' '+sz+'px '+(fam||"'Kantumruy Pro', system-ui, sans-serif"); };
     x.textAlign='center';
-    font(60,'400',"'Koulen', system-ui, sans-serif"); x.fillStyle='#FAF6F0'; x.fillText('កូនព្រះ  GONPREAH', W/2, 200);
-    font(46,'600'); x.fillStyle='#FFB323'; x.fillText(gpT('{name}’s calling',{name:firstName_(S.me.name)}), W/2, 380, W-120);
-    var sz=76, lines, lh; do { font(sz,'700'); lines=canvasWrap_(x, c.statement, W-160); lh=Math.round(sz*1.4); sz-=4; } while(lines.length*lh>720 && sz>36);
-    var y=480+lh*0.7; x.fillStyle='#FFFFFF'; lines.forEach(function(l){ x.fillText(l, W/2, y); y+=lh; });
-    var f=String(A.focus||'').trim();
-    if(f){ y+=30; x.fillStyle='#FFB323'; x.fillRect(W/2-60, y, 120, 6); y+=100;
-      font(42,'600'); x.fillStyle='rgba(250,246,240,.75)'; x.fillText(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}), W/2, y, W-120); y+=86;
-      var fs=54, fl, flh; do { font(fs,'700'); fl=canvasWrap_(x, f, W-180); flh=Math.round(fs*1.4); fs-=4; } while(y+fl.length*flh>H-300 && fs>28);
+    font(60,'400',"'Koulen', system-ui, sans-serif"); x.fillStyle='#FAF6F0'; x.fillText('កូនព្រះ  GONPREAH', W/2, 190);
+    font(46,'600'); x.fillStyle='#FFB323'; x.fillText(gpT('{name}’s calling',{name:firstName_(S.me.name)}), W/2, 330, W-120);
+    var f=clTx_(A,'focus'), room=f && c.statement.indexOf(clFirst_(f).slice(0,30))<0 ? 900 : 1150;
+    var sz=72, lines, lh; do { font(sz,'700'); lines=canvasWrap_(x, c.statement, W-160); lh=Math.round(sz*1.38); sz-=3; } while(lines.length*lh>room && sz>30);
+    var y=420+lh*0.7; x.fillStyle='#FFFFFF'; lines.forEach(function(l){ x.fillText(l, W/2, y); y+=lh; });
+    if(room===900){ y+=20; x.fillStyle='#FFB323'; x.fillRect(W/2-60, y, 120, 6); y+=90;
+      font(42,'600'); x.fillStyle='rgba(250,246,240,.75)'; x.fillText(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}), W/2, y, W-120); y+=80;
+      var fs=50, fl, flh; do { font(fs,'700'); fl=canvasWrap_(x, f, W-180); flh=Math.round(fs*1.38); fs-=3; } while(y+fl.length*flh>H-290 && fs>26);
       x.fillStyle='#FAF6F0'; fl.forEach(function(l){ x.fillText(l, W/2, y); y+=flh; }); }
     font(40,'600'); x.fillStyle='rgba(250,246,240,.8)'; x.fillText(t('What did God make you for? Find your calling:'), W/2, H-190, W-120);
     font(40,'600'); x.fillStyle='#FFB323'; x.fillText(location.host || 'app.gonpreah.org', W/2, H-120);
@@ -2676,12 +2903,12 @@ function drawCallingCard_(c, cb){
   var ff=document.fonts; if(ff && ff.load) Promise.all([ff.load("400 60px 'Koulen'"), ff.load("700 60px 'Kantumruy Pro'"), ff.load("600 40px 'Kantumruy Pro'")]).then(go, go); else go();
 }
 /* On Home, the Plan tab and Me: my calling, or the way in. */
-var CL_INVITE='Who you’re called to, your focus for the next three years, and why — in words you can share.';
+var CL_INVITE='Who you’re called to, your focus for the next three years, and why — in your own words, ready to share.';
 function callingHomeHtml_(){
-  var c=clOf_(), A=c.a, fr=clFrom_(), P=planOf(), read=!!dayOf_(todayStr()).vision, n=[1,2,3].filter(function(i){ return String(A['m'+i]||'').trim() && !c.done['m'+i]; })[0], m=n ? String(A['m'+n]).trim() : '';
+  var c=clOf_(), A=c.a, fr=clFrom_(), P=planOf(), read=!!dayOf_(todayStr()).vision, n=[1,2,3].filter(function(i){ return clTx_(A,'m'+i) && !c.done['m'+i]; })[0], m=n ? clTx_(A,'m'+n) : '';
   return '<button class="card visionCard callCard" id="goCalling"><span class="visionTop"><span class="pmeta">🎯 '+esc(t('My calling'))+'</span>'+(P.word?'<span class="wordBadge">🔑 '+esc(LANG==='en'?P.word.toUpperCase():P.word)+'</span>':'')+'</span>'+
     '<span class="whyLineTx">“'+esc(c.statement)+'”</span>'+
-    (String(A.focus||'').trim()?'<span class="visionToday"><span class="pmeta">'+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</span>'+esc(A.focus)+'</span>':'')+
+    (clTx_(A,'focus')?'<span class="visionToday"><span class="pmeta">'+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</span>'+esc(A.focus)+'</span>':'')+
     (m?'<span class="visionToday"><span class="pmeta">'+esc(gpT('By the end of {y}',{y:fr+n-1}))+'</span>'+esc(m)+'</span>':'')+
     '<span class="visionRead">'+esc(t('Open · share it'))+' ›</span></button>'+
     (P.vision?'<button class="card whyLine" id="goVision"><span class="pmeta">📜 '+esc(t('My vision'))+'</span><span class="whyLineTx">'+(read?'✓ '+esc(t('Read today')):esc(t('Read my vision'))+' · +5 XP')+' ›</span></button>':'');
@@ -2690,35 +2917,65 @@ function callingPlanHtml_(){
   var c=clOf_(), A=c.a, fr=clFrom_();
   if(!c.statement) return entryCardHtml('goCalling','🎯',t('Find your calling'),t(CL_INVITE));
   return '<h3>🎯 '+esc(t('My calling'))+'</h3><button class="card callPlan" id="goCalling"><span class="clStmt small">'+esc(c.statement)+'</span>'+
-    (String(A.focus||'').trim()?'<span class="pmeta">'+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</span><span>'+esc(A.focus)+'</span>':'')+'<span class="visionRead">'+esc(t('Open · share it'))+' ›</span></button>';
+    (clTx_(A,'focus')?'<span class="pmeta">'+esc(gpT('My focus · {a}–{b}',{a:fr, b:fr+2}))+'</span><span>'+esc(A.focus)+'</span>':'')+'<span class="visionRead">'+esc(t('Open · share it'))+' ›</span></button>';
 }
 function callingInviteHtml_(){ return clOf_().statement ? '' : entryCardHtml('goCalling','🎯',t('Now find your calling'),t(CL_INVITE)); }
+/* The spheres of society (view spheres): what God cares about in each, and the work young people
+   can do there — what it is, how to start, the skills it needs (spheres.js). */
+function spheresHtml(){
+  var h=backBtn(t('Back'))+'<h2>🌍 '+esc(t('Spheres of society'))+'</h2><p class="sub">'+esc(t('Every part of society needs people who follow Jesus. Here is real work young people can do in each one — tap a sphere to explore.'))+'</p>';
+  if(!needJs_('spheres.js','GP_SPHERE_ROLES')) return h+loadingHtml_();
+  var L=LANG==='km'?1:0, stars=clStars_('spheres'), mine=((clOf_().a.roles||{}).c)||[];
+  if(stars.length) h+='<p class="pmeta">⭐ '+esc(t('Where your type, strengths and gifts may shine.'))+'</p>';
+  return h+Object.keys(SPHERES).map(function(id){ var x=SPHERES[id], I=GP_SPHERE_INFO[id], open=S.sphOpen===id, R=GP_SPHERE_ROLES[id];
+    var head='<button class="card sphHead'+(open?' open':'')+'" data-sphopen="'+id+'"><span class="clSphIc">'+x[0]+'</span><span style="flex:1;text-align:left"><b>'+(stars.indexOf(id)>-1?'⭐ ':'')+esc(t(x[1]))+'</b><span class="pmeta" style="display:block">'+esc(t(x[2]))+'</span>'+
+      (open?'':'<span class="pmeta clEx">'+esc(gpT('{n} kinds of work',{n:R.length}))+' · '+esc(R.slice(0,3).map(function(r){ return r.t[L]; }).join(' · '))+'</span>')+'</span><span class="chev">'+(open?'▾':'›')+'</span></button>';
+    if(!open) return head;
+    return head+'<div class="sphBody"><div class="clHeart">✝ '+esc(I.heart[L])+' <i>'+esc(refsLabel_(I.ref))+'</i></div>'+R.map(function(r){
+      return '<div class="card sphRole'+(mine.indexOf(r.id)>-1?' mine':'')+'"><b>'+esc(r.t[L])+'</b><p>'+esc(r.d[L])+'</p><div class="pmeta">🚀 '+esc(t('How to start'))+': '+esc(r.go[L])+'</div><div class="jrTags">'+r.sk.map(function(s){ return '<span>'+esc(GP_SKILLS[s][L])+'</span>'; }).join('')+'</div></div>'; }).join('')+'</div>'; }).join('')+
+    (clOf_().statement?'':'<button class="btn" id="goCalling" style="margin-top:14px">🎯 '+esc(t('Find your calling'))+'</button>');
+}
 function bindCalling_(){
   on('goCalling', function(){ if(clOf_().statement){ go('calling'); return; } clStart_(); go('callq'); });
   on('goCallq', function(){ clStart_(); go('callq'); });
+  on('goSpheres', function(){ if(S.view==='callq') clKeep_(); go('spheres'); });
+  all('[data-sphopen]', function(b){ var id=b.getAttribute('data-sphopen'); S.sphOpen=S.sphOpen===id ? null : id; gpTap(); render(); });
   if(S.view==='callq' && S.cl) bindCallq_();
   if(S.view==='calling') bindCallingPage_();
 }
+/* Move to a question: a line of the statement starts as its draft. */
+function clEnter_(C, i){ C.i=i; var Q=CL_QS[i]; if(Q && Q.type==='write' && !clTx_(C.a,Q.k)) C.a[Q.k]=clDraft_(Q.k, C.a); }
 function bindCallq_(){
-  var C=S.cl, save=function(){ return call('calling','save',{ answers:C.a }).then(function(d){ if(d && d.ok) S.me=d.me; return d; }); };
+  var C=S.cl, save=function(){ return call('calling','save',{ answers:C.a, step:Math.max(0,C.i) }).then(function(d){ if(d && d.ok) S.me=d.me; return d; }); };
+  var redraw=function(){ render(); window.scrollTo(0,0); };
   on('clLater', busyOnce_(function(){ clKeep_(); var out=function(){ S.cl=null; goBack('plan'); }; if(C.i<0 && C.phase==='q'){ out(); return; } return save().then(out); }));
-  on('clGo', function(){ C.i=0; gpTap(); render(); window.scrollTo(0,0); });
-  on('clBack', function(){ clKeep_(); C.i--; render(); window.scrollTo(0,0); });
+  on('clGo', function(){ clEnter_(C, 0); C.phase='part'; gpTap(); redraw(); });
+  on('clResume', function(){ clEnter_(C, Math.min(clOf_().step, CL_QS.length-1)); C.phase='part'; gpTap(); redraw(); });
+  on('clPartGo', function(){ C.phase='q'; gpTap(); redraw(); });
+  on('clBack', function(){ clKeep_(); if(C.phase==='part' || C.i===0){ if(C.i===0){ C.i=-1; C.phase='q'; } else { clEnter_(C, C.i-1); C.phase='q'; } } else clEnter_(C, C.i-1); redraw(); });
   on('clNext', busyOnce_(function(){ clKeep_(); gpTap();
-    if(C.i<CL_QS.length-1){ C.i++; render(); window.scrollTo(0,0); return; }
-    C.phase='build'; render(); window.scrollTo(0,0);
-    return save().then(function(){ setTimeout(function(){ if(S.cl!==C) return; C.draft=clStatement_(C.a); C.phase='reveal'; render(); }, 1200); }); }));
+    if(C.i<CL_QS.length-1){ var p=CL_QS[C.i].p; clEnter_(C, C.i+1); if(CL_QS[C.i].p!==p){ C.phase='part'; redraw(); return save(); } redraw(); return; }
+    C.draft=clJoin_(C.a); C.read={}; C.phase='reveal'; redraw(); return save(); }));
   all('[data-clc]', function(b){ clKeep_(); var Q=CL_QS[C.i], v=C.a[Q.k]||(C.a[Q.k]={ c:[], o:'' }), id=b.getAttribute('data-clc'); v.c=v.c||[]; var i=v.c.indexOf(id);
     if(i>-1) v.c.splice(i,1); else { if(Q.max===1) v.c=[]; else if(v.c.length>=Q.max) v.c.shift(); v.c.push(id); }
     gpTap(); render(); });
-  all('[data-clsph]', function(b){ clKeep_(); var id=b.getAttribute('data-clsph'); C.a.sphere=C.a.sphere===id ? '' : id; gpTap(); render(); });
+  var multi=function(attr, k, max){ all('['+attr+']', function(b){ clKeep_(); var v=C.a[k]||(C.a[k]={ c:[], o:'' }), id=b.getAttribute(attr); v.c=v.c||[]; var i=v.c.indexOf(id);
+    if(i>-1) v.c.splice(i,1); else { if(v.c.length>=max) v.c.shift(); v.c.push(id); } gpTap(); render(); }); };
+  multi('data-clsph', 'spheres', 2); multi('data-clrole', 'roles', 3); multi('data-clsk', 'skills', 4); multi('data-clck', 'checks', 5);
+  all('[data-clst]', function(b){ var e=$('clText'); if(!e) return; var Q=CL_QS[C.i], st=(Q.starters||[]).map(function(x){ return t(x); }); if(Q.heart) st=st.concat(jrWords_(storyOf_().a,'heart'));
+    var s=st[Number(b.getAttribute('data-clst'))]||'', open=/…$/.test(s); s=s.replace(/…$/,'');
+    e.value=(e.value.trim() ? e.value.replace(/\s*$/,'')+(open?' ':'. ') : '')+s+(open?' ':''); clKeep_(); e.focus(); var n=$('clNext'); if(n) n.textContent=t('Next')+' →'; });
+  all('[data-clseed]', function(b){ var s=clSeeds_()[Number(b.getAttribute('data-clseed'))]; clKeep_(); for(var n=1;n<=3;n++){ if(!clTx_(C.a,'good'+n)){ C.a['good'+n]=s; break; } } gpTap(); render(); });
   all('[data-clidea]', function(b){ var x=clIdeas_(C.a)[Number(b.getAttribute('data-clidea'))]; if(x){ C.a.focus=x; gpTap(); render(); } });
-  document.querySelectorAll('#clText, #clOther, [data-clm]').forEach(function(e){ e.oninput=function(){ clKeep_(); var n=$('clNext'); if(n) n.textContent=(clEmpty_(CL_QS[C.i], C.a) ? t('Skip') : t('Next'))+' →'; }; });
+  all('[data-clread]', function(b){ C.read=C.read||{}; var i=b.getAttribute('data-clread'); C.read[i]=!C.read[i]; clKeep_(); gpTap(); render(); });
+  on('clSharpen', function(){ clKeep_(); for(var i=0;i<CL_QS.length;i++) if(CL_QS[i].k==='focus'){ clEnter_(C, i); break; } redraw(); });
+  on('clDraft', function(){ var Q=CL_QS[C.i]; C.a[Q.k]=clDraft_(Q.k, C.a); gpTap(); render(); });
+  document.querySelectorAll('#clText, #clOther, [data-clm], [data-clline], [data-clpair]').forEach(function(e){ e.oninput=function(){ clKeep_(); var n=$('clNext'); if(n) n.textContent=(clEmpty_(CL_QS[C.i], C.a) ? t('Skip') : t('Next'))+' →'; }; });
   var st=$('clStmt'); if(st) st.oninput=function(){ C.draft=st.value; };   // a redraw mustn't lose what's typed
-  on('clRemake', function(){ if(!confirm(t('Write it again from your answers? Changes you made here will go.'))) return; C.draft=clStatement_(C.a); render(); });
-  on('clRedo', function(){ clKeep_(); C.i=0; C.phase='q'; render(); window.scrollTo(0,0); });
+  on('clRemake', function(){ if(!confirm(t('Put your four lines together again? Changes you made here will go.'))) return; C.draft=clJoin_(C.a); render(); });
+  on('clRedo', function(){ clKeep_(); clEnter_(C, 0); C.phase='part'; redraw(); });
   on('clKeep', busyOnce_(function(){ clKeep_(); var v=String(C.draft||'').trim(); if(v.length<10){ showMsg(t('Write a few words first.')); return; }
-    var b=$('clKeep'); return call('calling','keep',{ answers:C.a, statement:v, lang:LANG }).then(function(d){ if(d && d.ok){ S.me=d.me; confettiAt_(b); S.cl=null; S.clEdit=null; S.clImg=null; S.back=['plan']; S.view='calling'; render(); window.scrollTo(0,0); } else failMsg(d); }); }));
+    var b=$('clKeep'); return call('calling','keep',{ answers:C.a, statement:v, lang:LANG, step:CL_QS.length }).then(function(d){ if(d && d.ok){ S.me=d.me; confettiAt_(b); S.cl=null; S.clEdit=null; S.clImg=null; S.back=['plan']; S.view='calling'; render(); window.scrollTo(0,0); } else failMsg(d); }); }));
 }
 function bindCallingPage_(){
   var cur=function(){ var e=$('clTx'); return e ? e.value : ''; }, key=function(){ return (S.clTab||'letter')+(S.clLang||LANG); };
@@ -2734,12 +2991,12 @@ function bindCallingPage_(){
   on('clPicShare', function(){ var img=S.clImg; if(!img) return;
     try { var f=new File([img.blob], 'gonpreah-my-calling.png', { type:'image/png' }); if(navigator.canShare && navigator.canShare({ files:[f] })){ navigator.share({ files:[f] }).catch(function(){}); return; } } catch(e){}
     var a=document.createElement('a'); a.href=img.url; a.download='gonpreah-my-calling.png'; document.body.appendChild(a); a.click(); a.remove(); });
-  on('clEditWords', function(){ clStart_(); S.cl.phase='reveal'; S.cl.draft=clOf_().statement; go('callq'); });
+  on('clEditWords', function(){ clStart_(); S.cl.phase='reveal'; S.cl.draft=clOf_().statement; S.cl.read={}; go('callq'); });
   all('[data-clmile]', busyOnce_(function(b){ var m=b.getAttribute('data-clmile'), on=!clOf_().done[m]; gpTap(); if(on) confettiAt_(b);
     return call('calling','mile',{ m:m, done:on }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
   all('[data-clgoal]', function(b){ var n=Number(b.getAttribute('data-clgoal')), A=clOf_().a, by=(clFrom_()+n-1)+'-12', now=monthKey(todayStr());
     if(by<now) by=addMonths(now, 3);
-    S.goalDraft={ area:clArea_(A), title:String(A['m'+n]||'').slice(0,100), measure:'', help:'', why:String(A.focus||'').slice(0,200), by:by }; go('goaledit'); });
+    S.goalDraft={ area:clArea_(A), title:clTx_(A,'m'+n).slice(0,100), measure:'', help:'', why:clTx_(A,'focus').slice(0,200), by:by }; go('goaledit'); });
 }
 
 /* ---------------- today's devotional ----------------

@@ -90,8 +90,11 @@ string must have Khmer; check before shipping a new screen. Have a native speake
 km-app.js, the privacy promises first.
 
 ## Deploy
-Push to `main` → Netlify builds and goes live. Work on a branch and open a pull request; CI
-(`.github/workflows/tests.yml`) runs the tests on every PR. Run them locally first:
+**Don't deploy, and don't merge** (Uriah, Nov 2026: "don't keep pushing the Netlify build up … I'll push
+one at a time so it's not using up my Netlify pushes"): work on a branch, open a pull request, let CI
+pass, and tell Uriah it's ready — he merges and deploys himself. No Netlify deploys from a session.
+Push to `main` → Netlify builds and goes live. CI (`.github/workflows/tests.yml`) runs the tests on
+every PR. Run them locally first:
 `node tests/test-api.mjs`, `node tests/test-library.mjs`, `node tests/test-reminders.mjs` and `node tests/test-app-ui.mjs`
 (needs `npm install --no-save playwright`).
 
@@ -111,7 +114,13 @@ what holds you back), the call (what breaks your heart, who to help, the dream),
 fear, the future to avoid, a truth to hold), your guides (who helped, who walks with me, who I'll
 guide), the future you want (five years in each of the six areas, one year), your legacy (the
 70th birthday, three words, a word for the year). One question a screen, chips (`JR_OPTS`, ids
-only on the server) or a short text; every question can be skipped. In our own words: no text
+only on the server) or a short text; every question can be skipped. Since Nov 2026 ("in their own
+words … not just clicky") each stop also asks something to answer in their own words (the chapter's
+title, a time a gift helped someone, what would change without what holds me back, what I saw that
+made me care, when fear stopped me, what I'd do if I weren't afraid, who I'll be in five years, why my
+word), and the vision is written in **five sections** (`JR_SECS`: who I am, what I live for, my life in
+five years, when it's hard, my legacy), each a draft from the answers (`visionParts_`, their own
+sentences first) to rewrite before the next, then seen whole. In our own words: no text
 from the books. The app writes the vision on the phone (`visionMake_`, in the person's language)
 and a one-line why (`missionMake_`); they edit it, then `journey` 'vision' keeps it. Answers are
 `u.story` = {a, done, finished} — only `selfOut_` sends them: no card, coach or leader ever sees
@@ -129,26 +138,40 @@ nothing else from the vision. Sundays' reminder adds "read your vision again" (`
 
 ## My calling (Plan tab → view `callq`, then view `calling`)
 Nov 2026, Uriah: after the personality, strengths and gifts tests, be "laser clear on what they're
-going to focus on in the next few years and why", and have "a compelling vision statement for their
-life" to send to supporters, friends and family. The intro shows what they bring (the three tests and
-the Life Journey, each with a way to take it). Then one choice a screen (`CL_QS`, options `CL_OPTS`,
-ids only on the server): how I love to serve (⭐ = the strongest gifts and the journey's gifts), who
-(one group), the change I want for them, the sphere (⭐ from `sphereVotes_`) and where to start; ONE
-focus for three years (ideas from the answers, `clIdeas_`), a milestone for each year, up to three
-things I'll say no to, why (with the journey's answers as reminders) and a verse (a reference only),
-and how people can help. The phone writes the statement (`clStatement_`), which they edit and keep
-(`calling` 'keep', 60 XP once, a feed moment with no words). My calling shows the statement, the
-focus and milestones (each ticked off, 30 XP, or one tap from a life goal), why, what I'm saying no
-to, how God made me for it, and **the words to send**: a letter for family and supporters
-(`clLetter_`: the story, the tests, the calling, the three years, what I'm saying no to, the verse,
-the asks, thanks) and a short message (`clPost_`), in English or Khmer whatever the app's language
-(`withLang_`; their own words stay as written), edited and saved per language (`calling` 'text'),
-sent with the phone's share sheet, Telegram or Copy; and a 1080×1920 picture (statement and focus).
-`u.calling` is private (`selfOut_` only); a coach the mentee shares their plan with sees the
-statement, the focus and the milestones — never the why, the answers or the letter. Home leads with
-it (the next milestone not reached), the Plan tab and Me show it, the Sunday reset's "look up" shows
-it, and the tests on Home, my vision and Me invite to it until it's found. The three years start this
-year until June, next year from July (`callFrom_`), and start again once they're over.
+going to focus on in the next few years and why", with "a compelling vision statement for their life"
+to send to supporters, friends and family — and then "a robust process … in their own words … not just
+clicky", still easy. **Six parts** (`CL_PARTS`), one question a screen (`CL_QS`, 30), each part opening
+with what it's for, a map of the six on top, "Save and finish later" and **Continue** where they
+stopped (`u.calling.step`): (1) how God made you — the tests shown, then in my own words (starters to
+tap), three things I do well, a story of "I was made for this", what gives and drains energy; (2) what
+moves you — the problem like telling a friend, who, one real person with it, the change, ten years on,
+why; (3) where you'll serve — up to two **spheres** (⭐ from `sphereVotes_`, what God cares about there),
+up to three **roles** in them and how to start, what draws me, who I can learn from, skills (the roles'
+first); (4) your focus — how I serve (⭐ from the gifts), where to start, ONE focus for three years (ideas
+from the answers, `clIdeas_`), a **clarity check** with a tip for each box not ticked, a milestone a year,
+the first step in 30 days, the cost (private), what I'll say no to; (5) your people — a mentor, how people
+can help, a verse (a reference only); (6) **the statement, line by line** — "God made me…", "I'm called
+to…", "For the next three years, I will…", "Because…", each a draft of their own words (`clDraft_`) with
+what they said underneath; then the four together to read out loud (four checks) and keep (`calling`
+'keep', 60 XP once, a feed moment with no words). Every question can be skipped. Answers: chip ids and
+their own words (`callingAnswer_`: `CALL_CHIPS`, `CALL_TEXT`, `CALL_LONG` keeps line breaks). My calling
+shows the statement, the focus with milestones (ticked off for 30 XP, or one tap from a life goal) and
+the first step, what moves me, where I'll serve (spheres, roles, skills, who I can learn from), why,
+what I'm saying no to, the cost, how God made me for it, who walks with me — and **the words to send**:
+a letter (`clLetter_`: their story, the problem and the one person, the tests, the calling, what they
+long to see, the work and skills, the plan year by year, the first step, what they say no to, the
+verse, the asks) and a short message (`clPost_`), in English or Khmer whatever the app's language
+(`withLang_`; their own words stay as written), edited and saved per language (`calling` 'text'), sent
+with the share sheet, Telegram or Copy; and a 1080×1920 picture. `u.calling` is private (`selfOut_` only);
+a coach the mentee shares their plan with sees the statement, the focus and the milestones — never the
+answers or the letter. Home leads with it (the next milestone not reached), the Plan tab and Me show
+it, the Sunday reset's "look up" shows it. The three years start this year until June, next year from
+July (`callFrom_`), and start again once they're over.
+**The spheres of society** (view `spheres`, from Me, my calling and the calling's questions;
+`public/spheres.js`, loaded when needed): ten (`SPHERES`: family, church, education, government, media,
+arts, business, health, tech, land), each with what God cares about there (a reference only) and 8–9
+kinds of work young people are drawn to — what you'd do, how to start, the skills (`GP_SKILLS`) — English
+and Khmer, drafts by Claude. tests/test-library.mjs checks its shape.
 
 ## Phones in a browser (iPhone Safari)
 Safari zooms into a text box under 16px and leaves the page zoomed and sliding about, and zooms

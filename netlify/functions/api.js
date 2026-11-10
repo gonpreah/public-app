@@ -1026,7 +1026,8 @@ async function saveGoal(uid, tok, g) {
    theirs alone: only selfOut_ sends them, never a card, a coach or a leader. 20 XP a stop (once
    ever), 60 for the vision, 5 a day for reading it again (Home → My vision). */
 const JOURNEY_STOPS = ['home', 'you', 'call', 'dragon', 'guide', 'future', 'legacy'];
-const STORY_TEXT = ['best', 'hard', 'lesson', 'flow', 'dream', 'avoid', 'helped', 'guideFor', 'year', 'remember'];
+const STORY_TEXT = ['best', 'hard', 'lesson', 'flow', 'dream', 'avoid', 'helped', 'guideFor', 'year', 'remember',
+  'chapter', 'giftStory', 'weakFree', 'heartSaw', 'fearStory', 'brave', 'person5', 'wordWhy'];   // Nov 2026: more in their own words
 const STORY_CHIPS = { pastWords: 3, gifts: 3, weak: 2, heart: 2, who: 2, fear: 1, truth: 1, walk: 3, known: 3, word: 1 };
 function strMl_(v, max) { return String(v == null ? '' : v).replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, max); }
 function wheelOf_(v) { const o = {}; v = v && typeof v === 'object' ? v : {}; AREAS.forEach(function (a) { const n = Number(v[a]); if ([1, 2, 3, 4, 5].indexOf(n) > -1) o[a] = n; }); return o; }
@@ -1106,23 +1107,26 @@ async function journey(uid, tok, act, a) {
    language), letter:{en,km}, post:{en,km} (their own edits; empty = written fresh), from (the
    first of the three years), at, upd, done:{m1..m3: the day each milestone was reached}}. Private: selfOut_ only, and a coach the mentee shares
    their plan with sees the statement, the focus and the milestones. 60 XP once; a feed moment. */
-const CALL_CHIPS = { do: 1, who: 1, change: 1, place: 1, no: 3, help: 6 };
-const CALL_TEXT = { focus: 200, m1: 160, m2: 160, m3: 160, verse: 40, pray: 200 };
-const CALL_SPHERES = ['family', 'church', 'education', 'government', 'media', 'arts', 'business', 'health'];
+const CALL_CHIPS = { do: 1, who: 1, change: 1, place: 1, no: 3, help: 6, spheres: 2, roles: 3, skills: 4, checks: 5 };
+const CALL_TEXT = { focus: 200, m1: 160, m2: 160, m3: 160, verse: 60, pray: 200, first: 200, models: 200, mentor: 200,
+  good1: 80, good2: 80, good3: 80, gives: 200, drains: 200, w1: 300, w2: 300, w3: 300, w4: 300 };
+const CALL_LONG = { why: 800, me: 600, alive: 600, burden: 600, person: 600, picture: 600, draw: 400, cost: 400 };   // their own words, line breaks kept
+const CALL_SPHERES = ['family', 'church', 'education', 'government', 'media', 'arts', 'business', 'health', 'tech', 'land'];
 function callingAnswer_(k, v) {
-  if (k === 'why') return strMl_(v, 800);
+  if (Object.prototype.hasOwnProperty.call(CALL_LONG, k)) return strMl_(v, CALL_LONG[k]);
+  if (k === 'spheres') { const x = callingAnswer_('_chips', v); x.c = x.c.filter(function (id) { return CALL_SPHERES.indexOf(id) > -1; }).slice(0, 2); x.o = ''; return x; }
   if (Object.prototype.hasOwnProperty.call(CALL_TEXT, k)) return str_(v, CALL_TEXT[k]);
   if (k === 'sphere') return CALL_SPHERES.indexOf(v) > -1 ? v : '';
-  if (Object.prototype.hasOwnProperty.call(CALL_CHIPS, k)) {
+  if (k === '_chips' || Object.prototype.hasOwnProperty.call(CALL_CHIPS, k)) {
     v = v && typeof v === 'object' ? v : {};
     const c = (Array.isArray(v.c) ? v.c : []).filter(function (x) { return typeof x === 'string' && /^[a-z]{2,12}$/.test(x); });
-    return { c: c.filter(function (x, i) { return c.indexOf(x) === i; }).slice(0, CALL_CHIPS[k]), o: str_(v.o, 80) };
+    return { c: c.filter(function (x, i) { return c.indexOf(x) === i; }).slice(0, CALL_CHIPS[k] || 10), o: str_(v.o, 80) };
   }
   return undefined;
 }
 function callingOf_(u) {
   const c = (u && u.calling) || {}, two = function (x) { x = x && typeof x === 'object' ? x : {}; return { en: x.en || '', km: x.km || '' }; };
-  return { a: c.a && typeof c.a === 'object' ? c.a : {}, statement: c.statement || '', sl: c.sl || '', letter: two(c.letter), post: two(c.post), from: c.from || 0, at: c.at || '', upd: c.upd || '', done: c.done && typeof c.done === 'object' ? c.done : {} };
+  return { a: c.a && typeof c.a === 'object' ? c.a : {}, statement: c.statement || '', sl: c.sl || '', letter: two(c.letter), post: two(c.post), from: c.from || 0, at: c.at || '', upd: c.upd || '', done: c.done && typeof c.done === 'object' ? c.done : {}, step: c.step || 0 };
 }
 /* The three years start this year until June, next year from July. */
 function callFrom_() { const d = today_(); return Number(d.slice(5, 7)) >= 7 ? Number(d.slice(0, 4)) + 1 : Number(d.slice(0, 4)); }
@@ -1134,9 +1138,10 @@ async function calling(uid, tok, act, a) {
     const c = callingOf_(u);
     if (act === 'save' || act === 'keep') {   // answers so far; 'keep' also keeps the statement
       const ans = a.answers && typeof a.answers === 'object' ? a.answers : {};
-      Object.keys(ans).slice(0, 30).forEach(function (k) { const v = callingAnswer_(k, ans[k]); if (v !== undefined) c.a[k] = v; });
+      Object.keys(ans).slice(0, 60).forEach(function (k) { if (k.charAt(0) === '_') return; const v = callingAnswer_(k, ans[k]); if (v !== undefined) c.a[k] = v; });
+      if (Number.isInteger(a.step) && a.step >= 0 && a.step <= 60) c.step = a.step;   // where they are, to carry on later
       if (act === 'keep') {
-        const st = str_(a.statement, 300);
+        const st = strMl_(a.statement, 900);
         if (st.length < 10) return { abort: true, ok: false, err: 'text' };
         c.statement = st; c.sl = a.lang === 'km' ? 'km' : 'en';
         if (!c.from || c.from + 2 < thisYear_()) c.from = callFrom_();   // a new three years once the last ones are over
@@ -1153,7 +1158,7 @@ async function calling(uid, tok, act, a) {
     if (act === 'text') {   // my own edit of the letter or the post, in one language ('' = write it fresh)
       if (['en', 'km'].indexOf(a.lang) === -1 || ['letter', 'post'].indexOf(a.kind) === -1) return { abort: true, ok: false, err: 'kind' };
       if (!c.statement) return { abort: true, ok: false, err: 'none' };
-      c[a.kind][a.lang] = strMl_(a.text, a.kind === 'letter' ? 4000 : 800);
+      c[a.kind][a.lang] = strMl_(a.text, a.kind === 'letter' ? 6000 : 1200);
       u.calling = c; return { ok: true };
     }
     return { abort: true, ok: false, err: 'act' };

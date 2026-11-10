@@ -8,6 +8,28 @@
     have the same English (app.js merges APP_KM after BUILTIN_KM only for keys km.js
     lacks — see the KM line in app.js). */
 var APP_KM = {
+  /* forgotten passwords (put first, so other changes at the end don’t meet these) */
+  "Forgot your password?": "ភ្លេចពាក្យសម្ងាត់?",
+  "Sent. The admin has been told and will give you a one-time password — ask them or your team leader. Then sign in with it here.": "បានផ្ញើហើយ។ អ្នកគ្រប់គ្រងបានដឹងហើយ ហើយនឹងផ្តល់ពាក្យសម្ងាត់ប្រើតែម្តងដល់អ្នក — សូមសួរគាត់ ឬអ្នកដឹកនាំក្រុមរបស់អ្នក។ បន្ទាប់មក ចូលដោយប្រើវានៅទីនេះ។",
+  "Type your username. We’ll tell the admin, who will give you a one-time password to sign in with.": "វាយឈ្មោះអ្នកប្រើរបស់អ្នក។ យើងនឹងប្រាប់អ្នកគ្រប់គ្រង ដែលនឹងផ្តល់ពាក្យសម្ងាត់ប្រើតែម្តងដល់អ្នក ដើម្បីចូល។",
+  "Ask for a new password": "សុំពាក្យសម្ងាត់ថ្មី",
+  "You’re using a one-time password. Choose your own": "អ្នកកំពុងប្រើពាក្យសម្ងាត់ប្រើតែម្តង។ ជ្រើសរើសពាក្យសម្ងាត់ផ្ទាល់ខ្លួន",
+  "Forgotten passwords": "ពាក្យសម្ងាត់ដែលភ្លេច",
+  "1 person asked for a new password": "មនុស្ស ១ នាក់បានសុំពាក្យសម្ងាត់ថ្មី",
+  "{n} people asked for a new password": "មនុស្ស {n} នាក់បានសុំពាក្យសម្ងាត់ថ្មី",
+  "Reset their password": "កំណត់ពាក្យសម្ងាត់របស់គាត់ឡើងវិញ",
+  "Type your username first.": "សូមវាយឈ្មោះអ្នកប្រើរបស់អ្នកជាមុនសិន។",
+  "Asked for a new password": "បានសុំពាក្យសម្ងាត់ថ្មី",
+  "Send it": "ផ្ញើវា",
+  "They sign in with their username and this password, then choose their own.": "គាត់ចូលដោយប្រើឈ្មោះអ្នកប្រើ និងពាក្យសម្ងាត់នេះ រួចជ្រើសរើសពាក្យសម្ងាត់ផ្ទាល់ខ្លួន។",
+  "Your GonPreah one-time password: {pw}\nSign in at {site} with your username @{u} and this password, then choose your own.": "ពាក្យសម្ងាត់ប្រើតែម្តងសម្រាប់ កូនព្រះ៖ {pw}\nចូលនៅ {site} ដោយប្រើឈ្មោះអ្នកប្រើ @{u} និងពាក្យសម្ងាត់នេះ រួចជ្រើសរើសពាក្យសម្ងាត់ផ្ទាល់ខ្លួន។",
+  "Copied.": "បានចម្លង។",
+  "Choose your own password": "ជ្រើសរើសពាក្យសម្ងាត់ផ្ទាល់ខ្លួន",
+  "You signed in with a one-time password. Now pick one only you know — at least 8 characters.": "អ្នកបានចូលដោយប្រើពាក្យសម្ងាត់ប្រើតែម្តង។ ឥឡូវ ជ្រើសរើសពាក្យសម្ងាត់ដែលមានតែអ្នកទេដែលដឹង — យ៉ាងតិច ៨ តួអក្សរ។",
+  "The one-time password": "ពាក្យសម្ងាត់ប្រើតែម្តង",
+  "The same again": "វាយម្តងទៀត",
+  "Save my password": "រក្សាទុកពាក្យសម្ងាត់របស់ខ្ញុំ",
+  "Saved. Use your new password next time.": "បានរក្សាទុក។ ប្រើពាក្យសម្ងាត់ថ្មីរបស់អ្នកនៅពេលក្រោយ។",
   "Something went wrong on this screen.": "មានបញ្ហានៅលើទំព័រនេះ។",
   "Back to Home": "ត្រឡប់ទៅទំព័រដើម",
   "Welcome to GonPreah": "សូមស្វាគមន៍មកកាន់ កូនព្រះ",

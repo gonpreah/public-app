@@ -304,10 +304,25 @@ ok('… and a long enough new one', (await H.setPassword(P.uid, P.token, 'my goo
 ok('a password is changed', (await H.setPassword(P.uid, P.token, 'my good password', 'a new password')).ok && (await H.loginPassword('kosal', 'a new password')).ok);
 ok('a Google account can add a password', (await H.setPassword(A.uid, A.token, '', 'sokha password')).ok && (await H.loginPassword('sokha', 'sokha password')).ok);
 ok('only the admin can reset a password', (await H.adminResetPassword(P.uid, P.token, 'srey')).err === 'not_admin');
+const Q0 = await H.registerPassword({ username: 'notadmin', name: 'Not Admin', birthYear: 2000, password: 'notadmin password' });
 process.env.GPA_ADMIN_USERNAMES = 'kosal';
 ok('an admin named by username', (await H.boot(P.uid, P.token)).me.admin === true);
 const rp = await H.adminResetPassword(P.uid, P.token, 'srey');
 ok('the admin resets a forgotten password: a one-time one, and old sign-ins end', rp.ok && rp.password.length === 10 && (await H.boot(PM.uid, PM.token)).err === 'auth' && (await H.loginPassword('srey', rp.password)).ok);
+const FG = await H.registerPassword({ username: 'forgot1', name: 'For Got', birthYear: 2000, password: 'forgot1 password' });
+const rp0 = await H.adminResetPassword(P.uid, P.token, 'forgot1');
+const sl = await H.loginPassword('forgot1', rp0.password);
+ok('signing in with a one-time password asks for their own', sl.me.pwTemp === true && (await H.setPassword(sl.uid, sl.token, rp0.password, 'forgot1 new password')).me.pwTemp === false);
+ok('“Forgot your password?” answers the same for a name that isn’t there', (await H.forgotPassword('nobody_here')).ok && (await H.adminReports(P.uid, P.token, false)).pwAsks.length === 0);
+ok('… and for a real one, the ask waits for the admin', (await H.forgotPassword('@FORGOT1')).ok && (await H.adminReports(P.uid, P.token, false)).pwAsks.map(x => x.username).join() === 'forgot1');
+await H.forgotPassword('forgot1');
+ok('… once, however many times they tap', (await H.adminReports(P.uid, P.token, false)).pwAsks.length === 1 && (await H.boot(P.uid, P.token)).pwAsks === 1);
+ok('the admin’s phone is remembered, to be told when someone asks', (JSON.parse(globalThis.__gpaStore._m.get('admins') || '[]')).includes(P.uid));
+ok('nobody else sees or clears the asks', (await H.adminReports(Q0.uid, Q0.token, false)).err === 'not_admin' && (await H.dropPwAsk(Q0.uid, Q0.token, FG.uid)).err === 'not_admin');
+const rp2 = await H.adminResetPassword(P.uid, P.token, 'forgot1');
+ok('resetting it clears the ask', rp2.ok && (await H.adminReports(P.uid, P.token, false)).pwAsks.length === 0 && (await H.loginPassword('forgot1', rp2.password)).me.pwTemp === true);
+await H.forgotPassword('forgot1'); globalThis.__gpaStore._m.set('pwAsks', JSON.stringify(JSON.parse(globalThis.__gpaStore._m.get('pwAsks')).map(x => Object.assign(x, { at: new Date(Date.now() - 3600e3).toISOString() }))));
+ok('the admin can clear an ask without resetting', (await H.dropPwAsk(P.uid, P.token, FG.uid)).pwAsks.length === 0);
 delete process.env.GPA_ADMIN_USERNAMES;
 
 /* ---------- 12. Today: three things, focus time, the evening check-in ---------- */

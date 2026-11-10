@@ -555,7 +555,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null, clifton: u.clifton || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
+    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, pwTemp: !!u.pwTemp, level: levelOf_(u.xp),
     reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
@@ -661,10 +661,11 @@ async function setPassword(uid, tok, current, next) {
   if (me.pw && !pwOk_(me, current)) return { ok: false, err: 'current' };
   const pw = cleanPassword_(next);
   if (!pw) return { ok: false, err: 'password' };
-  await mutate_('u:' + uid, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.pwLock; } return { ok: true }; });
+  await mutate_('u:' + uid, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.pwLock; delete u.pwTemp; } return { ok: true }; });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
-/* The admin gives someone who forgot their password a one-time one; it signs them out everywhere. */
+/* The admin gives someone who forgot their password a one-time one; it signs them out everywhere.
+   Signing in with it, the app asks them to choose their own (u.pwTemp, cleared by setPassword). */
 async function adminResetPassword(uid, tok, username) {
   const me = await auth_(uid, tok);
   if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
@@ -674,10 +675,39 @@ async function adminResetPassword(uid, tok, username) {
   let temp = ''; for (let i = 0; i < 10; i++) temp += A[b[i] % A.length];
   const res = await mutate_('u:' + map.id, null, function (u) {
     if (!u || u.closed) return { abort: true, ok: false, err: 'none' };
-    u.pw = makePw_(temp); u.tokens = []; delete u.pwLock;
+    u.pw = makePw_(temp); u.pwTemp = true; u.tokens = []; delete u.pwLock;
     return { ok: true };
   });
+  if (res.ok) await mutate_('pwAsks', [], function (L) { for (let i = L.length - 1; i >= 0; i--) if (L[i].id === map.id) L.splice(i, 1); return { ok: true }; });
   return res.ok ? { ok: true, username: n, password: temp } : res;
+}
+async function dropPwAsk(uid, tok, id) {
+  const me = await auth_(uid, tok);
+  if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
+  await mutate_('pwAsks', [], function (L) { for (let i = L.length - 1; i >= 0; i--) if (L[i].id === id) L.splice(i, 1); return { ok: true }; });
+  return { ok: true, pwAsks: pwAsksFresh_(await readJSON('pwAsks', [])).slice().reverse() };
+}
+/* "Forgot your password?" on the sign-in screen (Nov 2026, Uriah: they "can't submit for forgot
+   their password … make it easier … for me to get them logged back in simply"). Anyone can ask, by
+   username; the ask waits in 'pwAsks' (14 days, the last 60) for the admin, who gets a notification
+   if their alerts are on, and resets it from Reports with one tap. The answer is always the same, so
+   it never tells whether a username exists; one ask per account every 10 minutes. */
+const PW_ASK_DAYS = 14, PW_ASK_MAX = 60, PW_ASK_GAP_MIN = 10;
+function pwAsksFresh_(L) { const cut = new Date(Date.now() - PW_ASK_DAYS * 864e5).toISOString(); return (Array.isArray(L) ? L : []).filter(function (x) { return x && x.at >= cut; }); }
+async function forgotPassword(username) {
+  const n = cleanUsername_(String(username == null ? '' : username).trim().replace(/^@/, '')), map = n ? await readJSON('uname:' + n, null) : null;
+  const u = map ? await readJSON('u:' + map.id, null) : null;
+  if (!u || u.closed || u.suspended) return { ok: true };
+  let fresh = false;
+  await mutate_('pwAsks', [], function (L) {
+    const had = L.filter(function (x) { return x.id === u.id; })[0];
+    if (had && Date.parse(had.at) > Date.now() - PW_ASK_GAP_MIN * 60000) return { abort: true, ok: true };
+    const keep = pwAsksFresh_(L).filter(function (x) { return x.id !== u.id; }).concat([{ id: u.id, username: u.username, name: u.name, at: new Date().toISOString() }]).slice(-PW_ASK_MAX);
+    L.splice(0, L.length); keep.forEach(function (x) { L.push(x); }); fresh = true;
+    return { ok: true };
+  });
+  if (fresh) for (const id of (await readJSON('admins', []))) await pushNow_(id, 'pwAsk');
+  return { ok: true };
 }
 
 /* Google (token) or a password (pw, from registerPassword). */
@@ -730,12 +760,17 @@ async function boot(uid, tok) {
     meetsOut_(t, uid, null).forEach(function (m) { if (m.date <= addDays_(today_(), 14) && m.mine !== 'no') myMeets.push(Object.assign({ team: t.id, teamName: t.name, emoji: t.emoji || '✦' }, m)); });
     challengesOut_(t, uid, {}).forEach(function (c) { if (c.joined && c.state === 'on') myChallenges.push(Object.assign({ teamName: t.name, teamEmoji: t.emoji || '✦' }, c, { people: undefined, others: c.people.length - 1 })); });
   }
+  let pwAsks = 0;
+  if (isAdmin_(u)) {   // the admin: how many asked for a new password; and remember who to buzz when someone asks
+    pwAsks = pwAsksFresh_(await readJSON('pwAsks', [])).length;
+    if ((await readJSON('admins', [])).indexOf(uid) === -1) await mutate_('admins', [], function (L) { if (L.indexOf(uid) === -1) L.push(uid); return { ok: true }; });
+  }
   const co = await coachings(uid, tok);
   const pk = await pushKeys_(true);
   const fr = await friendsList(uid, tok);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
     push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, friends: fr.ok ? fr.friends : [], friendAsks: fr.ok ? fr.asks : [], today: today_(),
-    meets: myMeets.sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }) };
+    meets: myMeets.sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }), pwAsks: pwAsks };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -1890,6 +1925,7 @@ async function adminReports(uid, tok, all) {
   const me = await auth_(uid, tok);
   if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
   const rows = (await readJSON('reports', [])).filter(function (r) { return all ? true : r.status === 'open'; }).slice(-200).reverse();
+  const pwAsks = pwAsksFresh_(await readJSON('pwAsks', [])).slice().reverse();
   const out = [];
   for (const r of rows) {
     const o = Object.assign({}, r), by = await readJSON('u:' + r.by, null);
@@ -1900,7 +1936,7 @@ async function adminReports(uid, tok, all) {
   }
   const photos = {};
   for (const o of out) if (o.person && o.person.hasPhoto && !photos[o.person.id]) { const ph = await readJSON('ph:' + o.person.id, null); if (ph) photos[o.person.id] = ph.d; }
-  return { ok: true, reports: out, photos: photos };
+  return { ok: true, reports: out, photos: photos, pwAsks: pwAsks };
 }
 async function closeTeam_(tid) {
   const t = await readJSON('t:' + tid, null);
@@ -1959,6 +1995,7 @@ const PUSH_TEXT = {
   planDay: { en: 'Good morning ☀️ What are your 3 things for today?', km: 'អរុណសួស្តី ☀️ តើរឿងទាំង ៣ របស់អ្នកសម្រាប់ថ្ងៃនេះជាអ្វី?' },
   meetup: { en: '📅 {team} has a new meetup — are you coming?', km: '📅 {team} មានការជួបជុំថ្មី — តើអ្នកនឹងមកទេ?' },
   meetupToday: { en: '📅 {team} meets today {time}', km: '📅 {team} ជួបជុំគ្នាថ្ងៃនេះ {time}' },
+  pwAsk: { en: '🔑 Someone forgot their password. Open Me → Reports to give them a new one.', km: '🔑 មាននរណាម្នាក់ភ្លេចពាក្យសម្ងាត់។ បើក ខ្ញុំ → របាយការណ៍ ដើម្បីផ្តល់ពាក្យសម្ងាត់ថ្មីឲ្យគាត់។' },
   saver: { en: '🔥 Your {n}-day streak ends at midnight — tick one habit to keep it going!', km: '🔥 ការធ្វើជាប់ៗគ្នា {n} ថ្ងៃរបស់អ្នកនឹងបញ្ចប់នៅពាក់កណ្តាលអធ្រាត្រ — គូសទម្លាប់មួយដើម្បីរក្សាវា!' },
   reset: { en: 'Sunday reset: 5 minutes to set up your week 🔄', km: 'កំណត់សប្តាហ៍ឡើងវិញនៅថ្ងៃអាទិត្យ៖ ៥ នាទីដើម្បីរៀបចំសប្តាហ៍របស់អ្នក 🔄' },
   vision: { en: 'It’s Sunday: read your vision again 📜', km: 'ថ្ងៃនេះជាថ្ងៃអាទិត្យ៖ អានចក្ខុវិស័យរបស់អ្នកម្តងទៀត 📜' },
@@ -2345,7 +2382,7 @@ async function signOut(uid, tok) {
 }
 
 export const HANDLERS = {
-  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
+  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,

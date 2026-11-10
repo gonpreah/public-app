@@ -38,8 +38,15 @@ A **username and password** (`registerPassword` / `loginPassword`; Nov 2026, Uri
 login besides Google") or Google sign-in (`loginGoogle` / `register`), then a username (unique,
 3–20 of a-z 0-9 _ .), a name and a birth year. Passwords: 8+ characters, kept only as a salted
 scrypt hash (`u.pw`); 8 wrong tries lock the account 15 minutes; Me → Password changes it (or
-adds one to a Google account). No email, so the admin resets a forgotten one (Me → Reports →
-Reset a password: a one-time password, and every old sign-in ends). The Google button shows
+adds one to a Google account). No email, so the admin resets a forgotten one: **"Forgot your
+password?"** on the sign-in screen (`forgotPassword`, by username; the same answer whether it exists;
+once per account every 10 minutes) puts an ask in `pwAsks` (14 days) and buzzes the admin (`admins`,
+remembered at boot; push `pwAsk`, if their alerts are on); Home and Me show "n people asked for a new
+password"; Me → Reports lists them, each with one **Reset** (`adminResetPassword`; `dropPwAsk` clears
+one), and the admin can also reset from anyone's card. Reset gives a one-time password to **Copy** or
+**Send** (a short message with the site and their username), ends every old sign-in, and sets
+`u.pwTemp`: signing in with it opens view `newpw` to choose their own (setPassword clears it; Home
+reminds until then). Nov 2026, Uriah: people "can't submit for forgot their password … make it easier". The Google button shows
 only when `GPA_GOOGLE_CLIENT_ID` is set. An admin is named by Google email (`GPA_ADMIN_EMAILS`)
 or by username (`GPA_ADMIN_USERNAMES` — set only after that account exists). A phone keeps a random device token (hashed on the account); every
 signed-in call is `(uid, token, …)` and starts with `auth_`. Telegram sign-in is planned.

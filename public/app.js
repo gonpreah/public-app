@@ -91,7 +91,7 @@ function failMsg(d){
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; if(d && 'pwAsks' in d) S.pwAsks=d.pwAsks; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -173,6 +173,7 @@ function render(){
     else if(V==='focus') h=focusHtml();
     else if(V==='share') h=shareHtml();
     else if(V==='welcome') h=welcomeHtml();
+    else if(V==='newpw') h=newPwHtml();
     else if(V==='faith') h=faithHtml();
     else if(V==='friends') h=friendsHtml();
     else if(V==='devo') h=devoHtml();
@@ -233,9 +234,18 @@ function signinHtml(){
       '<button class="btn" id="liGo"'+(S.busy?' disabled':'')+'>'+esc(S.busy?t('Signing in…'):t('Sign in'))+'</button>'+
       '<button class="btn ghost" id="liNew" style="margin-top:8px">'+esc(t('New here? Make an account'))+'</button>'+
       (S.authCfg && S.authCfg.google ? '<div class="orLine"><span>'+esc(t('or'))+'</span></div><button class="btn gBtn" id="googleBtn"'+(S.busy?' disabled':'')+'><span class="gG">G</span>'+esc(t('Continue with Google'))+'</button>' : '')+
-      '<p class="hint" style="text-align:center;margin-top:10px">'+esc(t('Forgot your password? Ask your team leader to contact the GonPreah admin.'))+'</p>'+
+      forgotHtml_()+
     '</div>'+
     '<p class="pFine" style="text-align:center">'+esc(t('GonPreah is for people 13 and older.'))+'</p></div>';
+}
+/* Forgot my password: ask, by username; the admin is told and gives a one-time password. */
+function forgotHtml_(){
+  var F=S.forgot;
+  if(!F) return '<button class="linkbtn" id="liForgot" style="display:block;margin:12px auto 0">🔑 '+esc(t('Forgot your password?'))+'</button>';
+  if(F.sent) return '<div class="banner" style="margin-top:12px">✓ '+esc(t('Sent. The admin has been told and will give you a one-time password — ask them or your team leader. Then sign in with it here.'))+'</div>';
+  return '<div class="card forgotBox" style="margin-top:12px"><b>🔑 '+esc(t('Forgot your password?'))+'</b><p class="sub" style="margin:4px 0 8px">'+esc(t('Type your username. We’ll tell the admin, who will give you a one-time password to sign in with.'))+'</p>'+
+    '<div class="atRow"><span>@</span><input type="text" id="fpUser" autocapitalize="none" maxlength="20" value="'+esc(F.u||'')+'" placeholder="'+esc(t('Username'))+'"></div>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="fpGo">'+esc(t('Ask for a new password'))+'</button><button class="btn small ghost" id="fpCancel">'+esc(t('Cancel'))+'</button></div></div>';
 }
 var GSI_URL='https://accounts.google.com/gsi/client';
 function googleToken_(cb){
@@ -356,6 +366,8 @@ function homeHtml(){
     h+='<div class="card inviteCard"><div><b>'+esc(iv.emoji||'✦')+' '+esc(iv.name)+'</b><div class="pmeta">'+esc(gpT('{name} asked you to join',{name:iv.from}))+'</div></div>'+
       '<div class="btnRow" style="margin-top:10px"><button class="btn small" data-invite="'+esc(iv.team)+'|1">'+esc(t('Join'))+'</button><button class="btn small ghost" data-invite="'+esc(iv.team)+'|0">'+esc(t('No thanks'))+'</button></div></div>';
   });
+  if(me.pwTemp) h+='<button class="card whyLine" id="goNewPw"><span class="pmeta">🔑 '+esc(t('Password'))+'</span><span class="whyLineTx">'+esc(t('You’re using a one-time password. Choose your own'))+' ›</span></button>';
+  if(me.admin && S.pwAsks) h+='<button class="card whyLine pwAskCard" id="goAdmin"><span class="pmeta">🔑 '+esc(t('Forgotten passwords'))+'</span><span class="whyLineTx">'+esc(S.pwAsks===1?t('1 person asked for a new password'):gpT('{n} people asked for a new password',{n:S.pwAsks}))+' ›</span></button>';
   var HC=homeCfg_(); HC.order.forEach(function(id){ if(HC.hide.indexOf(id)<0) h+=homePartHtml_(id); });   // Me → Customize Home
   if(!(S.teams||[]).length) h+='<h3>👥 '+esc(t('Your team'))+'</h3>'+entryCardHtml('goTeamsHome','👥',t('Join or start a team'),t('Grow together with your friends, club or group.'));
   return h;
@@ -627,6 +639,7 @@ function personHtml(){
   }
   if(p.id!==S.me.id) h+=coachAskHtml_(p);
   if(p.id!==S.me.id && !(S.friends||[]).some(function(f){ return f.id===p.id; })) h+='<button class="btn ghost" data-friendask="'+esc(p.username)+'" style="margin-bottom:12px">👯 '+esc(gpT('Add {name} as a friend',{name:firstName_(p.name)}))+'</button>';
+  if(p.id!==S.me.id && S.me.admin) h+='<div class="card"><button class="btn small ghost" data-pwreset="'+esc(p.username)+'">🔑 '+esc(t('Reset their password'))+'</button>'+(S.resetResult && S.resetResult.username===p.username ? resetResultHtml_() : '')+'</div>';
   if(p.id!==S.me.id) h+='<div class="safeRow"><button class="linkbtn" id="reportPerson">🚩 '+esc(t('Report'))+'</button><button class="linkbtn" id="blockPerson">🚫 '+esc(t('Block'))+'</button></div>';
   if(!p.minor && p.id!==S.me.id){
     var mine=(S.teams||[]).filter(function(tm){ return tm.leader && !(p.sharedTeams||[]).some(function(x){ return x.id===tm.id; }); });
@@ -694,7 +707,7 @@ function meHtml(){
     (me.blocked?'<button class="linkbtn" id="goBlocked">🚫 '+esc(gpT('People you’ve blocked ({n})',{n:me.blocked}))+'</button>':'')+
     '<button class="linkbtn" id="dlData">📦 '+esc(t('Download my data'))+'</button>'+
     '<button class="linkbtn" id="signOut">'+esc(t('Sign out'))+'</button>';
-  if(me.admin) h=entryCardHtml('goAdmin','🛡️',t('Reports'),t('You’re the admin: see what people reported, and act on it.'))+h;
+  if(me.admin) h=entryCardHtml('goAdmin','🛡️',t('Reports'),S.pwAsks ? (S.pwAsks===1?t('1 person asked for a new password'):gpT('{n} people asked for a new password',{n:S.pwAsks})) : t('You’re the admin: see what people reported, and act on it.'))+h;
   return h;
 }
 /* A photo shrunk on the phone to a 256px square JPEG before it goes anywhere. */
@@ -1165,7 +1178,11 @@ function bind(){
   on('liGo', function(){ if(S.busy) return; var un=$('liUser').value.trim(), pw=$('liPass').value;
     if(!un || !pw){ showMsg(t('That username or password isn’t right.')); return; }
     S.busy=true; render();
-    api('loginPassword',[un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ afterSignIn_(d); return; } failMsg(d); render(); var x=$('liUser'); if(x) x.value=un; }); });
+    api('loginPassword',[un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ S.forgot=null; afterSignIn_(d); if(d.me && d.me.pwTemp){ S.tempPw=pw; S.view='newpw'; render(); } return; } failMsg(d); render(); var x=$('liUser'); if(x) x.value=un; }); });
+  on('liForgot', function(){ var u=$('liUser'); S.forgot={ u:u ? u.value.trim().replace(/^@/,'') : '' }; render(); var f=$('fpUser'); if(f && !f.value) f.focus(); });
+  on('fpCancel', function(){ S.forgot=null; render(); });
+  on('fpGo', function(){ var un=$('fpUser').value.trim().replace(/^@/,''); if(!un){ showMsg(t('Type your username first.')); return; } if(S.busy) return;
+    S.busy=true; api('forgotPassword',[un]).then(function(d){ S.busy=false; if(d && d.ok){ S.forgot={ u:un, sent:true }; render(); } else failMsg(d); }); });
   bindSignup_();
   if(!AUTH || !S.me) return;
 
@@ -1457,8 +1474,8 @@ function bind(){
     return call('setPassword', cur, nw).then(function(d){ if(d && d.ok){ S.me=d.me; showMsg(t('Saved.')); render(); } else failMsg(d); }); }));
   on('arGo', busyOnce_(function(){ var un=$('arUser').value.trim(); if(!un) return;
     if(!confirm(gpT('Reset the password for @{u}? They will be signed out everywhere.',{u:un.replace(/^@/,'')}))) return;
-    return call('adminResetPassword', un).then(function(d){ if(d && d.ok){ S.resetResult=d; render(); } else { S.resetResult=null; failMsg(d); } }); }));
-  bindKhmer_();
+    return call('adminResetPassword', un).then(function(d){ if(d && d.ok){ S.resetResult=d; if(S.admin) S.admin.pwAsks=(S.admin.pwAsks||[]).filter(function(x){ return x.username!==d.username; }); render(); } else { S.resetResult=null; failMsg(d); } }); }));
+  bindKhmer_(); bindNewPw_(); bindPwReset_();
   if(S.view==='team' && S.team) loadPhotos_(S.team.people);
   if(S.view==='teams' && S.feed===null && (S.teams||[]).length && !S.feedAsked){ S.feedAsked=true; feedLoad_(); }
   if(S.view==='person' && S.person) loadPhotos_([S.person]);
@@ -1556,6 +1573,7 @@ var REPORT_LABEL = { photo:'Their photo', name:'Their name', bio:'The line about
 function adminHtml(){
   var A=S.admin, h=backBtn(t('Me'))+'<h2>🛡️ '+esc(t('Reports'))+'</h2>';
   if(!A) return h+'<p class="sub">'+esc(t('Loading…'))+'</p>';
+  h+=pwAsksHtml_();
   h+=adminResetHtml_();
   h+='<h3>🚩 '+esc(t('What people reported'))+'</h3>';
   h+='<div class="seg" style="margin-bottom:12px"><button data-adminall="0" class="'+(A.all?'':'on')+'">'+esc(t('Waiting'))+'</button><button data-adminall="1" class="'+(A.all?'on':'')+'">'+esc(t('All'))+'</button></div>';
@@ -1579,14 +1597,61 @@ function adminHtml(){
   });
   return h;
 }
+function pwAsksHtml_(){
+  var L=(S.admin && S.admin.pwAsks)||[];
+  if(!L.length) return '';
+  return '<h3>🔑 '+esc(t('Asked for a new password'))+'</h3><div class="card list">'+L.map(function(x){ var R=S.resetResult && S.resetResult.username===x.username;
+    return '<div class="pwAskRow"><span style="flex:1;min-width:0"><b>'+esc(x.name)+'</b><div class="pmeta">@'+esc(x.username)+' · '+esc(dayLabel(String(x.at).slice(0,10)))+'</div></span>'+
+      '<button class="btn small" data-pwreset="'+esc(x.username)+'">'+esc(t('Reset'))+'</button><button class="xBtn" data-pwdrop="'+esc(x.id)+'" aria-label="'+esc(t('Remove'))+'">×</button></div>'; }).join('')+'</div>'+resetResultHtml_();
+}
+/* The one-time password, ready to pass on: copy it, or share a short message with it. */
+function resetResultHtml_(){
+  var R=S.resetResult; if(!R) return '';
+  return '<div class="banner pwResult" style="margin-top:10px">'+esc(gpT('One-time password for @{u}:',{u:R.username}))+' <b class="bigPw">'+esc(R.password)+'</b>'+
+    '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="pwCopy">📋 '+esc(t('Copy'))+'</button><button class="btn small ghost" id="pwShare">📤 '+esc(t('Send it'))+'</button></div>'+
+    '<div class="hint">'+esc(t('They sign in with their username and this password, then choose their own.'))+'</div></div>';
+}
+function pwMsg_(R){ return gpT('Your GonPreah one-time password: {pw}\nSign in at {site} with your username @{u} and this password, then choose your own.',{ pw:R.password, site:location.origin, u:R.username }); }
+function bindPwReset_(){
+  all('[data-pwreset]', busyOnce_(function(b){ var un=b.getAttribute('data-pwreset');
+    if(!confirm(gpT('Reset the password for @{u}? They will be signed out everywhere.',{u:un}))) return;
+    return call('adminResetPassword', un).then(function(d){ if(d && d.ok){ S.resetResult=d; if(S.admin) S.admin.pwAsks=(S.admin.pwAsks||[]).filter(function(x){ return x.username!==d.username; }); S.pwAsks=Math.max(0,(S.pwAsks||0)-1); render(); } else { S.resetResult=null; failMsg(d); } }); }));
+  all('[data-pwdrop]', busyOnce_(function(b){ return call('dropPwAsk', b.getAttribute('data-pwdrop')).then(function(d){ if(d && d.ok){ S.admin.pwAsks=d.pwAsks; S.pwAsks=d.pwAsks.length; render(); } else failMsg(d); }); }));
+  on('pwCopy', function(){ var R=S.resetResult; if(R) copyText_(R.password); });
+  on('pwShare', function(){ var R=S.resetResult; if(!R) return; var x=pwMsg_(R); if(navigator.share) navigator.share({ text:x }).catch(function(){}); else copyText_(x); });
+}
+function copyText_(x){ var done=function(){ showMsg(t('Copied.')); };
+  try { if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(x).then(done, function(){ copyOld_(x); done(); }); return; } } catch(e){}
+  copyOld_(x); done(); }
+function copyOld_(x){ var e=document.createElement('textarea'); e.value=x; e.setAttribute('readonly',''); e.style.position='fixed'; e.style.opacity='0'; document.body.appendChild(e); e.select(); try { document.execCommand('copy'); } catch(er){} e.remove(); }
 function adminResetHtml_(){
-  var R=S.resetResult;
+  var R=S.resetResult && !((S.admin && S.admin.pwAsks)||[]).length ? S.resetResult : null;
   return '<h3>🔑 '+esc(t('Reset a password'))+'</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(t('For someone who forgot theirs: you get a one-time password to give them, and they’re signed out everywhere.'))+'</p>'+
     '<div class="atRow"><span>@</span><input type="text" id="arUser" autocapitalize="none" maxlength="20" placeholder="'+esc(t('Username'))+'"><button class="btn small" id="arGo">'+esc(t('Reset'))+'</button></div>'+
-    (R ? '<div class="banner" style="margin-top:10px">'+esc(gpT('One-time password for @{u}:',{u:R.username}))+' <b class="bigPw">'+esc(R.password)+'</b><div class="hint">'+esc(t('Give it to them in person. They can change it on Me.'))+'</div></div>' : '')+'</div>';
+    (R ? resetResultHtml_() : '')+'</div>';
 }
-function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all }; render(); } else { failMsg(d); goBack('me'); } }); }
+function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all, pwAsks:d.pwAsks||[] }; S.pwAsks=(d.pwAsks||[]).length; render(); } else { failMsg(d); goBack('me'); } }); }
 
+/* ---------------- a new password, after the admin gave a one-time one (view newpw) ---------------- */
+VIEWS_TABS.newpw='me';   // the Me tab lights up while choosing my own password
+function newPwHtml(){
+  var known=!!S.tempPw;
+  return '<div class="jrIntro"><div class="jrBig">🔑</div><h2>'+esc(t('Choose your own password'))+'</h2><p class="jrStory">'+esc(t('You signed in with a one-time password. Now pick one only you know — at least 8 characters.'))+'</p></div>'+
+    '<div class="card">'+(known?'':'<label class="f" for="npCur">'+esc(t('The one-time password'))+'</label><input type="password" id="npCur" autocomplete="current-password" maxlength="128">')+
+    '<label class="f" for="npNew">'+esc(t('New password'))+'</label><input type="password" id="npNew" autocomplete="new-password" maxlength="128">'+
+    '<label class="f" for="npNew2">'+esc(t('The same again'))+'</label><input type="password" id="npNew2" autocomplete="new-password" maxlength="128">'+
+    '<button class="btn" id="npSave" style="margin-top:12px">'+esc(t('Save my password'))+'</button></div>'+
+    '<button class="linkbtn" id="npLater">'+esc(t('Later'))+'</button>';
+}
+function bindNewPw_(){
+  on('goNewPw', function(){ go('newpw'); });
+  if(S.view!=='newpw') return;
+  on('npLater', function(){ S.view='home'; S.back=[]; render(); });
+  on('npSave', busyOnce_(function(){ var cur=S.tempPw || ($('npCur') ? $('npCur').value : ''), a=$('npNew').value, b=$('npNew2').value;
+    if(a.length<8){ showMsg(t('Use at least 8 characters for your password.')); return; }
+    if(a!==b){ showMsg(t('The two passwords aren’t the same.')); return; }
+    return call('setPassword', cur, a).then(function(d){ if(d && d.ok){ S.me=d.me; S.tempPw=null; showMsg(t('Saved. Use your new password next time.')); S.view='home'; S.back=[]; render(); } else failMsg(d); }); }));
+}
 /* ---------------- my password (Me) ---------------- */
 function passwordCardHtml_(){
   var has=S.me.hasPassword;

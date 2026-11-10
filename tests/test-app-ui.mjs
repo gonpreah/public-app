@@ -300,6 +300,37 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   await ctx.close();
 }
 
+/* ---------- 17m. forgot my password: ask, the admin resets, choose my own ---------- */
+{
+  process.env.GPA_ADMIN_EMAILS = 'sokha@example.com';   // a is the admin again for this part
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const f = await ctx.newPage(); f.on('pageerror', x => errors.push('forgot: ' + x.message)); f.on('dialog', d => d.accept());
+  await f.goto(base + '/'); await f.click('#liNew'); await f.waitForSelector('#suPass');
+  await f.fill('#suUser', 'forgetful'); await f.fill('#suPass', 'forgetful password'); await f.fill('#suPass2', 'forgetful password');
+  await f.fill('#suName', 'Bopha Forget'); await f.selectOption('#suYear', '2001'); await f.click('#suGo'); await f.waitForSelector('nav.bottom');
+  await f.evaluate(() => { localStorage.removeItem('gpa-auth'); }); await f.goto(base + '/'); await f.waitForSelector('#liForgot');
+  await f.fill('#liUser', 'forgetful'); await f.click('#liForgot'); await f.waitForSelector('#fpGo');
+  ok('“Forgot your password?” on the sign-in screen, with my username already in', await f.$eval('#fpUser', e => e.value) === 'forgetful');
+  await f.click('#fpGo'); await f.waitForTimeout(500);
+  ok('… and the admin is told', /The admin has been told/.test(await text(f)));
+  await a.evaluate(() => refresh_()); await a.waitForTimeout(500);
+  await a.click('nav.bottom button[data-tab="home"]'); await a.waitForTimeout(300);
+  ok('the admin sees it on Home', /1 person asked for a new password/.test(await text(a)));
+  await a.click('.pwAskCard'); await a.waitForSelector('[data-pwreset="forgetful"]');
+  ok('… then the ask in Reports, with one Reset button', /Bopha Forget/.test(await text(a)));
+  await a.click('[data-pwreset="forgetful"]'); await a.waitForSelector('.bigPw');
+  const temp = await a.$eval('.bigPw', e => e.textContent);
+  ok('… which gives a one-time password, to copy or send', temp.length === 10 && !!(await a.$('#pwCopy')) && !!(await a.$('#pwShare')) && !(await a.$('[data-pwreset="forgetful"]')));
+  await f.fill('#liUser', 'forgetful'); await f.fill('#liPass', temp); await f.click('#liGo'); await f.waitForSelector('#npSave');
+  ok('signing in with it asks them to choose their own', /Choose your own password/.test(await text(f)));
+  await f.fill('#npNew', 'my brand new pass'); await f.fill('#npNew2', 'my brand new pass'); await f.click('#npSave'); await f.waitForTimeout(600);
+  ok('… and then it’s theirs', await f.evaluate(() => S.view === 'home' && !S.me.pwTemp));
+  await ctx.close();
+  await a.click('[data-back]'); await a.waitForTimeout(200);
+  delete process.env.GPA_ADMIN_EMAILS;
+}
+
 /* ---------- 12. Today: my why, three things, focus, the check-in ---------- */
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });

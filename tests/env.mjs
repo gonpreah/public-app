@@ -23,6 +23,11 @@ export function fakeGoogle() {
       return { ok: true, json: async () => ({ aud: CLIENT, sub: m[1], email: m[1] + '@example.com', verified_email: true, expires_in: 3000, name: m[2] }) };
     }
     if (u.startsWith('https://openidconnect.googleapis.com/')) return { ok: false, json: async () => ({}) };
+    if (u.startsWith('https://api.telegram.org/bot')) {   // a stand-in for Telegram: keep what the bot sends
+      const method = u.split('/').pop(), body = arguments[1] && arguments[1].body ? JSON.parse(arguments[1].body) : {};
+      (globalThis.__tgSent = globalThis.__tgSent || []).push({ method, body });
+      return { ok: true, json: async () => ({ ok: true, result: true }) };
+    }
     throw new Error('no network in tests: ' + u);
   };
 }
@@ -60,6 +65,12 @@ export async function startServer(port) {
       let body = ''; for await (const c of req) body += c;
       const r = await api(new Request('http://x/', { method: req.method, body: req.method === 'POST' ? body : undefined }));
       res.writeHead(r.status, { 'Content-Type': 'application/json' }); res.end(await r.text()); return;
+    }
+    if (u.pathname === '/.netlify/functions/telegram') {   // Telegram posting a message to the bot
+      let body = ''; for await (const c of req) body += c;
+      const tg = (await import('../netlify/functions/telegram.js')).default;
+      const r = await tg(new Request('http://x/', { method: req.method, headers: { 'x-telegram-bot-api-secret-token': req.headers['x-telegram-bot-api-secret-token'] || '' }, body: req.method === 'POST' ? body : undefined }));
+      res.writeHead(r.status); res.end(await r.text()); return;
     }
     let f = path.join(ROOT, 'public', decodeURIComponent(u.pathname));
     if (u.pathname.endsWith('/')) f = path.join(f, 'index.html');

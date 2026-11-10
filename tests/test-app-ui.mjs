@@ -338,6 +338,35 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   delete process.env.GPA_ADMIN_EMAILS;
 }
 
+/* ---------- 17n. sign in with Telegram ---------- */
+{
+  process.env.GPA_TELEGRAM_BOT_TOKEN = '123:test-token'; process.env.GPA_TELEGRAM_BOT_NAME = 'testbot'; process.env.URL = 'https://gonpreah-app.netlify.app';
+  const secret = (await import('node:crypto')).createHash('sha256').update('gpa-tg|123:test-token', 'utf8').digest('hex').slice(0, 48);
+  const http = (await import('node:http')).default;
+  const tapStart = (code, id, first) => new Promise((res, rej) => { const r = http.request(base + '/.netlify/functions/telegram', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': secret } }, (resp) => { resp.resume(); resp.on('end', () => res(resp.statusCode)); }); r.on('error', rej); r.end(JSON.stringify({ message: { text: '/start ' + code, chat: { id, type: 'private' }, from: { id, first_name: first } } })); });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await ctx.addInitScript(() => { try { if (!localStorage.getItem('gpa-lang')) localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} window.open = function (u) { window.__opened = u; return {}; }; });
+  const g = await ctx.newPage(); g.on('pageerror', x => errors.push('telegram: ' + x.message)); g.on('dialog', d => d.accept());
+  await g.goto(base + '/'); await g.waitForSelector('#tgBtn');
+  ok('“Sign in with Telegram” on the sign-in screen', /Sign in with Telegram/.test(await text(g)));
+  await g.click('#tgBtn'); await g.waitForSelector('#tgOpen');
+  const code = await g.evaluate(() => S.tg.code);
+  ok('… it opens the chat with the bot, and waits', await g.evaluate(() => /^https:\/\/t\.me\/testbot\?start=/.test(window.__opened)) && /Waiting for Telegram/.test(await text(g)));
+  await tapStart(code, 4242, 'Sokunthea'); await g.waitForSelector('#tgMake', { timeout: 8000 });
+  ok('tapping Start in Telegram: welcome, and make my account', /Welcome, Sokunthea!/.test(await text(g)));
+  await g.click('#tgMake'); await g.waitForSelector('#suUser');
+  ok('… with my name filled in, and no password to make', await g.$eval('#suName', e => e.value) === 'Sokunthea' && !(await g.$('#suPass')));
+  await g.fill('#suUser', 'sokunthea'); await g.selectOption('#suYear', '2003'); await g.click('#suGo'); await g.waitForSelector('nav.bottom:not([hidden])');
+  await g.click('nav.bottom button[data-tab="me"]'); await g.waitForTimeout(400);
+  ok('… and I’m in, with Telegram connected on Me', /Connected/.test(await text(g)) && await g.evaluate(() => !!S.me.tg));
+  await g.evaluate(() => { localStorage.removeItem('gpa-auth'); }); await g.goto(base + '/'); await g.waitForSelector('#tgBtn');
+  await g.click('#tgBtn'); await g.waitForSelector('#tgOpen'); const code2 = await g.evaluate(() => S.tg.code);
+  await tapStart(code2, 4242, 'Sokunthea'); await g.waitForSelector('nav.bottom:not([hidden])', { timeout: 8000 });
+  ok('next time, one tap in Telegram signs me in', await g.evaluate(() => S.me && S.me.username === 'sokunthea'));
+  await ctx.close();
+  delete process.env.GPA_TELEGRAM_BOT_TOKEN; delete process.env.GPA_TELEGRAM_BOT_NAME; delete process.env.URL;
+}
+
 /* ---------- 12. Today: my why, three things, focus, the check-in ---------- */
 {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });

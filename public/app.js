@@ -64,6 +64,8 @@ var S = {
   challenges: [], chNew: null
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
+/* Back from the Telegram chat after the page was closed: carry on waiting. */
+(function(){ try { var g=JSON.parse(lsGet('gpa-tg')||'null'); if(!AUTH && g && g.code && Date.now()-g.at < 10*60000){ S.tg=g; setTimeout(function(){ tgPoll_(); }, 0); } else lsDel('gpa-tg'); } catch(e){} })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
 if(JOIN){ lsSet('gpa-join', JOIN); try { history.replaceState(null, '', location.pathname); } catch(e){} }
 else JOIN = (lsGet('gpa-join')||'');
@@ -88,12 +90,12 @@ function failMsg(d){
     not_leader:'Only a leader can do this.', none:'That isn’t here any more.',
     not_admin:'Only the admin can see this.', what:'Choose what is wrong.', suspended:'This account has been suspended.',
     password:'Use at least 4 characters for your password.', login:'That username or password isn’t right.', match:'That username and birth year don’t match.', too_many:'Too many tries today. Ask your team leader or the admin.',
-    locked:'Too many tries. Wait 15 minutes and try again.', google_only:'This account signs in with Google.', current:'Your current password isn’t right.',
+    locked:'Too many tries. Wait 15 minutes and try again.', google_only:'This account signs in with Google.', telegram_only:'This account signs in with Telegram — tap “Sign in with Telegram”.', not_set_up:'Telegram sign-in isn’t set up yet.', expired:'That took too long — tap “Sign in with Telegram” again.', exists:'You already have an account.', current:'Your current password isn’t right.',
     once_a_day:'Once a day is enough — try again tomorrow.',
     second_leader:'To coach someone under 18, the team needs a second leader first.', already:'You two already have a coaching.' };
   showMsg(t(E[d && d.err] || 'Something went wrong — try again.'));
 }
-function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; if(d && 'pwAsks' in d) S.pwAsks=d.pwAsks; }
+function adopt_(d){ if(d && d.me) S.me=d.me; if(d && d.teams) S.teams=d.teams; if(d && d.teamTasks) S.teamTasks=d.teamTasks; if(d && d.coach) S.coach=d.coach; if(d && d.cheers) S.cheers=d.cheers; if(d && 'push' in d) S.push=d.push; if(d && d.challenges) S.challenges=d.challenges; if(d && d.plans) S.plans=d.plans; if(d && d.friends) S.friends=d.friends; if(d && d.friendAsks) S.friendAsks=d.friendAsks; if(d && d.today) S.today=d.today; if(d && d.meets) S.meets=d.meets; if(d && 'pwAsks' in d) S.pwAsks=d.pwAsks; if(d && 'tgBot' in d) S.tgBot=d.tgBot; }
 
 /* ---------------- dates ---------------- */
 function todayStr(){ if(S.today) return S.today; var d=new Date(Date.now()+7*3600*1000); return d.toISOString().slice(0,10); }
@@ -231,7 +233,9 @@ function signinHtml(){
     '<h2 style="text-align:center;margin-top:18px">'+esc(t('Welcome to GonPreah'))+'</h2>'+
     '<p class="sub" style="text-align:center">'+esc(t('Find out how God made you, build a plan for your life, and grow together with your team.'))+'</p>'+
     (JOIN ? '<div class="banner">'+esc(gpT('You have a team code: {code}. Sign in to join.',{code:JOIN}))+'</div>' : '')+
-    '<div class="card">'+
+    (S.tg ? tgCardHtml_() : '')+
+    '<div class="card"'+(S.tg?' hidden':'')+'>'+
+      (S.authCfg && S.authCfg.telegram ? '<button class="btn tgBtn" id="tgBtn"'+(S.busy?' disabled':'')+'>✈️ '+esc(t('Sign in with Telegram'))+'</button><div class="orLine"><span>'+esc(t('or'))+'</span></div>' : '')+
       '<label class="f" for="liUser">'+esc(t('Username'))+'</label><div class="atRow"><span>@</span><input type="text" id="liUser" autocomplete="username" autocapitalize="none" maxlength="20" value="'+esc(S.liUser!=null ? S.liUser : (lsGet('gpa-lastuser')||''))+'"></div>'+
       '<label class="f" for="liPass">'+esc(t('Password'))+'</label><div class="pwRow"><input type="'+(S.liShow?'text':'password')+'" id="liPass" autocomplete="current-password" autocapitalize="none" maxlength="128"><button class="pwEye" id="liEye" type="button" aria-label="'+esc(t('Show the password'))+'">'+(S.liShow?'🙈':'👁')+'</button></div>'+
       '<button class="btn" id="liGo"'+(S.busy?' disabled':'')+'>'+esc(S.busy?t('Signing in…'):t('Sign in'))+'</button>'+
@@ -244,6 +248,37 @@ function signinHtml(){
 /* Forgot my password: ask, by username; the admin is told and gives a one-time password. */
 /* Forgot my password: my username and birth year, then a new one — and I'm in. If I can't
    remember those, the admin is told and sets one for me. */
+/* Telegram sign-in (api.js "Telegram sign-in"): open the chat with the bot, tap Start, come back. */
+var TG_TIMER=null;
+function tgCardHtml_(){
+  var T=S.tg, bot='@'+((S.authCfg && S.authCfg.telegram) || S.tgBot || 'bot');
+  if(T.state==='new') return '<div class="card tgCard"><div class="obBig">👋</div><h3 style="margin-top:0">'+esc(T.name ? gpT('Welcome, {name}!',{name:T.name}) : t('Welcome!'))+'</h3>'+
+    '<button class="btn" id="tgMake">'+esc(t('I’m new — make my account'))+'</button>'+
+    '<div class="orLine"><span>'+esc(t('or'))+'</span></div><p class="sub" style="margin:0 0 8px">'+esc(t('Already have an account? Sign in once with your password, and Telegram will be connected to it.'))+'</p>'+
+    '<div class="atRow"><span>@</span><input type="text" id="tgUser" autocapitalize="none" maxlength="20" placeholder="'+esc(t('Username'))+'" value="'+esc(lsGet('gpa-lastuser')||'')+'"></div>'+
+    '<input type="password" id="tgPass" maxlength="128" placeholder="'+esc(t('Password'))+'" style="margin-top:8px">'+
+    '<button class="btn ghost" id="tgLink" style="margin-top:8px">'+esc(t('Sign in and connect Telegram'))+'</button>'+
+    '<button class="linkbtn" id="tgCancel" style="display:block;margin:10px auto 0">'+esc(t('Cancel'))+'</button></div>';
+  return '<div class="card tgCard"><div class="obBig">✈️</div><h3 style="margin-top:0">'+esc(t('Waiting for Telegram…'))+'</h3>'+
+    '<p class="sub">'+esc(gpT('In the chat with {bot}, tap Start. Then come back here — you’ll be signed in.',{bot:bot}))+'</p>'+
+    '<a class="btn" href="'+esc(T.url)+'" target="_blank" rel="noopener" id="tgOpen">'+esc(t('Open Telegram'))+'</a>'+
+    '<button class="linkbtn" id="tgCancel" style="display:block;margin:10px auto 0">'+esc(t('Cancel'))+'</button></div>';
+}
+function tgPoll_(){
+  clearInterval(TG_TIMER); TG_TIMER=null;
+  if(!S.tg || S.tg.state!=='wait') return;
+  var tick=function(){ var T=S.tg; if(!T || T.state!=='wait'){ clearInterval(TG_TIMER); TG_TIMER=null; return; }
+    if(Date.now()-T.at > 10*60000){ tgStop_(); showMsg(t('That took too long — tap “Sign in with Telegram” again.')); render(); return; }
+    api('tgCheck',[T.code]).then(function(d){ if(S.tg!==T) return;
+      if(d && d.ok && d.token){ tgStop_(); afterSignIn_(d); return; }
+      if(d && d.ok && d.state==='new'){ T.state='new'; T.name=d.name||''; clearInterval(TG_TIMER); TG_TIMER=null; render(); return; }
+      if(d && d.ok && d.state==='suspended'){ tgStop_(); failMsg({ err:'suspended' }); render(); return; }
+      if(d && !d.ok && d.err==='expired'){ tgStop_(); showMsg(t('That took too long — tap “Sign in with Telegram” again.')); render(); } }); };
+  TG_TIMER=setInterval(tick, 2000); setTimeout(tick, 600);
+}
+function tgStop_(){ clearInterval(TG_TIMER); TG_TIMER=null; S.tg=null; lsDel('gpa-tg'); }
+function tgOpen_(url){ var w=null; try { w=window.open(url, '_blank'); } catch(e){} if(!w) location.href=url; }
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible' && S.tg && S.tg.state==='wait') tgPoll_(); });
 function forgotHtml_(){
   var F=S.forgot;
   if(!F) return '<button class="linkbtn" id="liForgot" style="display:block;margin:12px auto 0">🔑 '+esc(t('Forgot your password?'))+'</button>';
@@ -304,7 +339,7 @@ function signupHtml(){
       '<label class="f" for="suUser">'+esc(t('Username'))+'</label>'+
       '<div class="atRow"><span>@</span><input type="text" id="suUser" autocomplete="off" autocapitalize="none" maxlength="20" value="'+esc(F.username)+'"></div>'+
       '<div class="hint" id="suUserHint">'+esc(F.free===false?t('That username is taken.'):F.free===true?t('✓ Free'):t('3–20 letters, numbers, _ or .'))+'</div>'+
-      (S.google ? '' : '<label class="f" for="suPass">'+esc(t('Password'))+'</label><input type="password" id="suPass" autocomplete="new-password" maxlength="128" value="'+esc(F.password||'')+'">'+
+      (S.google || S.tgNew ? '' : '<label class="f" for="suPass">'+esc(t('Password'))+'</label><input type="password" id="suPass" autocomplete="new-password" maxlength="128" value="'+esc(F.password||'')+'">'+
         '<div class="hint">'+esc(t('At least 4 characters. Forget it? Your birth year gets you back in.'))+'</div>'+
         '<label class="f" for="suPass2">'+esc(t('The password again'))+'</label><input type="password" id="suPass2" autocomplete="new-password" maxlength="128" value="'+esc(F.password2||'')+'">')+
       '<label class="f" for="suName">'+esc(t('Your name'))+'</label><input type="text" id="suName" maxlength="60" value="'+esc(F.name)+'">'+
@@ -325,18 +360,19 @@ function bindSignup_(){
     clearTimeout(suTimer); suTimer=setTimeout(function(){ if(!S.signup) return; var v=S.signup.username; if(v.length<3) return;
       api('checkUsername',[v]).then(function(d){ if(!S.signup || S.signup.username!==v || !document.getElementById('suUserHint')) return; S.signup.free=!!(d && d.free); hint.textContent = d && d.err==='bad' ? t('3–20 letters, numbers, _ or .') : (d && d.free ? t('✓ Free') : t('That username is taken.')); }); }, 350); };
   ['suName','suYear','suCode','suPass','suPass2'].filter(function(id){ return document.getElementById(id); }).forEach(function(id){ document.getElementById(id).oninput=keep; document.getElementById(id).onchange=keep; });
-  document.getElementById('suCancel').onclick=function(){ S.signup=null; S.google=null; S.view='signin'; render(); };
+  document.getElementById('suCancel').onclick=function(){ S.signup=null; S.google=null; S.tgNew=null; S.view='signin'; render(); };
   document.getElementById('suGo').onclick=function(){
     keep(); clearTimeout(suTimer); var F=S.signup;
     if(!F.birthYear){ showMsg(t('Please choose the year you were born.')); return; }
-    if(!S.google){ if((F.password||'').length<4){ showMsg(t('Use at least 4 characters for your password.')); return; } if(F.password!==F.password2){ showMsg(t('The two passwords aren’t the same.')); return; } }
+    if(!S.google && !S.tgNew){ if((F.password||'').length<4){ showMsg(t('Use at least 4 characters for your password.')); return; } if(F.password!==F.password2){ showMsg(t('The two passwords aren’t the same.')); return; } }
     S.busy=true; render();
     var info={ username:F.username, name:F.name, birthYear:Number(F.birthYear), code:F.code, lang:LANG, langChosen:LANG==='km' };
-    if(!S.google) info.password=F.password;
-    (S.google ? api('register',[S.google, info]) : api('registerPassword',[info])).then(function(d){
+    if(!S.google && !S.tgNew) info.password=F.password;
+    (S.tgNew ? api('registerTelegram',[S.tgNew, info]) : S.google ? api('register',[S.google, info]) : api('registerPassword',[info])).then(function(d){
       S.busy=false;
-      if(d && d.ok){ lsDel('gpa-join'); JOIN=''; S.signup=null; afterSignIn_(d); if(d.joined) showMsg(gpT('You joined {team}!',{team:d.joined.name})); return; }
+      if(d && d.ok){ lsDel('gpa-join'); JOIN=''; S.signup=null; if(S.tgNew){ S.tgNew=null; tgStop_(); } afterSignIn_(d); if(d.joined) showMsg(gpT('You joined {team}!',{team:d.joined.name})); return; }
       if(d && d.err==='google'){ S.view='signin'; }
+      if(d && d.err==='expired' && S.tgNew){ S.tgNew=null; tgStop_(); S.view='signin'; showMsg(t('That took too long — tap “Sign in with Telegram” again.')); render(); return; }
       failMsg(d); render();
     });
   };
@@ -714,7 +750,7 @@ function meHtml(){
     '<label class="f">'+esc(t('Appearance'))+'</label><div class="seg">'+[['auto','Auto'],['light','Light'],['dark','Dark']].map(function(x){ var cur=lsGet('gpa-theme')||'auto'; return '<button data-theme="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
     '<label class="f">'+esc(t('Text size'))+'</label><div class="seg">'+[['','Normal'],['l','Large'],['xl','Larger']].map(function(x){ var cur=lsGet('gpa-text')||''; return '<button data-tsize="'+x[0]+'" class="'+(cur===x[0]?'on':'')+'">'+esc(t(x[1]))+'</button>'; }).join('')+'</div>'+
     '<button class="btn" id="pfSave">'+esc(t('Save'))+'</button></div>'+
-    passwordCardHtml_()+
+    passwordCardHtml_()+tgMeHtml_()+
     remindersCardHtml_()+
     (me.blocked?'<button class="linkbtn" id="goBlocked">🚫 '+esc(gpT('People you’ve blocked ({n})',{n:me.blocked}))+'</button>':'')+
     '<button class="linkbtn" id="dlData">📦 '+esc(t('Download my data'))+'</button>'+
@@ -1191,6 +1227,13 @@ function bind(){
     if(!un || !pw){ showMsg(t('That username or password isn’t right.')); return; }
     S.busy=true; render();
     api('loginPassword',[un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ S.forgot=null; S.liUser=null; afterSignIn_(d); return; } S.liUser=un; failMsg(d); render(); }); });
+  on('tgBtn', function(){ if(S.busy) return; S.busy=true; render();
+    api('tgStart',[location.origin]).then(function(d){ S.busy=false; if(!(d && d.ok)){ failMsg(d); render(); return; }
+      S.tg={ code:d.code, url:d.url, at:Date.now(), state:'wait' }; lsSet('gpa-tg', JSON.stringify(S.tg)); render(); tgOpen_(d.url); tgPoll_(); }); });
+  on('tgCancel', function(){ tgStop_(); render(); });
+  on('tgMake', function(){ var T=S.tg; S.tgNew=T.code; S.google=null; S.signup={ name:T.name||'', username:'', birthYear:'', code:JOIN, free:null, password:'', password2:'' }; S.view='signup'; render(); });
+  on('tgLink', function(){ var T=S.tg, un=$('tgUser').value.trim(), pw=$('tgPass').value; if(!un || !pw){ showMsg(t('That username or password isn’t right.')); return; } if(S.busy) return;
+    S.busy=true; api('tgLinkLogin',[T.code, un, pw]).then(function(d){ S.busy=false; if(d && d.ok){ tgStop_(); afterSignIn_(d); setTimeout(function(){ showMsg(t('Telegram is connected. Next time, just tap “Sign in with Telegram”.')); }, 300); return; } failMsg(d); render(); }); });
   on('liEye', function(){ var u=$('liUser'), p=$('liPass'); S.liUser=u ? u.value : null; var v=p ? p.value : ''; S.liShow=!S.liShow; render(); var q=$('liPass'); if(q){ q.value=v; q.focus(); } });
   var keepForgot=function(){ var F=S.forgot; if(!F || !$('fpUser')) return; F.u=$('fpUser').value.trim().replace(/^@/,''); F.y=$('fpYear').value; };
   on('liForgot', function(){ var u=$('liUser'); S.liUser=u ? u.value : null; S.forgot={ u:u ? u.value.trim().replace(/^@/,'') : '', y:'' }; render(); var f=$('fpUser'); if(f) (f.value ? $('fpYear') : f).focus(); });
@@ -1492,7 +1535,7 @@ function bind(){
   on('arGo', busyOnce_(function(){ var un=$('arUser').value.trim(), pw=$('arPw').value.trim(); if(!un) return;
     if(pw && pw.length<4){ showMsg(t('Use at least 4 characters for your password.')); return; }
     return call('setUserPassword', un, pw).then(function(d){ if(d && d.ok){ S.resetResult=d; if(S.admin) S.admin.pwAsks=(S.admin.pwAsks||[]).filter(function(x){ return x.username!==d.username; }); render(); } else { S.resetResult=null; failMsg(d); } }); }));
-  bindKhmer_(); bindPwReset_();
+  bindKhmer_(); bindPwReset_(); bindTgMe_();
   if(S.view==='team' && S.team) loadPhotos_(S.team.people);
   if(S.view==='teams' && S.feed===null && (S.teams||[]).length && !S.feedAsked){ S.feedAsked=true; feedLoad_(); }
   if(S.view==='person' && S.person) loadPhotos_([S.person]);
@@ -1664,6 +1707,30 @@ function adminResetHtml_(){
 function adminLoad_(all){ S.admin=S.admin||{ reports:[], photos:{} }; S.admin.all=!!all; call('adminReports', !!all).then(function(d){ if(d && d.ok){ S.admin={ reports:d.reports, photos:d.photos||{}, all:!!all, pwAsks:d.pwAsks||[] }; S.pwAsks=(d.pwAsks||[]).length; render(); } else { failMsg(d); goBack('me'); } }); }
 
 /* ---------------- my password (Me) ---------------- */
+/* Me → Telegram: connect it once, then sign in with one tap. */
+function tgMeHtml_(){
+  if(!S.tgBot) return '';
+  var tg=S.me.tg;
+  if(tg) return '<h3>✈️ Telegram</h3><div class="card"><p class="sub" style="margin:0 0 8px">✅ '+esc(tg.username ? gpT('Connected as @{u}. Sign in with one tap.',{u:tg.username}) : t('Connected. Sign in with one tap.'))+'</p><button class="linkbtn" id="tgUnlink" style="color:var(--bad)">'+esc(t('Disconnect Telegram'))+'</button></div>';
+  return '<h3>✈️ Telegram</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(t('Connect Telegram, and next time you sign in with one tap — no password.'))+'</p>'+
+    (S.tgLink ? '<p class="pmeta">'+esc(gpT('In the chat with @{bot}, tap Start, then come back.',{bot:S.tgBot}))+'</p><a class="btn" href="'+esc(S.tgLink.url)+'" target="_blank" rel="noopener">'+esc(t('Open Telegram'))+'</a>'
+      : '<button class="btn ghost" id="tgConnect">✈️ '+esc(t('Connect Telegram'))+'</button>')+'</div>';
+}
+var TG_LINK_TIMER=null;
+function tgLinkPoll_(){
+  clearInterval(TG_LINK_TIMER);
+  var tick=function(){ var L=S.tgLink; if(!L){ clearInterval(TG_LINK_TIMER); return; }
+    if(Date.now()-L.at > 10*60000){ S.tgLink=null; clearInterval(TG_LINK_TIMER); render(); return; }
+    api('tgCheck',[L.code]).then(function(d){ if(S.tgLink!==L || !d) return;
+      if(d.ok && d.state==='linked'){ S.tgLink=null; clearInterval(TG_LINK_TIMER); refresh_().then(function(){ showMsg(t('Telegram is connected. Next time, just tap “Sign in with Telegram”.')); render(); }); }
+      else if(d.ok && d.state==='taken'){ S.tgLink=null; clearInterval(TG_LINK_TIMER); showMsg(t('That Telegram is already connected to another account.')); render(); }
+      else if(!d.ok){ S.tgLink=null; clearInterval(TG_LINK_TIMER); render(); } }); };
+  TG_LINK_TIMER=setInterval(tick, 2000);
+}
+function bindTgMe_(){
+  on('tgConnect', busyOnce_(function(){ return call('tgLinkStart', location.origin).then(function(d){ if(d && d.ok){ S.tgLink={ code:d.code, url:d.url, at:Date.now() }; render(); tgOpen_(d.url); tgLinkPoll_(); } else failMsg(d); }); }));
+  on('tgUnlink', busyOnce_(function(){ if(!confirm(t('Disconnect Telegram? You can still sign in with your username and password.'))) return; return call('tgUnlink').then(function(d){ if(d && d.ok){ S.me=d.me; render(); } else failMsg(d); }); }));
+}
 function passwordCardHtml_(){
   var has=S.me.hasPassword;
   return '<h3>🔑 '+esc(t('Password'))+'</h3><div class="card">'+

@@ -8,6 +8,28 @@
     have the same English (app.js merges APP_KM after BUILTIN_KM only for keys km.js
     lacks — see the KM line in app.js). */
 var APP_KM = {
+  /* Telegram sign-in */
+  "Sign in with Telegram": "ចូលដោយ Telegram",
+  "Welcome!": "សូមស្វាគមន៍!",
+  "I’m new — make my account": "ខ្ញុំជាអ្នកថ្មី — បង្កើតគណនីរបស់ខ្ញុំ",
+  "Already have an account? Sign in once with your password, and Telegram will be connected to it.": "មានគណនីរួចហើយ? ចូលម្តងដោយប្រើពាក្យសម្ងាត់របស់អ្នក ហើយ Telegram នឹងត្រូវបានភ្ជាប់ទៅវា។",
+  "Sign in and connect Telegram": "ចូល ហើយភ្ជាប់ Telegram",
+  "Waiting for Telegram…": "កំពុងរង់ចាំ Telegram…",
+  "In the chat with {bot}, tap Start. Then come back here — you’ll be signed in.": "ក្នុងការជជែកជាមួយ {bot} ចុច Start។ រួចត្រឡប់មកទីនេះវិញ — អ្នកនឹងបានចូល។",
+  "Open Telegram": "បើក Telegram",
+  "That took too long — tap “Sign in with Telegram” again.": "យូរពេកហើយ — សូមចុច «ចូលដោយ Telegram» ម្តងទៀត។",
+  "Telegram is connected. Next time, just tap “Sign in with Telegram”.": "Telegram បានភ្ជាប់ហើយ។ លើកក្រោយ គ្រាន់តែចុច «ចូលដោយ Telegram»។",
+  "Connected as @{u}. Sign in with one tap.": "បានភ្ជាប់ជា @{u}។ ចូលដោយចុចតែម្តង។",
+  "Connected. Sign in with one tap.": "បានភ្ជាប់ហើយ។ ចូលដោយចុចតែម្តង។",
+  "Disconnect Telegram": "ផ្តាច់ Telegram",
+  "Connect Telegram, and next time you sign in with one tap — no password.": "ភ្ជាប់ Telegram ហើយលើកក្រោយ អ្នកនឹងចូលដោយចុចតែម្តង — គ្មានពាក្យសម្ងាត់។",
+  "In the chat with @{bot}, tap Start, then come back.": "ក្នុងការជជែកជាមួយ @{bot} ចុច Start រួចត្រឡប់មកវិញ។",
+  "Connect Telegram": "ភ្ជាប់ Telegram",
+  "That Telegram is already connected to another account.": "Telegram នោះបានភ្ជាប់ទៅគណនីមួយផ្សេងទៀតរួចហើយ។",
+  "Disconnect Telegram? You can still sign in with your username and password.": "ផ្តាច់ Telegram? អ្នកនៅតែអាចចូលដោយប្រើឈ្មោះអ្នកប្រើ និងពាក្យសម្ងាត់បាន។",
+  "This account signs in with Telegram — tap “Sign in with Telegram”.": "គណនីនេះចូលដោយ Telegram — សូមចុច «ចូលដោយ Telegram»។",
+  "Telegram sign-in isn’t set up yet.": "ការចូលដោយ Telegram មិនទាន់បានរៀបចំនៅឡើយទេ។",
+  "You already have an account.": "អ្នកមានគណនីរួចហើយ។",
   /* forgotten passwords (put first, so other changes at the end don’t meet these) */
   "Use at least 4 characters for your password.": "សូមប្រើយ៉ាងតិច ៤ តួអក្សរសម្រាប់ពាក្យសម្ងាត់របស់អ្នក។",
   "That username and birth year don’t match.": "ឈ្មោះអ្នកប្រើ និងឆ្នាំកំណើតនោះមិនត្រូវគ្នាទេ។",

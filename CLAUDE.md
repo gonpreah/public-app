@@ -51,7 +51,16 @@ Reports; with Copy and Send; other sign-ins carry on. Signed in, I change mine o
 without the old one. The Google button shows
 only when `GPA_GOOGLE_CLIENT_ID` is set. An admin is named by Google email (`GPA_ADMIN_EMAILS`)
 or by username (`GPA_ADMIN_USERNAMES` — set only after that account exists). A phone keeps a random device token (hashed on the account); every
-signed-in call is `(uid, token, …)` and starts with `auth_`. Telegram sign-in is planned.
+signed-in call is `(uid, token, …)` and starts with `auth_`. **Telegram** (Nov 2026, Uriah: "sign in
+with a Telegram chat"): the bot @Gonpreahbot (`GPA_TELEGRAM_BOT_TOKEN`, secret, production only;
+`GPA_TELEGRAM_BOT_NAME`). "Sign in with Telegram" (`tgStart`) makes a code (`tgc:<code>`, 10 minutes)
+and opens t.me/<bot>?start=<code>; tapping Start, Telegram posts to `netlify/functions/telegram.js`
+(checked by the `x-telegram-bot-api-secret-token` header) → `tgUpdate`: a connected Telegram signs in,
+a new one makes an account (`registerTelegram`, no password) or signs in once with a password to connect
+(`tgLinkLogin`); the page asks `tgCheck` every 2 s and when it comes back to the front. Me → Telegram
+connects (`tgLinkStart`) or disconnects (`tgUnlink`). `tgu:<telegram id>` → the account, `u.tg`. The app
+points the bot at itself (`setWebhook`, remembered in `tgHook`). The bot answers in Khmer when Telegram
+says the person uses Khmer.
 `GPA_GOOGLE_CLIENT_ID` (Netlify env) must be a Google OAuth web client with
 https://app.gonpreah.org as an authorised JavaScript origin; without it the button says so.
 
@@ -394,6 +403,6 @@ a reflection, a question, a prayer; no Bible text): on Home by day of the month,
 2. ~~1-on-1s with a coach or mentor (a check-in on six areas of life, notes, follow-ups).~~ Done Nov 2026.
 3. ~~Learn Khmer / English (the Impact app's flashcards and game) and the Library (books for youth).~~ Done Nov 2026.
 4. ~~A Strava-like feed with 👏, reporting and blocking; reminders on the phone~~ Done Nov 2026.
-   Still to do: Telegram sign-in (needs a bot from @BotFather).
+   Telegram sign-in: done Nov 2026 (@Gonpreahbot).
 5. ~~Christian content daily~~: reading plans and a prayer list, Nov 2026. A verse of the day
    with its text waits for a Bible translation we have permission to use.

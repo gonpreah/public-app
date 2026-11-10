@@ -555,7 +555,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null, clifton: u.clifton || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
+    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, tg: u.tg ? { username: u.tg.username || '' } : null, level: levelOf_(u.xp),
     reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
@@ -587,7 +587,150 @@ async function sharesTeam_(a, b) {
 }
 
 /* ---------------- handlers ---------------- */
-async function authConfig() { return { ok: true, google: googleClientId_() }; }
+async function authConfig() { return { ok: true, google: googleClientId_(), telegram: tgOn_() ? tgName_() : '' }; }
+
+/* ---------------- Telegram sign-in ----------------
+   Nov 2026, Uriah: "sign in with a Telegram chat". The bot is GPA_TELEGRAM_BOT_NAME (@Gonpreahbot), its
+   token GPA_TELEGRAM_BOT_TOKEN (Netlify env, secret). "Sign in with Telegram" makes a code (tgStart,
+   'tgc:<code>', 10 minutes) and opens t.me/<bot>?start=<code>; tapping Start sends "/start <code>" to the
+   bot, Telegram posts it to netlify/functions/telegram.js (checked by a secret header), and tgUpdate
+   marks the code: a Telegram already connected → signed in ('in'); one that isn't → 'new' (the page
+   makes an account with registerTelegram, or signs in once with a password to connect, tgLinkLogin);
+   a code from Me → Connect Telegram (tgLinkStart) → 'linked'. The page asks tgCheck every 2 seconds.
+   'tgu:<telegram id>' → the account; u.tg = {id, username}. The app points the bot at itself the first
+   time (setWebhook, remembered in 'tgHook'), so there's nothing to set up by hand. */
+const TG_CODE_MIN = 10;
+function tgToken_() { return process.env.GPA_TELEGRAM_BOT_TOKEN || ''; }
+function tgName_() { return String(process.env.GPA_TELEGRAM_BOT_NAME || '').replace(/^@/, ''); }
+function tgOn_() { return !!(tgToken_() && tgName_()); }
+function tgSecret_() { return sha_('gpa-tg|' + tgToken_()).slice(0, 48); }
+export function tgSecretOk(h) { return tgOn_() && typeof h === 'string' && safeEq_(h, tgSecret_()); }
+async function tgApi_(method, body) {
+  try { const r = await fetch('https://api.telegram.org/bot' + tgToken_() + '/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return await r.json(); }
+  catch (e) { return { ok: false }; }
+}
+/* The site's own address: Netlify's URL, or the page's if it is this site's kind of address. */
+function siteOrigin_(o) {
+  const env = String(process.env.URL || '');
+  if (/^https:\/\//.test(env)) return env.replace(/\/$/, '');
+  o = String(o || '');
+  return /^https:\/\/([a-z0-9-]+\.)*(netlify\.app|gonpreah\.org)$/.test(o) ? o : '';
+}
+async function tgHook_(origin) {
+  const site = siteOrigin_(origin);
+  if (!site || !tgOn_()) return;
+  const url = site + '/.netlify/functions/telegram', h = await readJSON('tgHook', null);
+  if (h && h.url === url && h.s === tgSecret_().slice(0, 6)) return;
+  const r = await tgApi_('setWebhook', { url: url, secret_token: tgSecret_(), allowed_updates: ['message'] });
+  if (r && r.ok) await writeJSON('tgHook', { url: url, s: tgSecret_().slice(0, 6), at: new Date().toISOString() });
+}
+async function tgNewCode_(link) {
+  const code = crypto.randomBytes(12).toString('hex');
+  await writeJSON('tgc:' + code, { at: Date.now(), state: 'wait', link: link || null });
+  return { ok: true, code: code, url: 'https://t.me/' + tgName_() + '?start=' + code, bot: tgName_() };
+}
+async function tgCode_(code) {
+  if (!/^[a-f0-9]{24}$/.test(String(code || ''))) return null;
+  const c = await readJSON('tgc:' + code, null);
+  return c && Date.now() - c.at <= TG_CODE_MIN * 60000 ? c : null;
+}
+async function tgStart(origin) {
+  if (!tgOn_()) return { ok: false, err: 'not_set_up' };
+  await tgHook_(origin);
+  return tgNewCode_(null);
+}
+async function tgLinkStart(uid, tok, origin) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (!tgOn_()) return { ok: false, err: 'not_set_up' };
+  await tgHook_(origin);
+  return tgNewCode_(uid);
+}
+/* The page asks: has the chat said yes yet? Signing in uses the code up, once. */
+async function tgCheck(code) {
+  const c = await tgCode_(code);
+  if (!c) return { ok: false, err: 'expired' };
+  if (c.state === 'in') {
+    let mine = false;
+    await mutate_('tgc:' + code, null, function (x) { if (x && x.state === 'in') { x.state = 'used'; mine = true; } return { ok: true }; });
+    return mine ? signInAs_(c.uid) : { ok: false, err: 'expired' };
+  }
+  if (c.state === 'new') return { ok: true, state: 'new', name: (c.tg && c.tg.first) || '' };
+  if (c.state === 'linked' || c.state === 'taken' || c.state === 'suspended') return { ok: true, state: c.state };
+  return { ok: true, state: c.state === 'used' ? 'used' : 'wait' };
+}
+async function tgConnect_(id, tg) {
+  await mutate_('u:' + id, null, function (u) { if (u) u.tg = { id: tg.id, username: tg.username || '', at: today_() }; return { ok: true }; });
+  await writeJSON('tgu:' + tg.id, { id: id });
+}
+/* New to GonPreah, from Telegram: a username, name and birth year, as with Google. */
+async function registerTelegram(code, p) {
+  const c = await tgCode_(code);
+  if (!c || c.state !== 'new' || !c.tg) return { ok: false, err: 'expired' };
+  if (await readJSON('tgu:' + c.tg.id, null)) return { ok: false, err: 'exists' };
+  const r = await register(null, p, null, c.tg);
+  if (r.ok) await mutate_('tgc:' + code, null, function (x) { if (x) x.state = 'used'; return { ok: true }; });
+  return r;
+}
+/* Already have an account: sign in once with the password, and Telegram is connected to it. */
+async function tgLinkLogin(code, username, password) {
+  const c = await tgCode_(code);
+  if (!c || c.state !== 'new' || !c.tg) return { ok: false, err: 'expired' };
+  const r = await loginPassword(username, password);
+  if (!r.ok) return r;
+  const had = await readJSON('tgu:' + c.tg.id, null);
+  if (!had) await tgConnect_(r.uid, c.tg);
+  await mutate_('tgc:' + code, null, function (x) { if (x) x.state = 'used'; return { ok: true }; });
+  return Object.assign(r, { me: selfOut_(await readJSON('u:' + r.uid, null)) });
+}
+async function tgUnlink(uid, tok) {
+  const me = await auth_(uid, tok);
+  if (!me) return { ok: false, err: 'auth' };
+  const id = me.tg && me.tg.id;
+  await mutate_('u:' + uid, null, function (u) { if (u) delete u.tg; return { ok: true }; });
+  if (id) { const m = await readJSON('tgu:' + id, null); if (m && m.id === uid) await writeJSON('tgu:' + id, null); }
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+const TG_SAY = {
+  hi: ['👋 Hi! To sign in, open GonPreah and tap “Sign in with Telegram”.', '👋 សួស្តី! ដើម្បីចូល សូមបើក កូនព្រះ ហើយចុច «ចូលដោយ Telegram»។'],
+  late: ['⌛ That sign-in link has run out. Go back to GonPreah and tap “Sign in with Telegram” again.', '⌛ តំណចូលនោះផុតកំណត់ហើយ។ សូមត្រឡប់ទៅ កូនព្រះ ហើយចុច «ចូលដោយ Telegram» ម្តងទៀត។'],
+  in: ['✅ You’re signed in as @{u}. Go back to GonPreah.', '✅ អ្នកបានចូលជា @{u} ហើយ។ សូមត្រឡប់ទៅ កូនព្រះ។'],
+  new: ['👋 Welcome, {n}! Go back to GonPreah to finish — it takes a minute.', '👋 សូមស្វាគមន៍ {n}! សូមត្រឡប់ទៅ កូនព្រះ ដើម្បីបញ្ចប់ — ចំណាយពេលតែមួយនាទី។'],
+  linked: ['✅ Telegram is connected to your GonPreah account. Next time, just tap “Sign in with Telegram”.', '✅ Telegram បានភ្ជាប់ទៅគណនី កូនព្រះ របស់អ្នកហើយ។ លើកក្រោយ គ្រាន់តែចុច «ចូលដោយ Telegram»។'],
+  taken: ['This Telegram is already connected to another GonPreah account.', 'Telegram នេះបានភ្ជាប់ទៅគណនី កូនព្រះ មួយផ្សេងទៀតរួចហើយ។'],
+  suspended: ['This GonPreah account has been suspended.', 'គណនី កូនព្រះ នេះត្រូវបានផ្អាក។'],
+  open: ['Open GonPreah', 'បើក កូនព្រះ']
+};
+/* A message to the bot (from telegram.js, after its secret header is checked). */
+export async function tgUpdate(up) {
+  return scope.run(new Map(), async function () {
+    const m = up && up.message;
+    if (!m || !m.from || !m.chat || m.chat.type !== 'private' || m.from.is_bot) return;
+    const km = /^km/.test(m.from.language_code || '') ? 1 : 0, site = siteOrigin_('');
+    const say = function (k, v) { let tx = TG_SAY[k][km]; Object.keys(v || {}).forEach(function (x) { tx = tx.replace('{' + x + '}', v[x]); });
+      const b = { chat_id: m.chat.id, text: tx }; if (site) b.reply_markup = { inline_keyboard: [[{ text: TG_SAY.open[km], url: site }]] };
+      return tgApi_('sendMessage', b); };
+    const mm = /^\/start(?:\s+([a-f0-9]{24}))?\s*$/.exec(String(m.text || '').trim());
+    if (!mm || !mm[1]) return say('hi');
+    const code = mm[1], c = await tgCode_(code);
+    if (!c || c.state !== 'wait') return say('late');
+    const tg = { id: String(m.from.id), first: str_(m.from.first_name, 40), username: str_(m.from.username, 40) };
+    const map = await readJSON('tgu:' + tg.id, null);
+    const mark = function (o) { return mutate_('tgc:' + code, null, function (x) { if (x && x.state === 'wait') Object.assign(x, o); return { ok: true }; }); };
+    if (c.link) {
+      if (map && map.id !== c.link) { await mark({ state: 'taken' }); return say('taken'); }
+      await tgConnect_(c.link, tg); await mark({ state: 'linked' });
+      return say('linked');
+    }
+    const u = map ? await readJSON('u:' + map.id, null) : null;
+    if (u && !u.closed) {
+      if (u.suspended) { await mark({ state: 'suspended' }); return say('suspended'); }
+      await mark({ state: 'in', uid: u.id });
+      return say('in', { u: u.username });
+    }
+    await mark({ state: 'new', tg: tg });
+    return say('new', { n: tg.first || 'friend' });
+  });
+}
 
 /* Google first: a known account signs in; an unknown one is told 'new' so the
    page can ask for a username and birth year, then calls register. */
@@ -650,7 +793,7 @@ async function loginPassword(username, password) {
   const u0 = map ? await readJSON('u:' + map.id, null) : null;
   if (!u0 || u0.closed) return { ok: false, err: 'login' };
   if (u0.suspended) return { ok: false, err: 'suspended' };
-  if (!u0.pw) return { ok: false, err: 'google_only' };
+  if (!u0.pw) return { ok: false, err: u0.tg ? 'telegram_only' : 'google_only' };
   if (!pwOk_(u0, password)) return { ok: false, err: 'login' };
   return signInAs_(u0.id);
 }
@@ -730,9 +873,9 @@ async function forgotPassword(username) {
 }
 
 /* Google (token) or a password (pw, from registerPassword). */
-async function register(token, p, pw) {
+async function register(token, p, pw, tg) {
   let g = null;
-  if (!pw) { g = await verifyGoogle_(token); if (!g) return { ok: false, err: 'google' }; }
+  if (!pw && !tg) { g = await verifyGoogle_(token); if (!g) return { ok: false, err: 'google' }; }
   p = p && typeof p === 'object' ? p : {};
   const username = cleanUsername_(p.username);
   if (!username) return { ok: false, err: 'username' };
@@ -751,8 +894,10 @@ async function register(token, p, pw) {
     eh: g && g.email ? sha_(g.email) : ''
   };
   if (pw) u.pw = pw;
+  if (tg) u.tg = { id: tg.id, username: tg.username || '', at: today_() };
   const tok = addToken_(u);
   await writeJSON('uname:' + username, { id: id });
+  if (tg) await writeJSON('tgu:' + tg.id, { id: id });
   if (gkey) await writeJSON(gkey, { id: id });
   await writeJSON('u:' + id, u);
   await mutate_('people', [], function (rows) { rows.push({ id: id, username: username, name: name, minor: isMinor_(u) }); return { ok: true }; });
@@ -789,7 +934,7 @@ async function boot(uid, tok) {
   const fr = await friendsList(uid, tok);
   return { ok: true, me: selfOut_(u), teams: teams, teamTasks: teamTasks, coach: co.ok ? co.coachings : [], cheers: await cheersFor_(u),
     push: pk ? { key: pk.pub, prefs: pushPrefsOf_(u) } : null, challenges: myChallenges, plans: READING_PLANS, froze: froze, friends: fr.ok ? fr.friends : [], friendAsks: fr.ok ? fr.asks : [], today: today_(),
-    meets: myMeets.sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }), pwAsks: pwAsks };
+    tgBot: tgOn_() ? tgName_() : '', meets: myMeets.sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; }), pwAsks: pwAsks };
 }
 
 /* name, bio, language, character, what to show — all optional */
@@ -2417,7 +2562,7 @@ async function signOut(uid, tok) {
 }
 
 export const HANDLERS = {
-  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
+  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, tgStart, tgLinkStart, tgCheck, registerTelegram, tgLinkLogin, tgUnlink, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,

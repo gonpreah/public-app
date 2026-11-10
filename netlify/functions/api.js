@@ -555,7 +555,7 @@ function selfOut_(u) {
     personality: u.personality || null, gstrengths: u.gstrengths || null, apest: u.apest || null, clifton: u.clifton || null,
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
-    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, pwTemp: !!u.pwTemp, level: levelOf_(u.xp),
+    plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
     reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
@@ -615,72 +615,91 @@ async function checkUsername(name) {
 }
 
 /* ---------------- username and password (Nov 2026: "a basic login besides Google") ----------------
-   A password is kept only as a salted scrypt hash (u.pw). After PW_MAX_FAILS wrong tries in a
-   row an account locks for PW_LOCK_MIN minutes. There is no email, so a forgotten password is
-   reset by the admin (adminResetPassword), who gets a one-time password to pass on. */
-const PW_MIN = 8, PW_MAX = 128, PW_MAX_FAILS = 8, PW_LOCK_MIN = 15;
+   Easy on purpose (Uriah, Nov 2026: "no one's hacking this … there's not personal information …
+   make it super easy to where I can just get them their accounts back"): a password of 4+
+   characters, kept only as a salted scrypt hash (u.pw); no lock after wrong tries. Forgot it?
+   On the sign-in screen, the username and birth year let anyone choose a new one and sign straight
+   in (resetOwnPassword; 10 wrong tries a day at most). And the admin — or a leader, for an adult in
+   their team — can set anyone's password to whatever they like and just tell them
+   (setUserPassword). Signed in, I change mine on Me without the old one. */
+const PW_MIN = 4, PW_MAX = 128, SELF_RESET_TRIES = 10;
 function pwHash_(pw, salt) { return crypto.scryptSync(String(pw), salt, 32, { N: 16384, r: 8, p: 1 }).toString('hex'); }
 function cleanPassword_(pw) { const x = typeof pw === 'string' ? pw : ''; return x.length >= PW_MIN && x.length <= PW_MAX ? x : null; }
 function makePw_(pw) { const salt = crypto.randomBytes(16).toString('hex'); return { salt: salt, hash: pwHash_(pw, salt), at: new Date().toISOString() }; }
 function pwOk_(u, pw) { return !!(u && u.pw && typeof pw === 'string' && pw.length <= PW_MAX && safeEq_(pwHash_(pw, u.pw.salt), u.pw.hash)); }
+function unameIn_(x) { return cleanUsername_(String(x == null ? '' : x).trim().replace(/^@/, '')); }
+/* An easy password to say out loud: a word and four numbers ("mango4821"). */
+function easyPassword_() { const W = ['mango', 'lotus', 'river', 'tiger', 'rice', 'star', 'moon', 'sun', 'lime', 'kite', 'palm', 'boat'], b = crypto.randomBytes(3);
+  return W[b[0] % W.length] + String(1000 + (b[1] * 256 + b[2]) % 9000); }
 async function registerPassword(p) {
   p = p && typeof p === 'object' ? p : {};
   const pw = cleanPassword_(p.password);
   if (!pw) return { ok: false, err: 'password' };
   return register(null, p, makePw_(pw));
 }
+async function signInAs_(id) {
+  let tok = null;
+  const res = await mutate_('u:' + id, null, function (u) { if (!u) return { abort: true, ok: false, err: 'login' }; delete u.pwLock; tok = addToken_(u); u.seen = today_(); return { ok: true }; });
+  if (!res.ok) return res;
+  const u = await readJSON('u:' + id, null);
+  return { ok: true, uid: u.id, token: tok, me: selfOut_(u) };
+}
 async function loginPassword(username, password) {
-  const n = cleanUsername_(username);
+  const n = unameIn_(username);
   const map = n ? await readJSON('uname:' + n, null) : null;
   const u0 = map ? await readJSON('u:' + map.id, null) : null;
   if (!u0 || u0.closed) return { ok: false, err: 'login' };
   if (u0.suspended) return { ok: false, err: 'suspended' };
-  if (u0.pwLock && u0.pwLock.until && Date.parse(u0.pwLock.until) > Date.now()) return { ok: false, err: 'locked' };
   if (!u0.pw) return { ok: false, err: 'google_only' };
-  let tok = null;
-  const good = pwOk_(u0, password);
-  const res = await mutate_('u:' + u0.id, null, function (u) {
-    if (!u) return { abort: true, ok: false, err: 'login' };
-    if (!good) {
-      const lock = u.pwLock || {}, expired = !!(lock.until && Date.parse(lock.until) <= Date.now());
-      const f = (expired ? 0 : (lock.n || 0)) + 1;   // a lock that has run out starts the count again
-      u.pwLock = f >= PW_MAX_FAILS ? { n: f, until: new Date(Date.now() + PW_LOCK_MIN * 60000).toISOString() } : { n: f };
-      return { ok: false, err: f >= PW_MAX_FAILS ? 'locked' : 'login' };
-    }
-    delete u.pwLock; tok = addToken_(u); u.seen = today_();
-    return { ok: true };
-  });
-  if (!res.ok) return res;
-  const u = await readJSON('u:' + u0.id, null);
-  return { ok: true, uid: u.id, token: tok, me: selfOut_(u) };
+  if (!pwOk_(u0, password)) return { ok: false, err: 'login' };
+  return signInAs_(u0.id);
 }
-/* Set or change my password. With a password already, the current one is needed. */
+/* Forgot my password: my username and birth year, then a new password, and I'm in. */
+async function resetOwnPassword(username, birthYear, password) {
+  const n = unameIn_(username), map = n ? await readJSON('uname:' + n, null) : null;
+  const u0 = map ? await readJSON('u:' + map.id, null) : null;
+  if (!u0 || u0.closed) return { ok: false, err: 'match' };
+  if (u0.suspended) return { ok: false, err: 'suspended' };
+  const pw = cleanPassword_(password);
+  if (!pw) return { ok: false, err: 'password' };
+  const d = today_(), tries = u0.selfReset && u0.selfReset.d === d ? u0.selfReset.n : 0;
+  if (tries >= SELF_RESET_TRIES) return { ok: false, err: 'too_many' };
+  if (Number(birthYear) !== Number(u0.birthYear)) {
+    await mutate_('u:' + u0.id, null, function (u) { if (u) u.selfReset = { d: d, n: tries + 1 }; return { ok: true }; });
+    return { ok: false, err: 'match' };
+  }
+  await mutate_('u:' + u0.id, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.selfReset; } return { ok: true }; });
+  await mutate_('pwAsks', [], function (L) { for (let i = L.length - 1; i >= 0; i--) if (L[i].id === u0.id) L.splice(i, 1); return { ok: true }; });
+  return signInAs_(u0.id);
+}
+/* Set or change my password; I'm signed in, so the old one isn't needed. */
 async function setPassword(uid, tok, current, next) {
   const me = await auth_(uid, tok);
   if (!me) return { ok: false, err: 'auth' };
-  if (me.pw && !pwOk_(me, current)) return { ok: false, err: 'current' };
   const pw = cleanPassword_(next);
   if (!pw) return { ok: false, err: 'password' };
-  await mutate_('u:' + uid, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.pwLock; delete u.pwTemp; } return { ok: true }; });
+  await mutate_('u:' + uid, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.pwLock; } return { ok: true }; });
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
-/* The admin gives someone who forgot their password a one-time one; it signs them out everywhere.
-   Signing in with it, the app asks them to choose their own (u.pwTemp, cleared by setPassword). */
-async function adminResetPassword(uid, tok, username) {
+/* Set someone's password, to tell them: the admin for anyone; a leader for an adult in a team they
+   lead. No password given → an easy one ("mango4821"). Their other sign-ins carry on. */
+async function setUserPassword(uid, tok, username, password) {
   const me = await auth_(uid, tok);
-  if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
-  const n = cleanUsername_(username), map = n ? await readJSON('uname:' + n, null) : null;
+  if (!me) return { ok: false, err: 'auth' };
+  const n = unameIn_(username), map = n ? await readJSON('uname:' + n, null) : null;
   if (!map || map.id === uid) return { ok: false, err: 'none' };
-  const A = 'abcdefghjkmnpqrstuvwxyz23456789', b = crypto.randomBytes(10);
-  let temp = ''; for (let i = 0; i < 10; i++) temp += A[b[i] % A.length];
-  const res = await mutate_('u:' + map.id, null, function (u) {
-    if (!u || u.closed) return { abort: true, ok: false, err: 'none' };
-    u.pw = makePw_(temp); u.pwTemp = true; u.tokens = []; delete u.pwLock;
-    return { ok: true };
-  });
-  if (res.ok) await mutate_('pwAsks', [], function (L) { for (let i = L.length - 1; i >= 0; i--) if (L[i].id === map.id) L.splice(i, 1); return { ok: true }; });
-  return res.ok ? { ok: true, username: n, password: temp } : res;
+  const them = await readJSON('u:' + map.id, null);
+  if (!them || them.closed) return { ok: false, err: 'none' };
+  let may = isAdmin_(me);
+  if (!may && !isMinor_(them)) for (const tid of (them.teams || [])) { const t = await readJSON('t:' + tid, null); if (t && !t.closed && (t.leaders || []).indexOf(uid) > -1) { may = true; break; } }
+  if (!may) return { ok: false, err: 'not_admin' };
+  const pw = password == null || password === '' ? easyPassword_() : cleanPassword_(password);
+  if (!pw) return { ok: false, err: 'password' };
+  await mutate_('u:' + map.id, null, function (u) { if (u) { u.pw = makePw_(pw); delete u.pwLock; delete u.selfReset; } return { ok: true }; });
+  await mutate_('pwAsks', [], function (L) { for (let i = L.length - 1; i >= 0; i--) if (L[i].id === map.id) L.splice(i, 1); return { ok: true }; });
+  return { ok: true, username: n, password: pw };
 }
+async function adminResetPassword(uid, tok, username) { return setUserPassword(uid, tok, username, ''); }   // the older name, for the Reports page
 async function dropPwAsk(uid, tok, id) {
   const me = await auth_(uid, tok);
   if (!me || !isAdmin_(me)) return { ok: false, err: 'not_admin' };
@@ -695,7 +714,7 @@ async function dropPwAsk(uid, tok, id) {
 const PW_ASK_DAYS = 14, PW_ASK_MAX = 60, PW_ASK_GAP_MIN = 10;
 function pwAsksFresh_(L) { const cut = new Date(Date.now() - PW_ASK_DAYS * 864e5).toISOString(); return (Array.isArray(L) ? L : []).filter(function (x) { return x && x.at >= cut; }); }
 async function forgotPassword(username) {
-  const n = cleanUsername_(String(username == null ? '' : username).trim().replace(/^@/, '')), map = n ? await readJSON('uname:' + n, null) : null;
+  const n = unameIn_(username), map = n ? await readJSON('uname:' + n, null) : null;
   const u = map ? await readJSON('u:' + map.id, null) : null;
   if (!u || u.closed || u.suspended) return { ok: true };
   let fresh = false;
@@ -2382,7 +2401,7 @@ async function signOut(uid, tok) {
 }
 
 export const HANDLERS = {
-  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
+  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,

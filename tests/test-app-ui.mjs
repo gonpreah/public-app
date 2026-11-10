@@ -595,7 +595,7 @@ await a.click('[data-back]');
   await w.click('#rsNext'); await w.waitForTimeout(900);
   ok('the week is set: its goals, the reset kept, and it leaves Home', await w.evaluate(() => { const wk = mondayOf(todayStr()); return S.view === 'home' && (S.me.weeks[wk] || []).map(g => g.text).join() === 'Sleep by 11,Run twice' && S.me.resets[wk].area === 'health'; }) && !(await w.$('#goReset')));
   await w.click('nav.bottom button[data-tab="me"]'); await w.waitForSelector('#goBadges'); await w.click('#goBadges'); await w.waitForSelector('.badgeGrid');
-  ok('badges: twenty-one, with what each one takes and how close I am', (await w.$$('.badge')).length === 21 && /A 7-day streak/.test(await text(w)) && /0 \/ 7/.test(await text(w)));
+  ok('badges: twenty-two, with what each one takes and how close I am', (await w.$$('.badge')).length === 22 && /A 7-day streak/.test(await text(w)) && /0 \/ 7/.test(await text(w)));
   await w.evaluate(() => { S.me.stats.best = 7; render(); }); await w.waitForTimeout(300);
   ok('… and a new one pops up once', /New badge/.test(await w.$eval('.badgePop', e => e.innerText)) && (await w.$$('.badge.got')).length >= 1);
   await ctx.close();
@@ -708,6 +708,53 @@ await a.click('[data-back]');
   await a.click('#goPulse'); await a.waitForSelector('[data-cheer]');
   ok('the pulse shows tests taken and how many finished them all', /all 3 tests done/.test(await text(a)) && /📝 \d\/3/.test(await a.$eval('.list', e => e.innerText)));
   await a.click('[data-back]'); await a.waitForTimeout(200); await a.click('[data-back]'); await a.waitForTimeout(200);
+}
+
+/* ---------- 17l. my calling ---------- */
+{
+  const lvl = async () => { await a.waitForTimeout(300); if (await a.$('#levelOk')) await a.click('#levelOk'); };
+  await a.click('nav.bottom button[data-tab="plan"]'); await a.waitForTimeout(400); await lvl();
+  await a.click('#goCalling'); await a.waitForSelector('#clGo');
+  ok('my calling: it starts with what the tests and the journey bring', /What you bring/.test(await text(a)) && (await a.$$('.clReadyRow')).length === 4);
+  await a.click('#clGo'); await a.waitForSelector('[data-clc="teach"]');
+  ok('… the gift test’s strongest gift is starred', /⭐/.test(await a.$eval('.jrChips', e => e.innerText)));
+  await a.click('[data-clc="teach"]'); await a.click('#clNext');
+  await a.click('[data-clc="kids"]'); await a.click('#clNext');
+  await a.click('[data-clc="learn"]'); await a.click('#clNext');
+  await a.waitForSelector('[data-clsph]'); await a.click('[data-clsph="education"]'); await a.click('#clNext');
+  await a.click('[data-clc="home"]'); await a.click('#clNext');
+  await a.waitForSelector('[data-clidea]');
+  ok('ideas for the three-year focus come from the answers', /Teach and train children in my village or province/.test(await a.$eval('.clIdeas', e => e.innerText)));
+  await a.click('[data-clidea="0"]'); await a.waitForTimeout(200);
+  ok('… one tap puts it in the box to make it mine', /^Teach and train children/.test(await a.$eval('#clText', e => e.value)));
+  await a.click('#clNext'); await a.waitForSelector('#clM1');
+  await a.fill('#clM1', 'Start the club with ten children'); await a.fill('#clM3', 'A second club'); await a.click('#clNext');
+  await a.click('[data-clc="scroll"]'); await a.click('#clNext');
+  await a.waitForSelector('#clVerse'); await a.fill('#clText', 'My cousin had to leave school.'); await a.fill('#clVerse', 'Isaiah 61:1'); await a.click('#clNext');
+  await a.click('[data-clc="pray"]'); await a.click('[data-clc="give"]'); await a.click('#clNext');
+  await a.waitForSelector('#clStmt', { timeout: 8000 });
+  ok('the statement is written from the answers', await a.$eval('#clStmt', e => e.value) === 'I believe God made me to teach and train children, so they can learn and finish school. I’ll serve through education, starting in my village or province.');
+  await a.click('#clKeep'); await a.waitForSelector('.clHero'); await lvl();
+  const letter = await a.$eval('#clTx', e => e.value);
+  ok('the letter for family and supporters: the story, the calling, three years, the asks', /^Dear friends and family,/.test(letter) && letter.includes('My cousin had to leave school.') && letter.includes('So this is my calling: I believe God made me') && /By the end of \d{4}: Start the club/.test(letter) && letter.includes('Would you pray for me and give to support me?') && letter.includes('Isaiah 61:1'));
+  await a.click('[data-cllang="km"]'); await a.waitForTimeout(200);
+  ok('… and in Khmer, for the family', /^ជូនចំពោះ/.test(await a.$eval('#clTx', e => e.value)) && (await a.$eval('#clTx', e => e.value)).includes('ខ្ញុំជឿថា'));
+  await a.fill('#clTx', 'ជូនចំពោះ ប៉ា ម៉ាក់'); await a.dispatchEvent('#clTx', 'input');
+  ok('… my own changes can be saved', await a.$eval('#clTxSave', e => !e.hidden));
+  await a.click('#clTxSave'); await a.waitForTimeout(500);
+  ok('… and stay', await a.evaluate(() => S.me.calling.letter.km === 'ជូនចំពោះ ប៉ា ម៉ាក់') && await a.$eval('#clTx', e => e.value) === 'ជូនចំពោះ ប៉ា ម៉ាក់');
+  await a.click('[data-cltab="post"]'); await a.click('[data-cllang="en"]'); await a.waitForTimeout(200);
+  ok('a short message too', /^I believe God made me/.test(await a.$eval('#clTx', e => e.value)) && !!(await a.$('#clTg')));
+  await a.click('[data-cltab="pic"]'); await a.waitForSelector('.clShare .shareImg', { timeout: 8000 });
+  ok('… and a picture', (await a.$eval('.clShare .shareImg', e => e.naturalHeight)) === 1920);
+  await a.click('[data-cltab="letter"]'); await a.waitForTimeout(200);
+  await a.click('[data-clmile="m3"]'); await a.waitForTimeout(500); await lvl();
+  ok('a milestone ticked off when it’s reached', await a.evaluate(() => !!S.me.calling.done.m3) && !!(await a.$('.clYear.done')));
+  await a.click('[data-clgoal="1"]'); await a.waitForSelector('#gTitle');
+  ok('a milestone is one tap from a life goal', await a.$eval('#gTitle', e => e.value) === 'Start the club with ten children');
+  await a.click('[data-back]'); await a.waitForTimeout(300);
+  await a.click('nav.bottom button[data-tab="home"]'); await a.waitForTimeout(400);
+  ok('Home leads with my calling', /My calling/.test(await text(a)) && /I believe God made me to teach and train children/.test(await text(a)));
 }
 
 /* ---------- 18. Khmer ---------- */

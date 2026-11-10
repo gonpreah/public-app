@@ -585,6 +585,33 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
 { const qp = (await H.teamPulse(Q2.uid, Q2.token, QT.team.id)).pulse, qr = qp.rows.find(r => r.id === Q.uid);
   ok('the pulse shows which tests each person has taken — taken or not, never the results', qr.tests && typeof qr.tests.type === 'boolean' && !('personality' in qr) && typeof qp.allTests === 'number' && typeof qp.journeys === 'number'); }
 
+/* ---------- 18j. my calling ---------- */
+{ const CL = await H.registerPassword({ username: 'called', name: 'Dara Called', birthYear: 2001, password: 'called password' });
+  const CO = await H.registerPassword({ username: 'coachcl', name: 'Coach Cl', birthYear: 1990, password: 'coachcl password' });
+  const CT = await H.createTeam(CO.uid, CO.token, { name: 'DTS calling', emoji: '🎯' }); await H.joinTeam(CL.uid, CL.token, CT.team.code);
+  let r = await H.calling(CL.uid, CL.token, 'save', { answers: { do: { c: ['teach', 'care', 'BAD!'] }, who: { c: ['kids'], o: 'x'.repeat(200) }, sphere: 'nowhere', focus: 'Start a reading club', why: 'Line one\n\n\n\nLine two', m1: 'Ten children', secret: 'no' } });
+  ok('my calling keeps only real answers: one way to serve, real ids, short words, a real sphere', r.ok && JSON.stringify(r.me.calling.a.do) === '{"c":["teach"],"o":""}' && r.me.calling.a.who.o.length === 80 && r.me.calling.a.sphere === '' && !('secret' in r.me.calling.a) && r.me.calling.a.why === 'Line one\n\nLine two');
+  ok('a calling needs a statement of a few words', (await H.calling(CL.uid, CL.token, 'keep', { statement: 'short' })).err === 'text');
+  const xp0 = r.me.level.xp;
+  r = await H.calling(CL.uid, CL.token, 'keep', { answers: { sphere: 'education' }, statement: 'I believe God made me to teach and train children.', lang: 'km' });
+  ok('kept, with its language and the first of its three years', r.ok && r.me.calling.statement.startsWith('I believe') && r.me.calling.sl === 'km' && r.me.calling.from >= Number(today.slice(0, 4)) && r.me.calling.a.sphere === 'education' && r.me.calling.a.focus === 'Start a reading club');
+  r = await H.calling(CL.uid, CL.token, 'keep', { statement: 'I believe God made me to teach children to read.' });
+  ok('60 XP, once', r.me.level.xp - xp0 === 60 && r.me.calling.statement.endsWith('read.'));
+  ok('my own letter, kept in one language', (await H.calling(CL.uid, CL.token, 'text', { kind: 'letter', lang: 'en', text: 'Dear all,\n\nHello' })).me.calling.letter.en === 'Dear all,\n\nHello' && (await H.calling(CL.uid, CL.token, 'text', { kind: 'letter', lang: 'fr', text: 'x' })).err === 'kind');
+  const x1 = (await H.calling(CL.uid, CL.token, 'mile', { m: 'm1', done: true })).me;
+  ok('a year’s milestone ticked: 30 XP, once', !!x1.calling.done.m1 && x1.level.xp - xp0 === 90 && (await H.calling(CL.uid, CL.token, 'mile', { m: 'm1', done: true })).me.level.xp === x1.level.xp);
+  ok('… only one that’s written down', (await H.calling(CL.uid, CL.token, 'mile', { m: 'm2', done: true })).err === 'none' && (await H.calling(CL.uid, CL.token, 'mile', { m: 'm9', done: true })).err === 'none');
+  ok('… and untick takes it back', !(await H.calling(CL.uid, CL.token, 'mile', { m: 'm1', done: false })).me.calling.done.m1);
+  ok('… and written fresh again when cleared', (await H.calling(CL.uid, CL.token, 'text', { kind: 'letter', lang: 'en', text: '' })).me.calling.letter.en === '');
+  const pc = (await H.person(CO.uid, CO.token, CL.uid)).person;
+  ok('nobody else sees my calling on my card', pc && !JSON.stringify(pc).includes('teach children') && !('calling' in pc));
+  ok('finding it is a moment in the team feed, with no words', (await H.feed(CO.uid, CO.token)).feed.some(x => x.who.id === CL.uid && x.kind === 'calling' && !JSON.stringify(x).includes('teach')));
+  const cc = await H.coachAsk(CL.uid, CL.token, CO.uid, CT.team.id, 'mentee'); await H.coachAnswer(CO.uid, CO.token, cc.id, true);
+  ok('a coach doesn’t see it until the plan is shared', !(await H.coaching(CO.uid, CO.token, cc.id)).coaching.calling);
+  await H.coachAct(CL.uid, CL.token, cc.id, 'sharePlan', { on: true });
+  const cv = (await H.coaching(CO.uid, CO.token, cc.id)).coaching.calling;
+  ok('… then sees the statement, the focus and the milestones — not the why or the letter', cv && cv.statement.endsWith('read.') && cv.focus === 'Start a reading club' && cv.m1 === 'Ten children' && !('why' in cv) && !('letter' in cv)); }
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

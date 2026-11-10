@@ -526,7 +526,7 @@ function xpDrop_(u, key) {
    their own — no goal titles, habit names or answers. Each kind shows only while the person's
    matching switch is on (POST_SHARE) and their 'feed' switch is on. Kept 30 days. */
 const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
-const POST_SHARE = { apest: 'apest', journey: 'plan', streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
+const POST_SHARE = { calling: 'plan', apest: 'apest', journey: 'plan', streak: 'streak', goal: 'plan', type: 'type', strengths: 'strengths', week: 'week', joined: 'teams', focus: 'focus', challenge: 'teams', level: 'level', reading: 'feed' };
 const KEEP_POST_DAYS = 30, MAX_POSTS = 40, MAX_CLAPS = 300;
 function addPost_(u, kind, n) {
   const cut = addDays_(today_(), -KEEP_POST_DAYS);
@@ -556,7 +556,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -1095,6 +1095,73 @@ async function journey(uid, tok, act, a) {
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 
+/* ---------------- my calling ----------------
+   Nov 2026, Uriah: after the tests and the Life Journey, be "laser clear on what they're going to
+   focus on in the next few years and why", and have "a compelling vision statement for their life"
+   to send to supporters, friends and family. One choice a screen (chip ids only, like the journey):
+   how I serve (do), who, the change I want for them, the sphere and the place to start; then ONE
+   focus for three years, a milestone a year, what I'll say no to, why, a verse (a reference), and
+   how people can help. The phone writes the statement, a letter and a short post (in English or
+   Khmer); the person edits them and sends them themselves. u.calling = {a, statement, sl (its
+   language), letter:{en,km}, post:{en,km} (their own edits; empty = written fresh), from (the
+   first of the three years), at, upd, done:{m1..m3: the day each milestone was reached}}. Private: selfOut_ only, and a coach the mentee shares
+   their plan with sees the statement, the focus and the milestones. 60 XP once; a feed moment. */
+const CALL_CHIPS = { do: 1, who: 1, change: 1, place: 1, no: 3, help: 6 };
+const CALL_TEXT = { focus: 200, m1: 160, m2: 160, m3: 160, verse: 40, pray: 200 };
+const CALL_SPHERES = ['family', 'church', 'education', 'government', 'media', 'arts', 'business', 'health'];
+function callingAnswer_(k, v) {
+  if (k === 'why') return strMl_(v, 800);
+  if (Object.prototype.hasOwnProperty.call(CALL_TEXT, k)) return str_(v, CALL_TEXT[k]);
+  if (k === 'sphere') return CALL_SPHERES.indexOf(v) > -1 ? v : '';
+  if (Object.prototype.hasOwnProperty.call(CALL_CHIPS, k)) {
+    v = v && typeof v === 'object' ? v : {};
+    const c = (Array.isArray(v.c) ? v.c : []).filter(function (x) { return typeof x === 'string' && /^[a-z]{2,12}$/.test(x); });
+    return { c: c.filter(function (x, i) { return c.indexOf(x) === i; }).slice(0, CALL_CHIPS[k]), o: str_(v.o, 80) };
+  }
+  return undefined;
+}
+function callingOf_(u) {
+  const c = (u && u.calling) || {}, two = function (x) { x = x && typeof x === 'object' ? x : {}; return { en: x.en || '', km: x.km || '' }; };
+  return { a: c.a && typeof c.a === 'object' ? c.a : {}, statement: c.statement || '', sl: c.sl || '', letter: two(c.letter), post: two(c.post), from: c.from || 0, at: c.at || '', upd: c.upd || '', done: c.done && typeof c.done === 'object' ? c.done : {} };
+}
+/* The three years start this year until June, next year from July. */
+function callFrom_() { const d = today_(); return Number(d.slice(5, 7)) >= 7 ? Number(d.slice(0, 4)) + 1 : Number(d.slice(0, 4)); }
+async function calling(uid, tok, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    const c = callingOf_(u);
+    if (act === 'save' || act === 'keep') {   // answers so far; 'keep' also keeps the statement
+      const ans = a.answers && typeof a.answers === 'object' ? a.answers : {};
+      Object.keys(ans).slice(0, 30).forEach(function (k) { const v = callingAnswer_(k, ans[k]); if (v !== undefined) c.a[k] = v; });
+      if (act === 'keep') {
+        const st = str_(a.statement, 300);
+        if (st.length < 10) return { abort: true, ok: false, err: 'text' };
+        c.statement = st; c.sl = a.lang === 'km' ? 'km' : 'en';
+        if (!c.from || c.from + 2 < thisYear_()) c.from = callFrom_();   // a new three years once the last ones are over
+        if (!c.at) { c.at = today_(); addPost_(u, 'calling', null); }
+        c.upd = today_(); xpAdd_(u, 'c|calling', 60);
+      }
+      u.calling = c; return { ok: true };
+    }
+    if (act === 'mile') {   // a year's milestone reached (or not): 30 XP, once each
+      if (['m1', 'm2', 'm3'].indexOf(a.m) === -1 || !c.statement || !str_(c.a[a.m], 160)) return { abort: true, ok: false, err: 'none' };
+      if (a.done) { c.done[a.m] = c.done[a.m] || today_(); xpAdd_(u, 'c|' + a.m, 30); } else { delete c.done[a.m]; xpDrop_(u, 'c|' + a.m); }
+      u.calling = c; return { ok: true };
+    }
+    if (act === 'text') {   // my own edit of the letter or the post, in one language ('' = write it fresh)
+      if (['en', 'km'].indexOf(a.lang) === -1 || ['letter', 'post'].indexOf(a.kind) === -1) return { abort: true, ok: false, err: 'kind' };
+      if (!c.statement) return { abort: true, ok: false, err: 'none' };
+      c[a.kind][a.lang] = strMl_(a.text, a.kind === 'letter' ? 4000 : 800);
+      u.calling = c; return { ok: true };
+    }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+
 /* One goal: add / tick / drop a step, mark it reached (or not), or delete it. */
 async function goalAct(uid, tok, gid, act, a) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
@@ -1448,7 +1515,10 @@ async function coaching(uid, tok, cid) {
   o.meetings = (c.meetings || []).slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (m) {
     const x = Object.assign({}, m); if (role !== 'coach') delete x.priv; return x;
   });
-  if (role === 'coach' && c.status === 'active' && c.sharePlan) { const m = await readJSON('u:' + c.mentee, null); if (m) o.plan = planOf_(m); }
+  if (role === 'coach' && c.status === 'active' && c.sharePlan) {
+    const m = await readJSON('u:' + c.mentee, null);
+    if (m) { o.plan = planOf_(m); const cl = callingOf_(m); if (cl.statement) o.calling = { statement: cl.statement, focus: cl.a.focus || '', m1: cl.a.m1 || '', m2: cl.a.m2 || '', m3: cl.a.m3 || '', from: cl.from }; }   // their calling, not the why, the letter or the answers
+  }
   if (role === 'mentee' && o.other) { const co = await readJSON('u:' + c.coach, null); o.otherIsMinor = co ? isMinor_(co) : false; }
   if (role !== 'mentee') { const m = await readJSON('u:' + c.mentee, null); o.minor = !!(m && isMinor_(m)); }
   else o.minor = isMinor_(await readJSON('u:' + uid, null));
@@ -2277,7 +2347,7 @@ async function signOut(uid, tok) {
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, adminResetPassword, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
-  savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, weekReset, journal,
+  savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,
   pushSubscribe, pushUnsubscribe, pushSavePrefs, pushTest,

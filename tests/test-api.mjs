@@ -633,6 +633,49 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   const cv = (await H.coaching(CO.uid, CO.token, cc.id)).coaching.calling;
   ok('… then sees the statement, the focus and the milestones — not the why or the letter', cv && cv.statement.endsWith('read.') && cv.focus === 'Start a reading club' && cv.m1 === 'Ten children' && !('why' in cv) && !('letter' in cv)); }
 
+/* ---------- 18k. Telegram sign-in ---------- */
+{ const TGH = (await import('../netlify/functions/telegram.js')).default;
+  ok('no Telegram button until the bot is set up', (await H.authConfig()).telegram === '' && (await H.tgStart('https://gonpreah-app.netlify.app')).err === 'not_set_up');
+  process.env.GPA_TELEGRAM_BOT_TOKEN = '123:test-token'; process.env.GPA_TELEGRAM_BOT_NAME = '@testbot'; process.env.URL = 'https://gonpreah-app.netlify.app';
+  const secret = (await import('node:crypto')).createHash('sha256').update('gpa-tg|123:test-token', 'utf8').digest('hex').slice(0, 48);
+  const post = (up, sec) => TGH(new Request('http://x/', { method: 'POST', headers: { 'x-telegram-bot-api-secret-token': sec == null ? secret : sec }, body: JSON.stringify(up) }));
+  const msg = (id, text, first, uname) => ({ message: { text, chat: { id, type: 'private' }, from: { id, first_name: first || 'Dara', username: uname || '', language_code: 'en' } } });
+  const sent = () => (globalThis.__tgSent || []).filter(x => x.method === 'sendMessage').pop();
+  globalThis.__tgSent = [];
+  ok('with the bot set up, the button shows', (await H.authConfig()).telegram === 'testbot');
+  let st = await H.tgStart('https://evil.example.com');
+  const hook = globalThis.__tgSent.find(x => x.method === 'setWebhook');
+  ok('the app points the bot at itself — at its own address, with a secret', st.ok && st.url === 'https://t.me/testbot?start=' + st.code && hook && hook.body.url === 'https://gonpreah-app.netlify.app/.netlify/functions/telegram' && hook.body.secret_token === secret);
+  await H.tgStart(''); ok('… once', globalThis.__tgSent.filter(x => x.method === 'setWebhook').length === 1);
+  ok('only Telegram (with the secret) can post to the bot', (await post(msg(555, '/start ' + st.code), 'wrong')).status === 401 && (await H.tgCheck(st.code)).state === 'wait');
+  ok('a new person taps Start: the bot welcomes them', (await post(msg(555, '/start ' + st.code, 'Dara'))).status === 200 && /Welcome, Dara/.test(sent().body.text) && sent().body.reply_markup.inline_keyboard[0][0].url === 'https://gonpreah-app.netlify.app');
+  ok('… and the page is told to make an account', JSON.stringify(await H.tgCheck(st.code)) === '{"ok":true,"state":"new","name":"Dara"}');
+  ok('under 13 still can’t make one', (await H.registerTelegram(st.code, { username: 'tgkid', name: 'Kid Tg', birthYear: Y - 12 })).err === 'too_young');
+  const tr = await H.registerTelegram(st.code, { username: 'tgdara', name: 'Dara Tg', birthYear: 2002 });
+  ok('an account made from Telegram — no password', tr.ok && tr.me.tg && !tr.me.hasPassword && (await H.boot(tr.uid, tr.token)).ok);
+  ok('… the code works once', (await H.registerTelegram(st.code, { username: 'tgdara2', name: 'Dara Two', birthYear: 2002 })).err === 'expired');
+  ok('a password sign-in to it says to use Telegram', (await H.loginPassword('tgdara', 'anything')).err === 'telegram_only');
+  st = await H.tgStart(''); await post(msg(555, '/start ' + st.code));
+  ok('next time: tap Start, and the bot says you’re in', /signed in as @tgdara/.test(sent().body.text));
+  const tin = await H.tgCheck(st.code);
+  ok('… and the page is signed in', tin.ok && tin.uid === tr.uid && tin.token && (await H.boot(tin.uid, tin.token)).ok);
+  ok('… once only', (await H.tgCheck(st.code)).token === undefined);
+  await post(msg(555, '/start ' + st.code)); ok('an old code: the bot says it ran out', /run out/.test(sent().body.text));
+  await post(msg(555, '/start')); ok('a bare /start: how to sign in', /tap “Sign in with Telegram”/.test(sent().body.text));
+  st = await H.tgLinkStart(Q.uid, Q.token, ''); await post(msg(777, '/start ' + st.code, 'Thida', 'thida_tg'));
+  ok('Me → Connect Telegram: tap Start, and it’s connected', (await H.tgCheck(st.code)).state === 'linked' && (await H.boot(Q.uid, Q.token)).me.tg.username === 'thida_tg' && /connected/.test(sent().body.text));
+  st = await H.tgStart(''); await post(msg(777, '/start ' + st.code));
+  ok('… then one tap signs them in', (await H.tgCheck(st.code)).uid === Q.uid);
+  st = await H.tgLinkStart(Q2.uid, Q2.token, ''); await post(msg(777, '/start ' + st.code));
+  ok('one Telegram, one account', (await H.tgCheck(st.code)).state === 'taken' && !(await H.boot(Q2.uid, Q2.token)).me.tg);
+  st = await H.tgStart(''); await post(msg(888, '/start ' + st.code, 'Vanna'));
+  const vl = await H.tgLinkLogin(st.code, 'vanna', 'vanna password');
+  ok('“I already have an account”: sign in once with the password, and Telegram is connected', vl.ok && vl.uid === Q2.uid && vl.me.tg);
+  st = await H.tgStart(''); await post(msg(888, '/start ' + st.code)); ok('… then one tap', (await H.tgCheck(st.code)).uid === Q2.uid);
+  ok('disconnect it', !(await H.tgUnlink(Q2.uid, Q2.token)).me.tg);
+  st = await H.tgStart(''); await post(msg(888, '/start ' + st.code)); ok('… and it no longer signs them in', (await H.tgCheck(st.code)).state === 'new');
+  delete process.env.GPA_TELEGRAM_BOT_TOKEN; delete process.env.GPA_TELEGRAM_BOT_NAME; delete process.env.URL; }
+
 /* ---------- 19. the door ---------- */
 const api = (await import('../netlify/functions/api.js')).default;
 const call = async (body) => (await api(new Request('http://x/', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))).status;

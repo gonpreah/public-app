@@ -1159,3 +1159,4 @@ body.bigScreen #main { max-width:1200px; }
 .callPlan { display:flex; flex-direction:column; align-items:stretch; text-align:left; gap:4px; width:100%; }
 .clYear .tick { flex:none; }
 .clYear.done .stepTx { text-decoration:line-through; color:var(--muted); }
+.jrReveal .clYears, .jrReveal .clFocusTx, .jrReveal .card { text-align:left; }

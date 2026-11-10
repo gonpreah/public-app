@@ -1119,3 +1119,44 @@ body.bigScreen #main { max-width:1200px; }
 .bsRank { width:34px; text-align:center; font-size:22px; font-weight:800; }
 .bsBig b { font-size:28px; }
 .bsCard .qrBox svg { max-width:260px; }
+
+/* my calling (view callq, view calling) */
+.clReady { margin:14px 0; text-align:left; }
+.clReadyRow { display:flex; gap:10px; align-items:center; padding:9px 0; border-top:1px solid var(--line); }
+.clReadyRow:first-of-type { border-top:0; }
+.clReadyIc { font-size:22px; width:28px; text-align:center; }
+.clReadyRow .btn.small { width:auto; flex:none; }
+.clOk { color:var(--good, #1F8A6F); font-weight:800; font-size:18px; }
+.clSph { display:grid; gap:8px; margin:6px 0 4px; }
+.clSphB { display:flex; gap:12px; align-items:center; text-align:left; border:1.5px solid var(--border2); background:var(--surface); color:var(--ink); border-radius:14px; padding:10px 12px; font:inherit; cursor:pointer; touch-action:manipulation; }
+.clSphB b { display:block; font-size:15px; }
+.clSphB.on { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset; }
+.clSphIc { font-size:26px; width:32px; text-align:center; flex:none; }
+.clIdeas { display:grid; gap:8px; margin:6px 0 12px; }
+.clIdea { text-align:left; border:1.5px dashed var(--accent); background:var(--accentSoft); color:var(--ink); border-radius:12px; padding:10px 12px; font:inherit; font-size:14.5px; line-height:1.4; cursor:pointer; touch-action:manipulation; }
+.clFocusMini { font-weight:700; margin-bottom:6px; }
+.clStmtIn { font-size:18px; font-weight:700; line-height:1.45; }
+.clHero { background:linear-gradient(150deg, #17150F, #1430B0 70%, #1F44FF); color:#FAF6F0; border-radius:20px; padding:20px 18px 22px; margin:6px 0 10px; }
+.clHero .pmeta { color:#FFB323; font-weight:700; }
+.clStmt { font-size:21px; font-weight:800; line-height:1.4; margin:8px 0 0; }
+.clStmt.small { display:block; font-size:16px; line-height:1.4; margin:0 0 6px; font-weight:800; }
+.clFocusTx { font-size:16.5px; font-weight:700; line-height:1.45; margin:0 0 8px; }
+.clYears { display:grid; gap:2px; }
+.clYear { display:flex; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); }
+.clYear .btn.small { width:auto; flex:none; }
+.clY { flex:none; font-weight:800; color:var(--accent); min-width:44px; }
+.clWhy { white-space:pre-wrap; line-height:1.55; margin:0 0 6px; }
+.clDRow { display:flex; gap:10px; padding:6px 0; line-height:1.4; }
+.clDRow span:first-child { width:24px; text-align:center; flex:none; }
+.clTabs { margin-bottom:10px; }
+.clLangRow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 8px; }
+.clLangRow .seg { flex:none; }
+.clTx { width:100%; line-height:1.55; font-size:15px; }
+.clBtns { margin-top:10px; flex-wrap:wrap; }
+.clTxRow { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+.clTxRow .btn.small { width:auto; }
+.callCard .whyLineTx { font-style:normal; font-weight:800; font-size:16.5px; }
+.callPlan { display:flex; flex-direction:column; align-items:stretch; text-align:left; gap:4px; width:100%; }
+.clYear .tick { flex:none; }
+.clYear.done .stepTx { text-decoration:line-through; color:var(--muted); }
+.jrReveal .clYears, .jrReveal .clFocusTx, .jrReveal .card { text-align:left; }

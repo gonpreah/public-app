@@ -58,7 +58,8 @@ Held by tests/test-api.mjs against the real handlers.
   answers, scores, birth year or email. Since Nov 2026 (Uriah, for a DTS class: "see each
   other's journey a bit") also the Life Journey, a little, behind `share.journey`: how many
   stops, finished or not, the word for the year and the three "becoming" words (chip ids) —
-  never the answers or the vision.
+  never the answers or the vision. My calling (the statement, the letter, the answers) is never on a card either:
+  people send it themselves; finding it is a feed moment with no words.
 - **Team tasks** are set only by leaders (adults) and every member sees every one — no
   private channel between two people, on purpose. Members tick only tasks for everyone or for them.
 - The page sends test answers; the server scores strengths (`gsScore_`) and refuses
@@ -126,6 +127,29 @@ and Home nudges a month on. Each stop's done screen shows "What you said". **Sha
 (view `share`, `S.shareKind='word'`): a 1080×1920 picture — first name, the word, "Becoming" —
 nothing else from the vision. Sundays' reminder adds "read your vision again" (`vision`).
 
+## My calling (Plan tab → view `callq`, then view `calling`)
+Nov 2026, Uriah: after the personality, strengths and gifts tests, be "laser clear on what they're
+going to focus on in the next few years and why", and have "a compelling vision statement for their
+life" to send to supporters, friends and family. The intro shows what they bring (the three tests and
+the Life Journey, each with a way to take it). Then one choice a screen (`CL_QS`, options `CL_OPTS`,
+ids only on the server): how I love to serve (⭐ = the strongest gifts and the journey's gifts), who
+(one group), the change I want for them, the sphere (⭐ from `sphereVotes_`) and where to start; ONE
+focus for three years (ideas from the answers, `clIdeas_`), a milestone for each year, up to three
+things I'll say no to, why (with the journey's answers as reminders) and a verse (a reference only),
+and how people can help. The phone writes the statement (`clStatement_`), which they edit and keep
+(`calling` 'keep', 60 XP once, a feed moment with no words). My calling shows the statement, the
+focus and milestones (each ticked off, 30 XP, or one tap from a life goal), why, what I'm saying no
+to, how God made me for it, and **the words to send**: a letter for family and supporters
+(`clLetter_`: the story, the tests, the calling, the three years, what I'm saying no to, the verse,
+the asks, thanks) and a short message (`clPost_`), in English or Khmer whatever the app's language
+(`withLang_`; their own words stay as written), edited and saved per language (`calling` 'text'),
+sent with the phone's share sheet, Telegram or Copy; and a 1080×1920 picture (statement and focus).
+`u.calling` is private (`selfOut_` only); a coach the mentee shares their plan with sees the
+statement, the focus and the milestones — never the why, the answers or the letter. Home leads with
+it (the next milestone not reached), the Plan tab and Me show it, the Sunday reset's "look up" shows
+it, and the tests on Home, my vision and Me invite to it until it's found. The three years start this
+year until June, next year from July (`callFrom_`), and start again once they're over.
+
 ## Phones in a browser (iPhone Safari)
 Safari zooms into a text box under 16px and leaves the page zoomed and sliding about, and zooms
 on a quick double tap: so text boxes are 16px on touch screens (`pointer:coarse`) and the page is
@@ -163,7 +187,7 @@ which part of life needs care), look ahead (three goals, with my plan's open ste
 give the week to God (a short prayer in our own words). It saves the week's goals (`saveWeek`)
 and `weekReset` keeps `u.resets[monday]` = {good, hard, area} (26 weeks, private; 30 XP a week).
 Sunday's reminder adds "Sunday reset" until it's done. **Badges** (Me → Badges, view `badges`):
-twenty, worked out on the phone from what's already there (`badgeList_`: streaks, Today's 3,
+twenty-two, worked out on the phone from what's already there (`badgeList_`: streaks, Today's 3,
 focus hours, the three tests, the journey, vision reads, the wheel, resets, steps, goals,
 devotionals, a reading plan, answered prayers, check-ins, a team, friends, level 10) — nothing new
 stored or shared; a new one pops up once (`badgeWatch_`, the phone remembers `gpa-badges`). **The

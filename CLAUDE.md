@@ -108,10 +108,12 @@ string must have Khmer; check before shipping a new screen. Have a native speake
 km-app.js, the privacy promises first.
 
 ## Deploy
-**Don't deploy, and don't merge** (Uriah, Nov 2026: "don't keep pushing the Netlify build up … I'll push
-one at a time so it's not using up my Netlify pushes"): work on a branch, open a pull request, let CI
-pass, and tell Uriah it's ready — he merges and deploys himself. No Netlify deploys from a session.
-Push to `main` → Netlify builds and goes live. CI (`.github/workflows/tests.yml`) runs the tests on
+**Merge and deploy only when Uriah says so** ("Push"; Nov 2026: "don't keep pushing the Netlify build
+up … I'll push one at a time so it's not using up my Netlify pushes"): work on a branch, open a pull
+request, let CI pass, and tell him it's ready. **Netlify isn't linked to GitHub** — merging to `main`
+doesn't build anything; the live site changes only with an upload deploy (the Netlify tool's
+deploy-site, from a clean `git archive` of `main`). So when he says push: merge the ready PRs, run the
+tests on `main`, then deploy **once**. CI (`.github/workflows/tests.yml`) runs the tests on
 every PR. Run them locally first:
 `node tests/test-api.mjs`, `node tests/test-library.mjs`, `node tests/test-reminders.mjs` and `node tests/test-app-ui.mjs`
 (needs `npm install --no-save playwright`).

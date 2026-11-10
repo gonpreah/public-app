@@ -364,6 +364,23 @@ ok('the Learn tab shows today’s XP', /XP today/.test(await text(m)));
   await tapStart(code2, 4242, 'Sokunthea'); await g.waitForSelector('nav.bottom:not([hidden])', { timeout: 8000 });
   ok('next time, one tap in Telegram signs me in', await g.evaluate(() => S.me && S.me.username === 'sokunthea'));
   await ctx.close();
+  /* opened inside Telegram (a Mini App): no taps at all */
+  const nc = await import('node:crypto');
+  const initData = (id, first) => { const q = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000)), query_id: 'AAE1', user: JSON.stringify({ id, first_name: first }) });
+    const dcs = Array.from(q.entries()).sort((x, y) => x[0] < y[0] ? -1 : 1).map(x => x[0] + '=' + x[1]).join('\n');
+    q.set('hash', nc.createHmac('sha256', nc.createHmac('sha256', 'WebAppData').update('123:test-token').digest()).update(dcs).digest('hex')); return q.toString(); };
+  const wctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await wctx.route('https://telegram.org/**', r => r.abort());
+  await wctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const w = await wctx.newPage(); w.on('pageerror', x => errors.push('miniapp: ' + x.message));
+  await w.goto(base + '/#tgWebAppData=' + encodeURIComponent(initData(4242, 'Sokunthea')) + '&tgWebAppVersion=8.0'); await w.waitForSelector('nav.bottom:not([hidden])', { timeout: 8000 });
+  ok('opened inside Telegram, they’re signed in — no taps, no codes', await w.evaluate(() => S.me && S.me.username === 'sokunthea'));
+  const w2 = await wctx.newPage(); w2.on('pageerror', x => errors.push('miniapp2: ' + x.message));
+  await w2.evaluate(() => { try { sessionStorage.clear(); localStorage.removeItem('gpa-auth'); } catch (e) {} }).catch(() => {});
+  await w2.goto(base + '/#tgWebAppData=' + encodeURIComponent(initData(5151, 'Rotha')));
+  await w2.evaluate(() => { localStorage.removeItem('gpa-auth'); }); await w2.reload(); await w2.waitForSelector('#tgMake', { timeout: 8000 });
+  ok('… someone new: “Welcome, Rotha!”, and make the account right there', /Welcome, Rotha!/.test(await text(w2)) && !(await w2.$('#tgBtn')));
+  await wctx.close();
   delete process.env.GPA_TELEGRAM_BOT_TOKEN; delete process.env.GPA_TELEGRAM_BOT_NAME; delete process.env.URL;
 }
 

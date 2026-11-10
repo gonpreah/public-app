@@ -60,7 +60,14 @@ a new one makes an account (`registerTelegram`, no password) or signs in once wi
 (`tgLinkLogin`); the page asks `tgCheck` every 2 s and when it comes back to the front. Me → Telegram
 connects (`tgLinkStart`) or disconnects (`tgUnlink`). `tgu:<telegram id>` → the account, `u.tg`. The app
 points the bot at itself (`setWebhook`, remembered in `tgHook`). The bot answers in Khmer when Telegram
-says the person uses Khmer.
+says the person uses Khmer. **Inside Telegram** (Nov 2026, Uriah: the bot's button opened the app "in
+the Telegram browser" — signed out): GonPreah is a Telegram **Mini App**. The bot's "Open GonPreah"
+button (`web_app`) and the GonPreah button by the chat box (`setChatMenuButton`, set with the webhook,
+`tgHook.v` 2) open it inside Telegram, where Telegram puts who it is in the address
+(`#tgWebAppData=…`, kept in sessionStorage `gpa-twa`); `tgWebAppLogin` checks Telegram's signature
+(HMAC with the bot token's "WebAppData" key, a day at most) and signs a connected person straight in,
+or gives a new one the "Welcome" card to make an account there. The page loads telegram-web-app.js
+only then (ready, expand), and hides "Sign in with Telegram" inside Telegram.
 `GPA_GOOGLE_CLIENT_ID` (Netlify env) must be a Google OAuth web client with
 https://app.gonpreah.org as an authorised JavaScript origin; without it the button says so.
 

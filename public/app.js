@@ -64,6 +64,14 @@ var S = {
   challenges: [], chNew: null
 };
 var AUTH = (function(){ try { var a=JSON.parse(lsGet('gpa-auth')||'null'); return a && a.uid && a.token ? a : null; } catch(e){ return null; } })();
+/* Opened inside Telegram (a Mini App — the bot's "Open GonPreah" or the button by its chat box):
+   Telegram puts who it is in the address (#tgWebAppData=…), signed with the bot's token. The server
+   checks it (tgWebAppLogin) and they're simply in; someone new makes an account right there. */
+var TG_WA=(function(){ try { var m=(location.hash||'').match(/[#&]tgWebAppData=([^&]*)/);
+  if(m){ var d=decodeURIComponent(m[1]); try { sessionStorage.setItem('gpa-twa', d); } catch(e){} return d; }
+  return sessionStorage.getItem('gpa-twa')||''; } catch(e){ return ''; } })();
+if(TG_WA){ try { var tgs=document.createElement('script'); tgs.src='https://telegram.org/js/telegram-web-app.js'; tgs.async=true;
+  tgs.onload=function(){ try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch(e){} }; document.head.appendChild(tgs); } catch(e){} }
 /* Back from the Telegram chat after the page was closed: carry on waiting. */
 (function(){ try { var g=JSON.parse(lsGet('gpa-tg')||'null'); if(!AUTH && g && g.code && Date.now()-g.at < 10*60000){ S.tg=g; setTimeout(function(){ tgPoll_(); }, 0); } else lsDel('gpa-tg'); } catch(e){} })();
 var JOIN = (function(){ try { return (new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6); } catch(e){ return ''; } })();
@@ -235,7 +243,7 @@ function signinHtml(){
     (JOIN ? '<div class="banner">'+esc(gpT('You have a team code: {code}. Sign in to join.',{code:JOIN}))+'</div>' : '')+
     (S.tg ? tgCardHtml_() : '')+
     '<div class="card"'+(S.tg?' hidden':'')+'>'+
-      (S.authCfg && S.authCfg.telegram ? '<button class="btn tgBtn" id="tgBtn"'+(S.busy?' disabled':'')+'>✈️ '+esc(t('Sign in with Telegram'))+'</button><div class="orLine"><span>'+esc(t('or'))+'</span></div>' : '')+
+      (S.authCfg && S.authCfg.telegram && !TG_WA ? '<button class="btn tgBtn" id="tgBtn"'+(S.busy?' disabled':'')+'>✈️ '+esc(t('Sign in with Telegram'))+'</button><div class="orLine"><span>'+esc(t('or'))+'</span></div>' : '')+
       '<label class="f" for="liUser">'+esc(t('Username'))+'</label><div class="atRow"><span>@</span><input type="text" id="liUser" autocomplete="username" autocapitalize="none" maxlength="20" value="'+esc(S.liUser!=null ? S.liUser : (lsGet('gpa-lastuser')||''))+'"></div>'+
       '<label class="f" for="liPass">'+esc(t('Password'))+'</label><div class="pwRow"><input type="'+(S.liShow?'text':'password')+'" id="liPass" autocomplete="current-password" autocapitalize="none" maxlength="128"><button class="pwEye" id="liEye" type="button" aria-label="'+esc(t('Show the password'))+'">'+(S.liShow?'🙈':'👁')+'</button></div>'+
       '<button class="btn" id="liGo"'+(S.busy?' disabled':'')+'>'+esc(S.busy?t('Signing in…'):t('Sign in'))+'</button>'+
@@ -3620,7 +3628,14 @@ function confettiAt_(el){
 /* ---------------- start ---------------- */
 if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.serviceWorker.register('sw.js').catch(function(){}); } catch(e){}
 /* Start once every script is in (library-app.js and learn.js load after this file and use S). */
-function start_(){ textSize_(); if(AUTH) bootNow_(); else render();
+function start_(){ textSize_();
+  if(!AUTH && TG_WA){   // inside Telegram: sign in with who Telegram says it is
+    var m=document.getElementById('main'); if(m && typeof GP_LOGO==='string') m.innerHTML='<div class="loadingBox"><div class="loadCoin"><img src="'+GP_LOGO+'" alt=""></div></div>';
+    api('tgWebAppLogin',[TG_WA]).then(function(d){
+      if(d && d.ok && d.token){ afterSignIn_(d); return; }
+      if(d && d.ok && d.state==='new'){ S.tg={ code:d.code, state:'new', name:d.name||'', at:Date.now(), url:'' }; }
+      render(); });
+  } else if(AUTH) bootNow_(); else render();
   api('authConfig').then(function(c){ S.authCfg=c||{}; if(!AUTH && !typing_()) render(); }); }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start_); else start_();
 /* ---------------- staying up to date by itself ----------------

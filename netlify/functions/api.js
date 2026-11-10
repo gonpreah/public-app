@@ -620,9 +620,10 @@ async function tgHook_(origin) {
   const site = siteOrigin_(origin);
   if (!site || !tgOn_()) return;
   const url = site + '/.netlify/functions/telegram', h = await readJSON('tgHook', null);
-  if (h && h.url === url && h.s === tgSecret_().slice(0, 6)) return;
+  if (h && h.url === url && h.s === tgSecret_().slice(0, 6) && h.v === 2) return;
   const r = await tgApi_('setWebhook', { url: url, secret_token: tgSecret_(), allowed_updates: ['message'] });
-  if (r && r.ok) await writeJSON('tgHook', { url: url, s: tgSecret_().slice(0, 6), at: new Date().toISOString() });
+  await tgApi_('setChatMenuButton', { menu_button: { type: 'web_app', text: 'GonPreah', web_app: { url: site + '/' } } });   // the button by the chat box opens the app inside Telegram
+  if (r && r.ok) await writeJSON('tgHook', { url: url, s: tgSecret_().slice(0, 6), v: 2, at: new Date().toISOString() });
 }
 async function tgNewCode_(link) {
   const code = crypto.randomBytes(12).toString('hex');
@@ -691,15 +692,42 @@ async function tgUnlink(uid, tok) {
   return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
 }
 const TG_SAY = {
-  hi: ['👋 Hi! To sign in, open GonPreah and tap “Sign in with Telegram”.', '👋 សួស្តី! ដើម្បីចូល សូមបើក កូនព្រះ ហើយចុច «ចូលដោយ Telegram»។'],
+  hi: ['👋 Hi! Tap “Open GonPreah” to use it right here in Telegram — you’re signed in with your Telegram.', '👋 សួស្តី! ចុច «បើក កូនព្រះ» ដើម្បីប្រើវានៅក្នុង Telegram នេះតែម្តង — អ្នកចូលដោយ Telegram របស់អ្នក។'],
   late: ['⌛ That sign-in link has run out. Go back to GonPreah and tap “Sign in with Telegram” again.', '⌛ តំណចូលនោះផុតកំណត់ហើយ។ សូមត្រឡប់ទៅ កូនព្រះ ហើយចុច «ចូលដោយ Telegram» ម្តងទៀត។'],
-  in: ['✅ You’re signed in as @{u}. Go back to GonPreah.', '✅ អ្នកបានចូលជា @{u} ហើយ។ សូមត្រឡប់ទៅ កូនព្រះ។'],
-  new: ['👋 Welcome, {n}! Go back to GonPreah to finish — it takes a minute.', '👋 សូមស្វាគមន៍ {n}! សូមត្រឡប់ទៅ កូនព្រះ ដើម្បីបញ្ចប់ — ចំណាយពេលតែមួយនាទី។'],
+  in: ['✅ You’re signed in as @{u}. Switch back to the GonPreah app — it’s ready. (Or use it right here: tap “Open GonPreah”.)', '✅ អ្នកបានចូលជា @{u} ហើយ។ សូមត្រឡប់ទៅកម្មវិធី កូនព្រះ — វារួចរាល់ហើយ។ (ឬប្រើវានៅទីនេះ៖ ចុច «បើក កូនព្រះ»។)'],
+  new: ['👋 Welcome, {n}! Switch back to the GonPreah app to finish — it takes a minute. (Or finish right here: tap “Open GonPreah”.)', '👋 សូមស្វាគមន៍ {n}! សូមត្រឡប់ទៅកម្មវិធី កូនព្រះ ដើម្បីបញ្ចប់ — ចំណាយពេលតែមួយនាទី។ (ឬបញ្ចប់នៅទីនេះ៖ ចុច «បើក កូនព្រះ»។)'],
   linked: ['✅ Telegram is connected to your GonPreah account. Next time, just tap “Sign in with Telegram”.', '✅ Telegram បានភ្ជាប់ទៅគណនី កូនព្រះ របស់អ្នកហើយ។ លើកក្រោយ គ្រាន់តែចុច «ចូលដោយ Telegram»។'],
   taken: ['This Telegram is already connected to another GonPreah account.', 'Telegram នេះបានភ្ជាប់ទៅគណនី កូនព្រះ មួយផ្សេងទៀតរួចហើយ។'],
   suspended: ['This GonPreah account has been suspended.', 'គណនី កូនព្រះ នេះត្រូវបានផ្អាក។'],
   open: ['Open GonPreah', 'បើក កូនព្រះ']
 };
+/* GonPreah opened inside Telegram (a Mini App, from the bot's button or the one by the chat box):
+   Telegram hands the page who it is, signed with the bot's token (initData). Checked here (the
+   bot token's "WebAppData" key, a day at most), a connected Telegram is simply signed in; a new one
+   gets a code in the 'new' state, so registerTelegram / tgLinkLogin finish it as from the chat. */
+function tgInitUser_(initData) {
+  const p = new URLSearchParams(String(initData || '')), hash = p.get('hash');
+  if (!hash || !tgOn_()) return null;
+  p.delete('hash');
+  const dcs = Array.from(p.entries()).sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (x) { return x[0] + '=' + x[1]; }).join('\n');
+  const key = crypto.createHmac('sha256', 'WebAppData').update(tgToken_()).digest();
+  if (!safeEq_(crypto.createHmac('sha256', key).update(dcs).digest('hex'), hash)) return null;
+  const at = Number(p.get('auth_date'));
+  if (!at || Date.now() / 1000 - at > 86400) return null;
+  let who = null; try { who = JSON.parse(p.get('user') || 'null'); } catch (e) { return null; }
+  if (!who || !who.id || who.is_bot) return null;
+  return { id: String(who.id), first: str_(who.first_name, 40), username: str_(who.username, 40) };
+}
+async function tgWebAppLogin(initData) {
+  if (!tgOn_()) return { ok: false, err: 'not_set_up' };
+  const tg = tgInitUser_(initData);
+  if (!tg) return { ok: false, err: 'telegram' };
+  const map = await readJSON('tgu:' + tg.id, null), u = map ? await readJSON('u:' + map.id, null) : null;
+  if (u && !u.closed) return u.suspended ? { ok: false, err: 'suspended' } : signInAs_(u.id);
+  const code = crypto.randomBytes(12).toString('hex');
+  await writeJSON('tgc:' + code, { at: Date.now(), state: 'new', tg: tg, link: null });
+  return { ok: true, state: 'new', code: code, name: tg.first };
+}
 /* A message to the bot (from telegram.js, after its secret header is checked). */
 export async function tgUpdate(up) {
   return scope.run(new Map(), async function () {
@@ -707,7 +735,7 @@ export async function tgUpdate(up) {
     if (!m || !m.from || !m.chat || m.chat.type !== 'private' || m.from.is_bot) return;
     const km = /^km/.test(m.from.language_code || '') ? 1 : 0, site = siteOrigin_('');
     const say = function (k, v) { let tx = TG_SAY[k][km]; Object.keys(v || {}).forEach(function (x) { tx = tx.replace('{' + x + '}', v[x]); });
-      const b = { chat_id: m.chat.id, text: tx }; if (site) b.reply_markup = { inline_keyboard: [[{ text: TG_SAY.open[km], url: site }]] };
+      const b = { chat_id: m.chat.id, text: tx }; if (site) b.reply_markup = { inline_keyboard: [[{ text: TG_SAY.open[km], web_app: { url: site + '/' } }]] };
       return tgApi_('sendMessage', b); };
     const mm = /^\/start(?:\s+([a-f0-9]{24}))?\s*$/.exec(String(m.text || '').trim());
     if (!mm || !mm[1]) return say('hi');
@@ -2562,7 +2590,7 @@ async function signOut(uid, tok) {
 }
 
 export const HANDLERS = {
-  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, tgStart, tgLinkStart, tgCheck, registerTelegram, tgLinkLogin, tgUnlink, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
+  authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, tgStart, tgLinkStart, tgCheck, registerTelegram, tgLinkLogin, tgUnlink, tgWebAppLogin, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
   savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,

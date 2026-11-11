@@ -17,6 +17,7 @@ var APP_KM = {
   "Waiting for Telegram…": "កំពុងរង់ចាំ Telegram…",
   "In the chat with {bot}, tap Start. Then come back here — you’ll be signed in.": "ក្នុងការជជែកជាមួយ {bot} ចុច Start។ រួចត្រឡប់មកទីនេះវិញ — អ្នកនឹងបានចូល។",
   "Open Telegram": "បើក Telegram",
+  "Telegram not opening? Use the web link": "Telegram មិនបើក? ប្រើតំណគេហទំព័រ",
   "That took too long — tap “Sign in with Telegram” again.": "យូរពេកហើយ — សូមចុច «ចូលដោយ Telegram» ម្តងទៀត។",
   "Telegram is connected. Next time, just tap “Sign in with Telegram”.": "Telegram បានភ្ជាប់ហើយ។ លើកក្រោយ គ្រាន់តែចុច «ចូលដោយ Telegram»។",
   "Connected as @{u}. Sign in with one tap.": "បានភ្ជាប់ជា @{u}។ ចូលដោយចុចតែម្តង។",

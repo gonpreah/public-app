@@ -656,7 +656,7 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   ok('the app points the bot at itself — at its own address, with a secret', st.ok && st.url === 'https://t.me/testbot?start=' + st.code && hook && hook.body.url === 'https://gonpreah-app.netlify.app/.netlify/functions/telegram' && hook.body.secret_token === secret);
   await H.tgStart(''); ok('… once', globalThis.__tgSent.filter(x => x.method === 'setWebhook').length === 1);
   ok('only Telegram (with the secret) can post to the bot', (await post(msg(555, '/start ' + st.code), 'wrong')).status === 401 && (await H.tgCheck(st.code)).state === 'wait');
-  ok('a new person taps Start: the bot welcomes them', (await post(msg(555, '/start ' + st.code, 'Dara'))).status === 200 && /Welcome, Dara/.test(sent().body.text) && sent().body.reply_markup.inline_keyboard[0][0].url === 'https://gonpreah-app.netlify.app');
+  ok('a new person taps Start: the bot welcomes them', (await post(msg(555, '/start ' + st.code, 'Dara'))).status === 200 && /Welcome, Dara/.test(sent().body.text) && sent().body.reply_markup.inline_keyboard[0][0].web_app.url === 'https://gonpreah-app.netlify.app/');
   ok('… and the page is told to make an account', JSON.stringify(await H.tgCheck(st.code)) === '{"ok":true,"state":"new","name":"Dara"}');
   ok('under 13 still can’t make one', (await H.registerTelegram(st.code, { username: 'tgkid', name: 'Kid Tg', birthYear: Y - 12 })).err === 'too_young');
   const tr = await H.registerTelegram(st.code, { username: 'tgdara', name: 'Dara Tg', birthYear: 2002 });
@@ -669,7 +669,8 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   ok('… and the page is signed in', tin.ok && tin.uid === tr.uid && tin.token && (await H.boot(tin.uid, tin.token)).ok);
   ok('… once only', (await H.tgCheck(st.code)).token === undefined);
   await post(msg(555, '/start ' + st.code)); ok('an old code: the bot says it ran out', /run out/.test(sent().body.text));
-  await post(msg(555, '/start')); ok('a bare /start: how to sign in', /tap “Sign in with Telegram”/.test(sent().body.text));
+  await post(msg(555, '/start')); ok('a bare /start: open GonPreah right in Telegram', /Open GonPreah/.test(sent().body.text) && !!sent().body.reply_markup.inline_keyboard[0][0].web_app);
+  ok('the bot gets a GonPreah button by the chat box that opens the app inside Telegram', globalThis.__tgSent.some(x => x.method === 'setChatMenuButton' && x.body.menu_button.web_app.url === 'https://gonpreah-app.netlify.app/'));
   st = await H.tgLinkStart(Q.uid, Q.token, ''); await post(msg(777, '/start ' + st.code, 'Thida', 'thida_tg'));
   ok('Me → Connect Telegram: tap Start, and it’s connected', (await H.tgCheck(st.code)).state === 'linked' && (await H.boot(Q.uid, Q.token)).me.tg.username === 'thida_tg' && /connected/.test(sent().body.text));
   st = await H.tgStart(''); await post(msg(777, '/start ' + st.code));
@@ -682,6 +683,18 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   st = await H.tgStart(''); await post(msg(888, '/start ' + st.code)); ok('… then one tap', (await H.tgCheck(st.code)).uid === Q2.uid);
   ok('disconnect it', !(await H.tgUnlink(Q2.uid, Q2.token)).me.tg);
   st = await H.tgStart(''); await post(msg(888, '/start ' + st.code)); ok('… and it no longer signs them in', (await H.tgCheck(st.code)).state === 'new');
+  /* opened inside Telegram (a Mini App): Telegram signs who it is */
+  const nc = await import('node:crypto');
+  const initData = (id, first, ageSec, token) => { const p = new URLSearchParams({ auth_date: String(Math.floor(Date.now() / 1000) - (ageSec || 0)), query_id: 'AAE1', user: JSON.stringify({ id, first_name: first, username: first.toLowerCase() }) });
+    const dcs = Array.from(p.entries()).sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x[0] + '=' + x[1]).join('\n');
+    const key = nc.createHmac('sha256', 'WebAppData').update(token || '123:test-token').digest(); p.set('hash', nc.createHmac('sha256', key).update(dcs).digest('hex')); return p.toString(); };
+  const wa = await H.tgWebAppLogin(initData(777, 'Thida'));
+  ok('inside Telegram, a connected person is simply signed in', wa.ok && wa.uid === Q.uid && wa.token && (await H.boot(Q.uid, wa.token)).ok);
+  ok('… not with a signature from anyone but the bot', (await H.tgWebAppLogin(initData(777, 'Thida', 0, '999:other'))).err === 'telegram' && (await H.tgWebAppLogin('user=%7B%22id%22%3A777%7D&auth_date=1&hash=abc')).err === 'telegram');
+  ok('… nor an old one', (await H.tgWebAppLogin(initData(777, 'Thida', 2 * 86400))).err === 'telegram');
+  const wn = await H.tgWebAppLogin(initData(999, 'Rina'));
+  ok('someone new inside Telegram: welcome, and make an account right there', wn.ok && wn.state === 'new' && wn.name === 'Rina' && (await H.registerTelegram(wn.code, { username: 'rina_tg', name: 'Rina', birthYear: 2004 })).ok);
+  ok('… then they’re signed in each time they open it', (await H.tgWebAppLogin(initData(999, 'Rina'))).me.username === 'rina_tg');
   delete process.env.GPA_TELEGRAM_BOT_TOKEN; delete process.env.GPA_TELEGRAM_BOT_NAME; delete process.env.URL; }
 
 /* ---------- 19. the door ---------- */

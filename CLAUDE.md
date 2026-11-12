@@ -15,6 +15,47 @@ teams/15-khmer.js), `khmer-vocab.js`, `khmer-grammar.js`, `library-app.js` (Impa
 code from teams/03-library-org.js) and their styles at the end of app.css. Fix a bug there in
 both apps. The Library's BOOKS (`library.js`, `library-km.js`) are this app's own (below).
 
+## One journey (Nov 2026 — how the whole app hangs together)
+Uriah: make it cohesive so people know what it's for — "your calling, relational, vocational identity":
+a child of God first (relational identity), then what God made you to do (vocational identity), then
+a plan, then "the tools and resources you need … books and coaching and community", "a little bit of a
+hero's journey … all in a sequence. Once you fill out these things, okay, now read these books", and "a
+real solid 2-year commitment, 5-year commitment statement on the front page". So the app is **seven
+stages** (`PATH` in app.js), in the order of Uriah's DTS course "Called" (its five days: a child of
+God, designed, formed, healthy on the journey, sent — each stage's subtitle), worked out from what's
+already there (`pathParts_`, `pathStage_`):
+(1) 💛 **Whose you are** (a child of God): who God says I am (`BELOVED`, our words + references
+only) and "I am a child of God — Amen" (`pathMark` 'beloved' → `u.path.beloved`, 20 XP once);
+(2) 🧭 **How God made you** (designed) — the three tests; (3) 🗺️ **Your story** (formed) — the Life
+Journey and vision; (4) 🌱 **Healthy for the road** (healthy on the journey) — my two wheels of life
+(below), a book read, a mentor (an active 1-on-1 as mentee), a team (done: the wheels and 2 of the
+other 3); (5) 🎯 **The call** (sent) — My calling (spheres optional); (6) ✍️ **Commit** — crossing the
+threshold: what I commit to in the next 2 and 5 years, in my own words (view `commit`, `CM_KINDS`
+starters, ideas from the calling's focus and milestones; `commit` → `u.commit` = {two, five, from, at},
+one line of 240 each, 30 XP once both; Share / Telegram / Copy); (7) 🚶 **Walk it out** — a goal for
+the lowest part of my wheels with steps, habits, an update for supporters.
+**My two wheels of life** (view `wheels`; the course's Day 4: "your two wheels of life, outer and
+inner", Mark 12:30): the **outer** wheel, where a coach helps (`WHEEL_OUT`: faith, family & marriage,
+friends & community, health & body, money, work & ministry, learning, rest & fun, my home) and the
+**inner** one, where a counselor helps (`WHEEL_IN`: joy, peace, focus, identity, secure attachment,
+being yourself with others (differentiation), healing, forgiveness, hope), each spoke 1–10 with a
+question to score it by, drawn as a wheel with the last check as a line. `lifeWheel` 'save' / 'drop'
+→ `u.lw` = [{d, o, i}] (12 checks, one a day; 10 XP once a month) — **private**: `selfOut_` only, never
+a card, coach or leader. Then **"Start with your lowest"**: the parts lowest first (five, then all),
+each with its goals or "Set a goal for this" (a starter goal from the spoke, its life area). A goal
+keeps which part it helps (`g.wheel` = 'o:<id>' | 'i:<id>', `wheelKey_`; the editor's chips are lowest
+first); the plan lists goals for the lowest parts first and tags them ("Peace 2/10"); a coach sees the
+goals without `wheel`. The Life Journey's simpler six-area wheel (1–5) stays as it was. Each stage has 3 books (`PATH_BOOKS`: Library ids, titles,
+shelf colours — Home shows them without loading library.js); a stage that's done says "Now read these".
+**Tabs**: Home · **Journey** (view `plan`: the map `pathMapHtml_`, my commitment, calling and vision if
+started, then "My life plan") · **Tools** (view `grow`: books to read next, the Library, Bible & prayer,
+a mentor, my team, Learn Khmer) · Teams · Me. A stage opens as view `stage` (`S.stage`). **Home** leads
+with my commitment (`commit` part, the years big), my next step (`path`: the seven dots, stage n of 7,
+the next part) and Tools for your journey (`tools`: books to read next — the stage just finished first —
+and mentor / team / Bible). A book opened from the journey goes back there (`S.libFrom`). The commitment
+is private (`selfOut_`; a coach the mentee shares their plan with sees it, `coaching.commit`); the
+walkthrough and the sign-in screen say what the app is for in these words.
+
 ## The name — and no YWAM
 On screen it is **GonPreah** / **កូនព្រះ**. **Nothing on screen says YWAM** (Uriah, Nov 2026:
 "leave out ywam stuff"): the header shows the round GonPreah seal (`GP_LOGO`), not the wide
@@ -129,7 +170,7 @@ every PR. Run them locally first:
 `node tests/test-api.mjs`, `node tests/test-library.mjs`, `node tests/test-reminders.mjs` and `node tests/test-app-ui.mjs`
 (needs `npm install --no-save playwright`).
 
-## The life plan (Plan tab)
+## The life plan (Journey tab, under the map)
 `u.plan` = `{why, goals:[{id, area, title, measure, help, why, by:'YYYY-MM', done, steps:[{id, text,
 when:'YYYY-MM'|'YYYY-Qn', done}]}]}`; `u.tasks` = a person's own tasks; `t.tasks` = team tasks
 (`done` is a map of who ticked). Six areas of life (`AREAS`, the same six the 1-on-1s will use).
@@ -323,7 +364,7 @@ going well, hard, shared notes, the coach's own notes `priv`, follow-ups). Asked
 person's card ("Ask … to be my coach" / "Offer to coach …"); answered on Home. Roles come
 from `coachRole_`: coach, mentee, leader (read-only, under-18s only).
 
-## The Learn tab (📚, view `grow`)
+## The Tools tab (🧰, view `grow`; it was "Learn")
 Two doors: the **Library** (`library-app.js`, view `library`) and **Learn Khmer / English**
 (`learn.js`, view `learn`), both copied from the Impact app with small changes listed at the
 top of each file. Both load their data only when opened (`libLoad_`, `khLoad_`); index.html

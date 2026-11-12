@@ -810,7 +810,7 @@ await a.click('[data-back]');
   const next = async () => { await a.click('#clNext'); await a.waitForTimeout(120); if (await a.$('#clPartGo')) await a.click('#clPartGo'); await a.waitForTimeout(120); };
   const q = () => a.evaluate(() => S.cl.i >= 0 ? CL_QS[S.cl.i].k : '');
   await a.click('nav.bottom button[data-tab="plan"]'); await a.waitForTimeout(400); await lvl();
-  await a.click('#goCalling'); await a.waitForSelector('#clGo');
+  await a.click('[data-stage="call"]'); await a.waitForSelector('[data-pgo="calling"]'); await a.click('[data-pgo="calling"]'); await a.waitForSelector('#clGo');
   ok('my calling: what the tests and journey bring, and six parts', (await a.$$('.clReadyRow')).length === 4 && (await a.$$('.clPartRow')).length === 6);
   await a.click('#clGo'); await a.waitForSelector('#clPartGo');
   ok('… each part starts with what it’s for', /Part 1 of 6/.test(await text(a)) && /How God made you/.test(await text(a)));
@@ -824,7 +824,7 @@ await a.click('[data-back]');
   await next(); await a.fill('[data-clpair="gives"]', 'Teaching'); await a.fill('[data-clpair="drains"]', 'Paperwork');
   await next(); ok('part 2: what moves me', await q() === 'burden'); await a.fill('#clText', 'So many kids in my province stop school at 12 to work.');
   await a.click('#clLater'); await a.waitForTimeout(500);
-  await a.click('#goCalling'); await a.waitForSelector('#clResume');
+  ok('“Save and finish later” goes back to the stage', await a.evaluate(() => S.view === 'stage')); await a.click('[data-pgo="calling"]'); await a.waitForSelector('#clResume');
   ok('it saves, and carries on where I stopped', /Continue: What moves you/.test(await text(a)) && await a.evaluate(() => S.me.calling.a.gives === 'Teaching'));
   await a.click('#clResume'); await a.click('#clPartGo'); await a.waitForTimeout(150);
   await next(); await a.click('[data-clc="kids"]');
@@ -920,6 +920,64 @@ ok('in Khmer, the Library reads in Khmer — "For you" too', /សម្រាប
 
 /* ---------- 19. the page fits a phone ---------- */
 ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+/* ---------- 17p. one journey: whose you are → how God made you → the call → commit → tools → walk it out ---------- */
+{
+  const pctx = await browser.newContext({ ...devices['iPhone 13'], timezoneId: 'Asia/Phnom_Penh' });
+  await pctx.addInitScript(() => { try { localStorage.setItem('gpa-lang', 'en'); localStorage.setItem('gpa-onboarded', '1'); } catch (e) {} });
+  const g = await pctx.newPage(); g.on('pageerror', x => errors.push('path: ' + x.message));
+  const lvl = async () => { await g.waitForTimeout(250); if (await g.$('#levelOk')) await g.click('#levelOk'); };
+  await g.goto(base + '/'); await g.click('#liNew'); await g.waitForSelector('#suPass');
+  await g.fill('#suUser', 'sreypov'); await g.fill('#suPass', 'sreypov pw'); await g.fill('#suPass2', 'sreypov pw'); await g.fill('#suName', 'Sreypov Ly'); await g.selectOption('#suYear', '2003'); await g.click('#suGo');
+  await g.waitForSelector('nav.bottom:not([hidden])');
+  ok('the tabs are the journey: Home · Journey · Tools · Teams · Me', (await g.$$eval('nav.bottom button', b => b.map(x => x.textContent.trim()).join('|'))) === '🏠Home|🧭Journey|🧰Tools|👥Teams|🙂Me');
+  const home = await text(g);
+  ok('Home leads with the commitment, then the next step, then books to read', home.indexOf('Make your commitment') > -1 && home.indexOf('Make your commitment') < home.indexOf('Stage 1 of 7') && home.indexOf('Stage 1 of 7') < home.indexOf('Tools for your journey') && (await g.$$('.pBooks [data-pbook]')).length === 3);
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('.pMap');
+  ok('the Journey tab is a map of seven stages, and I’m at the first', (await g.$$('.pStop')).length === 7 && (await g.$$('.pStop.now')).length === 1 && await g.$eval('.pStop.now', e => e.getAttribute('data-stage')) === 'beloved' && /My life plan/.test(await text(g)));
+  await g.click('.pStop.now'); await g.waitForSelector('#belYes');
+  ok('stage 1: who God says I am, with the references only', (await g.$$('.belRow')).length === 6 && /John 1:12/.test(await text(g)) && /relational identity/.test(await text(g)));
+  await g.click('#belYes'); await g.waitForSelector('.stDone'); await lvl();
+  ok('… “I am a child of God — Amen”, kept', await g.evaluate(() => !!S.me.path.beloved) && /Now read these/.test(await text(g)));
+  await g.click('[data-pbook="the-father-heart-of-god"]'); await g.waitForSelector('#libStart', { timeout: 8000 });
+  ok('a stage’s book opens in the Library', /The Father Heart of God/.test(await text(g)));
+  await g.click('#libBack'); await g.waitForSelector('.stHero');
+  ok('… and back goes to the stage', await g.evaluate(() => S.view === 'stage' && S.stage === 'beloved'));
+  await g.click('[data-stage="made"]'); await g.waitForSelector('.stParts');
+  ok('the next stage: the three tests, each a tap away', (await g.$$('.stPart')).length === 3 && !!(await g.$('[data-pgo="ptest"]')) && !!(await g.$('[data-pgo="atest"]')));
+  await g.evaluate(() => { S.stage = 'commit'; render(); }); await g.waitForSelector('[data-pgo="commit"]'); await g.click('[data-pgo="commit"]'); await g.waitForSelector('#cm_two');
+  await g.click('[data-cmkind="two|study"]');
+  ok('a starter fills the sentence', /^finish my degree in … at …$/.test(await g.$eval('#cm_two', e => e.value)));
+  await g.fill('#cm_two', 'finish my degree in education at RUPP'); await g.fill('#cm_five', 'serve as a missionary in Laos for four years');
+  await g.click('#cmSave'); await g.waitForSelector('#cmCopy'); await lvl();
+  const y = new Date().getFullYear();
+  ok('my commitment is saved, ready to say to my people', await g.evaluate(() => S.me.commit.five) === 'serve as a missionary in Laos for four years' && new RegExp('by ' + (y + 2) + '\\), I commit to finish my degree').test(await text(g)));
+  await g.click('nav.bottom button[data-tab="home"]'); await g.waitForSelector('#goCommit');
+  ok('… and it leads Home, with its years', (await g.$$eval('.cmYr b', b => b.map(x => x.textContent).join())) === (y + 2) + ',' + (y + 5));
+  ok('Home’s next step moves on to stage 2', /Stage 2 of 7/.test(await text(g)));
+  await g.click('nav.bottom button[data-tab="grow"]'); await g.waitForSelector('.pBooks');
+  ok('the Tools tab: books to read next, the Library, a mentor, my team', /Tools for the journey/.test(await text(g)) && /Read next/.test(await text(g)) && !!(await g.$('#goLibrary')) && !!(await g.$('[data-pgo="mentor"]')) && !!(await g.$('#goLearn')));
+  /* the two wheels of life, and goals for the lowest part first */
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('#goWheels'); await g.click('#goWheels'); await g.waitForSelector('[data-lw]');
+  ok('the two wheels: nine parts each, 1 to 10, the outer first', (await g.$$('.lwRow')).length === 9 && (await g.$$('[data-lw^="o|faith|"]')).length === 10 && /coach helps with the outer wheel/.test(await text(g)));
+  for (const [id, n] of [['faith', 8], ['family', 7], ['friends', 6], ['health', 3], ['money', 5], ['work', 6], ['learn', 7], ['rest', 4], ['home', 8]]) await g.click(`[data-lw="o|${id}|${n}"]`);
+  await g.click('[data-lwtab="i"]'); await g.waitForSelector('[data-lw^="i|joy|"]');
+  ok('… then the inner one', /Inner life/.test(await text(g)) && (await g.$$('.lwRow')).length === 9);
+  await g.click('[data-lw="i|peace|2"]'); await g.click('[data-lw="i|hope|9"]');
+  await g.click('#lwSave'); await g.waitForSelector('.lwLow'); await lvl();
+  ok('saved, and the lowest first: peace 2, health 3, rest 4', (await g.$$eval('.lwLow .lwHead b', b => b.slice(0, 3).map(x => x.textContent).join())) === 'Peace,Health & body,Rest & fun' && (await g.$$('.lwSvg polygon')).length >= 1);
+  await g.click('[data-lwgoal="i:peace"]'); await g.waitForSelector('#gTitle');
+  ok('a goal for the lowest part, started for me', await g.$eval('#gTitle', e => e.value) === 'Give my worries to God in prayer every morning' && !!(await g.$('[data-gwheel="i:peace"].on')) && await g.evaluate(() => S.goalDraft.area) === 'faith');
+  await g.click('#goalSave'); await g.waitForSelector('#stepIn');
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('.lwPlan');
+  ok('the Journey tab: my lowest three, and the goal for peace tagged', /Peace\s*2\/10/.test(await g.$eval('.lwPlan', e => e.textContent)) && /Peace 2\/10/.test(await g.$eval('.goalRow', e => e.textContent)));
+  await g.evaluate(() => { S.goalDraft = { area: 'study', title: 'Learn English', measure: '', help: '', why: '', by: addMonths(monthKey(todayStr()), 6), wheel: 'o:learn' }; go('goaledit'); }); await g.waitForSelector('#goalSave'); await g.click('#goalSave'); await g.waitForSelector('#stepIn');
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('.goalRow');
+  ok('goals for the lowest part of my wheels come first', (await g.$$eval('.goalRow b', b => b.map(x => x.textContent).join('|'))) === 'Give my worries to God in prayer every morning|Learn English');
+  await g.evaluate(() => setLang_('km')); await g.waitForTimeout(300);
+  ok('in Khmer too', /ឧបករណ៍/.test(await text(g)) && /ដំណើរ/.test(await g.$eval('nav.bottom', e => e.textContent)));
+  await pctx.close();
+}
+
 ok('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close(); srv.close();
 ok.done();

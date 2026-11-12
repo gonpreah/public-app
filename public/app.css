@@ -938,6 +938,99 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 @keyframes jrPop { from { transform:scale(.4); opacity:0; } to { transform:scale(1); opacity:1; } }
 @keyframes jrSpin { 0%,100% { transform:rotate(-12deg) scale(1); } 50% { transform:rotate(12deg) scale(1.2); } }
 @media (prefers-reduced-motion: reduce) { .jrBig, .jrXp, .jrSpark { animation:none; } }
+/* The journey (app.js PATH): the map on the Journey tab, the next step and the books on Home, a stage page, my commitment. */
+.pIntro { font-size:14.5px; line-height:1.5; background:var(--surface2); }
+.pMap { position:relative; margin:4px 0 16px; }
+.pMap:before { content:''; position:absolute; left:27px; top:22px; bottom:22px; width:3px; border-radius:3px; background:var(--border); }
+.pStop { position:relative; display:flex; align-items:center; gap:12px; width:100%; padding:10px 10px 10px 8px; margin-bottom:6px; border:1px solid transparent; border-radius:var(--r); background:none; font:inherit; color:var(--ink); text-align:left; cursor:pointer; }
+.pStop .pDot { flex:none; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; background:var(--surface); border:2px solid var(--border); z-index:1; }
+.pStop.done .pDot { background:var(--good); border-color:var(--good); color:#fff; font-weight:800; font-size:17px; }
+.pStop.now { background:var(--surface); border-color:var(--accent); box-shadow:0 6px 18px rgba(31,68,255,.12); }
+.pStop.now .pDot { border-color:var(--accent); background:var(--accent); box-shadow:0 0 0 5px rgba(31,68,255,.15); }
+.pStopTx { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.pStopTx b { font-size:15.5px; }
+.pStop.done .pStopTx b { color:var(--muted); }
+.pStopSay { font-size:13.5px; line-height:1.4; margin:2px 0; }
+.pNowTag { flex:none; font-size:11px; font-weight:800; color:#fff; background:var(--accent); border-radius:99px; padding:3px 8px; }
+.pHome { display:flex; flex-direction:column; gap:4px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--onDark); background:linear-gradient(135deg, var(--headerBg), var(--accent)); border:0; }
+.pHome .pmeta { color:var(--onDark); opacity:.8; }
+.pHomeName { font-size:20px; }
+.pHomeSay { font-size:14px; line-height:1.45; opacity:.92; }
+.pNext { margin-top:6px; font-size:14px; background:rgba(255,255,255,.14); border-radius:10px; padding:8px 10px; }
+.pDots { display:flex; gap:6px; margin-bottom:6px; }
+.pDots span { flex:1; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; background:rgba(255,255,255,.12); }
+.pDots span.done { background:var(--amber); color:#17150F; font-weight:800; }
+.pDots span.now { background:#fff; box-shadow:0 0 0 2px var(--amber); }
+.pBooks { display:grid; grid-auto-flow:column; grid-auto-columns:116px; gap:10px; overflow-x:auto; scrollbar-width:none; padding-bottom:4px; margin-bottom:12px; }
+.pBooks::-webkit-scrollbar { display:none; }
+.pBook { display:flex; flex-direction:column; gap:3px; background:none; border:0; padding:0; font:inherit; color:var(--ink); text-align:left; cursor:pointer; }
+.pBookCover { position:relative; height:150px; border-radius:6px 10px 10px 6px; background:var(--bk); color:#fff; padding:12px 10px 10px 16px; display:flex; align-items:flex-end; box-shadow:inset 6px 0 0 rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.12); overflow:hidden; }
+.pBookCover:before { content:''; position:absolute; right:-26px; top:-26px; width:84px; height:84px; border-radius:50%; background:rgba(255,255,255,.14); }
+.pBookT { position:relative; font-family:'Koulen', 'Kantumruy Pro', system-ui, sans-serif; font-size:16px; line-height:1.15; letter-spacing:.2px; }
+.pBookOk { position:absolute; top:8px; left:12px; width:24px; height:24px; border-radius:50%; background:var(--good); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
+.pBookA { font-size:12.5px; color:var(--muted); line-height:1.3; }
+.pBookM { font-size:11.5px; color:var(--faint); }
+.pToolRow { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-bottom:14px; }
+.pTool { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 6px; border-radius:var(--r); border:1px solid var(--border); background:var(--surface); font:inherit; font-size:20px; color:var(--ink); cursor:pointer; }
+.pTool span { font-size:12.5px; font-weight:700; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.stHero { text-align:center; padding:6px 0 4px; }
+.stHero .stIc { font-size:46px; margin:6px 0 0; }
+.stHero h2 { margin:2px 0 4px; }
+.stParts { padding:4px 12px; }
+.stPart { display:flex; align-items:center; gap:10px; width:100%; padding:12px 0; border:0; border-bottom:1px solid var(--line); background:none; font:inherit; color:var(--ink); cursor:pointer; }
+.stPart:last-child { border-bottom:0; }
+.stChk { flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--border2); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--muted); }
+.stPart.done .stChk { background:var(--good); border-color:var(--good); color:#fff; }
+.stGo { font-size:13px; font-weight:700; color:var(--accent); }
+.stDone { text-align:center; font-weight:800; color:var(--good); margin:6px 0 14px; }
+.stTalk { margin:2px 0 6px; }
+.belCard { padding:6px 14px; }
+.belRow { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:15px; line-height:1.45; }
+.belRow:last-child { border-bottom:0; }
+.belRow i { display:block; font-style:normal; font-size:12.5px; color:var(--muted); margin-top:2px; }
+.cmHome { display:flex; flex-direction:column; gap:10px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer; border-left:4px solid var(--amber); }
+.cmRow { display:flex; gap:12px; align-items:flex-start; }
+.cmYr { flex:none; width:58px; text-align:center; border-radius:10px; background:var(--surface2); padding:6px 0; display:flex; flex-direction:column; }
+.cmYr b { font-size:18px; line-height:1.1; }
+.cmYr i { font-style:normal; font-size:11px; color:var(--muted); }
+.cmTx { flex:1; font-size:15px; font-weight:700; line-height:1.4; }
+.cmTx .pmeta { display:block; font-weight:500; }
+.cmLead { font-weight:800; margin:2px 0 6px; }
+.cmKinds { margin-bottom:8px; }
+.cmIdeas button { cursor:pointer; font:inherit; background:var(--accentSoft); color:var(--ink); border:0; border-radius:999px; padding:6px 11px; font-size:13.5px; text-align:left; }
+.planHead { margin-top:22px; }
+/* My two wheels of life (app.js wheelsHtml) */
+.lwTabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.lwTabs button { display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 6px; border-radius:var(--r); border:1px solid var(--border); background:var(--surface); font:inherit; font-weight:800; font-size:15px; color:var(--ink); cursor:pointer; }
+.lwTabs button span { font-size:12px; font-weight:500; color:var(--muted); }
+.lwTabs button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.lwTabs button.on span { color:rgba(255,255,255,.85); }
+.lwWheel { padding:8px; }
+.lwSvg { display:block; width:100%; max-width:320px; margin:0 auto; }
+.lwRing { fill:none; stroke:var(--border); stroke-width:1; }
+.lwSpokeLn { stroke:var(--border); stroke-width:1; }
+.lwIc { font-size:17px; }
+.lwNow { fill:rgba(31,68,255,.22); stroke:var(--accent); stroke-width:2.5; stroke-linejoin:round; }
+.lwBefore { fill:none; stroke:var(--amber); stroke-width:2; stroke-dasharray:5 4; }
+.lwSpokes { padding:4px 12px; }
+.lwRow { padding:12px 0; border-bottom:1px solid var(--line); }
+.lwRow:last-child { border-bottom:0; }
+.lwHead { display:flex; align-items:center; gap:8px; }
+.lwHead b { flex:1; font-size:15.5px; }
+.lwV { font-weight:800; font-size:14px; color:var(--accent); }
+.lwV.none { color:var(--faint); }
+.lwV.lo { color:var(--bad); }
+.lwNums { display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; margin-top:8px; }
+.lwNums button { height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); font:inherit; font-weight:700; font-size:14px; color:var(--ink); cursor:pointer; padding:0; }
+.lwNums button.lo { color:var(--bad); }
+.lwNums button.hi { color:var(--good); }
+.lwNums button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.lwLow.top { border-left:4px solid var(--bad); }
+.lwGoal { display:block; width:100%; text-align:left; margin-top:8px; padding:8px 10px; border-radius:10px; border:0; background:var(--surface2); font:inherit; font-weight:700; color:var(--ink); cursor:pointer; }
+.lwPlan { display:flex; flex-direction:column; gap:6px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer; }
+.lwPlanRow { display:flex; justify-content:space-between; font-size:15px; }
+.lwPlanRow b.lo { color:var(--bad); }
+.lwPick { max-height:132px; overflow-y:auto; }
 .jrInvite { display:flex; flex-direction:column; gap:5px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--onDark); background:linear-gradient(135deg, var(--headerBg), var(--accent)); border:0; }
 .jrInvite b { font-size:19px; }
 .jrInvite .pmeta { color:var(--onDark); opacity:.85; }

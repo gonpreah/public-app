@@ -556,7 +556,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, tg: u.tg ? { username: u.tg.username || '' } : null, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), path: u.path || {}, commit: commitOf_(u), lw: u.lw || [], resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -1080,6 +1080,41 @@ const CLIFTON = ['Achiever', 'Arranger', 'Belief', 'Consistency', 'Deliberative'
   'Activator', 'Command', 'Communication', 'Competition', 'Maximizer', 'Self-Assurance', 'Significance', 'Woo',
   'Adaptability', 'Connectedness', 'Developer', 'Empathy', 'Harmony', 'Includer', 'Individualization', 'Positivity', 'Relator',
   'Analytical', 'Context', 'Futuristic', 'Ideation', 'Input', 'Intellection', 'Learner', 'Strategic'];
+/* The journey (Nov 2026, Uriah: one path through the app — whose you are, how God made you, the
+   call, a commitment, the tools, walking it out). Two things are kept for it here:
+   u.path.beloved — the day I said "I am a child of God" (the first stage, 20 XP once), and
+   u.commit = {two, five, from, at} — what I commit to in the next two and five years, in my own
+   words (one line each, 240 characters; `from` is the year I wrote it; 30 XP once, when both are
+   there). Both private: selfOut_ only, and a coach the mentee shares their plan with sees the
+   commitments, like the calling's statement. */
+const PATH_KEYS = ['beloved'];
+async function pathMark(uid, tok, key, on) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (PATH_KEYS.indexOf(key) < 0) return { ok: false, err: 'key' };
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: true };
+    u.path = u.path && typeof u.path === 'object' ? u.path : {};
+    if (on === false) delete u.path[key];
+    else if (!u.path[key]) { u.path[key] = today_(); xpAdd_(u, 'path|' + key, 20); }
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+function commitOf_(u) { const c = u && u.commit; return c && (c.two || c.five) ? { two: c.two || '', five: c.five || '', from: c.from || 0, at: c.at || '' } : null; }
+async function commit(uid, tok, p) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  p = p && typeof p === 'object' ? p : {};
+  const two = str_(p.two, 240), five = str_(p.five, 240);
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: true };
+    if (!two && !five) { delete u.commit; return { ok: true }; }
+    const old = u.commit || {};
+    u.commit = { two: two, five: five, from: (old.two === two && old.five === five && old.from) || Number(today_().slice(0, 4)), at: today_() };
+    if (two && five) xpAdd_(u, 'commit', 30);
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
 async function saveClifton(uid, tok, p) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
   p = p && typeof p === 'object' ? p : {};
@@ -1189,6 +1224,36 @@ async function weekReset(uid, tok, week, a) {
    each broken into steps for a quarter ('2027-Q1') or a month ('2027-01'), and
    a person's own tasks. All of it is theirs alone: others see counts (cardOut_). */
 const AREAS = ['faith', 'family', 'study', 'health', 'money', 'serve'];
+/* The two wheels of life (Nov 2026, from Uriah's "Called" course, Day 4: "your two wheels of life
+   (outer and inner)" — the outer one is where a coach helps, the inner one where a counselor helps;
+   each spoke scored 1 (really hard) to 10 (thriving)). u.lw = [{d, o:{id:n}, i:{id:n}}], the last 12
+   checks, one a day — private: selfOut_ only, never a card, a coach or a leader. 10 XP once a month.
+   A life goal can say which spoke it helps (g.wheel = 'o:<id>' | 'i:<id>'), so the plan can put the
+   goals for the lowest parts of life first. */
+const WHEEL_OUT = ['faith', 'family', 'friends', 'health', 'money', 'work', 'learn', 'rest', 'home'];
+const WHEEL_IN = ['joy', 'peace', 'focus', 'identity', 'secure', 'self', 'healing', 'forgive', 'hope'];
+function wheelKey_(k) { const m = /^([oi]):([a-z]+)$/.exec(String(k || '')); return m && (m[1] === 'o' ? WHEEL_OUT : WHEEL_IN).indexOf(m[2]) > -1 ? k : ''; }
+function wheelScores_(v, ids) { const o = {}; if (v && typeof v === 'object') ids.forEach(function (id) { const n = Number(v[id]); if (Number.isInteger(n) && n >= 1 && n <= 10) o[id] = n; }); return o; }
+async function lifeWheel(uid, tok, act, a) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  a = a && typeof a === 'object' ? a : {};
+  const res = await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { abort: true, ok: false, err: 'auth' };
+    u.lw = Array.isArray(u.lw) ? u.lw : [];
+    const d = today_();
+    if (act === 'save') {
+      const o = wheelScores_(a.o, WHEEL_OUT), i = wheelScores_(a.i, WHEEL_IN);
+      if (!Object.keys(o).length && !Object.keys(i).length) return { abort: true, ok: false, err: 'empty' };
+      u.lw = u.lw.filter(function (x) { return x.d !== d; }).concat([{ d: d, o: o, i: i }]).sort(function (x, y) { return x.d < y.d ? -1 : 1; }).slice(-12);
+      xpAdd_(u, 'lw|' + d.slice(0, 7), 10);
+      return { ok: true };
+    }
+    if (act === 'drop') { u.lw = u.lw.filter(function (x) { return x.d !== a.d; }); return { ok: true }; }
+    return { abort: true, ok: false, err: 'act' };
+  });
+  if (!res.ok) return res;
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
 const MAX_LIFE_GOALS = 8, MAX_KEPT_GOALS = 30, MAX_STEPS = 40, MAX_TASKS = 60, KEEP_DONE_TASKS = 30;
 function monthOf_(iso) { return iso.slice(0, 7); }
 function quarterOf_(iso) { return iso.slice(0, 4) + '-Q' + (Math.floor((Number(iso.slice(5, 7)) - 1) / 3) + 1); }
@@ -1217,7 +1282,7 @@ async function saveGoal(uid, tok, g) {
   if (title.length < 2) return { ok: false, err: 'title' };
   if (AREAS.indexOf(g.area) === -1) return { ok: false, err: 'area' };
   if (!isMonth_(g.by) || !inYears_(g.by)) return { ok: false, err: 'by' };
-  const fields = { area: g.area, title: title, measure: str_(g.measure, 160), help: str_(g.help, 160), why: str_(g.why, 200), by: g.by };
+  const fields = { area: g.area, title: title, measure: str_(g.measure, 160), help: str_(g.help, 160), why: str_(g.why, 200), by: g.by, wheel: wheelKey_(g.wheel) };
   let gid = null;
   const res = await mutate_('u:' + uid, null, function (u) {
     if (!u) return { abort: true, ok: false, err: 'auth' };
@@ -1758,7 +1823,7 @@ async function coaching(uid, tok, cid) {
   });
   if (role === 'coach' && c.status === 'active' && c.sharePlan) {
     const m = await readJSON('u:' + c.mentee, null);
-    if (m) { o.plan = planOf_(m); const cl = callingOf_(m); if (cl.statement) o.calling = { statement: cl.statement, focus: cl.a.focus || '', m1: cl.a.m1 || '', m2: cl.a.m2 || '', m3: cl.a.m3 || '', from: cl.from }; }   // their calling, not the why, the letter or the answers
+    if (m) { o.plan = planOf_(m); o.plan.goals = o.plan.goals.map(function (g) { const x = Object.assign({}, g); delete x.wheel; return x; }); const cl = callingOf_(m); if (cl.statement) o.calling = { statement: cl.statement, focus: cl.a.focus || '', m1: cl.a.m1 || '', m2: cl.a.m2 || '', m3: cl.a.m3 || '', from: cl.from }; o.commit = commitOf_(m); }   // their calling, not the why, the letter or the answers
   }
   if (role === 'mentee' && o.other) { const co = await readJSON('u:' + c.coach, null); o.otherIsMinor = co ? isMinor_(co) : false; }
   if (role !== 'mentee') { const m = await readJSON('u:' + c.mentee, null); o.minor = !!(m && isMinor_(m)); }
@@ -2591,7 +2656,7 @@ async function signOut(uid, tok) {
 
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, tgStart, tgLinkStart, tgCheck, registerTelegram, tgLinkLogin, tgUnlink, tgWebAppLogin, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
-  savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
+  savePersonality, saveStrengths, saveApest, saveClifton, pathMark, commit, lifeWheel, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,

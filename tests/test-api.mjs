@@ -639,7 +639,36 @@ ok('an emptied page is gone, and its XP with it', jn.me.journalDays.length === 0
   ok('a coach doesn’t see it until the plan is shared', !(await H.coaching(CO.uid, CO.token, cc.id)).coaching.calling);
   await H.coachAct(CL.uid, CL.token, cc.id, 'sharePlan', { on: true });
   const cv = (await H.coaching(CO.uid, CO.token, cc.id)).coaching.calling;
-  ok('… then sees the statement, the focus and the milestones — not the why or the letter', cv && cv.statement.endsWith('read.') && cv.focus === 'Start a reading club' && cv.m1 === 'Ten children' && !('why' in cv) && !('letter' in cv)); }
+  ok('… then sees the statement, the focus and the milestones — not the why or the letter', cv && cv.statement.endsWith('read.') && cv.focus === 'Start a reading club' && cv.m1 === 'Ten children' && !('why' in cv) && !('letter' in cv));
+
+  /* the journey: whose you are, and my commitments */
+  ok('the journey’s first stage: only its own keys', (await H.pathMark(CL.uid, CL.token, 'nowhere', true)).err === 'key' && (await H.pathMark(CL.uid, CL.token, 'beloved', true, 'x')).ok === true);
+  let jx = (await H.boot(CL.uid, CL.token)).me;
+  ok('“I am a child of God”: kept with the day, 20 XP once', jx.path.beloved === today && (await H.pathMark(CL.uid, CL.token, 'beloved', true)).me.level.xp === jx.level.xp);
+  const xc = jx.level.xp;
+  let cm = await H.commit(CL.uid, CL.token, { two: '  finish my teaching degree   at RUPP ', five: '' });
+  ok('a 2-year commitment, in my own words, from this year', cm.ok && cm.me.commit.two === 'finish my teaching degree at RUPP' && cm.me.commit.five === '' && cm.me.commit.from === Number(today.slice(0, 4)) && cm.me.level.xp === xc);
+  cm = await H.commit(CL.uid, CL.token, { two: 'finish my teaching degree at RUPP', five: 'x'.repeat(400) });
+  ok('… both: 30 XP once, and each one line of 240 at most', cm.me.commit.five.length === 240 && cm.me.level.xp - xc === 30 && (await H.commit(CL.uid, CL.token, { two: 'finish my teaching degree at RUPP', five: 'serve as a missionary in Laos for four years' })).me.level.xp - xc === 30);
+  ok('a coach I share my plan with sees my commitments', ((await H.coaching(CO.uid, CO.token, cc.id)).coaching.commit || {}).five === 'serve as a missionary in Laos for four years');
+  const pcm = (await H.person(CO.uid, CO.token, CL.uid)).person;
+  ok('nobody sees them on my card, nor whose-you-are', !JSON.stringify(pcm).includes('Laos') && !('commit' in pcm) && !('path' in pcm));
+  ok('… and they can be cleared', (await H.commit(CL.uid, CL.token, { two: '', five: '' })).me.commit === null);
+  /* the two wheels of life */
+  ok('a wheel check needs at least one real score', (await H.lifeWheel(CL.uid, CL.token, 'save', { o: { faith: 11, nowhere: 5 }, i: { joy: 0 } })).err === 'empty');
+  const lx = (await H.boot(CL.uid, CL.token)).me.level.xp;
+  let lw = await H.lifeWheel(CL.uid, CL.token, 'save', { o: { faith: 7, health: 3, money: '4', nowhere: 9 }, i: { peace: 2, joy: 8.5 } });
+  ok('the two wheels: real spokes, 1 to 10, kept with the day; 10 XP', lw.ok && JSON.stringify(lw.me.lw) === JSON.stringify([{ d: today, o: { faith: 7, health: 3, money: 4 }, i: { peace: 2 } }]) && lw.me.level.xp - lx === 10);
+  lw = await H.lifeWheel(CL.uid, CL.token, 'save', { o: { faith: 8 }, i: {} });
+  ok('… one check a day (the last wins), XP once a month', lw.me.lw.length === 1 && lw.me.lw[0].o.faith === 8 && lw.me.level.xp - lx === 10);
+  const gw = await H.saveGoal(CL.uid, CL.token, { area: 'faith', title: 'Pray every morning', by: today.slice(0, 7), wheel: 'i:peace' });
+  const gx = await H.saveGoal(CL.uid, CL.token, { area: 'faith', title: 'A goal for nowhere', by: today.slice(0, 7), wheel: 'i:nowhere' });
+  const gs = gw.me.plan.goals.find(g => g.id === gw.id), gz = gx.me.plan.goals.find(g => g.id === gx.id);
+  ok('a goal can say which part of the wheels it helps — only a real one', gs.wheel === 'i:peace' && gz.wheel === '');
+  const cg = (await H.coaching(CO.uid, CO.token, cc.id)).coaching.plan.goals.find(g => g.id === gw.id);
+  ok('a coach sees the goal, not which part of the wheels it is for, nor the wheels', cg && !('wheel' in cg) && !JSON.stringify((await H.coaching(CO.uid, CO.token, cc.id)).coaching).includes('"lw"'));
+  ok('nobody sees the wheels on my card', !('lw' in (await H.person(CO.uid, CO.token, CL.uid)).person));
+  ok('… and a check can be deleted', (await H.lifeWheel(CL.uid, CL.token, 'drop', { d: today })).me.lw.length === 0); }
 
 /* ---------- 18k. Telegram sign-in ---------- */
 { const TGH = (await import('../netlify/functions/telegram.js')).default;

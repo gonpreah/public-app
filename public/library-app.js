@@ -5,6 +5,7 @@
     Changes for this app: the view is 'library' (from the Grow tab); "read" ticks and where you
     are in a book stay on this phone (gpa-lib-*), nothing goes to a server; the 🎧 player is off
     (LIB_AUDIO_ON=false, as in the Impact app). Fix a bug here and in the Impact app.
+    Also: a book opened from the journey (app.js pathOpenBook_, S.libFrom) goes back there.
     Everything below is the Impact app's own description. */
 /* ==================== Library ====================
    Five-minute reads of the books on Craig Groeschel's leadership lists, written
@@ -337,7 +338,7 @@ function libRowHtml_(title, books, read, prog, seeAll){
     '<div class="libRow">'+books.map(function(b){ return libTileHtml_(b, read, prog); }).join('')+'</div>';
 }
 function libraryHtml(){
-  var back='<button class="linkbtn" id="libBack" style="text-align:left;text-decoration:none;padding-left:0">← '+esc(S.libBook ? t('Library') : S.libShelf!=='all' ? t('Library') : t('Learn'))+'</button>';
+  var back='<button class="linkbtn" id="libBack" style="text-align:left;text-decoration:none;padding-left:0">← '+esc(S.libBook && S.libFrom ? t('Back') : S.libBook ? t('Library') : S.libShelf!=='all' ? t('Library') : t('Tools'))+'</button>';
   if(typeof GP_LIBRARY==='undefined'){
     return back+'<h2>📚 '+esc(t('Library'))+'</h2>'+(S.libError
       ? '<div class="card"><p class="sub" style="margin:0 0 10px">'+esc(t('The library could not load. Check your connection and try again.'))+'</p><button class="btn ghost" id="libRetry">'+esc(t('Try again'))+'</button></div>'
@@ -600,7 +601,7 @@ function libGo_(step){
 }
 function bindLibrary_(){
   var lb=document.getElementById('libBack');
-  if(lb) lb.onclick=function(){ gpTap(); if(S.libBook){ S.libBook=null; S.libStep=null; render(); } else if(S.libShelf!=='all'){ S.libShelf='all'; render(); } else { S.view='grow'; render(); } window.scrollTo(0,0); };
+  if(lb) lb.onclick=function(){ gpTap(); if(S.libBook && S.libFrom){ var f=S.libFrom; S.libFrom=null; S.libBook=null; S.libStep=null; if(S.back.length) S.back.pop(); S.view=f; render(); window.scrollTo(0,0); return; } if(S.libBook){ S.libBook=null; S.libStep=null; render(); } else if(S.libShelf!=='all'){ S.libShelf='all'; render(); } else { S.view='grow'; render(); } window.scrollTo(0,0); };
   var lr=document.getElementById('libRetry');
   if(lr) lr.onclick=function(){ libLoad_(); render(); };
   libLiveCovers_(); libFitTitles_();

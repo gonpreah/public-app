@@ -999,6 +999,38 @@ a.btn { display:inline-flex; align-items:center; justify-content:center; text-de
 .cmKinds { margin-bottom:8px; }
 .cmIdeas button { cursor:pointer; font:inherit; background:var(--accentSoft); color:var(--ink); border:0; border-radius:999px; padding:6px 11px; font-size:13.5px; text-align:left; }
 .planHead { margin-top:22px; }
+/* My two wheels of life (app.js wheelsHtml) */
+.lwTabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.lwTabs button { display:flex; flex-direction:column; align-items:center; gap:2px; padding:10px 6px; border-radius:var(--r); border:1px solid var(--border); background:var(--surface); font:inherit; font-weight:800; font-size:15px; color:var(--ink); cursor:pointer; }
+.lwTabs button span { font-size:12px; font-weight:500; color:var(--muted); }
+.lwTabs button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.lwTabs button.on span { color:rgba(255,255,255,.85); }
+.lwWheel { padding:8px; }
+.lwSvg { display:block; width:100%; max-width:320px; margin:0 auto; }
+.lwRing { fill:none; stroke:var(--border); stroke-width:1; }
+.lwSpokeLn { stroke:var(--border); stroke-width:1; }
+.lwIc { font-size:17px; }
+.lwNow { fill:rgba(31,68,255,.22); stroke:var(--accent); stroke-width:2.5; stroke-linejoin:round; }
+.lwBefore { fill:none; stroke:var(--amber); stroke-width:2; stroke-dasharray:5 4; }
+.lwSpokes { padding:4px 12px; }
+.lwRow { padding:12px 0; border-bottom:1px solid var(--line); }
+.lwRow:last-child { border-bottom:0; }
+.lwHead { display:flex; align-items:center; gap:8px; }
+.lwHead b { flex:1; font-size:15.5px; }
+.lwV { font-weight:800; font-size:14px; color:var(--accent); }
+.lwV.none { color:var(--faint); }
+.lwV.lo { color:var(--bad); }
+.lwNums { display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; margin-top:8px; }
+.lwNums button { height:34px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); font:inherit; font-weight:700; font-size:14px; color:var(--ink); cursor:pointer; padding:0; }
+.lwNums button.lo { color:var(--bad); }
+.lwNums button.hi { color:var(--good); }
+.lwNums button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+.lwLow.top { border-left:4px solid var(--bad); }
+.lwGoal { display:block; width:100%; text-align:left; margin-top:8px; padding:8px 10px; border-radius:10px; border:0; background:var(--surface2); font:inherit; font-weight:700; color:var(--ink); cursor:pointer; }
+.lwPlan { display:flex; flex-direction:column; gap:6px; width:100%; text-align:left; font:inherit; color:var(--ink); cursor:pointer; }
+.lwPlanRow { display:flex; justify-content:space-between; font-size:15px; }
+.lwPlanRow b.lo { color:var(--bad); }
+.lwPick { max-height:132px; overflow-y:auto; }
 .jrInvite { display:flex; flex-direction:column; gap:5px; width:100%; text-align:left; cursor:pointer; font:inherit; color:var(--onDark); background:linear-gradient(135deg, var(--headerBg), var(--accent)); border:0; }
 .jrInvite b { font-size:19px; }
 .jrInvite .pmeta { color:var(--onDark); opacity:.85; }

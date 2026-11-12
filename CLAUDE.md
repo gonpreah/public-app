@@ -21,16 +21,31 @@ a child of God first (relational identity), then what God made you to do (vocati
 a plan, then "the tools and resources you need … books and coaching and community", "a little bit of a
 hero's journey … all in a sequence. Once you fill out these things, okay, now read these books", and "a
 real solid 2-year commitment, 5-year commitment statement on the front page". So the app is **seven
-stages** (`PATH` in app.js), worked out from what's already there (`pathParts_`, `pathStage_`):
-(1) 💛 **Whose you are** — before the adventure: who God says I am (`BELOVED`, our words + references
+stages** (`PATH` in app.js), in the order of Uriah's DTS course "Called" (its five days: a child of
+God, designed, formed, healthy on the journey, sent — each stage's subtitle), worked out from what's
+already there (`pathParts_`, `pathStage_`):
+(1) 💛 **Whose you are** (a child of God): who God says I am (`BELOVED`, our words + references
 only) and "I am a child of God — Amen" (`pathMark` 'beloved' → `u.path.beloved`, 20 XP once);
-(2) 🧭 **How God made you** — the three tests; (3) 🗺️ **Your story** — the Life Journey and vision;
-(4) 🎯 **The call** — My calling (spheres optional); (5) ✍️ **Commit** — crossing the threshold: what I
-commit to in the next 2 and 5 years, in my own words (view `commit`, `CM_KINDS` starters, ideas from the
-calling's focus and milestones; `commit` → `u.commit` = {two, five, from, at}, one line of 240 each, 30 XP
-once both; Share / Telegram / Copy); (6) 🧰 **Tools for the road** — mentors and allies: a book read, a
-mentor (an active 1-on-1 as mentee), a team (done with 2 of 3); (7) 🚶 **Walk it out** — a goal with
-steps, habits, an update for supporters. Each stage has 3 books (`PATH_BOOKS`: Library ids, titles,
+(2) 🧭 **How God made you** (designed) — the three tests; (3) 🗺️ **Your story** (formed) — the Life
+Journey and vision; (4) 🌱 **Healthy for the road** (healthy on the journey) — my two wheels of life
+(below), a book read, a mentor (an active 1-on-1 as mentee), a team (done: the wheels and 2 of the
+other 3); (5) 🎯 **The call** (sent) — My calling (spheres optional); (6) ✍️ **Commit** — crossing the
+threshold: what I commit to in the next 2 and 5 years, in my own words (view `commit`, `CM_KINDS`
+starters, ideas from the calling's focus and milestones; `commit` → `u.commit` = {two, five, from, at},
+one line of 240 each, 30 XP once both; Share / Telegram / Copy); (7) 🚶 **Walk it out** — a goal for
+the lowest part of my wheels with steps, habits, an update for supporters.
+**My two wheels of life** (view `wheels`; the course's Day 4: "your two wheels of life, outer and
+inner", Mark 12:30): the **outer** wheel, where a coach helps (`WHEEL_OUT`: faith, family & marriage,
+friends & community, health & body, money, work & ministry, learning, rest & fun, my home) and the
+**inner** one, where a counselor helps (`WHEEL_IN`: joy, peace, focus, identity, secure attachment,
+being yourself with others (differentiation), healing, forgiveness, hope), each spoke 1–10 with a
+question to score it by, drawn as a wheel with the last check as a line. `lifeWheel` 'save' / 'drop'
+→ `u.lw` = [{d, o, i}] (12 checks, one a day; 10 XP once a month) — **private**: `selfOut_` only, never
+a card, coach or leader. Then **"Start with your lowest"**: the parts lowest first (five, then all),
+each with its goals or "Set a goal for this" (a starter goal from the spoke, its life area). A goal
+keeps which part it helps (`g.wheel` = 'o:<id>' | 'i:<id>', `wheelKey_`; the editor's chips are lowest
+first); the plan lists goals for the lowest parts first and tags them ("Peace 2/10"); a coach sees the
+goals without `wheel`. The Life Journey's simpler six-area wheel (1–5) stays as it was. Each stage has 3 books (`PATH_BOOKS`: Library ids, titles,
 shelf colours — Home shows them without loading library.js); a stage that's done says "Now read these".
 **Tabs**: Home · **Journey** (view `plan`: the map `pathMapHtml_`, my commitment, calling and vision if
 started, then "My life plan") · **Tools** (view `grow`: books to read next, the Library, Bible & prayer,

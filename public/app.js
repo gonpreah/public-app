@@ -137,7 +137,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { stage:'plan', commit:'plan', cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { wheels:'plan', stage:'plan', commit:'plan', cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -196,6 +196,7 @@ function render(){
     else if(V==='calling') h=callingHtml();
     else if(V==='spheres') h=spheresHtml();
     else if(V==='stage') h=stageHtml();
+    else if(V==='wheels') h=wheelsHtml();
     else if(V==='commit') h=commitHtml();
     else if(V==='cupdate') h=cupdateHtml();
     else if(V==='reset') h=resetHtml();
@@ -816,9 +817,10 @@ function planHtml(){
   else if(P.why) h+='<p class="whyText">“'+esc(P.why)+'”</p><button class="linkbtn" id="whyEdit">'+esc(t('Change'))+'</button>';
   else h+='<p class="sub" style="margin:0 0 6px">'+esc(t('What do you think God made you for? Write a sentence or two — you can change it any time.'))+'</p><button class="btn ghost" id="whyEdit">'+esc(t('Write my why'))+'</button>';
   h+='</div>';
+  h+=lwPlanHtml_();
   h+='<h3>🎯 '+esc(t('Life goals'))+'</h3>';
   if(!active.length) h+='<div class="card"><p class="sub" style="margin:0">'+esc(t('A life goal is something big you want to reach in the next months or years. Make it clear, something you can measure, and give it a date.'))+'</p></div>';
-  active.forEach(function(g){ h+=goalRowHtml(g); });
+  goalsByWheel_(active).forEach(function(g){ h+=goalRowHtml(g); });   // the lowest part of my wheels first
   if(active.length<MAX_LIFE_GOALS) h+='<button class="btn ghost" id="newGoal">＋ '+esc(t('New life goal'))+'</button>';
   h+=dreamsHtml_();
   if(reached.length){
@@ -833,7 +835,7 @@ function goalRowHtml(g){
   var a=areaOf(g.area), pct=goalPct(g), now=(g.steps||[]).filter(function(s){ return isNow_(s.when) && !s.done; }).length;
   var meta=g.done ? gpT('Reached {d}',{d:dayLabel(g.done)}) : gpT('By {m}',{m:monthLabel(g.by)})+(now?' · '+gpT('{n} steps for now',{n:now}):'');
   return '<button class="card goalRow'+(g.done?' reached':'')+'" data-goal="'+esc(g.id)+'"><span class="goalIc">'+(g.done?'🏆':a.icon)+'</span><span style="flex:1;min-width:0;text-align:left">'+
-    '<b>'+esc(g.title)+'</b><div class="pmeta">'+esc(a.name)+' · '+esc(meta)+'</div>'+
+    '<b>'+esc(g.title)+'</b><div class="pmeta">'+esc(a.name)+esc(goalWheelTag_(g))+' · '+esc(meta)+'</div>'+
     '<div class="miniTrack"><div style="width:'+pct+'%"></div></div></span><span class="chev">›</span></button>';
 }
 function goalHtml(){
@@ -888,7 +890,7 @@ function stepRowHtml(g, s){
 function goalEditHtml(){
   var F=S.goalDraft, d=todayStr();
   var h=backBtn(t('Back'))+'<h2>'+esc(F.id?t('Edit the goal'):t('New life goal'))+'</h2><p class="sub">'+esc(t('A good goal is SMART: Specific, Measurable, Achievable, Relevant and Time-bound.'))+'</p><div class="card">'+
-    '<label class="f">'+esc(t('Which part of life?'))+'</label><div class="catChips">'+AREAS.map(function(a){ return '<button class="catChip'+(F.area===a[0]?' on':'')+'" data-garea="'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</button>'; }).join('')+'</div>'+goalIdeasHtml_(F)+
+    '<label class="f">'+esc(t('Which part of life?'))+'</label><div class="catChips">'+AREAS.map(function(a){ return '<button class="catChip'+(F.area===a[0]?' on':'')+'" data-garea="'+a[0]+'">'+a[1]+' '+esc(t(a[2]))+'</button>'; }).join('')+'</div>'+goalIdeasHtml_(F)+goalWheelHtml_(F)+
     smartField_('gTitle','S',t('What exactly do you want to do?'),t('e.g. Finish grade 12 with good marks'),F.title,100)+
     smartField_('gMeasure','M',t('How will you know you’ve done it?'),t('e.g. I pass the exam with a B or better'),F.measure,160)+
     smartField_('gHelp','A',t('What or who will help you get there?'),t('e.g. A study group, my teacher, two hours a day'),F.help,160)+
@@ -1330,7 +1332,7 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_(); bindPath_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_(); bindPath_(); bindWheels_();
   all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
   all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });
@@ -1423,7 +1425,7 @@ function bind(){
     if(!F.area){ showMsg(t('Choose a part of life.')); return; }
     return call('saveGoal', F).then(function(d){ if(d && d.ok){ S.me=d.me; S.goalDraft=null; S.goalId=d.id;
       if(F.id) goBack('goal'); else { S.back=['plan']; S.view='goal'; render(); window.scrollTo(0,0); } } else failMsg(d); }); }));
-  on('goalEdit', function(){ var g=goalById(S.goalId); if(!g) return; S.goalDraft={ id:g.id, area:g.area, title:g.title, measure:g.measure, help:g.help, why:g.why, by:g.by }; go('goaledit'); });
+  on('goalEdit', function(){ var g=goalById(S.goalId); if(!g) return; S.goalDraft={ id:g.id, area:g.area, title:g.title, measure:g.measure, help:g.help, why:g.why, by:g.by, wheel:g.wheel||'' }; go('goaledit'); });
   on('goalDelete', busyOnce_(function(){ if(!confirm(t('Delete this goal and all its steps?'))) return;
     return call('goalAct', S.goalDraft.id, 'delete').then(function(d){ if(d && d.ok){ S.me=d.me; S.goalDraft=null; S.goalId=null; S.back=[]; S.view='plan'; render(); window.scrollTo(0,0); } else failMsg(d); }); }));
   on('goalReach', busyOnce_(function(){ var el=$('goalReach'); return call('goalAct', S.goalId, 'reach', { done:true }).then(function(d){ if(d && d.ok){ confettiAt_(el); S.me=d.me; showMsg(t('Well done! Thank God for it.')); render(); } else failMsg(d); }); }));
@@ -3638,7 +3640,123 @@ function confettiAt_(el){
   } catch(e){}
 }
 
+/* ---------------- My two wheels of life (view wheels; api.js lifeWheel) ----------------
+   Nov 2026, from Uriah's "Called" course, Day 4 ("your two wheels of life, outer and inner"): God
+   wants the whole person — heart, soul and mind (the inner life) and strength (the outer life),
+   Mark 12:30. The outer wheel is where a coach helps (goals, practice, the next step); the inner one
+   is where a counselor helps (understanding and healing what's inside). Nine spokes each, scored
+   1 (really hard) to 10 (thriving); the shape matters more than the total, and the lowest part —
+   the one most likely to take you off the road — is where to start. So the screen ends with every
+   spoke, lowest first, each with the goals that help it and one tap to set one (g.wheel), and the
+   plan puts the goals for the lowest parts first. Private: only selfOut_ sends u.lw.
+   [id, icon, name, the question to score it by, a goal to start from, the life area it goes with] */
+var WHEEL_OUT=[
+  ['faith','🙏','Faith','How close and alive is your walk with God?','Spend 15 minutes with God every morning','faith'],
+  ['family','🏠','Family & marriage','How are things with the people closest to you at home?','Eat together with my family once a week, phones away','family'],
+  ['friends','🤝','Friends & community','Do you have friends who really know you?','Meet one good friend every week','family'],
+  ['health','💪','Health & body','Sleep, food, exercise — how is your body doing?','Exercise three times a week','health'],
+  ['money','💵','Money','Do you spend, save and give wisely?','Save a little every month, and give the first part','money'],
+  ['work','💼','Work & ministry','Does your work or ministry fit how God made you?','Talk with my leader about a role that fits how God made me','study'],
+  ['learn','📚','Learning','Are you growing — a skill, a language, your studies?','Learn one new skill this year','study'],
+  ['rest','🎉','Rest & fun','Do you rest, keep a sabbath and have fun?','Take one day a week to rest','health'],
+  ['home','🏡','My home','Is where you live a place you can rest?','Make my room a place I can rest and pray','family']];
+var WHEEL_IN=[
+  ['joy','😊','Joy','Is there joy in your days, even when it’s hard?','Write three things I’m thankful for every evening','faith'],
+  ['peace','🕊️','Peace','Is your heart mostly at peace, or anxious?','Give my worries to God in prayer every morning','faith'],
+  ['focus','🎯','Focus','Can you keep your mind on what matters?','Two focused hours a day, my phone in another room','study'],
+  ['identity','💛','Identity','Do you know you’re God’s child, loved before you do anything?','Read who God says I am every morning for 30 days','faith'],
+  ['secure','⚓','Secure attachment','Can you trust people, and let them close?','Share honestly with one safe person every week','family'],
+  ['self','⭕','Being yourself with others','Can you stay close to people and still be yourself — and say no?','Practise saying a kind, clear no','family'],
+  ['healing','🩹','Healing','Are old hurts healing, or still pulling you back?','Meet a counselor once a month','health'],
+  ['forgive','🤲','Forgiveness','Have you forgiven the people who hurt you — and yourself?','Write a prayer forgiving someone — I don’t have to send it','faith'],
+  ['hope','🌅','Hope','Do you look ahead with hope?','Read my vision again every Sunday','faith']];
+function lwChecks_(){ return ((S.me && S.me.lw)||[]).slice().sort(function(a,b){ return a.d<b.d?-1:1; }); }
+function lwLast_(){ var c=lwChecks_(); return c[c.length-1]||null; }
+function lwSpoke_(k){ var w=String(k||'').charAt(0), id=String(k||'').slice(2), L=w==='o'?WHEEL_OUT:w==='i'?WHEEL_IN:null, x=L && L.filter(function(s){ return s[0]===id; })[0];
+  return x ? { k:k, w:w, id:x[0], ic:x[1], name:x[2], q:x[3], idea:x[4], area:x[5] } : null; }
+/* Every spoke scored in my last check, lowest first (the outer wheel first when it's a tie). */
+function lwRanked_(){ var c=lwLast_(); if(!c) return [];
+  var out=[]; [['o',WHEEL_OUT],['i',WHEEL_IN]].forEach(function(W){ W[1].forEach(function(s, n){ var v=(c[W[0]]||{})[s[0]]; if(v) out.push({ k:W[0]+':'+s[0], v:v, n:(W[0]==='o'?0:20)+n }); }); });
+  return out.sort(function(a,b){ return a.v-b.v || a.n-b.n; }); }
+function lwScore_(k){ var c=lwLast_(), s=lwSpoke_(k); return c && s ? ((c[s.w]||{})[s.id]||0) : 0; }
+/* The wheel drawn: nine spokes, my scores now (filled) and last time (a line). */
+function lwSvg_(L, now, before){
+  var R=118, cx=150, cy=150, n=L.length, pt=function(i, v){ var a=-Math.PI/2+i*2*Math.PI/n, r=R*v/10; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; };
+  var poly=function(vals){ return L.map(function(s, i){ return pt(i, Math.max(0.4, vals[s[0]]||0)).map(function(x){ return x.toFixed(1); }).join(','); }).join(' '); };
+  var h='<svg class="lwSvg" viewBox="0 0 300 300" role="img" aria-label="'+esc(t('My wheel of life'))+'">';
+  [2.5,5,7.5,10].forEach(function(v){ h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*v/10)+'" class="lwRing"/>'; });
+  L.forEach(function(s, i){ var p=pt(i,10), q=pt(i,11.9); h+='<line x1="'+cx+'" y1="'+cy+'" x2="'+p[0].toFixed(1)+'" y2="'+p[1].toFixed(1)+'" class="lwSpokeLn"/><text x="'+q[0].toFixed(1)+'" y="'+(q[1]+6).toFixed(1)+'" text-anchor="middle" class="lwIc">'+s[1]+'</text>'; });
+  if(before && Object.keys(before).length) h+='<polygon points="'+poly(before)+'" class="lwBefore"/>';
+  if(Object.keys(now).length) h+='<polygon points="'+poly(now)+'" class="lwNow"/>';
+  return h+'</svg>';
+}
+function wheelsHtml(){
+  var last=lwLast_();
+  var W=S.wh||(S.wh={ tab:'o', o:Object.assign({}, last ? last.o : {}), i:Object.assign({}, last ? last.i : {}) }), L=W.tab==='o'?WHEEL_OUT:WHEEL_IN, vals=W[W.tab];
+  var h=backBtn(t('Back'))+'<h2>⭕ '+esc(t('My two wheels of life'))+'</h2>'+
+    '<p class="sub">'+esc(t('God wants the whole of you: heart, soul and mind — your inner life — and strength — your outer life.'))+' <i>'+esc(refsLabel_('Mark 12:30'))+'</i></p>'+
+    '<div class="card pIntro">'+esc(t('Score each part from 1 (really hard) to 10 (thriving). Be honest — only you see it. The shape matters more than the total: one very low part makes a bumpy ride. A coach helps with the outer wheel; a counselor helps with the inner one.'))+'</div>';
+  h+='<div class="lwTabs"><button class="'+(W.tab==='o'?'on':'')+'" data-lwtab="o">🌍 '+esc(t('Outer life'))+'<span>'+esc(t('with a coach'))+'</span></button><button class="'+(W.tab==='i'?'on':'')+'" data-lwtab="i">💗 '+esc(t('Inner life'))+'<span>'+esc(t('with a counselor'))+'</span></button></div>';
+  h+='<div class="card lwWheel">'+lwSvg_(L, vals, last ? last[W.tab] : null)+
+    (last ? '<div class="pmeta" style="text-align:center">'+esc(gpT('The line is your last check ({d})',{d:dayLabel(last.d)}))+'</div>' : '')+'</div>';
+  h+='<div class="card lwSpokes">'+L.map(function(s){ var v=vals[s[0]]||0;
+    return '<div class="lwRow"><div class="lwHead"><span>'+s[1]+'</span><b>'+esc(t(s[2]))+'</b><span class="lwV'+(v?'':' none')+'">'+(v?v+'/10':'—')+'</span></div><div class="pmeta">'+esc(t(s[3]))+'</div>'+
+      '<div class="lwNums">'+[1,2,3,4,5,6,7,8,9,10].map(function(n){ return '<button class="'+(n===v?'on':'')+(n<=3?' lo':n>=8?' hi':'')+'" data-lw="'+W.tab+'|'+s[0]+'|'+n+'" aria-label="'+n+'">'+n+'</button>'; }).join('')+'</div></div>'; }).join('')+'</div>';
+  var nO=Object.keys(W.o).length, nI=Object.keys(W.i).length;
+  h+='<div class="pmeta" style="text-align:center;margin-bottom:8px">'+esc(gpT('Outer {a}/9 · inner {b}/9',{a:nO, b:nI}))+'</div>';
+  if(W.tab==='o' && nO>=9 && nI<9) h+='<button class="btn ghost" data-lwtab="i">💗 '+esc(t('Now the inner wheel'))+' ›</button>';
+  h+='<button class="btn" id="lwSave"'+(nO+nI?'':' disabled')+'>'+esc(t('Save my wheels'))+'</button>';
+  if(last) h+=lwLowestHtml_();
+  return h;
+}
+/* Lowest first: where to start, and the goals that help each part. */
+function lwLowestHtml_(){
+  var R=lwRanked_(), goals=planOf().goals.filter(function(g){ return !g.done; });
+  if(!R.length) return '';
+  var h='<h3>🔻 '+esc(t('Start with your lowest'))+'</h3><p class="pmeta" style="margin:-4px 0 8px">'+esc(gpT('From your check on {d}. Which low part is most likely to take you off the road? Start there.',{d:dayLabel(lwLast_().d)}))+'</p>';
+  var more=R.length-5;   // the lowest five, then the rest on a tap (a part with a goal always shows)
+  if(!S.lwAll) R=R.filter(function(r, i){ return i<5 || goals.some(function(g){ return g.wheel===r.k; }); });
+  return h+R.map(function(r, i){ var s=lwSpoke_(r.k), mine=goals.filter(function(g){ return g.wheel===r.k; });
+    return '<div class="card lwLow'+(i<3?' top':'')+'"><div class="lwHead"><span>'+s.ic+'</span><b>'+esc(t(s.name))+'</b><span class="lwV'+(r.v<=4?' lo':'')+'">'+r.v+'/10</span></div>'+
+      '<div class="pmeta">'+esc(s.w==='o'?t('Outer life · a coach can help'):t('Inner life · a counselor can help'))+'</div>'+
+      mine.map(function(g){ return '<button class="lwGoal" data-goal="'+esc(g.id)+'">🎯 '+esc(g.title)+' ›</button>'; }).join('')+
+      (mine.length ? '' : '<button class="btn small'+(i<3?'':' ghost')+'" data-lwgoal="'+r.k+'" style="margin-top:8px">＋ '+esc(t('Set a goal for this'))+'</button>')+'</div>'; }).join('')+
+    (more>0 ? '<button class="linkbtn" id="lwMore">'+esc(S.lwAll ? t('Show fewer') : gpT('Show all {n} parts',{n:more+5}))+' '+(S.lwAll?'▴':'▾')+'</button>' : '');
+}
+/* A goal for one part of the wheel: the idea for it, the life area that goes with it. */
+function lwGoalDraft_(k){ var s=lwSpoke_(k); return { area:s?s.area:'', title:s?t(s.idea):'', measure:'', help:'', why:'', by:addMonths(monthKey(todayStr()), 6), wheel:k }; }
+/* In the goal editor: which part of my wheels this goal helps — lowest first. */
+function goalWheelHtml_(F){
+  var R=lwRanked_(), ks=R.length ? R.map(function(r){ return r.k; }) : WHEEL_OUT.map(function(s){ return 'o:'+s[0]; }).concat(WHEEL_IN.map(function(s){ return 'i:'+s[0]; }));
+  if(F.wheel && ks.indexOf(F.wheel)<0) ks.unshift(F.wheel);
+  return '<label class="f">⭕ '+esc(t('Which part of your wheels does it help?'))+' <span class="pmeta">('+esc(R.length?t('lowest first'):t('optional'))+')</span></label><div class="catChips lwPick">'+
+    ks.map(function(k){ var s=lwSpoke_(k), v=lwScore_(k); return s ? '<button class="catChip'+(F.wheel===k?' on':'')+'" data-gwheel="'+k+'">'+s.ic+' '+esc(t(s.name))+(v?' · '+v:'')+'</button>' : ''; }).join('')+'</div>';
+}
+/* The plan: goals for the lowest parts of my wheels first. */
+function goalsByWheel_(list){ return list.map(function(g, i){ return { g:g, v:g.wheel ? (lwScore_(g.wheel)||11) : 12, i:i }; }).sort(function(a,b){ return a.v-b.v || a.i-b.i; }).map(function(x){ return x.g; }); }
+function goalWheelTag_(g){ var s=g.wheel && lwSpoke_(g.wheel), v=s && lwScore_(g.wheel); return s ? ' · '+s.ic+' '+t(s.name)+(v?' '+v+'/10':'') : ''; }
+/* The Journey tab: my wheels in a line, the lowest three. */
+function lwPlanHtml_(){
+  var R=lwRanked_();
+  if(!R.length) return entryCardHtml('goWheels','⭕',t('My two wheels of life'),t('Score your outer and inner life, 1 to 10 — then set goals for the lowest parts first.'));
+  return '<h3>⭕ '+esc(t('My two wheels of life'))+'</h3><button class="card lwPlan" id="goWheels"><span class="pmeta">'+esc(t('Lowest first'))+' · '+esc(dayLabel(lwLast_().d))+'</span>'+
+    R.slice(0,3).map(function(r){ var s=lwSpoke_(r.k); return '<span class="lwPlanRow"><span>'+s.ic+' '+esc(t(s.name))+'</span><b class="'+(r.v<=4?'lo':'')+'">'+r.v+'/10</b></span>'; }).join('')+
+    '<span class="visionRead">'+esc(t('Check again · set goals'))+' ›</span></button>';
+}
+function bindWheels_(){
+  on('goWheels', function(){ S.wh=null; go('wheels'); });
+  on('lwMore', function(){ S.lwAll=!S.lwAll; var y=window.scrollY; render(); window.scrollTo(0,y); });
+  all('[data-lwgoal]', function(b){ S.goalDraft=lwGoalDraft_(b.getAttribute('data-lwgoal')); go('goaledit'); });
+  all('[data-gwheel]', function(b){ keepGoal_(); var k=b.getAttribute('data-gwheel'), F=S.goalDraft; F.wheel = F.wheel===k ? '' : k; var s=lwSpoke_(F.wheel); if(s && !F.area) F.area=s.area; render(); });
+  if(S.view!=='wheels') return;
+  all('[data-lwtab]', function(b){ S.wh.tab=b.getAttribute('data-lwtab'); render(); window.scrollTo(0,0); });
+  all('[data-lw]', function(b){ var p=b.getAttribute('data-lw').split('|'); S.wh[p[0]][p[1]]=Number(p[2]); gpTap(); var y=window.scrollY; render(); window.scrollTo(0,y); });
+  on('lwSave', busyOnce_(function(){ return call('lifeWheel','save',{ o:S.wh.o, i:S.wh.i }).then(function(d){ if(d && d.ok){ S.me=d.me; render(); showMsg(t('Saved. Now start with your lowest part.')); var x=document.querySelector('.lwLow'); if(x) x.scrollIntoView({ behavior:'smooth', block:'center' }); } else failMsg(d); }); }));
+}
+
 /* ---------------- The journey: one path through the app (Nov 2026) ----------------
+   The order follows Uriah's "Called" course (a child of God, designed, formed, healthy on the
+   journey, sent), then the commitment and walking it out.
    Uriah: make the app feel like one thing people understand — "your calling, relational and
    vocational identity": first whose you are (a child of God), then how God made you and what he's
    calling you to do, then a plan and a real commitment, then the tools to make it possible (books,
@@ -3650,13 +3768,13 @@ function confettiAt_(el){
    to read next; a stage opens as view `stage` with what to do and its books (PATH_BOOKS, the
    Library's ids — opened in the Library, read ticks from the phone as the Library keeps them). */
 var PATH=[
-  { id:'beloved', ic:'💛', name:'Whose you are', hero:'Before the adventure', say:'You are a child of God — loved before you do anything. Everything else grows out of this.', books:['the-father-heart-of-god','intimate-friendship-with-god','making-jesus-lord'] },
-  { id:'made', ic:'🧭', name:'How God made you', hero:'Know who you are', say:'Your personality, your strengths and your gifts: how God made you, and how you work best.', books:['mindset','emotional-intelligence','switch-on-your-brain'] },
-  { id:'story', ic:'🗺️', name:'Your story', hero:'The ordinary world', say:'Where you come from, what breaks your heart, what you’re afraid of — and a vision for your life.', books:['start-with-why','the-war-of-art','grit'] },
-  { id:'call', ic:'🎯', name:'The call', hero:'The call to adventure', say:'What God made you to do: one clear focus for the next three years, and why it matters.', books:['is-that-really-you-god','daring-to-live-on-the-edge','discipling-nations'] },
-  { id:'commit', ic:'✍️', name:'Commit', hero:'Crossing the threshold', say:'Say yes. Write down what you will commit to in the next two years and the next five.', books:['decisive','the-compound-effect','the-7-habits-of-highly-effective-people'] },
-  { id:'tools', ic:'🧰', name:'Tools for the road', hero:'Mentors and allies', say:'No one walks this alone: books that grow you, a mentor who guides you, and a team who walks with you.', books:['how-to-win-friends-and-influence-people','crucial-conversations','thanks-for-the-feedback'] },
-  { id:'walk', ic:'🚶', name:'Walk it out', hero:'The road — and coming home', say:'A plan with steps, small habits every day, and telling your people how it’s going.', books:['atomic-habits','deep-work','developing-the-leader-within-you'] }
+  { id:'beloved', ic:'💛', name:'Whose you are', hero:'A child of God', say:'You are a child of God — loved before you do anything. Everything else grows out of this.', books:['the-father-heart-of-god','intimate-friendship-with-god','making-jesus-lord'] },
+  { id:'made', ic:'🧭', name:'How God made you', hero:'Designed', say:'Your personality, your strengths and your gifts: how God made you, and how you work best.', books:['emotional-intelligence','switch-on-your-brain','the-war-of-art'] },
+  { id:'story', ic:'🗺️', name:'Your story', hero:'Formed', say:'God has been forming you your whole life: where you come from, what breaks your heart, what you’re afraid of — and a vision for your life.', books:['mindset','grit','the-compound-effect'] },
+  { id:'health', ic:'🌱', name:'Healthy for the road', hero:'Healthy on the journey', say:'A call lasts when you’re healthy. Check your two wheels of life, outer and inner — then get what helps: a mentor, a team, good books.', books:['boundaries','crucial-conversations','drive'] },
+  { id:'call', ic:'🎯', name:'The call', hero:'Sent', say:'Sent as a child, not an employee: what God made you to do — one clear focus for the next three years, and why it matters.', books:['is-that-really-you-god','daring-to-live-on-the-edge','discipling-nations'] },
+  { id:'commit', ic:'✍️', name:'Commit', hero:'Crossing the threshold', say:'Say yes. Write down what you will commit to in the next two years and the next five.', books:['start-with-why','decisive','the-7-habits-of-highly-effective-people'] },
+  { id:'walk', ic:'🚶', name:'Walk it out', hero:'The road — and coming home', say:'A plan with steps — the lowest part of your wheels first — small habits every day, and telling your people how it’s going.', books:['atomic-habits','deep-work','developing-the-leader-within-you'] }
 ];
 /* The books each stage points to — title, author, shelf colour (as library.js has them), so Home
    can show them without loading the whole Library. */
@@ -3676,9 +3794,9 @@ var PATH_BOOKS={
   'decisive':['Decisive','Chip Heath & Dan Heath','#1F8A6F'],
   'the-compound-effect':['The Compound Effect','Darren Hardy','#1F8A6F'],
   'the-7-habits-of-highly-effective-people':['The 7 Habits of Highly Effective People','Stephen R. Covey','#1F8A6F'],
-  'how-to-win-friends-and-influence-people':['How to Win Friends & Influence People','Dale Carnegie','#B5475A'],
+  'boundaries':['Boundaries','Henry Cloud & John Townsend','#B5475A'],
   'crucial-conversations':['Crucial Conversations','Kerry Patterson and others','#B5475A'],
-  'thanks-for-the-feedback':['Thanks for the Feedback','Douglas Stone & Sheila Heen','#B5475A'],
+  'drive':['Drive','Daniel H. Pink','#A4572A'],
   'atomic-habits':['Atomic Habits','James Clear','#1F8A6F'],
   'deep-work':['Deep Work','Cal Newport','#A4572A'],
   'developing-the-leader-within-you':['Developing the Leader Within You','John C. Maxwell','#2D6CB0']
@@ -3710,17 +3828,18 @@ function pathParts_(id){
   if(id==='commit') return [
     { t:'What I commit to in the next 2 years', done:!!cm.two, go:'commit' },
     { t:'What I commit to in the next 5 years', done:!!cm.five, go:'commit' }];
-  if(id==='tools') return [
+  if(id==='health') return [
+    { t:'Your two wheels of life', done:lwChecks_().length>0, go:'wheels' },
     { t:'Read a book for your journey', done:PATH.some(function(s){ return s.books.some(function(b){ return rd[b]; }); }), go:'library' },
     { t:'A mentor for 1-on-1s', done:(S.coach||[]).some(function(c){ return c.role==='mentee' && c.status==='active'; }), go:'mentor' },
     { t:'A team to walk with', done:!!(S.teams||[]).length, go:'teams' }];
   return [
-    { t:'A life goal with steps', done:P.goals.some(function(g){ return !g.done && (g.steps||[]).length; }) || P.goals.some(function(g){ return g.done; }), go:'goal' },
+    { t:'A goal for the lowest part of your wheels, with steps', done:P.goals.some(function(g){ return !g.done && g.wheel && (g.steps||[]).length; }) || P.goals.some(function(g){ return g.done && g.wheel; }), go:'lowgoal' },
     { t:'Small habits every day', done:!!(me.habits||[]).length, go:'habits' },
     { t:'Tell your people how it’s going', done:!!(cl.updates||[]).length, go:cl.statement?'cupdate':'share' }];
 }
 function pathStage_(id){ var p=pathParts_(id).filter(function(x){ return !x.extra; }), n=p.filter(function(x){ return x.done; }).length;
-  return { n:n, of:p.length, done: id==='tools' ? n>=2 : n===p.length }; }
+  return { n:n, of:p.length, done: id==='health' ? (p[0].done && n>=3) : n===p.length }; }
 /* Where I am: the first stage not done (the last when all are). */
 function pathNow_(){ for(var i=0;i<PATH.length;i++) if(!pathStage_(PATH[i].id).done) return i; return -1; }
 function pathById_(id){ return PATH.filter(function(s){ return s.id===id; })[0]; }
@@ -3795,7 +3914,7 @@ function stageHtml(){
   } else {
     h+='<div class="card stParts">'+parts.map(function(p){ return '<button class="stPart'+(p.done?' done':'')+'" data-pgo="'+p.go+'"><span class="stChk">'+(p.done?'✓':(p.extra?'＋':'○'))+'</span><span style="flex:1;text-align:left">'+esc(t(p.t))+(p.extra?' <span class="pmeta">('+esc(t('optional'))+')</span>':'')+'</span><span class="stGo">'+esc(p.done?t('Open'):t('Start'))+' ›</span></button>'; }).join('')+'</div>';
     if(s.id==='commit' && commitOf_()) h+='<div class="card cmHome">'+commitRowsHtml_(commitOf_())+'</div>';
-    if(s.id==='tools') h+='<p class="pmeta">'+esc(t('A mentor is a leader in one of your teams. Open their card in your team and tap “Ask … to be my coach”.'))+'</p>';
+    if(s.id==='health') h+=(lwChecks_().length?lwPlanHtml_():'')+'<p class="pmeta">'+esc(t('A mentor is a leader in one of your teams. Open their card in your team and tap “Ask … to be my coach”.'))+'</p>';
   }
   h+='<h3>📚 '+esc(st.done?t('Now read these'):t('Books for this stage'))+'</h3><p class="pmeta" style="margin:-4px 0 8px">'+esc(gpT('{n} of {m} read · ten minutes each',{n:s.books.filter(function(b){ return rd[b]; }).length, m:s.books.length}))+'</p>'+pathBooksRowHtml_(s.books);
   if(st.done || s.id==='beloved') h+='<p class="pmeta stTalk">🤝 '+esc(t('Tell your mentor or your team what you found here.'))+'</p>';
@@ -3834,6 +3953,11 @@ function pathGo_(g){
   if(g==='mentor'){ var m=(S.coach||[]).filter(function(c){ return c.role==='mentee' && c.status==='active'; })[0]; if(m){ openCoach_(m.id); return; } S.back=[]; go('teams', true); if((S.teams||[]).length) setTimeout(function(){ showMsg(t('A mentor is a leader in one of your teams. Open their card in your team and tap “Ask … to be my coach”.')); }, 200); return; }
   if(g==='teams'){ S.back=[]; go('teams', true); return; }
   if(g==='faith'){ go('faith'); return; }
+  if(g==='wheels'){ S.wh=null; go('wheels'); return; }
+  if(g==='lowgoal'){ var R=lwRanked_(); if(!R.length){ S.wh=null; go('wheels'); return; }
+    var act=planOf().goals.filter(function(x){ return !x.done && x.wheel; }), bare=goalsByWheel_(act).filter(function(x){ return !(x.steps||[]).length; })[0];
+    if(bare){ S.goalId=bare.id; go('goal'); return; }
+    var free=R.filter(function(r){ return !act.some(function(x){ return x.wheel===r.k; }); })[0]||R[0]; S.goalDraft=lwGoalDraft_(free.k); go('goaledit'); return; }
   if(g==='goal'){ var P=planOf(), gl=P.goals.filter(function(x){ return !x.done; })[0]; if(gl){ S.goalId=gl.id; go('goal'); return; } S.goalDraft={ area:'', title:'', measure:'', help:'', why:'', by:addMonths(monthKey(todayStr()), 12) }; go('goaledit'); return; }
   if(g==='habits'){ S.habitDraft=null; go('habitpick'); return; }
   if(g==='cupdate'){ S.cu={ step:'form', since:'', story:'', next:cuNext_(), pray:'', thanks:'' }; go('cupdate'); return; }

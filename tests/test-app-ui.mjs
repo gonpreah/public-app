@@ -950,6 +950,23 @@ ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.s
   ok('Home’s next step moves on to stage 2', /Stage 2 of 7/.test(await text(g)));
   await g.click('nav.bottom button[data-tab="grow"]'); await g.waitForSelector('.pBooks');
   ok('the Tools tab: books to read next, the Library, a mentor, my team', /Tools for the journey/.test(await text(g)) && /Read next/.test(await text(g)) && !!(await g.$('#goLibrary')) && !!(await g.$('[data-pgo="mentor"]')) && !!(await g.$('#goLearn')));
+  /* the two wheels of life, and goals for the lowest part first */
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('#goWheels'); await g.click('#goWheels'); await g.waitForSelector('[data-lw]');
+  ok('the two wheels: nine parts each, 1 to 10, the outer first', (await g.$$('.lwRow')).length === 9 && (await g.$$('[data-lw^="o|faith|"]')).length === 10 && /coach helps with the outer wheel/.test(await text(g)));
+  for (const [id, n] of [['faith', 8], ['family', 7], ['friends', 6], ['health', 3], ['money', 5], ['work', 6], ['learn', 7], ['rest', 4], ['home', 8]]) await g.click(`[data-lw="o|${id}|${n}"]`);
+  await g.click('[data-lwtab="i"]'); await g.waitForSelector('[data-lw^="i|joy|"]');
+  ok('… then the inner one', /Inner life/.test(await text(g)) && (await g.$$('.lwRow')).length === 9);
+  await g.click('[data-lw="i|peace|2"]'); await g.click('[data-lw="i|hope|9"]');
+  await g.click('#lwSave'); await g.waitForSelector('.lwLow'); await lvl();
+  ok('saved, and the lowest first: peace 2, health 3, rest 4', (await g.$$eval('.lwLow .lwHead b', b => b.slice(0, 3).map(x => x.textContent).join())) === 'Peace,Health & body,Rest & fun' && (await g.$$('.lwSvg polygon')).length >= 1);
+  await g.click('[data-lwgoal="i:peace"]'); await g.waitForSelector('#gTitle');
+  ok('a goal for the lowest part, started for me', await g.$eval('#gTitle', e => e.value) === 'Give my worries to God in prayer every morning' && !!(await g.$('[data-gwheel="i:peace"].on')) && await g.evaluate(() => S.goalDraft.area) === 'faith');
+  await g.click('#goalSave'); await g.waitForSelector('#stepIn');
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('.lwPlan');
+  ok('the Journey tab: my lowest three, and the goal for peace tagged', /Peace\s*2\/10/.test(await g.$eval('.lwPlan', e => e.textContent)) && /Peace 2\/10/.test(await g.$eval('.goalRow', e => e.textContent)));
+  await g.evaluate(() => { S.goalDraft = { area: 'study', title: 'Learn English', measure: '', help: '', why: '', by: addMonths(monthKey(todayStr()), 6), wheel: 'o:learn' }; go('goaledit'); }); await g.waitForSelector('#goalSave'); await g.click('#goalSave'); await g.waitForSelector('#stepIn');
+  await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('.goalRow');
+  ok('goals for the lowest part of my wheels come first', (await g.$$eval('.goalRow b', b => b.map(x => x.textContent).join('|'))) === 'Give my worries to God in prayer every morning|Learn English');
   await g.evaluate(() => setLang_('km')); await g.waitForTimeout(300);
   ok('in Khmer too', /ឧបករណ៍/.test(await text(g)) && /ដំណើរ/.test(await g.$eval('nav.bottom', e => e.textContent)));
   await pctx.close();

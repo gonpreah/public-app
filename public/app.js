@@ -137,7 +137,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { stage:'plan', commit:'plan', cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -195,6 +195,8 @@ function render(){
     else if(V==='callq') h=callqHtml();
     else if(V==='calling') h=callingHtml();
     else if(V==='spheres') h=spheresHtml();
+    else if(V==='stage') h=stageHtml();
+    else if(V==='commit') h=commitHtml();
     else if(V==='cupdate') h=cupdateHtml();
     else if(V==='reset') h=resetHtml();
     else if(V==='habitcal') h=habitCalHtml();
@@ -230,7 +232,7 @@ function navHtml_(){
   if(!AUTH || !S.me){ n.hidden=true; return; }
   n.hidden=false;
   var on=VIEWS_TABS[S.view]||'home';
-  n.innerHTML=[['home','🏠','Home'],['plan','🎯','Plan'],['grow','📚','Learn'],['teams','👥','Teams'],['me','🙂','Me']].map(function(x){
+  n.innerHTML=[['home','🏠','Home'],['plan','🧭','Journey'],['grow','🧰','Tools'],['teams','👥','Teams'],['me','🙂','Me']].map(function(x){
     return '<button data-tab="'+x[0]+'" class="'+(on===x[0]?'on':'')+'"><span class="ic">'+x[1]+'</span>'+esc(t(x[2]))+'</button>';
   }).join('');
 }
@@ -239,7 +241,7 @@ function navHtml_(){
 function signinHtml(){
   return '<div class="gate">'+
     '<h2 style="text-align:center;margin-top:18px">'+esc(t('Welcome to GonPreah'))+'</h2>'+
-    '<p class="sub" style="text-align:center">'+esc(t('Find out how God made you, build a plan for your life, and grow together with your team.'))+'</p>'+
+    '<p class="sub" style="text-align:center">'+esc(t('Know whose you are. Find what God made you to do. Commit to it — with books, a mentor and your team for the road.'))+'</p>'+
     (JOIN ? '<div class="banner">'+esc(gpT('You have a team code: {code}. Sign in to join.',{code:JOIN}))+'</div>' : '')+
     (S.tg ? tgCardHtml_() : '')+
     '<div class="card"'+(S.tg?' hidden':'')+'>'+
@@ -800,9 +802,14 @@ function checkHtml(attr, on, label){ return '<button class="tick'+(on?' on':'')+
 
 function planHtml(){
   var P=planOf(), active=P.goals.filter(function(g){ return !g.done; }), reached=P.goals.filter(function(g){ return g.done; });
-  var h='<h2>'+esc(t('My life plan'))+'</h2><p class="sub">'+esc(t('Small steps toward the person God made you to be.'))+' <span class="lockNote">🔒 '+esc(t('Only you see your plan.'))+'</span></p>';
-  h+=callingPlanHtml_();
-  h+=journeyPlanHtml_();
+  var h='<h2>🧭 '+esc(t('My journey'))+'</h2><p class="sub">'+esc(t('From whose you are to what God made you to do — one stage at a time.'))+' <span class="lockNote">🔒 '+esc(t('Only you see your plan.'))+'</span></p>';
+  if(pathNow_()>-1 && pathNow_()<2) h+=pathIntroHtml_();
+  h+=pathMapHtml_();
+  if(commitOf_()) h+='<h3>✍️ '+esc(t('My commitment'))+'</h3><button class="card cmHome" id="goCommit">'+commitRowsHtml_(commitOf_())+'<span class="visionRead">'+esc(t('Change · share'))+' ›</span></button>';
+  var cl0=clOf_();
+  if(cl0.statement || Object.keys(cl0.a).length) h+=callingPlanHtml_();   // the map's stages lead to the rest
+  if(planOf().vision || storyOf_().done.length) h+=journeyPlanHtml_();
+  h+='<h2 class="planHead">🚶 '+esc(t('My life plan'))+'</h2><p class="sub">'+esc(t('Small steps toward the person God made you to be.'))+'</p>';
   h+='<h3>✦ '+esc(t('My why'))+'</h3><div class="card">';
   if(S.whyEdit) h+='<textarea id="whyIn" maxlength="300" rows="3" placeholder="'+esc(t('e.g. To care for people the way Jesus did.'))+'">'+esc(P.why)+'</textarea>'+
     '<div class="btnRow" style="margin-top:8px"><button class="btn small" id="whySave">'+esc(t('Save'))+'</button><button class="btn small ghost" id="whyCancel">'+esc(t('Cancel'))+'</button></div>';
@@ -1044,6 +1051,7 @@ function menteePlanHtml_(C){
   var h='<h3>🎯 '+esc(gpT('{name}’s life plan',{name:firstName_(C.other.name)}))+'</h3><div class="card">'+(P.why?'<p class="whyText">“'+esc(P.why)+'”</p>':'')+
     (C.calling?'<div class="pmeta">🎯 '+esc(t('Their calling'))+'</div><p class="clStmt small" style="margin:4px 0 6px">'+esc(C.calling.statement)+'</p>'+(C.calling.focus?'<div class="pmeta">'+esc(gpT('My focus · {a}–{b}',{a:C.calling.from, b:C.calling.from+2}))+'</div><div style="margin-bottom:6px">'+esc(C.calling.focus)+'</div>':'')+
       [1,2,3].map(function(n){ var m=C.calling['m'+n]; return m ? '<div class="pmeta">'+(C.calling.from+n-1)+' · '+esc(m)+'</div>' : ''; }).join('')+'<div style="height:10px"></div>':'')+
+    (C.commit?'<div class="pmeta">✍️ '+esc(t('Their commitment'))+'</div><div class="cmHome" style="margin:4px 0 10px">'+commitRowsHtml_(C.commit)+'</div>':'')+
     (P.vision?'<div class="pmeta">✦ '+esc(t('Their vision'))+(P.word?' · 🔑 '+esc(P.word):'')+'</div><div class="visionText clip" style="margin:4px 0 10px">'+esc(P.vision)+'</div>':'');
   if(!goals.length) h+='<p class="sub" style="margin:0">'+esc(t('No life goals yet.'))+'</p>';
   goals.forEach(function(g){ var now=(g.steps||[]).filter(function(s){ return isNow_(s.when); });
@@ -1322,7 +1330,7 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_(); bindPath_();
   all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
   all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });
@@ -1943,11 +1951,11 @@ function focusSound_(kind){
 function focusSoundsHtml_(){ return '<div class="fsRow">'+[['','🔇',t('Quiet')],['brown','🟤',t('Brown noise')],['rain','🌧️',t('Rain')]].map(function(s){ return '<button class="rsvpB'+(FS.kind===s[0]?' on':'')+'" data-fsound="'+s[0]+'">'+s[1]+' '+esc(s[2])+'</button>'; }).join('')+'</div>'; }
 
 /* ---------------- customize Home: order and hide sections (kept on this phone) ---------------- */
-var HOME_PARTS=[['vision','✦','My vision or why'],['tests','🧭','How God made you'],['reset','🔄','Sunday reset'],['meets','📅','Coming up (meetups)'],['devo','🕊️','Today’s devotional'],['recap','📊','Your week'],['cheers','👏','Cheers'],['today','☀️','Today’s 3 and focus'],['reading','📖','Bible reading'],['friends','👯','Friends'],['challenges','🏁','Challenges'],['habits','✅','Habits'],['checkin','🌙','Evening check-in'],['coach','🤝','1-on-1s'],['plan','🎯','Steps for now'],['week','🗒️','This week’s goals']];
+var HOME_PARTS=[['commit','✍️','My commitment'],['path','🧭','My journey: the next step'],['vision','✦','My vision or why'],['tools','🧰','Tools for your journey'],['tests','✦','How God made you'],['reset','🔄','Sunday reset'],['meets','📅','Coming up (meetups)'],['devo','🕊️','Today’s devotional'],['recap','📊','Your week'],['cheers','👏','Cheers'],['today','☀️','Today’s 3 and focus'],['reading','📖','Bible reading'],['friends','👯','Friends'],['challenges','🏁','Challenges'],['habits','✅','Habits'],['checkin','🌙','Evening check-in'],['coach','🤝','1-on-1s'],['plan','🎯','Steps for now'],['week','🗒️','This week’s goals']];
 function homeCfg_(){ var c; try { c=JSON.parse(lsGet('gpa-home')||'null'); } catch(e){ c=null; } c=c&&typeof c==='object'?c:{}; var ids=HOME_PARTS.map(function(p){ return p[0]; });
   var order=(Array.isArray(c.order)?c.order:[]).filter(function(id){ return ids.indexOf(id)>-1; }); ids.forEach(function(id){ if(order.indexOf(id)<0) order.splice(ids.indexOf(id), 0, id); });
   return { order:order, hide:(Array.isArray(c.hide)?c.hide:[]).filter(function(id){ return ids.indexOf(id)>-1 && id!=='today'; }) }; }
-function homePartHtml_(id){ return ({ tests:testsHomeHtml_, vision:whyLineHtml, reset:resetCardHtml_, meets:meetupsHomeHtml_, devo:devoCardHtml, recap:recapCardHtml, cheers:cheersHtml, today:todayCardHtml, reading:readingHomeHtml, friends:friendsHomeHtml, challenges:myChallengesHtml, habits:habitsCardHtml, checkin:checkinCardHtml, coach:coachHomeHtml, plan:planHomeHtml, week:weekCardHtml })[id](); }
+function homePartHtml_(id){ return ({ commit:commitHomeHtml_, path:pathHomeHtml_, tools:toolsHomeHtml_, tests:testsHomeHtml_, vision:whyLineHtml, reset:resetCardHtml_, meets:meetupsHomeHtml_, devo:devoCardHtml, recap:recapCardHtml, cheers:cheersHtml, today:todayCardHtml, reading:readingHomeHtml, friends:friendsHomeHtml, challenges:myChallengesHtml, habits:habitsCardHtml, checkin:checkinCardHtml, coach:coachHomeHtml, plan:planHomeHtml, week:weekCardHtml })[id](); }
 function homeCfgHtml(){
   var C=homeCfg_(), h=backBtn(t('Me'))+'<h2>🏠 '+esc(t('Customize Home'))+'</h2><p class="sub">'+esc(t('Put what matters most at the top, and hide what you don’t use. Kept on this phone.'))+'</p><div class="card">';
   C.order.forEach(function(id, i){ var P=HOME_PARTS.filter(function(p){ return p[0]===id; })[0], on=C.hide.indexOf(id)<0;
@@ -3462,8 +3470,8 @@ function levelUp_(L){
 function onboardNeeded_(){ return !!(S.me && !lsGet('gpa-onboarded') && !(S.me.habits||[]).length && !planOf().why); }
 function welcomeHtml(){
   var O=S.ob||(S.ob={ step:1, habits:[] }), me=S.me, h='<div class="obDots">'+[1,2,3,4].map(function(i){ return '<span class="'+(i<=O.step?'on':'')+'"></span>'; }).join('')+'</div>';
-  if(O.step===1) return h+'<div class="obBox"><div class="obBig">👋</div><h2>'+esc(gpT('Welcome, {name}!',{name:firstName_(me.name)}))+'</h2><p class="sub">'+esc(t('GonPreah helps you live the life God made you for — one day at a time.'))+'</p>'+
-    '<div class="card obList">'+[['☀️','Plan your day: three things that matter, and focus time'],['✅','Small daily habits, and a streak to keep'],['🎯','A plan for your life, step by step'],['👥','Grow with your team, and cheer each other on']].map(function(x){ return '<div><span>'+x[0]+'</span>'+esc(t(x[1]))+'</div>'; }).join('')+'</div>'+
+  if(O.step===1) return h+'<div class="obBox"><div class="obBig">👋</div><h2>'+esc(gpT('Welcome, {name}!',{name:firstName_(me.name)}))+'</h2><p class="sub">'+esc(t('GonPreah is a journey: from whose you are to what God made you to do — and the tools and people to live it.'))+'</p>'+
+    '<div class="card obList">'+[['💛','Know whose you are: a child of God'],['🧭','Find how God made you, and what he’s calling you to do'],['✍️','Make a real commitment: two years, five years'],['🧰','Get the tools: books, a mentor and your team'],['🚶','Walk it out every day, together']].map(function(x){ return '<div><span>'+x[0]+'</span>'+esc(t(x[1]))+'</div>'; }).join('')+'</div>'+
     '<button class="btn" id="obNext">'+esc(t('Let’s start'))+'</button><button class="linkbtn" id="obSkip">'+esc(t('Skip for now'))+'</button></div>';
   if(O.step===2) return h+'<div class="obBox"><div class="obBig">✦</div><h2>'+esc(t('Your why'))+'</h2><p class="sub">'+esc(t('What do you think God made you for? A sentence is enough — you can change it any time.'))+'</p>'+
     '<textarea id="obWhy" rows="3" maxlength="300" placeholder="'+esc(t('e.g. To care for people the way Jesus did.'))+'">'+esc(O.why||'')+'</textarea>'+
@@ -3605,10 +3613,15 @@ function growHtml(){
   try { read=Object.keys(libRead_()).length; if(typeof GP_LIBRARY!=='undefined'){ total=GP_LIBRARY.books.length; var pr=libProg_(), rd=libRead_(); going=GP_LIBRARY.books.filter(function(b){ return pr[b.id] && !rd[b.id]; })[0]||null; } } catch(e){}
   var G=null, streak=0; try { G=khGame_(); streak=khDayStreak_(); } catch(e){}
   var today=G ? (G.days[khToday_()]||0) : 0;
-  var h='<h2>'+esc(t('Learn'))+'</h2><p class="sub">'+esc(t('Grow a little every day: read a great book in ten minutes, and practise Khmer or English.'))+'</p>';
-  h+=entryCardHtml('goLibrary','📚',t('Library'), going ? gpT('Continue: {title}',{title:libTitle_(going)}) : (total ? gpT('{n} of {total} books read',{n:read,total:total}) : t('Ten-minute reads of great books on faith, habits, friendships, money and leading.')));
+  var h='<h2>🧰 '+esc(t('Tools for the journey'))+'</h2><p class="sub">'+esc(t('What you need for the road: books that grow you, the Bible and prayer, a mentor and your team.'))+'</p>';
+  var ids=pathNextBooks_(4);
+  if(ids.length) h+='<h3>📚 '+esc(t('Read next'))+'</h3><p class="pmeta" style="margin:-4px 0 8px">'+esc(t('Picked for where you are on your journey — ten minutes each'))+'</p>'+pathBooksRowHtml_(ids);
+  h+=entryCardHtml('goLibrary','📚',t('The Library'), going ? gpT('Continue: {title}',{title:libTitle_(going)}) : (total ? gpT('{n} of {total} books read',{n:read,total:total}) : t('Ten-minute reads of great books on faith, habits, friendships, money and leading.')));
   var rd=S.me.reading||{}, act=Object.keys(rd).filter(function(k){ return !rd[k].finished; }).length;
   h+=entryCardHtml('goFaith','🙏',t('Bible & prayer'), act ? gpT('{n} reading plans going',{n:act}) : t('Reading plans for every day, and your prayer list.'));
+  var mentor=(S.coach||[]).filter(function(c){ return c.role==='mentee' && c.status==='active'; })[0];
+  h+='<button class="card pEntry" data-pgo="mentor"><span class="pEntryArt"><span class="pQ">🤝</span></span><span style="flex:1"><div style="font-size:15px;font-weight:800">'+esc(t('A mentor'))+'</div><div class="pmeta">'+esc(mentor?gpT('{name} is your coach',{name:mentor.other.name}):t('1-on-1s with a leader in your team: how you’re doing, and what’s next.'))+'</div></span><span class="chev">›</span></button>';
+  h+='<button class="card pEntry" data-pgo="teams"><span class="pEntryArt"><span class="pQ">👥</span></span><span style="flex:1"><div style="font-size:15px;font-weight:800">'+esc(t('Your team'))+'</div><div class="pmeta">'+esc((S.teams||[]).length?S.teams.map(function(x){ return x.name; }).join(' · '):t('Grow together with your friends, club or group.'))+'</div></span><span class="chev">›</span></button>';
   h+=entryCardHtml('goLearn','🔤',t('Learn Khmer / English'), G && G.xp ? gpT('{xp} XP today · 🔥 {n} days',{xp:today,n:streak}) : t('Flashcards, quizzes, a matching game and grammar — like a language app.'));
   return h;
 }
@@ -3623,6 +3636,230 @@ function confettiAt_(el){
     for(var i=0;i<16;i++){ var p=document.createElement('span'); p.className='confettiBit'; p.style.background=C[i%C.length]; p.style.left=cx+'px'; p.style.top=cy+'px'; document.body.appendChild(p);
       var a=Math.random()*Math.PI*2, d=40+Math.random()*60; p.animate([{ transform:'translate(0,0)', opacity:1 },{ transform:'translate('+Math.cos(a)*d+'px,'+(Math.sin(a)*d-30)+'px)', opacity:0 }], { duration:700, easing:'ease-out' }).onfinish=(function(x){ return function(){ x.remove(); }; })(p); }
   } catch(e){}
+}
+
+/* ---------------- The journey: one path through the app (Nov 2026) ----------------
+   Uriah: make the app feel like one thing people understand — "your calling, relational and
+   vocational identity": first whose you are (a child of God), then how God made you and what he's
+   calling you to do, then a plan and a real commitment, then the tools to make it possible (books,
+   a mentor, a team), then walking it out and telling your people — "a little bit of a hero's
+   journey … all in a sequence. Once you fill out these things, now read these books."
+   PATH is the seven stages in order; each is worked out from what's already there (pathParts_),
+   except whose-you-are (u.path.beloved) and the commitments (u.commit) — api.js pathMark / commit.
+   The Journey tab (view plan) draws the map; Home shows my commitments, my next step and the books
+   to read next; a stage opens as view `stage` with what to do and its books (PATH_BOOKS, the
+   Library's ids — opened in the Library, read ticks from the phone as the Library keeps them). */
+var PATH=[
+  { id:'beloved', ic:'💛', name:'Whose you are', hero:'Before the adventure', say:'You are a child of God — loved before you do anything. Everything else grows out of this.', books:['the-father-heart-of-god','intimate-friendship-with-god','making-jesus-lord'] },
+  { id:'made', ic:'🧭', name:'How God made you', hero:'Know who you are', say:'Your personality, your strengths and your gifts: how God made you, and how you work best.', books:['mindset','emotional-intelligence','switch-on-your-brain'] },
+  { id:'story', ic:'🗺️', name:'Your story', hero:'The ordinary world', say:'Where you come from, what breaks your heart, what you’re afraid of — and a vision for your life.', books:['start-with-why','the-war-of-art','grit'] },
+  { id:'call', ic:'🎯', name:'The call', hero:'The call to adventure', say:'What God made you to do: one clear focus for the next three years, and why it matters.', books:['is-that-really-you-god','daring-to-live-on-the-edge','discipling-nations'] },
+  { id:'commit', ic:'✍️', name:'Commit', hero:'Crossing the threshold', say:'Say yes. Write down what you will commit to in the next two years and the next five.', books:['decisive','the-compound-effect','the-7-habits-of-highly-effective-people'] },
+  { id:'tools', ic:'🧰', name:'Tools for the road', hero:'Mentors and allies', say:'No one walks this alone: books that grow you, a mentor who guides you, and a team who walks with you.', books:['how-to-win-friends-and-influence-people','crucial-conversations','thanks-for-the-feedback'] },
+  { id:'walk', ic:'🚶', name:'Walk it out', hero:'The road — and coming home', say:'A plan with steps, small habits every day, and telling your people how it’s going.', books:['atomic-habits','deep-work','developing-the-leader-within-you'] }
+];
+/* The books each stage points to — title, author, shelf colour (as library.js has them), so Home
+   can show them without loading the whole Library. */
+var PATH_BOOKS={
+  'the-father-heart-of-god':['The Father Heart of God','Floyd McClung','#1F44FF'],
+  'intimate-friendship-with-god':['Intimate Friendship with God','Joy Dawson','#1F44FF'],
+  'making-jesus-lord':['Making Jesus Lord','Loren Cunningham','#1F44FF'],
+  'mindset':['Mindset','Carol S. Dweck','#1F8A6F'],
+  'emotional-intelligence':['Emotional Intelligence','Daniel Goleman','#B5475A'],
+  'switch-on-your-brain':['Switch On Your Brain','Dr. Caroline Leaf','#1F8A6F'],
+  'start-with-why':['Start with Why','Simon Sinek','#2D6CB0'],
+  'the-war-of-art':['The War of Art','Steven Pressfield','#1F8A6F'],
+  'grit':['Grit','Angela Duckworth','#1F8A6F'],
+  'is-that-really-you-god':['Is That Really You, God?','Loren Cunningham','#1F44FF'],
+  'daring-to-live-on-the-edge':['Daring to Live on the Edge','Loren Cunningham','#1F44FF'],
+  'discipling-nations':['Discipling Nations','Darrow L. Miller','#1F44FF'],
+  'decisive':['Decisive','Chip Heath & Dan Heath','#1F8A6F'],
+  'the-compound-effect':['The Compound Effect','Darren Hardy','#1F8A6F'],
+  'the-7-habits-of-highly-effective-people':['The 7 Habits of Highly Effective People','Stephen R. Covey','#1F8A6F'],
+  'how-to-win-friends-and-influence-people':['How to Win Friends & Influence People','Dale Carnegie','#B5475A'],
+  'crucial-conversations':['Crucial Conversations','Kerry Patterson and others','#B5475A'],
+  'thanks-for-the-feedback':['Thanks for the Feedback','Douglas Stone & Sheila Heen','#B5475A'],
+  'atomic-habits':['Atomic Habits','James Clear','#1F8A6F'],
+  'deep-work':['Deep Work','Cal Newport','#A4572A'],
+  'developing-the-leader-within-you':['Developing the Leader Within You','John C. Maxwell','#2D6CB0']
+};
+/* Who God says I am — in our own words, with the references (no Bible text). */
+var BELOVED=[
+  ['You are a child of God — not a servant trying to earn a place in the house.','John 1:12; Galatians 4:7'],
+  ['You are loved before you do anything, and nothing can take that love away.','Romans 5:8; Romans 8:38-39'],
+  ['You were chosen and made on purpose — you are not an accident.','Ephesians 1:4-5; Psalms 139:13-14'],
+  ['You are forgiven and made new. Your past doesn’t name you.','2 Corinthians 5:17; Colossians 1:13-14'],
+  ['You are never alone: his Spirit lives in you and calls him Father.','Romans 8:15-16; Hebrews 13:5'],
+  ['You have good work to do — he prepared it for you.','Ephesians 2:10']
+];
+function pathBooksRead_(){ try { return libRead_(); } catch(e){ return {}; } }
+function commitOf_(){ var c=S.me && S.me.commit; return c && (c.two || c.five) ? c : null; }
+function commitFrom_(){ var c=commitOf_(); return (c && c.from) || Number(todayStr().slice(0,4)); }
+/* Each stage's parts: what's done, and where a tap goes (pathGo_). */
+function pathParts_(id){
+  var me=S.me, P=planOf(), st=storyOf_(), cl=clOf_(), cm=commitOf_()||{}, rd=pathBooksRead_();
+  if(id==='beloved') return [{ t:'Who God says you are', done:!!(me.path||{}).beloved, go:'beloved' }];
+  if(id==='made') return [
+    { t:'Your personality type', done:!!me.personality, go:me.personality?'ptype':'ptest' },
+    { t:'Your top 5 strengths', done:!!(me.gstrengths||me.clifton), go:me.gstrengths?'gstr':(me.clifton?'clifton':'gtest') },
+    { t:'Your ministry gift (APEST)', done:!!me.apest, go:me.apest?'agift':'atest' }];
+  if(id==='story') return [
+    { t:'The Life Journey (seven stops)', done:!!st.finished, go:'journey' },
+    { t:'A vision for your life', done:!!P.vision, go:P.vision?'vision':'journey' }];
+  if(id==='call') return [{ t:'Find your calling', done:!!cl.statement, go:'calling' }, { t:'Explore the spheres of society', done:!!((cl.a.spheres||{}).c||[]).length, go:'spheres', extra:true }];
+  if(id==='commit') return [
+    { t:'What I commit to in the next 2 years', done:!!cm.two, go:'commit' },
+    { t:'What I commit to in the next 5 years', done:!!cm.five, go:'commit' }];
+  if(id==='tools') return [
+    { t:'Read a book for your journey', done:PATH.some(function(s){ return s.books.some(function(b){ return rd[b]; }); }), go:'library' },
+    { t:'A mentor for 1-on-1s', done:(S.coach||[]).some(function(c){ return c.role==='mentee' && c.status==='active'; }), go:'mentor' },
+    { t:'A team to walk with', done:!!(S.teams||[]).length, go:'teams' }];
+  return [
+    { t:'A life goal with steps', done:P.goals.some(function(g){ return !g.done && (g.steps||[]).length; }) || P.goals.some(function(g){ return g.done; }), go:'goal' },
+    { t:'Small habits every day', done:!!(me.habits||[]).length, go:'habits' },
+    { t:'Tell your people how it’s going', done:!!(cl.updates||[]).length, go:cl.statement?'cupdate':'share' }];
+}
+function pathStage_(id){ var p=pathParts_(id).filter(function(x){ return !x.extra; }), n=p.filter(function(x){ return x.done; }).length;
+  return { n:n, of:p.length, done: id==='tools' ? n>=2 : n===p.length }; }
+/* Where I am: the first stage not done (the last when all are). */
+function pathNow_(){ for(var i=0;i<PATH.length;i++) if(!pathStage_(PATH[i].id).done) return i; return -1; }
+function pathById_(id){ return PATH.filter(function(s){ return s.id===id; })[0]; }
+/* Books to read next: the stage just finished first ("now read these"), then the one I'm on. */
+function pathNextBooks_(n){
+  var i=pathNow_(), rd=pathBooksRead_(), ids=[], at=i<0 ? PATH.length-1 : i;
+  [at-1, at].forEach(function(k){ if(k>=0) PATH[k].books.forEach(function(b){ if(!rd[b] && ids.indexOf(b)<0) ids.push(b); }); });
+  if(!ids.length) PATH.forEach(function(s){ s.books.forEach(function(b){ if(!rd[b] && ids.indexOf(b)<0) ids.push(b); }); });
+  return ids.slice(0, n||3);
+}
+function pathBookTitle_(id){ var k=(LANG==='km' && typeof GP_LIBRARY_KM!=='undefined') ? GP_LIBRARY_KM[id] : null; return (k && k.title) || PATH_BOOKS[id][0]; }
+function pathBookHtml_(id){
+  var B=PATH_BOOKS[id], read=!!pathBooksRead_()[id];
+  if(!B) return '';
+  return '<button class="pBook" data-pbook="'+esc(id)+'" style="--bk:'+B[2]+'"><span class="pBookCover"><span class="pBookT">'+esc(pathBookTitle_(id))+'</span>'+(read?'<span class="pBookOk">✓</span>':'')+'</span><span class="pBookA">'+esc(B[1])+'</span><span class="pBookM">⏱ '+esc(gpT('{n} min',{n:10}))+'</span></button>';
+}
+function pathBooksRowHtml_(ids){ return '<div class="pBooks">'+ids.map(pathBookHtml_).join('')+'</div>'; }
+/* The map: seven stages down a path, where I am lit up. */
+function pathMapHtml_(){
+  var now=pathNow_();
+  return '<div class="pMap">'+PATH.map(function(s, i){ var S_=pathStage_(s.id), cls=S_.done?'done':(i===now?'now':'');
+    return '<button class="pStop '+cls+'" data-stage="'+s.id+'"><span class="pDot">'+(S_.done?'✓':s.ic)+'</span><span class="pStopTx"><span class="pmeta">'+esc(gpT('Stage {n}',{n:i+1}))+' · '+esc(t(s.hero))+'</span><b>'+esc(t(s.name))+'</b>'+
+      (i===now?'<span class="pStopSay">'+esc(t(s.say))+'</span>':'')+'<span class="pmeta">'+esc(S_.done?t('Done'):gpT('{n} of {m}',{n:S_.n, m:S_.of}))+'</span></span>'+(i===now?'<span class="pNowTag">'+esc(t('You are here'))+'</span>':'<span class="chev">›</span>')+'</button>'; }).join('')+'</div>';
+}
+function pathIntroHtml_(){
+  return '<div class="card pIntro"><b>'+esc(t('Whose you are comes first.'))+'</b> '+esc(t('You are a child of God — that’s who you are with him. From there you find what he made you to do: how he made you, his call on your life, and a real commitment. Then you get the tools — books, a mentor, a team — and walk it out, one day at a time.'))+'</div>';
+}
+/* Home: where I am on the journey, and the one next step. */
+function pathHomeHtml_(){
+  var i=pathNow_(), done=PATH.filter(function(s){ return pathStage_(s.id).done; }).length;
+  var dots='<div class="pDots">'+PATH.map(function(s, k){ var d=pathStage_(s.id).done; return '<span class="'+(d?'done':(k===i?'now':''))+'" title="'+esc(t(s.name))+'">'+(d?'✓':s.ic)+'</span>'; }).join('')+'</div>';
+  if(i<0) return '<h3>🧭 '+esc(t('My journey'))+'</h3><button class="card pHome" data-stage="walk">'+dots+'<b>'+esc(t('You’ve walked the whole journey.'))+'</b><span class="pmeta">'+esc(t('Keep walking it out — and help someone else start theirs.'))+'</span></button>';
+  var s=PATH[i], nx=pathParts_(s.id).filter(function(x){ return !x.done && !x.extra; })[0];
+  return '<h3>🧭 '+esc(t('My journey'))+'</h3><button class="card pHome" data-stage="'+s.id+'">'+dots+
+    '<span class="pmeta">'+esc(gpT('Stage {n} of {m}',{n:i+1, m:PATH.length}))+' · '+esc(t(s.hero))+'</span>'+
+    '<b class="pHomeName">'+s.ic+' '+esc(t(s.name))+'</b><span class="pHomeSay">'+esc(t(s.say))+'</span>'+
+    (nx?'<span class="pNext">'+esc(t('Next step'))+': <b>'+esc(t(nx.t))+'</b> ›</span>':'')+'</button>';
+}
+/* Home: the books to read next, and the rest of the tools. */
+function toolsHomeHtml_(){
+  var ids=pathNextBooks_(3);
+  var h='<div class="libSecHead"><h3>🧰 '+esc(t('Tools for your journey'))+'</h3><button class="linkbtn libSeeAll" id="goLibrary">'+esc(t('All books'))+' ›</button></div>';
+  if(ids.length) h+='<p class="pmeta" style="margin:-4px 0 8px">📚 '+esc(t('Read next — ten minutes each'))+'</p>'+pathBooksRowHtml_(ids);
+  var mentor=(S.coach||[]).filter(function(c){ return c.role==='mentee' && c.status==='active'; })[0];
+  h+='<div class="pToolRow"><button class="pTool" data-pgo="mentor">🤝 <span>'+esc(mentor?firstName_(mentor.other.name):t('A mentor'))+'</span></button>'+
+    '<button class="pTool" data-pgo="teams">👥 <span>'+esc((S.teams||[]).length?S.teams[0].name:t('A team'))+'</span></button>'+
+    '<button class="pTool" data-pgo="faith">🙏 <span>'+esc(t('Bible & prayer'))+'</span></button></div>';
+  return h;
+}
+/* Home: my commitments, the front page's promise. */
+function commitHomeHtml_(){
+  var c=commitOf_();
+  if(!c) return entryCardHtml('goCommit','✍️',t('Make your commitment'),t('What will you commit to in the next 2 years — and the next 5? Write it, say it, live it.'));
+  return '<h3>✍️ '+esc(t('My commitment'))+'</h3><button class="card cmHome" id="goCommit">'+commitRowsHtml_(c)+'<span class="visionRead">'+esc(t('Change · share'))+' ›</span></button>';
+}
+function commitRowsHtml_(c){ var f=c.from||commitFrom_();
+  return [[c.two, 2], [c.five, 5]].filter(function(x){ return x[0]; }).map(function(x){
+    return '<span class="cmRow"><span class="cmYr"><b>'+(f+x[1])+'</b><i>'+esc(gpT('{n} years',{n:x[1]}))+'</i></span><span class="cmTx"><span class="pmeta">'+esc(t('I commit to'))+'</span>'+esc(x[0])+'</span></span>'; }).join(''); }
+function commitText_(c){ var f=c.from||commitFrom_(), out=[t('My commitment')+':'];
+  if(c.two) out.push(gpT('In the next 2 years (by {y}), I commit to {x}',{y:f+2, x:c.two.replace(/[.\s]+$/,'')})+'.');
+  if(c.five) out.push(gpT('In the next 5 years (by {y}), I commit to {x}',{y:f+5, x:c.five.replace(/[.\s]+$/,'')})+'.');
+  return out.join('\n'); }
+/* A stage: what it's about, what to do, and the books for it. */
+function stageHtml(){
+  var s=pathById_(S.stage)||PATH[0], i=PATH.indexOf(s), st=pathStage_(s.id), parts=pathParts_(s.id), rd=pathBooksRead_();
+  var h=backBtn(t('My journey'))+'<div class="stHero"><span class="pmeta">'+esc(gpT('Stage {n} of {m}',{n:i+1, m:PATH.length}))+' · '+esc(t(s.hero))+'</span><div class="stIc">'+s.ic+'</div><h2>'+esc(t(s.name))+'</h2><p class="sub">'+esc(t(s.say))+'</p></div>';
+  if(s.id==='beloved'){
+    var when=(S.me.path||{}).beloved;
+    h+='<div class="card belCard">'+BELOVED.map(function(b){ return '<div class="belRow"><span>💛</span><div>'+esc(t(b[0]))+'<i>'+esc(refsLabel_(b[1]))+'</i></div></div>'; }).join('')+'</div>'+
+      '<div class="card pIntro">'+esc(t('This is your relational identity: who you are because of whose you are. Your gifts, your calling and your plan all grow out of it. You don’t do things to become his child — you do them because you are.'))+'</div>'+
+      (when ? '<div class="stDone">✓ '+esc(gpT('You said yes on {d}',{d:dayLabel(when)}))+'</div>' : '<button class="btn" id="belYes">💛 '+esc(t('I am a child of God — Amen'))+'</button>');
+  } else {
+    h+='<div class="card stParts">'+parts.map(function(p){ return '<button class="stPart'+(p.done?' done':'')+'" data-pgo="'+p.go+'"><span class="stChk">'+(p.done?'✓':(p.extra?'＋':'○'))+'</span><span style="flex:1;text-align:left">'+esc(t(p.t))+(p.extra?' <span class="pmeta">('+esc(t('optional'))+')</span>':'')+'</span><span class="stGo">'+esc(p.done?t('Open'):t('Start'))+' ›</span></button>'; }).join('')+'</div>';
+    if(s.id==='commit' && commitOf_()) h+='<div class="card cmHome">'+commitRowsHtml_(commitOf_())+'</div>';
+    if(s.id==='tools') h+='<p class="pmeta">'+esc(t('A mentor is a leader in one of your teams. Open their card in your team and tap “Ask … to be my coach”.'))+'</p>';
+  }
+  h+='<h3>📚 '+esc(st.done?t('Now read these'):t('Books for this stage'))+'</h3><p class="pmeta" style="margin:-4px 0 8px">'+esc(gpT('{n} of {m} read · ten minutes each',{n:s.books.filter(function(b){ return rd[b]; }).length, m:s.books.length}))+'</p>'+pathBooksRowHtml_(s.books);
+  if(st.done || s.id==='beloved') h+='<p class="pmeta stTalk">🤝 '+esc(t('Tell your mentor or your team what you found here.'))+'</p>';
+  var nx=PATH[i+1];
+  h+='<div class="btnRow" style="margin-top:14px">'+(i>0?'<button class="btn ghost" data-stage="'+PATH[i-1].id+'">‹ '+esc(t(PATH[i-1].name))+'</button>':'')+(nx?'<button class="btn'+(st.done?'':' ghost')+'" data-stage="'+nx.id+'">'+esc(t(nx.name))+' ›</button>':'')+'</div>';
+  return h;
+}
+/* My commitments (view commit): two lines in my own words, with starters and the calling's plan. */
+var CM_KINDS=[['study','🎓','Study','finish my degree in … at …'],['serve','🙌','Serve on staff','serve two years on staff with … in …'],['mission','🌏','Mission','serve as a missionary in … for … years'],
+  ['work','💼','Work','work as a … so that …'],['church','⛪','Church','serve my church by …'],['family','🏠','Family','care for my family by …']];
+function commitHtml(){
+  var c=commitOf_()||{}, D=S.cm||(S.cm={ two:c.two||'', five:c.five||'' }), f=commitFrom_(), cl=clOf_(), A=cl.a;
+  var h=backBtn(t('Back'))+'<h2>✍️ '+esc(t('My commitment'))+'</h2><p class="sub">'+esc(t('Crossing the threshold: this is where a dream becomes a yes. Be specific — what, where, and for how long. Then say it to the people who walk with you.'))+'</p>';
+  var ideas=[A.focus, A.m1, A.m2, A.m3].map(function(x){ return String(x||'').trim(); }).filter(Boolean);
+  if(ideas.length) h+='<div class="card"><div class="pmeta">🎯 '+esc(t('From your calling — tap one to use it'))+'</div><div class="jrTags cmIdeas">'+ideas.map(function(x, k){ return '<button data-cmidea="'+k+'">'+esc(x)+'</button>'; }).join('')+'</div></div>';
+  [['two',2,'e.g. finish my nursing degree, and serve every week in my church’s youth group'],['five',5,'e.g. serve as a missionary in another country for four years']].forEach(function(x){
+    h+='<div class="card cmBox"><label class="f" for="cm_'+x[0]+'">🗓️ '+esc(gpT('The next {n} years — by {y}',{n:x[1], y:f+x[1]}))+'</label><div class="cmLead">'+esc(t('I commit to…'))+'</div>'+
+      '<div class="catChips cmKinds">'+CM_KINDS.map(function(k){ return '<button class="catChip" data-cmkind="'+x[0]+'|'+k[0]+'">'+k[1]+' '+esc(t(k[2]))+'</button>'; }).join('')+'</div>'+
+      '<textarea id="cm_'+x[0]+'" rows="3" maxlength="240" placeholder="'+esc(t(x[2]))+'">'+esc(D[x[0]])+'</textarea></div>'; });
+  h+='<p class="pmeta">'+esc(t('Real examples: finish my university degree in education · serve two years on staff with a mission · be a missionary for four or five years in another country · start a small business that gives jobs.'))+'</p>';
+  h+='<button class="btn" id="cmSave">'+esc(t('Save my commitment'))+'</button>';
+  if(c.two || c.five) h+='<h3>📣 '+esc(t('Say it to your people'))+'</h3><div class="card"><div class="clText" style="white-space:pre-line">'+esc(commitText_(c))+'</div><div class="btnRow" style="margin-top:10px"><button class="btn small" id="cmShare">📤 '+esc(t('Share'))+'</button><button class="btn small ghost" id="cmTg">✈️ Telegram</button><button class="btn small ghost" id="cmCopy">'+esc(t('Copy'))+'</button></div></div>';
+  return h+'<p class="pFine">🔒 '+esc(t('Only you see your commitment — and a coach you share your plan with. You choose who else to send it to.'))+'</p>';
+}
+function pathOpenBook_(id){ S.back.push(S.view); S.libFrom=S.view; S.view='library'; S.libBook=id; S.libStep=null; S.libShelf='all'; libLoad_(); render(); window.scrollTo(0,0); }
+function pathGo_(g){
+  if(g==='beloved'){ S.stage='beloved'; go('stage'); return; }
+  if(g==='ptest'){ S.ptest=null; go('ptest'); return; }
+  if(g==='gtest'){ S.gtest=null; go('gtest'); return; }
+  if(g==='atest'){ S.atest=null; go('atest'); return; }
+  if(g==='clifton'){ S.cf=null; go('clifton'); return; }
+  if(g==='journey'){ S.jr=null; jrStart_(); go('journey'); return; }
+  if(g==='calling'){ if(clOf_().statement){ go('calling'); return; } clStart_(); go('callq'); return; }
+  if(g==='commit'){ S.cm=null; go('commit'); return; }
+  if(g==='library'){ S.back.push(S.view); S.libFrom=S.view; libOpen_(); return; }
+  if(g==='mentor'){ var m=(S.coach||[]).filter(function(c){ return c.role==='mentee' && c.status==='active'; })[0]; if(m){ openCoach_(m.id); return; } S.back=[]; go('teams', true); if((S.teams||[]).length) setTimeout(function(){ showMsg(t('A mentor is a leader in one of your teams. Open their card in your team and tap “Ask … to be my coach”.')); }, 200); return; }
+  if(g==='teams'){ S.back=[]; go('teams', true); return; }
+  if(g==='faith'){ go('faith'); return; }
+  if(g==='goal'){ var P=planOf(), gl=P.goals.filter(function(x){ return !x.done; })[0]; if(gl){ S.goalId=gl.id; go('goal'); return; } S.goalDraft={ area:'', title:'', measure:'', help:'', why:'', by:addMonths(monthKey(todayStr()), 12) }; go('goaledit'); return; }
+  if(g==='habits'){ S.habitDraft=null; go('habitpick'); return; }
+  if(g==='cupdate'){ S.cu={ step:'form', since:'', story:'', next:cuNext_(), pray:'', thanks:'' }; go('cupdate'); return; }
+  if(g==='share'){ S.shareKind='week'; S.shareImg=null; go('share'); drawShareCard_(function(blob, url){ S.shareImg={ blob:blob, url:url }; if(S.view==='share') render(); }); return; }
+  if(g==='gstr' || g==='ptype' || g==='agift' || g==='vision' || g==='spheres'){ if(g==='ptype') S.ptypeOther=null; go(g); return; }
+}
+function bindPath_(){
+  all('[data-stage]', function(b){ gpTap(); S.stage=b.getAttribute('data-stage'); go('stage', S.view==='stage'); });
+  all('[data-pgo]', function(b){ gpTap(); pathGo_(b.getAttribute('data-pgo')); });
+  all('[data-pbook]', function(b){ gpTap(); pathOpenBook_(b.getAttribute('data-pbook')); });
+  on('goCommit', function(){ S.cm=null; go('commit'); });
+  on('belYes', busyOnce_(function(){ return call('pathMark','beloved', true).then(function(d){ if(d && d.ok){ S.me=d.me; render(); var b=document.querySelector('.stDone'); if(b) confettiAt_(b); } else failMsg(d); }); }));
+  if(S.view!=='commit') return;
+  var keep=function(){ var D=S.cm; ['two','five'].forEach(function(k){ var el=$('cm_'+k); if(el) D[k]=el.value; }); };
+  ['two','five'].forEach(function(k){ var el=$('cm_'+k); if(el){ el.oninput=function(){ S.cm[k]=el.value; }; el.onfocus=function(){ S.cmAt=k; }; } });
+  all('[data-cmkind]', function(b){ keep(); var p=b.getAttribute('data-cmkind').split('|'), K=CM_KINDS.filter(function(x){ return x[0]===p[1]; })[0], cur=String(S.cm[p[0]]||'').trim();
+    S.cm[p[0]]=cur ? cur.replace(/[.;,\s]+$/,'')+'; '+t(K[3]) : t(K[3]); render(); var el=$('cm_'+p[0]); if(el){ el.focus(); var i=el.value.indexOf('…'); if(i>-1) el.setSelectionRange(i, i+1); } });
+  all('[data-cmidea]', function(b){ keep(); var A=clOf_().a, x=[A.focus, A.m1, A.m2, A.m3].map(function(v){ return String(v||'').trim(); }).filter(Boolean)[+b.getAttribute('data-cmidea')]||'', k=S.cmAt||(S.cm.two?'five':'two');
+    x=x.charAt(0).toLowerCase()+x.slice(1); S.cm[k]=String(S.cm[k]||'').trim() ? String(S.cm[k]).trim().replace(/[.;,\s]+$/,'')+'; '+x : x; render(); });
+  on('cmSave', busyOnce_(function(){ keep(); var D=S.cm;
+    if(!String(D.two).trim() && !String(D.five).trim()){ showMsg(t('Write at least one commitment first.')); return Promise.resolve(); }
+    return call('commit', { two:D.two, five:D.five }).then(function(d){ if(d && d.ok){ S.me=d.me; S.cm=null; render(); showMsg(t('Your commitment is saved. Now say it to someone who walks with you.')); } else failMsg(d); }); }));
+  var txt=function(){ return commitText_(commitOf_()||{}); };
+  on('cmShare', function(){ var x=txt(); if(navigator.share) navigator.share({ text:x }).catch(function(){}); else copyText_(x); });
+  on('cmTg', function(){ window.open('https://t.me/share/url?url='+encodeURIComponent(location.origin)+'&text='+encodeURIComponent(txt()), '_blank'); });
+  on('cmCopy', function(){ copyText_(txt()); });
 }
 
 /* ---------------- start ---------------- */

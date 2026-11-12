@@ -15,6 +15,32 @@ teams/15-khmer.js), `khmer-vocab.js`, `khmer-grammar.js`, `library-app.js` (Impa
 code from teams/03-library-org.js) and their styles at the end of app.css. Fix a bug there in
 both apps. The Library's BOOKS (`library.js`, `library-km.js`) are this app's own (below).
 
+## One journey (Nov 2026 — how the whole app hangs together)
+Uriah: make it cohesive so people know what it's for — "your calling, relational, vocational identity":
+a child of God first (relational identity), then what God made you to do (vocational identity), then
+a plan, then "the tools and resources you need … books and coaching and community", "a little bit of a
+hero's journey … all in a sequence. Once you fill out these things, okay, now read these books", and "a
+real solid 2-year commitment, 5-year commitment statement on the front page". So the app is **seven
+stages** (`PATH` in app.js), worked out from what's already there (`pathParts_`, `pathStage_`):
+(1) 💛 **Whose you are** — before the adventure: who God says I am (`BELOVED`, our words + references
+only) and "I am a child of God — Amen" (`pathMark` 'beloved' → `u.path.beloved`, 20 XP once);
+(2) 🧭 **How God made you** — the three tests; (3) 🗺️ **Your story** — the Life Journey and vision;
+(4) 🎯 **The call** — My calling (spheres optional); (5) ✍️ **Commit** — crossing the threshold: what I
+commit to in the next 2 and 5 years, in my own words (view `commit`, `CM_KINDS` starters, ideas from the
+calling's focus and milestones; `commit` → `u.commit` = {two, five, from, at}, one line of 240 each, 30 XP
+once both; Share / Telegram / Copy); (6) 🧰 **Tools for the road** — mentors and allies: a book read, a
+mentor (an active 1-on-1 as mentee), a team (done with 2 of 3); (7) 🚶 **Walk it out** — a goal with
+steps, habits, an update for supporters. Each stage has 3 books (`PATH_BOOKS`: Library ids, titles,
+shelf colours — Home shows them without loading library.js); a stage that's done says "Now read these".
+**Tabs**: Home · **Journey** (view `plan`: the map `pathMapHtml_`, my commitment, calling and vision if
+started, then "My life plan") · **Tools** (view `grow`: books to read next, the Library, Bible & prayer,
+a mentor, my team, Learn Khmer) · Teams · Me. A stage opens as view `stage` (`S.stage`). **Home** leads
+with my commitment (`commit` part, the years big), my next step (`path`: the seven dots, stage n of 7,
+the next part) and Tools for your journey (`tools`: books to read next — the stage just finished first —
+and mentor / team / Bible). A book opened from the journey goes back there (`S.libFrom`). The commitment
+is private (`selfOut_`; a coach the mentee shares their plan with sees it, `coaching.commit`); the
+walkthrough and the sign-in screen say what the app is for in these words.
+
 ## The name — and no YWAM
 On screen it is **GonPreah** / **កូនព្រះ**. **Nothing on screen says YWAM** (Uriah, Nov 2026:
 "leave out ywam stuff"): the header shows the round GonPreah seal (`GP_LOGO`), not the wide
@@ -125,7 +151,7 @@ every PR. Run them locally first:
 `node tests/test-api.mjs`, `node tests/test-library.mjs`, `node tests/test-reminders.mjs` and `node tests/test-app-ui.mjs`
 (needs `npm install --no-save playwright`).
 
-## The life plan (Plan tab)
+## The life plan (Journey tab, under the map)
 `u.plan` = `{why, goals:[{id, area, title, measure, help, why, by:'YYYY-MM', done, steps:[{id, text,
 when:'YYYY-MM'|'YYYY-Qn', done}]}]}`; `u.tasks` = a person's own tasks; `t.tasks` = team tasks
 (`done` is a map of who ticked). Six areas of life (`AREAS`, the same six the 1-on-1s will use).
@@ -319,7 +345,7 @@ going well, hard, shared notes, the coach's own notes `priv`, follow-ups). Asked
 person's card ("Ask … to be my coach" / "Offer to coach …"); answered on Home. Roles come
 from `coachRole_`: coach, mentee, leader (read-only, under-18s only).
 
-## The Learn tab (📚, view `grow`)
+## The Tools tab (🧰, view `grow`; it was "Learn")
 Two doors: the **Library** (`library-app.js`, view `library`) and **Learn Khmer / English**
 (`learn.js`, view `learn`), both copied from the Impact app with small changes listed at the
 top of each file. Both load their data only when opened (`libLoad_`, `khLoad_`); index.html

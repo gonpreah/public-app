@@ -556,7 +556,7 @@ function selfOut_(u) {
     habits: u.habits || [], days: u.days || {}, weeks: u.weeks || {},
     teams: u.teams || [], invites: u.invites || [], stats: statsOf_(u), hasPhoto: !!u.hasPhoto,
     plan: planOf_(u), tasks: u.tasks || [], daily: u.daily || {}, admin: isAdmin_(u), blocked: (u.blocked || []).length, hasPassword: !!u.pw, tg: u.tg ? { username: u.tg.username || '' } : null, level: levelOf_(u.xp),
-    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
+    reading: u.reading || {}, prayers: u.prayers || [], story: storyOf_(u), calling: callingOf_(u), path: u.path || {}, commit: commitOf_(u), resets: u.resets || {}, journalDays: Object.keys(u.journal || {}).sort(), xpWeek: (u.xpWeeks || {})[weekOf_(today_())] || 0
   };
 }
 /* What someone else sees of a person. `close` = they share a team. */
@@ -1080,6 +1080,41 @@ const CLIFTON = ['Achiever', 'Arranger', 'Belief', 'Consistency', 'Deliberative'
   'Activator', 'Command', 'Communication', 'Competition', 'Maximizer', 'Self-Assurance', 'Significance', 'Woo',
   'Adaptability', 'Connectedness', 'Developer', 'Empathy', 'Harmony', 'Includer', 'Individualization', 'Positivity', 'Relator',
   'Analytical', 'Context', 'Futuristic', 'Ideation', 'Input', 'Intellection', 'Learner', 'Strategic'];
+/* The journey (Nov 2026, Uriah: one path through the app — whose you are, how God made you, the
+   call, a commitment, the tools, walking it out). Two things are kept for it here:
+   u.path.beloved — the day I said "I am a child of God" (the first stage, 20 XP once), and
+   u.commit = {two, five, from, at} — what I commit to in the next two and five years, in my own
+   words (one line each, 240 characters; `from` is the year I wrote it; 30 XP once, when both are
+   there). Both private: selfOut_ only, and a coach the mentee shares their plan with sees the
+   commitments, like the calling's statement. */
+const PATH_KEYS = ['beloved'];
+async function pathMark(uid, tok, key, on) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  if (PATH_KEYS.indexOf(key) < 0) return { ok: false, err: 'key' };
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: true };
+    u.path = u.path && typeof u.path === 'object' ? u.path : {};
+    if (on === false) delete u.path[key];
+    else if (!u.path[key]) { u.path[key] = today_(); xpAdd_(u, 'path|' + key, 20); }
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
+function commitOf_(u) { const c = u && u.commit; return c && (c.two || c.five) ? { two: c.two || '', five: c.five || '', from: c.from || 0, at: c.at || '' } : null; }
+async function commit(uid, tok, p) {
+  if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
+  p = p && typeof p === 'object' ? p : {};
+  const two = str_(p.two, 240), five = str_(p.five, 240);
+  await mutate_('u:' + uid, null, function (u) {
+    if (!u) return { ok: true };
+    if (!two && !five) { delete u.commit; return { ok: true }; }
+    const old = u.commit || {};
+    u.commit = { two: two, five: five, from: (old.two === two && old.five === five && old.from) || Number(today_().slice(0, 4)), at: today_() };
+    if (two && five) xpAdd_(u, 'commit', 30);
+    return { ok: true };
+  });
+  return { ok: true, me: selfOut_(await readJSON('u:' + uid, null)) };
+}
 async function saveClifton(uid, tok, p) {
   if (!(await auth_(uid, tok))) return { ok: false, err: 'auth' };
   p = p && typeof p === 'object' ? p : {};
@@ -1758,7 +1793,7 @@ async function coaching(uid, tok, cid) {
   });
   if (role === 'coach' && c.status === 'active' && c.sharePlan) {
     const m = await readJSON('u:' + c.mentee, null);
-    if (m) { o.plan = planOf_(m); const cl = callingOf_(m); if (cl.statement) o.calling = { statement: cl.statement, focus: cl.a.focus || '', m1: cl.a.m1 || '', m2: cl.a.m2 || '', m3: cl.a.m3 || '', from: cl.from }; }   // their calling, not the why, the letter or the answers
+    if (m) { o.plan = planOf_(m); const cl = callingOf_(m); if (cl.statement) o.calling = { statement: cl.statement, focus: cl.a.focus || '', m1: cl.a.m1 || '', m2: cl.a.m2 || '', m3: cl.a.m3 || '', from: cl.from }; o.commit = commitOf_(m); }   // their calling, not the why, the letter or the answers
   }
   if (role === 'mentee' && o.other) { const co = await readJSON('u:' + c.coach, null); o.otherIsMinor = co ? isMinor_(co) : false; }
   if (role !== 'mentee') { const m = await readJSON('u:' + c.mentee, null); o.minor = !!(m && isMinor_(m)); }
@@ -2591,7 +2626,7 @@ async function signOut(uid, tok) {
 
 export const HANDLERS = {
   authConfig, loginGoogle, checkUsername, register, registerPassword, loginPassword, setPassword, setUserPassword, resetOwnPassword, tgStart, tgLinkStart, tgCheck, registerTelegram, tgLinkLogin, tgUnlink, tgWebAppLogin, adminResetPassword, forgotPassword, dropPwAsk, boot, saveProfile, savePhoto, photos,
-  savePersonality, saveStrengths, saveApest, saveClifton, saveHabits, tickHabit, saveWeek,
+  savePersonality, saveStrengths, saveApest, saveClifton, pathMark, commit, saveHabits, tickHabit, saveWeek,
   savePlanWhy, saveGoal, goalAct, myTask, teamTask, meetup, journey, calling, weekReset, journal,
   coachAsk, coachAnswer, coachings, coaching, coachAct,
   feed, clap, block, blockedList, report, adminReports, adminAct,

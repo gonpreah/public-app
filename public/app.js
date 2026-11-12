@@ -269,7 +269,8 @@ function tgCardHtml_(){
     '<button class="linkbtn" id="tgCancel" style="display:block;margin:10px auto 0">'+esc(t('Cancel'))+'</button></div>';
   return '<div class="card tgCard"><div class="obBig">✈️</div><h3 style="margin-top:0">'+esc(t('Waiting for Telegram…'))+'</h3>'+
     '<p class="sub">'+esc(gpT('In the chat with {bot}, tap Start. Then come back here — you’ll be signed in.',{bot:bot}))+'</p>'+
-    '<a class="btn" href="'+esc(T.url)+'" target="_blank" rel="noopener" id="tgOpen">'+esc(t('Open Telegram'))+'</a>'+
+    '<a class="btn" href="'+esc(tgDeep_(T.url))+'" id="tgOpen">'+esc(t('Open Telegram'))+'</a>'+
+    '<a class="linkbtn" href="'+esc(T.url)+'" target="_blank" rel="noopener" style="display:block;margin:8px auto 0">'+esc(t('Telegram not opening? Use the web link'))+'</a>'+
     '<button class="linkbtn" id="tgCancel" style="display:block;margin:10px auto 0">'+esc(t('Cancel'))+'</button></div>';
 }
 function tgPoll_(){
@@ -285,7 +286,19 @@ function tgPoll_(){
   TG_TIMER=setInterval(tick, 2000); setTimeout(tick, 600);
 }
 function tgStop_(){ clearInterval(TG_TIMER); TG_TIMER=null; S.tg=null; lsDel('gpa-tg'); }
-function tgOpen_(url){ var w=null; try { w=window.open(url, '_blank'); } catch(e){} if(!w) location.href=url; }
+/* Open the chat in the Telegram app itself (tg://), not a web page: from a Home Screen app on an iPhone,
+   a t.me link opens a Safari sheet that hands over to Telegram and is still there, blank, when they come
+   back (Uriah, Nov 2026). A web browser that couldn't open Telegram this way gets the t.me page instead;
+   a Home Screen app never does (the button under "Waiting" has it, if Telegram isn't on the phone). */
+function tgDeep_(url){ var m=String(url||'').match(/^https:\/\/t\.me\/([A-Za-z0-9_]+)\?start=([A-Za-z0-9_-]+)$/); return m ? 'tg://resolve?domain='+m[1]+'&start='+m[2] : url; }
+function standalone_(){ try { return !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); } catch(e){ return false; } }
+function tgOpen_(url){
+  var deep=tgDeep_(url), left=false, gone=function(){ if(document.visibilityState==='hidden') left=true; };
+  document.addEventListener('visibilitychange', gone);
+  try { var a=document.createElement('a'); a.href=deep; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); } catch(e){}
+  if(standalone_()) return;
+  setTimeout(function(){ document.removeEventListener('visibilitychange', gone); if(!left && document.visibilityState==='visible'){ try { window.open(url, '_blank'); } catch(e){} } }, 2500);
+}
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible' && S.tg && S.tg.state==='wait') tgPoll_(); });
 function forgotHtml_(){
   var F=S.forgot;
@@ -1721,7 +1734,7 @@ function tgMeHtml_(){
   var tg=S.me.tg;
   if(tg) return '<h3>✈️ Telegram</h3><div class="card"><p class="sub" style="margin:0 0 8px">✅ '+esc(tg.username ? gpT('Connected as @{u}. Sign in with one tap.',{u:tg.username}) : t('Connected. Sign in with one tap.'))+'</p><button class="linkbtn" id="tgUnlink" style="color:var(--bad)">'+esc(t('Disconnect Telegram'))+'</button></div>';
   return '<h3>✈️ Telegram</h3><div class="card"><p class="sub" style="margin:0 0 8px">'+esc(t('Connect Telegram, and next time you sign in with one tap — no password.'))+'</p>'+
-    (S.tgLink ? '<p class="pmeta">'+esc(gpT('In the chat with @{bot}, tap Start, then come back.',{bot:S.tgBot}))+'</p><a class="btn" href="'+esc(S.tgLink.url)+'" target="_blank" rel="noopener">'+esc(t('Open Telegram'))+'</a>'
+    (S.tgLink ? '<p class="pmeta">'+esc(gpT('In the chat with @{bot}, tap Start, then come back.',{bot:S.tgBot}))+'</p><a class="btn" href="'+esc(tgDeep_(S.tgLink.url))+'">'+esc(t('Open Telegram'))+'</a>'
       : '<button class="btn ghost" id="tgConnect">✈️ '+esc(t('Connect Telegram'))+'</button>')+'</div>';
 }
 var TG_LINK_TIMER=null;

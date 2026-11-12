@@ -68,6 +68,10 @@ button (`web_app`) and the GonPreah button by the chat box (`setChatMenuButton`,
 (HMAC with the bot token's "WebAppData" key, a day at most) and signs a connected person straight in,
 or gives a new one the "Welcome" card to make an account there. The page loads telegram-web-app.js
 only then (ready, expand), and hides "Sign in with Telegram" inside Telegram.
+**Opening Telegram** goes straight to the app with `tg://resolve?domain=<bot>&start=<code>` (`tgDeep_`),
+not t.me: from a Home Screen app on an iPhone, t.me opened a Safari sheet that was still there, blank,
+on coming back (Uriah, Nov 2026). A web browser still on the page 2.5 s later gets t.me too; a Home
+Screen app never does (`standalone_`) — "Telegram not opening? Use the web link" is under the button.
 `GPA_GOOGLE_CLIENT_ID` (Netlify env) must be a Google OAuth web client with
 https://app.gonpreah.org as an authorised JavaScript origin; without it the button says so.
 

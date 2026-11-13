@@ -137,7 +137,7 @@ function loadPhotos_(people){
 }
 
 /* ---------------- render ---------------- */
-var VIEWS_TABS = { wheels:'plan', stage:'plan', commit:'plan', cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
+var VIEWS_TABS = { slides:'grow', wheels:'plan', stage:'plan', commit:'plan', cupdate:'plan', spheres:'me', callq:'plan', calling:'plan', screen:'teams', clifton:'me', journal:'home', homecfg:'me', habitcal:'home', reset:'home', badges:'me', atest:'me', agift:'me', journey:'plan', vision:'plan', devo:'home', friends:'home', pulse:'teams', faith:'grow', welcome:'home', share:'home', focus:'home', report:'teams', blocked:'me', admin:'me', grow:'grow', library:'grow', learn:'grow', plan:'plan', goal:'plan', goaledit:'plan', coach:'plan', meet:'plan', home:'home', teams:'teams', team:'teams', person:'teams', find:'teams', newteam:'teams', me:'me', ptest:'me', ptype:'me', gtest:'me', gstr:'me', habitpick:'home' };
 function go(view, keep){ if(!keep) S.back.push(S.view); S.view=view; render(); window.scrollTo(0,0); }
 function goBack(fallback){ S.view=S.back.pop()||fallback||'home'; render(); window.scrollTo(0,0); }
 function backBtn(label){ return '<button class="linkbtn backLink" data-back>← '+esc(label)+'</button>'; }
@@ -197,6 +197,7 @@ function render(){
     else if(V==='spheres') h=spheresHtml();
     else if(V==='stage') h=stageHtml();
     else if(V==='wheels') h=wheelsHtml();
+    else if(V==='slides') h=slidesHtml();
     else if(V==='commit') h=commitHtml();
     else if(V==='cupdate') h=cupdateHtml();
     else if(V==='reset') h=resetHtml();
@@ -214,6 +215,7 @@ function render(){
     else if(V==='learn') h=khmerHtml_();
     else { S.view='home'; h=homeHtml(); }
     document.body.classList.toggle('libReading', V==='library' && !!S.libBook && S.libStep!=null);
+    document.body.classList.toggle('slFull', V==='slides' && !!S.slFull);   // the course slides, full screen
     m.innerHTML=h;
     /* Screens that slide in (the journey, the reset) slide only when the question changes — not on
        every redraw, like a tap on a chip. */
@@ -1345,7 +1347,7 @@ function bind(){
   on('focusHome', function(){ S.focusDone=null; S.back=[]; S.view='home'; render(); });
 
   /* the Life Journey, and my vision; the five gifts */
-  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_(); bindPath_(); bindWheels_();
+  bindJourney_(); bindVision_(); bindApest_(); bindReset_(); bindMeetups_(); bindJournal_(); bindHomeCfg_(); bindClifton_(); bindScreen_(); bindCalling_(); bindCUpdate_(); bindPath_(); bindWheels_(); bindSlides_();
   all('[data-fsound]', function(b){ focusSound_(b.getAttribute('data-fsound')); gpTap(); render(); });
   all('[data-gidea]', function(b){ var F=S.goalDraft, x=GOAL_IDEAS[F.area][Number(b.getAttribute('data-gidea'))]; keepGoal_(); F.title=t(x[0]); F.measure=t(x[1]); gpTap(); render(); });
   on('goHabitCal', function(){ go('habitcal'); });
@@ -3634,6 +3636,7 @@ function growHtml(){
   h+=entryCardHtml('goLibrary','📚',t('The Library'), going ? gpT('Continue: {title}',{title:libTitle_(going)}) : (total ? gpT('{n} of {total} books read',{n:read,total:total}) : t('Ten-minute reads of great books on faith, habits, friendships, money and leading.')));
   var rd=S.me.reading||{}, act=Object.keys(rd).filter(function(k){ return !rd[k].finished; }).length;
   h+=entryCardHtml('goFaith','🙏',t('Bible & prayer'), act ? gpT('{n} reading plans going',{n:act}) : t('Reading plans for every day, and your prayer list.'));
+  h+=entryCardHtml('goSlides','📽️',t('Called — the course slides'),gpT('Five days: a child of God, designed, formed, healthy, sent · {n} slides',{n:SLIDES.n}));
   var mentor=(S.coach||[]).filter(function(c){ return c.role==='mentee' && c.status==='active'; })[0];
   h+='<button class="card pEntry" data-pgo="mentor"><span class="pEntryArt"><span class="pQ">🤝</span></span><span style="flex:1"><div style="font-size:15px;font-weight:800">'+esc(t('A mentor'))+'</div><div class="pmeta">'+esc(mentor?gpT('{name} is your coach',{name:mentor.other.name}):t('1-on-1s with a leader in your team: how you’re doing, and what’s next.'))+'</div></span><span class="chev">›</span></button>';
   h+='<button class="card pEntry" data-pgo="teams"><span class="pEntryArt"><span class="pQ">👥</span></span><span style="flex:1"><div style="font-size:15px;font-weight:800">'+esc(t('Your team'))+'</div><div class="pmeta">'+esc((S.teams||[]).length?S.teams.map(function(x){ return x.name; }).join(' · '):t('Grow together with your friends, club or group.'))+'</div></span><span class="chev">›</span></button>';
@@ -3998,6 +4001,46 @@ function bindPath_(){
   on('cmTg', function(){ window.open('https://t.me/share/url?url='+encodeURIComponent(location.origin)+'&text='+encodeURIComponent(txt()), '_blank'); });
   on('cmCopy', function(){ copyText_(txt()); });
 }
+
+/* ---------------- The "Called" course slides (Tools tab → view slides) ----------------
+   Nov 2026, Uriah: "a link to the latest slide show", for everyone in the app. His five-day DTS
+   course (a child of God, designed, formed, healthy on the journey, sent) as pictures —
+   public/slides/called/001…152.jpg, 1280×720, made from the deck he sent, without its speaker
+   notes. Swipe or ‹ ›, jump to a day, tap the slide for full screen; the phone remembers the slide
+   (gpa-slides). The service worker keeps each slide once seen, so it works offline after that. */
+var SLIDES={ n:152, days:[['Day 1',1],['Day 2',34],['Day 3',60],['Day 4',92],['Day 5',117],['Extra',141]] };
+function slideSrc_(n){ return 'slides/called/'+('00'+n).slice(-3)+'.jpg'; }
+function slideNow_(){ if(!S.slide){ var n=Number(lsGet('gpa-slides'))||1; S.slide=Math.min(SLIDES.n, Math.max(1, n)); } return S.slide; }
+function slidesHtml(){
+  var n=slideNow_();
+  var h=backBtn(t('Tools'))+'<h2>📽️ '+esc(t('Called — the course slides'))+'</h2><p class="sub">'+esc(t('Five days: a child of God, designed, formed, healthy on the journey, sent.'))+'</p>';
+  h+='<div class="slDays">'+SLIDES.days.map(function(d, i){ var nx=(SLIDES.days[i+1]||[0, SLIDES.n+1])[1], on=n>=d[1] && n<nx;
+    return '<button class="'+(on?'on':'')+'" data-slday="'+d[1]+'">'+esc(t(d[0]))+'</button>'; }).join('')+'</div>';
+  h+='<div class="slFrame'+(S.slFull?' full':'')+'" id="slFrame"><img src="'+slideSrc_(n)+'" alt="'+esc(gpT('Slide {n}',{n:n}))+'" id="slImg">'+
+    (S.slFull?'<span class="slCount">'+n+' / '+SLIDES.n+'</span><button class="slX" id="slFullX" aria-label="'+esc(t('Close'))+'">✕</button>':'')+'</div>';
+  h+='<div class="slNav"><button class="btn small ghost" id="slPrev"'+(n>1?'':' disabled')+' aria-label="'+esc(t('Back'))+'">‹</button><span id="slCount">'+n+' / '+SLIDES.n+'</span><button class="btn small" id="slNext"'+(n<SLIDES.n?'':' disabled')+' aria-label="'+esc(t('Next'))+'">›</button></div>';
+  return h+'<p class="pmeta" style="text-align:center">'+esc(t('Swipe to turn the page. Tap the slide to see it full screen — turn your phone sideways for bigger.'))+'</p>';
+}
+function slideGo_(n){ n=Math.min(SLIDES.n, Math.max(1, n)); if(n===S.slide) return; S.slide=n; lsSet('gpa-slides', String(n)); render();
+  [n+1, n+2].forEach(function(k){ if(k<=SLIDES.n){ var im=new Image(); im.src=slideSrc_(k); } }); }   // the next two, ready
+function bindSlides_(){
+  on('goSlides', function(){ S.slide=null; S.slFull=false; go('slides'); });
+  if(S.view!=='slides') return;
+  on('slPrev', function(){ gpTap(); slideGo_(S.slide-1); });
+  on('slNext', function(){ gpTap(); slideGo_(S.slide+1); });
+  all('[data-slday]', function(b){ gpTap(); slideGo_(Number(b.getAttribute('data-slday'))); });
+  on('slFullX', function(e){ if(e) e.stopPropagation(); S.slFull=false; render(); });
+  var f=$('slFrame'); if(!f) return;
+  var x0=null, y0=null, moved=false;
+  f.addEventListener('touchstart', function(e){ x0=e.touches[0].clientX; y0=e.touches[0].clientY; moved=false; }, { passive:true });
+  f.addEventListener('touchend', function(e){ if(x0==null) return; var dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0; x0=null;
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){ moved=true; slideGo_(S.slide+(dx<0?1:-1)); } }, { passive:true });
+  f.onclick=function(e){ if(moved){ moved=false; return; } if(e.target && e.target.id==='slFullX') return;
+    if(S.slFull){ var r=f.getBoundingClientRect(); slideGo_(S.slide+((e.clientX-r.left)<r.width/3?-1:1)); return; }   // full screen: tap the right for the next, the left for the one before
+    S.slFull=true; render(); };
+}
+document.addEventListener('keydown', function(e){ if(S.view!=='slides' || typing_()) return;
+  if(e.key==='ArrowRight' || e.key===' ') { e.preventDefault(); slideGo_(S.slide+1); } else if(e.key==='ArrowLeft') slideGo_(S.slide-1); else if(e.key==='Escape' && S.slFull){ S.slFull=false; render(); } });
 
 /* ---------------- start ---------------- */
 if('serviceWorker' in navigator && !navigator.webdriver) try { navigator.serviceWorker.register('sw.js').catch(function(){}); } catch(e){}

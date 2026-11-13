@@ -365,6 +365,14 @@ person's card ("Ask … to be my coach" / "Offer to coach …"); answered on Hom
 from `coachRole_`: coach, mentee, leader (read-only, under-18s only).
 
 ## The Tools tab (🧰, view `grow`; it was "Learn")
+**The "Called" course slides** (Tools → view `slides`; Nov 2026, Uriah: "a link to the latest slide
+show", for everyone in the app): his five-day DTS course as pictures — `public/slides/called/001…152.jpg`
+(1280×720, made from the .pptx he sent; the **speaker notes are left out**: they hold his teaching notes
+about real people's stories). Day chips (`SLIDES.days`: 1, 34, 60, 92, 117, extra 141), swipe or ‹ ›,
+tap for full screen (`body.slFull`, no header or bar; tap left/right to turn), the phone remembers the
+slide (`gpa-slides`); not precached — sw.js keeps each slide once seen. The slides are Uriah's own and
+do name YWAM and real people (with their stories): the one place on screen that shows YWAM, by his
+choice. A new deck: replace the pictures and `SLIDES` (n and the days).
 Two doors: the **Library** (`library-app.js`, view `library`) and **Learn Khmer / English**
 (`learn.js`, view `learn`), both copied from the Impact app with small changes listed at the
 top of each file. Both load their data only when opened (`libLoad_`, `khLoad_`); index.html

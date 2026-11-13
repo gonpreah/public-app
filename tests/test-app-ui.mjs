@@ -973,6 +973,21 @@ ok('nothing scrolls sideways', await a.evaluate(() => document.documentElement.s
   await g.evaluate(() => { S.goalDraft = { area: 'study', title: 'Learn English', measure: '', help: '', why: '', by: addMonths(monthKey(todayStr()), 6), wheel: 'o:learn' }; go('goaledit'); }); await g.waitForSelector('#goalSave'); await g.click('#goalSave'); await g.waitForSelector('#stepIn');
   await g.click('nav.bottom button[data-tab="plan"]'); await g.waitForSelector('.goalRow');
   ok('goals for the lowest part of my wheels come first', (await g.$$eval('.goalRow b', b => b.map(x => x.textContent).join('|'))) === 'Give my worries to God in prayer every morning|Learn English');
+  /* the "Called" course slides, from the Tools tab */
+  await g.click('nav.bottom button[data-tab="grow"]'); await g.waitForSelector('#goSlides'); await g.click('#goSlides'); await g.waitForSelector('#slImg');
+  const slideOk = async n => g.evaluate(async n => { const i = document.getElementById('slImg'); if (!i.complete) await new Promise(r => { i.onload = r; i.onerror = r; }); return i.naturalWidth === 1280 && i.getAttribute('src') === 'slides/called/' + String(n).padStart(3, '0') + '.jpg'; }, n);
+  ok('the course slides open at slide 1 of 152, a real picture', await slideOk(1) && /1 \/ 152/.test(await g.$eval('#slCount', e => e.textContent)));
+  await g.click('#slNext'); await g.waitForTimeout(150);
+  ok('… › turns the page', await slideOk(2));
+  await g.click('[data-slday="92"]'); await g.waitForTimeout(150);
+  ok('… a day jumps to its first slide', await slideOk(92) && /on/.test(await g.$eval('[data-slday="92"]', e => e.className)));
+  await g.click('#slFrame'); await g.waitForSelector('#slFrame.full');
+  ok('… tap for full screen, without the bottom bar', await g.evaluate(() => getComputedStyle(document.querySelector('nav.bottom')).display === 'none'));
+  await g.click('#slFullX'); await g.waitForSelector('#slFrame:not(.full)');
+  await g.reload(); await g.waitForSelector('nav.bottom:not([hidden])'); await g.click('nav.bottom button[data-tab="grow"]'); await g.click('#goSlides'); await g.waitForSelector('#slImg');
+  ok('… and it remembers where I was', await slideOk(92));
+  const last = await g.evaluate(async () => (await fetch('slides/called/152.jpg')).status);
+  ok('all 152 slides are there', last === 200);
   await g.evaluate(() => setLang_('km')); await g.waitForTimeout(300);
   ok('in Khmer too', /ឧបករណ៍/.test(await text(g)) && /ដំណើរ/.test(await g.$eval('nav.bottom', e => e.textContent)));
   await pctx.close();

@@ -8,6 +8,18 @@
     have the same English (app.js merges APP_KM after BUILTIN_KM only for keys km.js
     lacks — see the KM line in app.js). */
 var APP_KM = {
+  /* the Called course slides (Nov 2026) */
+  "Called — the course slides": "ការត្រាស់ហៅ — ស្លាយវគ្គសិក្សា",
+  "Five days: a child of God, designed, formed, healthy on the journey, sent.": "ប្រាំថ្ងៃ៖ ជាកូនរបស់ព្រះ បានរចនាឡើង បានសូនឡើង មានសុខភាពល្អលើដំណើរ ត្រូវបានចាត់ឲ្យទៅ។",
+  "Five days: a child of God, designed, formed, healthy, sent · {n} slides": "ប្រាំថ្ងៃ៖ ជាកូនរបស់ព្រះ បានរចនាឡើង បានសូនឡើង មានសុខភាពល្អ ត្រូវបានចាត់ឲ្យទៅ · ស្លាយ {n}",
+  "Day 1": "ថ្ងៃទី ១",
+  "Day 2": "ថ្ងៃទី ២",
+  "Day 3": "ថ្ងៃទី ៣",
+  "Day 4": "ថ្ងៃទី ៤",
+  "Day 5": "ថ្ងៃទី ៥",
+  "Extra": "បន្ថែម",
+  "Slide {n}": "ស្លាយទី {n}",
+  "Swipe to turn the page. Tap the slide to see it full screen — turn your phone sideways for bigger.": "អូសដើម្បីបើកទំព័របន្ទាប់។ ចុចលើស្លាយដើម្បីមើលពេញអេក្រង់ — បង្វិលទូរស័ព្ទផ្តេកដើម្បីមើលធំជាងនេះ។",
   /* the two wheels of life (Nov 2026) */
   "Show all {n} parts": "បង្ហាញផ្នែកទាំង {n}",
   "A child of God": "ជាកូនរបស់ព្រះ",

@@ -3,6 +3,15 @@
     t('key', {vars}) picks the student's language; {name} style blanks are filled in. */
 window.BFH_T = {
   appName: { en: 'Brand From the Heart', km: 'ម៉ាកចេញពីបេះដូង' },
+  finishedTitle: { en: 'Your brand is finished!', km: 'ម៉ាករបស់អ្នករួចរាល់ហើយ!' },
+  finishedWhy: { en: 'Your class can see your brand now. The starter packs, logo files and 30-day plan below are extras — use them any time.', km: 'ថ្នាក់របស់អ្នកអាចមើលឃើញម៉ាករបស់អ្នកឥឡូវនេះ។ កញ្ចប់ចាប់ផ្ដើម ឯកសារឡូហ្គោ និងផែនការ ៣០ ថ្ងៃខាងក្រោម គឺជាផ្នែកបន្ថែម — ប្រើបានគ្រប់ពេល។' },
+  seeClass: { en: 'See our class', km: 'មើលថ្នាក់របស់យើង' },
+  keepEditing: { en: 'Keep editing', km: 'បន្តកែ' },
+  classBrands: { en: 'Our brands', km: 'ម៉ាករបស់យើង' },
+  classBrandsTitle: { en: '{n} finished brands', km: 'ម៉ាកដែលបានបញ្ចប់ {n}' },
+  reloginLead: { en: 'This phone forgot you — your work is safe. Tap your name to carry on.', km: 'ទូរស័ព្ទនេះភ្លេចអ្នក — ការងាររបស់អ្នកនៅមានសុវត្ថិភាព។ ចុចលើឈ្មោះរបស់អ្នក ដើម្បីបន្ត។' },
+  inAppTip: { en: 'You are in an app\'s built-in browser (like Telegram or Facebook). To stay signed in, open this page in Chrome or Safari: ⋮ or ⋯ → "Open in browser".', km: 'អ្នកកំពុងនៅក្នុងកម្មវិធីរុករកក្នុងកម្មវិធី (ដូចជា Telegram ឬ Facebook)។ ដើម្បីនៅតែចូល សូមបើកទំព័រនេះក្នុង Chrome ឬ Safari៖ ⋮ ឬ ⋯ → «Open in browser»។' },
+
   /* simple login + the class board */
   signInLead: { en: 'Sign in with your class code so your work is saved — on any phone.', km: 'ចូលដោយលេខកូដថ្នាក់ ដើម្បីរក្សាទុកការងាររបស់អ្នក — លើទូរស័ព្ទណាក៏បាន។' },
   signIn: { en: 'Sign in', km: 'ចូល' },

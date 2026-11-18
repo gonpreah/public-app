@@ -53,6 +53,7 @@ try {
   await tap(p, '[data-act="welcomeStart"]');
   // quiz
   await p.waitForSelector('.opt');
+  ok('signed in: the address keeps the class code (home-screen icons and chat links land on "tap your name")', (await p.evaluate(() => location.search)) === '?class=' + cls.code);
   ok('new student is in the class and goes straight to the quiz', await p.evaluate(() => window.BFH_APP.S.cls) === cls.code && await p.evaluate(() => window.BFH_APP.S.answers.name) === 'Sokha');
   const nQuiz = await p.evaluate(() => window.BFH_QUIZ.length);
   ok('quiz shows its part and an intro', (await p.textContent('.qtop')).length > 3 && await p.locator('.sec-intro').count() === 1);
@@ -171,6 +172,8 @@ try {
   // package
   await tap(p, '[data-act="go"][data-arg="pack"]');
   await p.waitForSelector('.brief');
+  ok('reaching the brand package = finished (no extra step needed)', await p.evaluate(() => window.BFH_APP.S.stage) === 'finished' && await p.locator('.done-card').count() === 1);
+  ok('finished shows 100%', await p.evaluate(() => window.BFH_APP.S.stage === 'finished') && (await api('teacher', { code: cls.code, tkey: cls.tkey })).students.find(x => x.name === 'Sokha').prog === 100);
   ok('brief: name, mission, palette hex, fonts, Claude block', (await p.textContent('.brief')).includes('Sokha') && await p.locator('.hexes button').count() === 5 && (await p.textContent('#projblock')).includes('Always design with these colours'));
   ok('universal prompt has hex codes and rules', /#[0-9A-F]{6}/.test(await p.textContent('#uniprompt')) && (await p.textContent('#uniprompt')).includes('Always design with these colours and fonts'));
   await tap(p, '[data-act="packLang"][data-arg="km"]');
@@ -233,6 +236,8 @@ try {
   ok('classmate sees the shared directions', await pb.locator('.mate-dir').count() === 2);
   await pb.waitForSelector('.board-list li');
   ok('class board: everyone\'s progress, stage and archetype', (await pb.textContent('.board-list')).includes('Sokha') && (await pb.textContent('.board-list')).includes('Finished') && await pb.locator('.board-list li').count() === 2);
+  await pb.waitForSelector('.class-brands figure');
+  ok('finished brands gallery for the class', await pb.locator('.class-brands .mock-post').count() === 1);
   ok('class board shows a finished brand, never answers', await pb.locator('.board-list .bl-brand').count() === 1 && !(await pb.textContent('.board-list')).includes('Pailin'));
   await pb.locator('[data-act="vote"]').nth(1).click();
   await pb.waitForSelector('[data-act="vote"].primary');
@@ -274,6 +279,14 @@ try {
   ok('signed out: the phone offers "Sign in to Test class"', (await pd.textContent('[data-act="signInLast"]')).includes('Test class') && await pd.evaluate(() => !window.BFH_APP.S.id));
   await tap(pd, '[data-act="signInLast"]');
   await tap(pd, '[data-act="welcomeMode"][data-arg="back"]');
+  await tap(pd, '.roster .opt:has-text("Sokha")');
+  await tap(pd, '[data-act="welcomeConfirm"]');
+  await pd.waitForSelector('.brief', { timeout: 5000 });
+  // a phone whose key stopped working: keep the work, ask to tap your name again
+  await pd.evaluate(() => { const st = JSON.parse(localStorage.getItem('bfh-state')); st.key = 'x'.repeat(24); localStorage.setItem('bfh-state', JSON.stringify(st)); });
+  await pd.reload();
+  await pd.waitForSelector('.roster');
+  ok('a forgotten phone asks to tap your name again — no "I\'m new"', await pd.evaluate(() => window.BFH_APP.V.relogin === true && window.BFH_APP.S.dirs.length === 7) && (await pd.textContent('.hero')).includes(await pd.evaluate(() => window.BFH_t('reloginLead'))) && await pd.locator('[data-act="welcomeContinue"]').count() === 0);
   await tap(pd, '.roster .opt:has-text("Sokha")');
   await tap(pd, '[data-act="welcomeConfirm"]');
   await pd.waitForSelector('.brief', { timeout: 5000 });

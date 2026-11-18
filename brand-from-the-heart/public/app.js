@@ -28,6 +28,7 @@
   function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   let saveTimer = null;
   function save(now) {
+    S.at = Date.now();
     persist();
     clearTimeout(saveTimer);
     if (!S.id) return;
@@ -83,6 +84,7 @@
     return a != null && String(a).trim() !== '';
   }
   function progress() {
+    if (S.stage === 'finished') return 100;
     let p = 0;
     if (S.quiz.result) p += 5;
     const qs = askable(); p += Math.round(45 * qs.filter(answered).length / Math.max(1, qs.length));
@@ -300,7 +302,7 @@
 
   /* --- the classroom link: new here, or tap your name to come back --- */
   VIEWS.welcome = function () {
-    const w = V.welcome || {}, me = S.id && (S.answers.name || '').trim();
+    const w = V.welcome || {}, me = S.id && !V.relogin && (S.answers.name || '').trim();
     if (!w.roster) return `<section class="hero"><p class="eyebrow">${t('welcomeEyebrow')}</p><h1>${esc(w.code || '')}</h1><p class="lead">${w.err ? esc(w.err) : t('loading')}</p></section>`;
     const r = w.roster;
     let body = '';
@@ -325,13 +327,19 @@
     }
     return `<section class="hero"><div class="hero-spark">${SPARK(116, 'var(--cobalt)')}</div>
         <p class="eyebrow">${t('welcomeEyebrow')}</p><h1>${esc(r.name)}</h1>
-        <p class="lead">${t('welcomeLead')}</p></section>${body}`;
+        <p class="lead">${V.relogin ? t('reloginLead') : t('welcomeLead')}</p></section>
+      ${inApp() ? `<div class="note small">💡 ${t('inAppTip')}</div>` : ''}${body}`;
   };
   const LAST = 'bfh-lastclass';
-  function rememberClass() { if (S.cls) try { localStorage.setItem(LAST, JSON.stringify({ code: S.cls, name: S.className || S.cls })); } catch (e) {} }
+  function rememberClass() {
+    if (!S.cls) return;
+    try { localStorage.setItem(LAST, JSON.stringify({ code: S.cls, name: S.className || S.cls })); } catch (e) {}
+    try { const want = '?class=' + S.cls; if (location.search !== want) history.replaceState(null, '', location.pathname + want + location.hash); } catch (e) {}
+  }
   function lastClass() { try { return JSON.parse(localStorage.getItem(LAST) || 'null'); } catch (e) { return null; } }
-  async function openWelcome(code) {
-    V.welcome = { code: String(code || '').toUpperCase().slice(0, 6), mode: '' };
+  const inApp = () => /FBAN|FBAV|Instagram|Line\/|Telegram|Messenger|; wv\)/i.test(navigator.userAgent || '');
+  async function openWelcome(code, mode) {
+    V.welcome = { code: String(code || '').toUpperCase().slice(0, 6), mode: mode || '' };
     go('welcome');
     try { V.welcome.roster = await api('classRoster', { code: V.welcome.code }); }
     catch (e) { V.welcome.err = t(e.code === 'NO_CLASS' ? 'errClass' : 'errNet'); }
@@ -340,6 +348,11 @@
   async function becomeStudent(id, key, cls, className) {
     const lang = S.lang;
     const r = await api('load', { id, key });
+    if (S.id === id && (S.at || 0) > (r.updated || 0) + 1000) {   // this phone has newer work than the server: keep it
+      Object.assign(S, { key, cls: r.cls || cls, className: r.className || className });
+      V.relogin = false; save(true); V.fb = r.feedback; return;
+    }
+    V.relogin = false;
     S = Object.assign(fresh(), r.data || {}, { id, key, cls: r.cls || cls, className: r.className || className, lang });
     if (r.job) S.job = { id: r.job };
     V.fb = r.feedback; persist();
@@ -684,6 +697,8 @@
     const promptCard = (p, i, kind) => `<div class="pcard"><div class="pc-head"><b>${i + 1}. ${esc(L(p.title))}</b>${btn('copyPrompt', t('copy'), 'soft small', kind + '|' + i)}</div><p class="muted small">${esc(L(p.use))}</p><pre class="copybox small">${esc(p.prompt)}</pre></div>`;
     const checks = ['chk1', 'chk2', 'chk3', 'chk4', 'chk5', 'chk6'];
     return `<h2>📦 ${t('package')}</h2>
+      ${S.stage === 'finished' ? `<section class="card done-card"><h3>🎉 ${t('finishedTitle')}</h3><p class="muted small">${t('finishedWhy')}</p>
+        <div class="row wrap">${btn('go', '👥 ' + t('seeClass') + ' →', 'primary small', 'cls')}${btn('go', '✏️ ' + t('keepEditing'), 'ghost small', 'studio')}</div></section>` : ''}
       <section class="brief" style="--p:${b.colors.primary};--bg:${b.colors.background};--tx:${b.colors.text};--ac:${b.colors.accent}">
         <div class="brief-top" style="background:${b.colors.primary};color:${B.readableOn(b.colors.primary)}">
           <div style="font-family:${B.ff(b.font.heading.family, 'serif')};font-weight:${b.font.heading.weight};font-size:2em;line-height:1.1">${esc(b.title)}</div>
@@ -761,7 +776,7 @@
         <div><b>${esc(S.answers.name || '')}</b><small class="muted">${esc(S.className || S.cls)} · ${t('savedToAccount')}</small></div>
         ${btn('signOut', t('signOut'), 'ghost small')}</section>` : '';
     return `<h2>👥 ${t('classTitle')}</h2>
-      ${me}${boardCard()}
+      ${me}${boardCard()}${finishedGallery()}
       <section class="card"><h3>🔗 ${t('myLink')}</h3>
         ${link ? `<p class="muted small">${t('myLinkWhy')}</p><pre class="copybox small">${esc(link)}</pre>${btn('copyLink', '📋 ' + t('copyLink'), 'primary small')}` : `<p class="muted small">${t('noLinkYet')}</p>${btn('makeLink', t('makeLink'), 'primary small')}`}
       </section>
@@ -799,6 +814,7 @@
     if (view === 'mine') view = resumeView();
     if (view === 'interview' && S.stage === 'start') { setStage('interview'); save(); }
     if (view === 'cls') loadClass();
+    if (view === 'pack' && S.pick && S.stage !== 'finished') { setStage('finished'); save(true); V.justFinished = true; }
     if (view === 'heart' && !S.heart && !(V.job && V.job.kind === 'heart') && S.id && S.cls) setTimeout(() => startJob('heart'), 0);
     V.view = view; render(); window.scrollTo(0, 0);
   }
@@ -821,6 +837,13 @@
             ${x.brand ? `<div class="bl-brand">${c ? swatches(c) : ''}<span>“${esc(L(x.brand.tagline))}”</span></div>` : ''}
           </div><b class="bl-pct">${x.prog}%</b></li>`;
       }).join('')}</ol></section>`;
+  }
+  function finishedGallery() {
+    const list = V.board ? V.board.students.filter(x => x.brand && x.brand.colors) : [];
+    if (!list.length) return '';
+    return `<section class="card"><p class="eyebrow">${t('classBrands')}</p><h3>✨ ${t('classBrandsTitle', { n: list.length })}</h3>
+      <div class="class-brands">${list.map(x => { const bb = brandFrom({ colors: x.brand.colors, fontId: x.brand.fontId, taglines: [x.brand.tagline] }, { title: x.brand.title || x.name, tune: x.brand.tune || {} });
+        return `<figure><div style="font-size:8.5px">${B.mock('post', bb, S.lang)}</div><figcaption><b>${esc(x.name)}</b>${x.me ? ` <small class="muted">· ${t('you')}</small>` : ''}</figcaption></figure>`; }).join('')}</div></section>`;
   }
   let boardTimer = null;
   async function loadBoard() {
@@ -1160,11 +1183,12 @@
       }
       history.replaceState(null, '', location.pathname + location.search);
     } else if (S.id) {
-      try { const r = await api('load', { id: S.id, key: S.key }); S.cls = r.cls; S.className = r.className; V.fb = r.feedback; if (r.job && !S.job) S.job = { id: r.job }; persist(); } catch (e) { if (e.code === 'NO_STUDENT') { S.id = null; S.key = null; persist(); } }
+      try { const r = await api('load', { id: S.id, key: S.key }); S.cls = r.cls; S.className = r.className; V.fb = r.feedback; if (r.job && !S.job) S.job = { id: r.job }; persist(); } catch (e) { if (e.code === 'NO_STUDENT') { if (S.cls) V.relogin = true; else { S.id = null; S.key = null; persist(); } } }
     }
     delete S.pendingClass;
+    if (V.relogin && S.cls) { render(); openWelcome(S.cls, 'back'); return; }
     if (classLink) {
-      history.replaceState(null, '', location.pathname + location.hash);
+      if (S.cls !== classLink) history.replaceState(null, '', location.pathname + location.hash);
       if (S.cls !== classLink) { openWelcome(classLink); if (S.job && S.job.id) { V.job = { kind: S.job.kind, opts: S.job.opts, status: 'running', started: Date.now() }; poll(); } return; }
     }
     if (S.job && S.job.id) { V.job = { kind: S.job.kind, opts: S.job.opts, status: 'running', started: Date.now() }; poll(); }

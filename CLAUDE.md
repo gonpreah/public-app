@@ -74,6 +74,12 @@ a file came from.
 - `tests/` — `test-api.mjs` (server rules), `test-app-ui.mjs` (the app in a phone browser),
   `env.mjs` (in-memory store, a stand-in for Google, a local server), `serve.mjs` (preview).
 
+## Brand From the Heart (`brand-from-the-heart/`) — a separate app
+Not part of GonPreah: a brand builder for a YWAM Social Media School class (Nov 2026), with its own
+Netlify site (base directory `brand-from-the-heart`), Blobs store ("bfh"), env vars, tests and CI
+(`.github/workflows/brand-tests.yml`). GonPreah's rules above (no YWAM on screen, no comments) don't
+apply to it. See brand-from-the-heart/CLAUDE.md and its README.
+
 ## Accounts
 A **username and password** (`registerPassword` / `loginPassword`; Nov 2026, Uriah: "a basic
 login besides Google") or Google sign-in (`loginGoogle` / `register`), then a username (unique,

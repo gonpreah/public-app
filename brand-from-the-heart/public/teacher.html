@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Teacher Dashboard · Brand From the Heart</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23B5523B'/><text x='50' y='68' font-size='56' text-anchor='middle' fill='white'>❤</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap">
+<link rel="stylesheet" href="app.css">
+<style>
+  main { max-width: 1040px; padding-bottom: 40px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .stat b { font-size: 1.8rem; display: block; line-height: 1.1; }
+  .stat.stuck b { color: var(--err); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: .78rem; text-transform: uppercase; color: var(--muted); letter-spacing: .04em; }
+  .st { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+  .st-none { background: #EEE; color: #555; } .st-interview { background: #E3F0FF; color: #154A85; } .st-choosing { background: #FFF1D6; color: #7A4B00; } .st-finished { background: #DDF3E4; color: #1E6B3A; }
+  .flag { color: var(--err); font-weight: 600; font-size: .82rem; }
+  .pbar { width: 90px; height: 8px; background: var(--line); border-radius: 9px; overflow: hidden; } .pbar i { display: block; height: 100%; background: var(--brand); }
+  .tablewrap { overflow-x: auto; }
+  .briefs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .bcard { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--card); cursor: pointer; text-align: left; padding: 0; }
+  .bcard .top2 { padding: 16px; } .bcard .bot { padding: 10px 14px; font-size: .88rem; }
+  .logos { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .logos .item { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--card); }
+  .logos .logo { height: 80px; }
+  .cm { border-bottom: 1px solid var(--line); padding: 8px 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .cm.hidden { opacity: .55; }
+  dialog { border: 0; border-radius: 18px; padding: 0; max-width: 680px; width: calc(100% - 24px); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  .dlg { padding: 18px; }
+</style>
+</head>
+<body>
+<header class="top"><span class="brandmark">❤ <span>Brand From the Heart · Teacher</span></span><span id="cls" class="muted small"></span></header>
+<main id="t"></main>
+<dialog id="dlg"></dialog>
+<div id="toast" class="toast"></div>
+<script src="fonts.js"></script>
+<script src="brands.js"></script>
+<script src="brand.js"></script>
+<script src="teacher.js"></script>
+</body>
+</html>

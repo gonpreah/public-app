@@ -1,0 +1,15 @@
+{
+  "name": "brand-from-the-heart",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Brand From the Heart — a bilingual (English/Khmer) brand builder for social media students. Netlify Functions + Blobs + Claude.",
+  "scripts": {
+    "test": "node tests/test-data.mjs && node tests/test-api.mjs && node tests/test-ui.mjs",
+    "preview": "node tests/serve.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
+    "@netlify/blobs": "^10.7.12"
+  }
+}

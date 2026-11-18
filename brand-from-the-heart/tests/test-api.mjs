@@ -205,6 +205,17 @@ ok('the background job accepts a second phone key', await (async () => { globalT
   ok('heart and directions still use the best model', f2.calls.every(c => c.fast) && fake.calls.slice(0, 6).every(c => !c.fast));
 }
 
+/* the class board */
+{
+  const board = await call('classProgress', { id: b.id, key: b.key });
+  const sk = board.students.find(x => x.name === 'Sokha');
+  ok('class board: every classmate with progress, stage and archetype', board.name === 'Social Media School' && sk && sk.prog === 70 && sk.stage === 'refine' && sk.arch === 'explorer');
+  ok('class board never carries answers or keys', !JSON.stringify(board).includes('Pailin') && !JSON.stringify(board).includes(a.key) && !JSON.stringify(board).includes('heart'));
+  ok('class board marks me', board.students.find(x => x.me).id === b.id);
+  ok('outside a class: no board', (await call('classProgress', { id: solo.id, key: solo.key })).error === 'NO_CLASS');
+  ok('a wrong key sees nothing', (await call('classProgress', { id: b.id, key: 'x'.repeat(24) })).error === 'NO_STUDENT');
+}
+
 /* join / remove */
 ok('solo student joins a class', (await call('join', { id: solo.id, key: solo.key, code: cls.code })).cls === cls.code);
 ok('teacher removes a student', (await call('teacherRemove', { code: cls.code, tkey: cls.tkey, sid: solo.id })).ok && !(await call('teacher', { code: cls.code, tkey: cls.tkey })).students.some(s => s.id === solo.id));

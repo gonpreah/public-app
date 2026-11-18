@@ -132,6 +132,22 @@ export const HANDLERS = {
     out.sort((x, y) => x.name.localeCompare(y.name));
     return { code: c.code, name: c.name, students: out };
   },
+  /* --- the class board: everyone in the class sees each other's progress (never answers) --- */
+  async classProgress(a) {
+    const s = await student(a);
+    if (!s.cls) throw new Fail('NO_CLASS', 404);
+    const c = await db.get('c:' + s.cls);
+    const out = [];
+    await Promise.all((await members(s.cls)).map(async id => {
+      const sum = await db.get('sum:' + id);
+      if (!sum || !sum.name) return;
+      const b = sum.brief || null;
+      out.push({ id, me: id === s.id, name: sum.name, stage: sum.stage || 'start', prog: sum.prog || 0, arch: sum.arch || null, updated: sum.updated || 0,
+        brand: b ? { title: b.title, tagline: b.tagline, colors: b.colors, fontId: b.fontId, tune: b.tune || {} } : null });
+    }));
+    out.sort((x, y) => (y.prog - x.prog) || x.name.localeCompare(y.name));
+    return { code: s.cls, name: c ? c.name : s.cls, students: out };
+  },
   async signIn(a) {
     const code = clip(a.code, 8).toUpperCase(), sid = clip(a.sid, 20);
     const c = await db.get('c:' + code);

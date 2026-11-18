@@ -22,6 +22,12 @@ logo, by Uriah's choice (Nov 2026: "load em").
     (`classRoster`, `signIn`).
   - `signIn` adds a key to `s.khs` (one per phone, last 10; `keyOk` checks `kh` or `khs`).
   - No PINs or passwords, and don't add any.
+- **Simple login + class board** (Uriah: "a simple login process so they don't lose their info and the class
+  can see each other's progress"):
+  - The home screen leads with the class code; the phone remembers it (`bfh-lastclass`).
+  - Students tap their name to sign in, and can sign out from the Class tab.
+  - `classProgress` gives class members each other's name, stage, progress, archetype and finished brand
+    (title, tagline, colours). Never answers.
 - **Voice** (Uriah: "make sure Claude can listen to their voice in Khmer"): the Messages API can't take
   audio. The phone's SpeechRecognition (`km-KH`) writes the text, and the `tidy` job (Sonnet) cleans it
   up. On iPhone, students use the Gboard 🎤 in Khmer.

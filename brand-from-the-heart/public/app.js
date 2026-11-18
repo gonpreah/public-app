@@ -242,9 +242,35 @@
 
   VIEWS.home = function () {
     const started = S.quiz.result || Object.keys(S.answers).length || S.dirs.length;
-    return `<section class="hero">
+    if (!S.cls) {
+      const lc = lastClass();
+      return `<section class="hero">
         <div class="hero-spark">${SPARK(116, 'var(--cobalt)')}</div>
         <p class="eyebrow">${t('heroEyebrow')}</p>
+        <h1>${t('heroTitleA')} <em>${t('heroTitleB')}</em></h1>
+        <p class="hand">${t('heroHand')}</p>
+        <p class="lead">${t('signInLead')}</p>
+        <div class="stack">
+          ${lc ? btn('signInLast', t('signInTo', { name: esc(lc.name) }) + ' →', 'primary big') : ''}
+          <div class="signin"><input id="signCode" placeholder="${t('classCode')}" maxlength="6" autocapitalize="characters" autocomplete="off" aria-label="${t('classCode')}"><button class="btn ${lc ? 'ghost' : 'primary'}" data-act="signInCode">${t('signIn')}</button></div>
+          <p class="muted small">${t('signInWhy')}</p>
+          ${btn('go', (started ? t('continueBrand') : t('tryWithout')) + ' →', 'soft', started ? resumeView() : 'quiz')}
+        </div>
+      </section>
+      ${installCard()}
+      <section class="card">
+        <p class="eyebrow">${t('howItWorks')}</p>
+        <ol class="steps">${['step1', 'step2', 'step3', 'step4', 'step5'].map(k => `<li>${t(k)}</li>`).join('')}</ol>
+      </section>
+      <section class="card">
+        <h3>📂 ${t('haveFile')}</h3>
+        <p class="muted small">${t('haveFileWhy')}</p>
+        <label class="btn ghost small">${t('loadFile')}<input type="file" accept=".json,application/json" id="loadFile" hidden></label>
+      </section>`;
+    }
+    return `<section class="hero">
+        <div class="hero-spark">${SPARK(116, 'var(--cobalt)')}</div>
+        <p class="eyebrow">${t('signedInAs', { name: esc(S.answers.name || '…'), cls: esc(S.className || S.cls) })}</p>
         <h1>${t('heroTitleA')} <em>${t('heroTitleB')}</em></h1>
         <p class="hand">${t('heroHand')}</p>
         <p class="lead">${t('homeLead')}</p>
@@ -287,7 +313,8 @@
       body = pick ? `<section class="card"><h3>${t('areYou', { name: esc(pick.name) })}</h3><p class="muted small">${t('areYouWhy')}</p>
           <div class="stack">${btn('welcomeConfirm', t('yesItsMe') + ' →', 'primary big', pick.id)}${btn('welcomePick', t('notMe'), 'ghost small', '')}</div></section>`
         : `<section class="card"><h3>${t('tapYourName')}</h3>
-          ${r.students.length ? `<div class="roster">${r.students.map(x => `<button class="opt" data-act="welcomePick" data-arg="${esc(x.id)}"><span class="avatar">${esc(x.name.trim().slice(0, 1).toUpperCase())}</span><span>${esc(x.name)}</span><small>${x.prog}%</small></button>`).join('')}</div>` : `<p class="muted">${t('nobodyYet')}</p>`}
+          ${r.students.length > 8 ? `<input id="rosterFilter" class="roster-filter" placeholder="${t('findName')}" autocomplete="off" aria-label="${t('findName')}">` : ''}
+          ${r.students.length ? `<div class="roster">${r.students.map(x => `<button class="opt" data-act="welcomePick" data-arg="${esc(x.id)}" data-name="${esc(x.name.toLowerCase())}"><span class="avatar">${esc(x.name.trim().slice(0, 1).toUpperCase())}</span><span>${esc(x.name)}</span><small>${x.prog}%</small></button>`).join('')}</div>` : `<p class="muted">${t('nobodyYet')}</p>`}
           ${btn('welcomeMode', '← ' + t('back'), 'ghost small', '')}</section>`;
     } else {
       body = `<div class="stack">
@@ -300,6 +327,9 @@
         <p class="eyebrow">${t('welcomeEyebrow')}</p><h1>${esc(r.name)}</h1>
         <p class="lead">${t('welcomeLead')}</p></section>${body}`;
   };
+  const LAST = 'bfh-lastclass';
+  function rememberClass() { if (S.cls) try { localStorage.setItem(LAST, JSON.stringify({ code: S.cls, name: S.className || S.cls })); } catch (e) {} }
+  function lastClass() { try { return JSON.parse(localStorage.getItem(LAST) || 'null'); } catch (e) { return null; } }
   async function openWelcome(code) {
     V.welcome = { code: String(code || '').toUpperCase().slice(0, 6), mode: '' };
     go('welcome');
@@ -727,7 +757,11 @@
         ${p.myComments.length < 3 ? `<div class="encourage">${['enc1', 'enc2', 'enc3', 'enc4'].map(k => `<button class="chip" data-act="encourage" data-arg="${p.id}|${k}">${t(k)}</button>`).join('')}</div>
         <div class="row"><input data-comment="${p.id}" maxlength="160" placeholder="${t('commentPh')}"><button class="btn soft small" data-act="comment" data-arg="${p.id}">${t('send')}</button></div>` : ''}
       </div>`).join('')}</section>`;
+    const me = S.cls ? `<section class="card whoami"><span class="avatar">${esc((S.answers.name || '?').trim().slice(0, 1).toUpperCase())}</span>
+        <div><b>${esc(S.answers.name || '')}</b><small class="muted">${esc(S.className || S.cls)} · ${t('savedToAccount')}</small></div>
+        ${btn('signOut', t('signOut'), 'ghost small')}</section>` : '';
     return `<h2>👥 ${t('classTitle')}</h2>
+      ${me}${boardCard()}
       <section class="card"><h3>🔗 ${t('myLink')}</h3>
         ${link ? `<p class="muted small">${t('myLinkWhy')}</p><pre class="copybox small">${esc(link)}</pre>${btn('copyLink', '📋 ' + t('copyLink'), 'primary small')}` : `<p class="muted small">${t('noLinkYet')}</p>${btn('makeLink', t('makeLink'), 'primary small')}`}
       </section>
@@ -768,7 +802,36 @@
     if (view === 'heart' && !S.heart && !(V.job && V.job.kind === 'heart') && S.id && S.cls) setTimeout(() => startJob('heart'), 0);
     V.view = view; render(); window.scrollTo(0, 0);
   }
+  const STAGE_KEYS = ['start', 'interview', 'heart', 'directions', 'refine', 'finished'];
+  function boardCard() {
+    if (!S.cls) return '';
+    const bd = V.board;
+    if (!bd) return `<section class="card"><p class="eyebrow">${t('ourClass')}</p><p class="muted">${t('loading')}</p></section>`;
+    const done = bd.students.filter(x => x.stage === 'finished').length;
+    return `<section class="card board"><p class="eyebrow">${t('ourClass')}</p>
+      <h3>${t('boardTitle', { n: bd.students.length, done })}</h3>
+      <p class="muted small">${t('boardPrivacy')}</p>
+      <ol class="board-list">${bd.students.map(x => {
+        const A = ARCH.find(a => a.id === x.arch), c = x.brand && x.brand.colors;
+        return `<li class="${x.me ? 'me' : ''}">
+          <span class="avatar" ${c ? `style="background:${esc(c.primary)};color:${B.readableOn(c.primary)}"` : ''}>${esc(x.name.trim().slice(0, 1).toUpperCase())}</span>
+          <div class="bl-main"><div class="bl-top"><b>${esc(x.name)}${x.me ? ` <small class="muted">· ${t('you')}</small>` : ''}</b>${A ? `<span title="${esc(L(A))}">${A.emoji}</span>` : ''}</div>
+            <div class="bl-stage">${STAGE_KEYS.includes(x.stage) ? t('stage_' + x.stage) : ''}</div>
+            <div class="bar"><i style="width:${Math.max(2, x.prog)}%"></i></div>
+            ${x.brand ? `<div class="bl-brand">${c ? swatches(c) : ''}<span>“${esc(L(x.brand.tagline))}”</span></div>` : ''}
+          </div><b class="bl-pct">${x.prog}%</b></li>`;
+      }).join('')}</ol></section>`;
+  }
+  let boardTimer = null;
+  async function loadBoard() {
+    if (!S.id || !S.cls) return;
+    try { V.board = await api('classProgress', { id: S.id, key: S.key }); } catch (e) { return; }
+    if (V.view === 'cls' && !(document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName))) render();
+  }
   async function loadClass() {
+    loadBoard();
+    clearInterval(boardTimer);
+    boardTimer = setInterval(() => { if (V.view === 'cls' && !document.hidden) loadBoard(); else if (V.view !== 'cls') clearInterval(boardTimer); }, 30000);
     if (!S.id) return;
     try { V.fb = await api('feedback', { id: S.id, key: S.key }); } catch (e) {}
     if (S.cls) { try { V.people = (await api('gallery', { id: S.id, key: S.key })).people; } catch (e) { V.people = []; } }
@@ -781,7 +844,7 @@
     welcomeMode: (a) => { V.welcome.mode = a; V.welcome.pick = null; render(); if (a === 'new') setTimeout(() => { const el = $('#newName'); if (el) el.focus(); }, 50); },
     welcomePick: (a) => { V.welcome.pick = a || null; render(); },
     welcomeConfirm: async (a) => {
-      try { const r = await api('signIn', { code: V.welcome.code, sid: a }); await becomeStudent(r.id, r.key, r.cls, r.className); toast(t('welcomeBack', { name: S.answers.name || '' })); loadLogos(); go(resumeView()); }
+      try { const r = await api('signIn', { code: V.welcome.code, sid: a }); await becomeStudent(r.id, r.key, r.cls, r.className); toast(t('welcomeBack', { name: S.answers.name || '' })); rememberClass(); loadLogos(); go(resumeView()); }
       catch (e) { toast(t('errNet')); }
     },
     welcomeStart: async () => {
@@ -791,11 +854,11 @@
         const r = await api('start', { name, code: V.welcome.code });
         const lang = S.lang;
         S = Object.assign(fresh(), { id: r.id, key: r.key, cls: r.cls, className: V.welcome.roster.name, lang });
-        S.answers.name = name; save(true); loadLogos(); go('quiz');
+        S.answers.name = name; save(true); rememberClass(); loadLogos(); go('quiz');
       } catch (e) { toast(t(e.code === 'NO_CLASS' ? 'errClass' : 'errNet')); }
     },
     welcomeContinue: async () => {
-      try { const r = await api('join', { id: S.id, key: S.key, code: V.welcome.code }); S.cls = r.cls; S.className = r.className; save(true); loadLogos(); go(resumeView()); }
+      try { const r = await api('join', { id: S.id, key: S.key, code: V.welcome.code }); S.cls = r.cls; S.className = r.className; save(true); rememberClass(); loadLogos(); go(resumeView()); }
       catch (e) { toast(t('errNet')); }
     },
     lang: (a) => { S.lang = a; persist(); render(); },
@@ -889,6 +952,15 @@
       if (code) openWelcome(code);
     },
     switchUser: () => { if (S.cls) openWelcome(S.cls); },
+    signInLast: () => { const lc = lastClass(); if (lc) openWelcome(lc.code); },
+    signInCode: () => { const code = (($('#signCode') || {}).value || '').trim().toUpperCase(); if (code) openWelcome(code); else { const el = $('#signCode'); if (el) el.focus(); } },
+    signOut: async () => {
+      if (!confirm(t('signOutSure'))) return;
+      clearTimeout(saveTimer); await syncUp();
+      const lang = S.lang; rememberClass();
+      S = fresh(); S.lang = lang; V.board = null; V.people = null; V.fb = null; V.job = null; clearTimeout(pollTimer);
+      persist(); go('home');
+    },
     shareDir: (a) => {
       const k = S.share.keys || (S.share.keys = []), i = k.indexOf(a);
       if (i >= 0) k.splice(i, 1); else { if (k.length >= 2) k.shift(); k.push(a); }
@@ -1018,6 +1090,7 @@
   });
   document.addEventListener('input', (e) => {
     const el = e.target, d = el.dataset;
+    if (el.id === 'rosterFilter') { const q = el.value.trim().toLowerCase(); document.querySelectorAll('.roster .opt').forEach(b => { b.hidden = q && !b.dataset.name.includes(q); }); return; }
     if (d.bind) {
       const q = QS.find(x => x.id === d.bind);
       if (q && q.type === 'words3') { const w = Array.isArray(S.answers[q.id]) ? S.answers[q.id].slice() : ['', '', '']; w[Number(d.idx)] = el.value; S.answers[q.id] = w; }
@@ -1041,6 +1114,8 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && V.brand) { V.brand = null; render(); }
+    if (e.key === 'Enter' && e.target.id === 'signCode') { e.preventDefault(); ACT.signInCode(); }
+    if (e.key === 'Enter' && e.target.id === 'newName') { e.preventDefault(); ACT.welcomeStart(); }
     if (e.key === 'Enter' && e.target.matches('input.big-in, .words3 input') && V.view === 'interview') { e.preventDefault(); ACT.next(); }
   });
   document.addEventListener('error', (e) => {   // a logo that won't load: try the next source, then the name
@@ -1058,6 +1133,7 @@
   }
 
   const typing = () => document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  window.addEventListener('hashchange', () => { if (/^#me=/.test(location.hash)) location.reload(); });   // a personal link opened while the app is already open
   window.addEventListener('online', () => { if (V.unsynced) syncUp(); if (!typing()) render(); });
   window.addEventListener('offline', () => { if (!typing()) render(); });
   document.addEventListener('bfh-pwa', () => { if (V.view === 'home' && !typing()) render(); });
@@ -1092,6 +1168,7 @@
       if (S.cls !== classLink) { openWelcome(classLink); if (S.job && S.job.id) { V.job = { kind: S.job.kind, opts: S.job.opts, status: 'running', started: Date.now() }; poll(); } return; }
     }
     if (S.job && S.job.id) { V.job = { kind: S.job.kind, opts: S.job.opts, status: 'running', started: Date.now() }; poll(); }
+    rememberClass();
     render();
     loadLogos();
     if (V.err) toast(V.err);

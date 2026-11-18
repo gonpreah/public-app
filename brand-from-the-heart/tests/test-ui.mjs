@@ -37,7 +37,13 @@ try {
   ok('English one tap away', (await p.textContent('h1')).includes('Brand from the') && await p.evaluate(() => document.documentElement.lang) === 'en');
   ok('in the brand: Archivo headings, cobalt pointing, paper ground', await p.evaluate(() => getComputedStyle(document.querySelector('h1')).fontFamily.includes('Archivo') && getComputedStyle(document.querySelector('.btn.primary')).borderRadius === '999px' && getComputedStyle(document.body).backgroundColor === 'rgb(250, 246, 240)'));
 
-  // the classroom link: a welcome screen, "I'm new", a name, no password
+  // simple login: the home screen asks for the class code
+  ok('home leads with sign in by class code', await p.locator('#signCode').count() === 1);
+  await p.fill('#signCode', cls.code.toLowerCase());
+  await tap(p, '[data-act="signInCode"]');
+  await p.waitForSelector('[data-act="welcomeMode"][data-arg="new"]');
+  ok('the code opens the class welcome screen', (await p.textContent('.hero h1')) === 'Test class');
+  // the classroom link does the same
   await p.goto(base + '/?class=' + cls.code);
   await p.waitForSelector('[data-act="welcomeMode"][data-arg="new"]');
   ok('class link opens a welcome screen with the class name', (await p.textContent('.hero h1')) === 'Test class' && !(await p.evaluate(() => location.search)).includes('class'));
@@ -225,6 +231,9 @@ try {
   await tap(pb, 'nav.bottom [data-arg="cls"]');
   await pb.waitForSelector('.mate', { timeout: 5000 });
   ok('classmate sees the shared directions', await pb.locator('.mate-dir').count() === 2);
+  await pb.waitForSelector('.board-list li');
+  ok('class board: everyone\'s progress, stage and archetype', (await pb.textContent('.board-list')).includes('Sokha') && (await pb.textContent('.board-list')).includes('Finished') && await pb.locator('.board-list li').count() === 2);
+  ok('class board shows a finished brand, never answers', await pb.locator('.board-list .bl-brand').count() === 1 && !(await pb.textContent('.board-list')).includes('Pailin'));
   await pb.locator('[data-act="vote"]').nth(1).click();
   await pb.waitForSelector('[data-act="vote"].primary');
   await pb.locator('.encourage .chip').first().click();
@@ -256,6 +265,19 @@ try {
   await tap(pd, '[data-act="welcomeConfirm"]');
   await pd.waitForSelector('.brief', { timeout: 5000 });
   ok('tap your name → your brand opens, no password', (await pd.textContent('.brief')).includes('Sokha'));
+  pd.on('dialog', d => d.accept());
+  await tap(pd, 'nav.bottom [data-arg="cls"]');
+  await pd.waitForSelector('[data-act="signOut"]');
+  ok('class tab shows who is signed in', (await pd.textContent('.whoami')).includes('Sokha'));
+  await tap(pd, '[data-act="signOut"]');
+  await pd.waitForSelector('[data-act="signInLast"]');
+  ok('signed out: the phone offers "Sign in to Test class"', (await pd.textContent('[data-act="signInLast"]')).includes('Test class') && await pd.evaluate(() => !window.BFH_APP.S.id));
+  await tap(pd, '[data-act="signInLast"]');
+  await tap(pd, '[data-act="welcomeMode"][data-arg="back"]');
+  await tap(pd, '.roster .opt:has-text("Sokha")');
+  await tap(pd, '[data-act="welcomeConfirm"]');
+  await pd.waitForSelector('.brief', { timeout: 5000 });
+  ok('…and signing back in brings everything back', (await pd.textContent('.brief')).includes('Sokha') && await pd.evaluate(() => window.BFH_APP.S.dirs.length) === 7);
 
   /* ---------- teacher ---------- */
   const pt = await newPage(await browser.newContext({ viewport: { width: 1100, height: 900 } }));

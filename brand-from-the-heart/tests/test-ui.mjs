@@ -31,11 +31,11 @@ try {
   const p = await newPage(ctxA);
   await p.goto(base + '/?class=' + cls.code);
   await p.waitForSelector('.hero');
-  ok('home renders in English first', (await p.textContent('h1')) === 'Brand From the Heart');
-  await noSideScroll(p, 'home');
-  await tap(p, '.lang button:has-text("ខ្មែរ")');
-  ok('Khmer one tap away', (await p.textContent('h1')) === 'ម៉ាកចេញពីបេះដូង' && await p.evaluate(() => document.documentElement.lang) === 'km');
+  ok('home opens in Khmer first', (await p.textContent('h1')).includes('ម៉ាកចេញពី') && await p.evaluate(() => document.documentElement.lang) === 'km' && (await p.textContent('.lang button.on')) === 'ខ្មែរ');
+  await noSideScroll(p, 'home (Khmer)');
   await tap(p, '.lang button:has-text("EN")');
+  ok('English one tap away', (await p.textContent('h1')).includes('Brand from the') && await p.evaluate(() => document.documentElement.lang) === 'en');
+  ok('in the brand: Archivo headings, cobalt pointing, paper ground', await p.evaluate(() => getComputedStyle(document.querySelector('h1')).fontFamily.includes('Archivo') && getComputedStyle(document.querySelector('.btn.primary')).borderRadius === '999px' && getComputedStyle(document.body).backgroundColor === 'rgb(250, 246, 240)'));
 
   // quiz
   await tap(p, '[data-act="go"][data-arg="quiz"]');
@@ -177,6 +177,7 @@ try {
   const ctxB = await browser.newContext(phone);
   const pb = await newPage(ctxB);
   await pb.goto(base + '/#me=' + B.id + '.' + B.key);
+  await pb.waitForSelector('.lang'); await tap(pb, '.lang button:has-text("EN")');
   await tap(pb, 'nav.bottom [data-arg="cls"]');
   await pb.waitForSelector('.mate', { timeout: 5000 });
   ok('classmate sees the shared directions', await pb.locator('.mate-dir').count() === 2);

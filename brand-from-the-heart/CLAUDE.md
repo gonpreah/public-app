@@ -7,6 +7,15 @@ GonPreah's "no YWAM on screen" rule does **not** apply here: the Inspiration gal
 logo, by Uriah's choice (Nov 2026: "load em").
 
 - README.md: what it does, setup, deploy, the class flow.
+- **Khmer first** (Uriah, Nov 2026): a new phone opens in Khmer (`fresh()` lang 'km'); ខ្មែរ comes first in
+  the switch. The teacher page is English.
+- **Uriah's brand** (Nov 2026, from his "Uriah's Brand — What It Is & Why" deck): Paper/Ink with Cobalt
+  pointing and Marigold warming (Marigold points on Ink). Archivo + Hanken Grotesk, Koulen + Kantumruy Pro
+  for Khmer, one Caveat line (never on Khmer, which it can't draw). Pill buttons, 14px cards, the spark.
+  The tokens are at the top of app.css.
+- **Quiz and interview** (Uriah: "too many questions … too much answering in the storyline", "the
+  archetype too basic"): the quiz has 14 questions in 3 parts with a deeper result; the interview has 15
+  questions, each typed one with an `example` shown open.
 - Uriah's decisions (Nov 2026):
   - load the real brand logos from the web (teacher uploads can replace them);
   - a new Netlify site;

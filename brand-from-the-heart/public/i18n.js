@@ -3,8 +3,12 @@
     t('key', {vars}) picks the student's language; {name} style blanks are filled in. */
 window.BFH_T = {
   appName: { en: 'Brand From the Heart', km: 'ម៉ាកចេញពីបេះដូង' },
+  heroEyebrow: { en: 'Social Media School', km: 'សាលាប្រព័ន្ធផ្សព្វផ្សាយសង្គម' },
+  heroTitleA: { en: 'Brand from the', km: 'ម៉ាកចេញពី' },
+  heroTitleB: { en: 'heart', km: 'បេះដូង' },
+  heroHand: { en: 'your story · your people · your look', km: 'រឿងរបស់អ្នក · មនុស្សរបស់អ្នក · រូបរាងរបស់អ្នក' },
   homeLead: { en: 'Build a brand that is truly you — your story, your people, your look. Then use it with Claude and any AI tool to make posters, graphics and videos.', km: 'បង្កើតម៉ាកដែលជាខ្លួនអ្នកពិតៗ — រឿងរបស់អ្នក មនុស្សរបស់អ្នក រូបរាងរបស់អ្នក។ បន្ទាប់មកប្រើវាជាមួយ Claude និង AI ផ្សេងៗ ដើម្បីធ្វើប័ណ្ណប្រកាស រូបភាព និងវីដេអូ។' },
-  startQuiz: { en: '✨ Start with a fun quiz', km: '✨ ចាប់ផ្ដើមដោយកម្រងសំណួរកំសាន្ត' },
+  startQuiz: { en: 'Find your archetype →', km: 'ស្វែងរកប្រភេទម៉ាករបស់អ្នក →' },
   skipQuiz: { en: 'Skip to the heart interview', km: 'រំលងទៅការសម្ភាសន៍ពីបេះដូង' },
   continueBrand: { en: 'Continue my brand', km: 'បន្តម៉ាករបស់ខ្ញុំ' },
   inspiration: { en: 'Inspiration', km: 'ការបំផុសគំនិត' },

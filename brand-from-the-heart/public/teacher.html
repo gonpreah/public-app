@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Teacher Dashboard · Brand From the Heart</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23B5523B'/><text x='50' y='68' font-size='56' text-anchor='middle' fill='white'>❤</text></svg>">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23faf6f0'/><g stroke='%231F44FF' stroke-width='11' stroke-linecap='round'><line x1='50' y1='16' x2='50' y2='84'/><line x1='16' y1='50' x2='84' y2='50'/><line x1='26' y1='26' x2='74' y2='74'/><line x1='74' y1='26' x2='26' y2='74'/></g></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&family=Hanken+Grotesk:wght@300..800&family=Kantumruy+Pro:wght@300..700&family=Koulen&family=Caveat:wght@400..700&display=swap">
 <link rel="stylesheet" href="app.css">
 <style>
   main { max-width: 1040px; padding-bottom: 40px; }
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .stat { background: var(--card); box-shadow: inset 0 0 0 2px var(--line); border-radius: 14px; padding: 14px; }
+  .stat b { font-family: var(--display); font-weight: 900; }
   .stat b { font-size: 1.8rem; display: block; line-height: 1.1; }
   .stat.stuck b { color: var(--err); }
   table { width: 100%; border-collapse: collapse; font-size: .92rem; }
@@ -36,7 +37,7 @@
 </style>
 </head>
 <body>
-<header class="top"><span class="brandmark">❤ <span>Brand From the Heart · Teacher</span></span><span id="cls" class="muted small"></span></header>
+<header class="top"><span class="brandmark"><svg width="22" height="22" viewBox="0 0 100 100" aria-hidden="true"><g stroke="#1F44FF" stroke-width="11" stroke-linecap="round"><line x1="50" y1="8" x2="50" y2="92"/><line x1="8" y1="50" x2="92" y2="50"/><line x1="20.3" y1="20.3" x2="79.7" y2="79.7"/><line x1="79.7" y1="20.3" x2="20.3" y2="79.7"/></g></svg><span>Brand From the Heart · Teacher</span></span><span id="cls" class="muted small"></span></header>
 <main id="t"></main>
 <dialog id="dlg"></dialog>
 <div id="toast" class="toast"></div>

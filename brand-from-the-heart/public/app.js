@@ -17,7 +17,7 @@
 
   /* ---------------- state ---------------- */
   const KEY = 'bfh-state';
-  const fresh = () => ({ v: 1, lang: 'en', id: null, key: null, cls: null, className: null,
+  const fresh = () => ({ v: 1, lang: 'km', id: null, key: null, cls: null, className: null,
     quiz: { answers: {}, result: null }, answers: {}, likes: [], tot: {}, qi: 0,
     heart: null, dirs: [], pick: null, pkg: null, share: { on: false, keys: [] }, job: null, stage: 'start', checks: {} });
   let S = fresh();
@@ -208,6 +208,14 @@
     catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast(t('copied')); } catch (x) {} ta.remove(); }
   }
   const swatches = (c, big) => `<div class="sws${big ? ' big' : ''}">${B.ROLES.map(r => `<span title="${r} ${c[r]}" style="background:${c[r]}"></span>`).join('')}</div>`;
+  const SPARK = (size, color) => `<svg class="spark" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true"><g stroke="${color || 'currentColor'}" stroke-width="11" stroke-linecap="round"><line x1="50" y1="8" x2="50" y2="92"/><line x1="8" y1="50" x2="92" y2="50"/><line x1="20.3" y1="20.3" x2="79.7" y2="79.7"/><line x1="79.7" y1="20.3" x2="20.3" y2="79.7"/></g></svg>`;
+  const ICON = {
+    home: '<path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+    gallery: '<path d="M12 3.5v17M3.5 12h17M6 6l12 12M18 6 6 18"/>',
+    mine: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+    cls: '<circle cx="9" cy="9" r="3.2"/><path d="M3.5 19.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="8.5" r="2.5"/><path d="M15.8 14.2c2.4-.3 4.3 1.1 4.8 3.8"/>'
+  };
+  const icon = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
   const btn = (act, label, cls, arg) => `<button class="btn ${cls || ''}" data-act="${act}"${arg !== undefined ? ` data-arg="${esc(arg)}"` : ''}>${label}</button>`;
   function fontPreview(f, title) {
     B.loadFont(f);
@@ -230,17 +238,19 @@
   VIEWS.home = function () {
     const started = S.quiz.result || Object.keys(S.answers).length || S.dirs.length;
     return `<section class="hero">
-        <div class="hero-mark">❤</div>
-        <h1>${t('appName')}</h1>
+        <div class="hero-spark">${SPARK(116, 'var(--cobalt)')}</div>
+        <p class="eyebrow">${t('heroEyebrow')}</p>
+        <h1>${t('heroTitleA')} <em>${t('heroTitleB')}</em></h1>
+        <p class="hand">${t('heroHand')}</p>
         <p class="lead">${t('homeLead')}</p>
         <div class="stack">
           ${started ? btn('go', t('continueBrand') + ` <small>${progress()}%</small>`, 'primary big', resumeView()) : btn('go', t('startQuiz'), 'primary big', 'quiz')}
           ${started ? '' : btn('go', t('skipQuiz'), 'ghost', 'interview')}
-          ${btn('go', '💡 ' + t('inspiration'), 'soft', 'gallery')}
+          ${btn('go', t('inspiration') + ' →', 'soft', 'gallery')}
         </div>
       </section>
       <section class="card">
-        <h3>${t('howItWorks')}</h3>
+        <p class="eyebrow">${t('howItWorks')}</p>
         <ol class="steps">${['step1', 'step2', 'step3', 'step4', 'step5'].map(k => `<li>${t(k)}</li>`).join('')}</ol>
       </section>
       <section class="card">
@@ -261,23 +271,38 @@
     const i = Math.min(V.quizI, QUIZ.length - 1), q = QUIZ[i];
     if (!q) return `<p>${t('errGeneric')}</p>`;
     const chosen = S.quiz.answers[q.id];
-    return `<div class="qtop"><span>${t('quizTitle')}</span><span>${i + 1} / ${QUIZ.length}</span></div>
+    const parts = window.BFH_QUIZ_PARTS || [], part = parts.find(p => p.id === q.part), pi = parts.indexOf(part);
+    const firstOfPart = part && (i === 0 || QUIZ[i - 1].part !== q.part);
+    return `<div class="qtop"><span>${part ? (part.emoji || '') + ' ' + esc(L(part)) : t('quizTitle')}</span><span>${i + 1} / ${QUIZ.length}</span></div>
       <div class="bar"><i style="width:${(i / QUIZ.length) * 100}%"></i></div>
+      ${parts.length ? `<div class="secdots">${parts.map((p, n) => `<i class="${n < pi ? 'done' : n === pi ? 'now' : ''}" title="${esc(L(p))}"></i>`).join('')}</div>` : ''}
+      ${firstOfPart && i === 0 ? `<p class="sec-intro">${t('quizIntro')}</p>` : ''}
       <h2 class="q">${esc(L(q.q))}</h2>
+      ${q.hint ? `<p class="muted">${esc(L(q.hint))}</p>` : ''}
       <div class="opts">${q.options.map(o => `<button class="opt${chosen === o.id ? ' on' : ''}" data-act="quizPick" data-arg="${esc(o.id)}"><span class="em">${o.emoji || ''}</span>${esc(L(o))}</button>`).join('')}</div>
       <div class="nav">${i > 0 ? btn('quizBack', '← ' + t('back'), 'ghost') : btn('go', '← ' + t('home'), 'ghost', 'home')}</div>`;
   };
   VIEWS.quizResult = function () {
     const r = S.quiz.result; if (!r) return VIEWS.quiz();
-    const R = (window.BFH_QUIZ_RESULTS || {})[r.top] || {}, A = ARCH.find(a => a.id === r.top) || {};
+    const RS = window.BFH_QUIZ_RESULTS || {}, R = RS[r.top] || {}, A = ARCH.find(a => a.id === r.top) || {};
+    const R2 = r.second && r.second !== r.top ? RS[r.second] : null;
     const brands = BRANDS.filter(b => b.archetype === r.top);
+    const pct = r.pct || {};
+    const mix = Object.keys(pct).sort((a, b) => pct[b] - pct[a]).slice(0, 3).filter(k => pct[k] > 0);
     return `<section class="result">
         <div class="res-em">${A.emoji || '✨'}</div>
         <p class="muted">${t('youAre')}</p>
         <h1>${esc(L(R.title))}</h1>
+        ${R2 && R2.blend ? `<p class="blend">${esc(L(R2.blend))}</p>` : ''}
         <p class="lead">${esc(L(R.text))}</p>
-        ${R.strengths ? `<ul class="ticks">${R.strengths.map(s => `<li>${esc(L(s))}</li>`).join('')}</ul>` : ''}
+      </section>
+      ${mix.length ? `<section class="card"><h3>📊 ${t('yourMix')}</h3>${mix.map(k => { const a = ARCH.find(x => x.id === k) || {}; return `<div class="mixbar"><span>${a.emoji || ''} ${esc(L((RS[k] || {}).title) || L(a))}</span><div class="bar"><i style="width:${pct[k]}%"></i></div><b>${pct[k]}%</b></div>`; }).join('')}</section>` : ''}
+      <section class="card">
+        ${R.strengths ? `<h3>💪 ${t('yourStrengths')}</h3><ul class="ticks">${R.strengths.map(s => `<li>${esc(L(s))}</li>`).join('')}</ul>` : ''}
         ${R.watch ? `<p class="watch">💡 ${esc(L(R.watch))}</p>` : ''}
+        ${R.brand ? `<h3>🎨 ${t('brandLooks')}</h3><p>${esc(L(R.brand))}</p>` : ''}
+        ${R.content ? `<h3>🎬 ${t('contentIdeas')}</h3><ul class="ticks">${R.content.map(s => `<li>${esc(L(s))}</li>`).join('')}</ul>` : ''}
+        ${R.verse ? `<p class="muted">📖 ${esc(R.verse)}</p>` : ''}
       </section>
       <section class="card"><h3>${t('brandsLikeYou', { a: esc(L(A)) })}</h3>
         <div class="mini-brands">${brands.map(b => `<button class="mini-brand" data-act="brand" data-arg="${b.id}">${logoImg(b)}<span>${esc(b.name)}</span></button>`).join('')}</div>
@@ -348,6 +373,7 @@
       <div class="secdots">${SECTIONS.map((s, n) => `<i class="${n < secIdx ? 'done' : n === secIdx ? 'now' : ''}" title="${esc(L(s))}"></i>`).join('')}</div>
       ${first && sec.intro ? `<p class="sec-intro">${esc(L(sec.intro))}</p>` : ''}
       <h2 class="q">${esc(L(q.q))}${q.optional ? ` <small class="opt-tag">${t('optional')}</small>` : ''}</h2>
+      ${q.example ? `<details class="example" open><summary>💡 ${t('exampleAnswer')}</summary><p>${esc(L(q.example))}</p></details>` : ''}
       ${input}
       ${follow}
       <p class="cheer">✨ ${esc(L(q.cheer))}</p>
@@ -611,12 +637,15 @@
     document.documentElement.lang = S.lang === 'km' ? 'km' : 'en';
     document.body.classList.toggle('km', S.lang === 'km');
     const view = VIEWS[V.view] ? V.view : 'home';
+    const animKey = view + ':' + (view === 'quiz' ? V.quizI : view === 'interview' ? S.qi : '');
+    document.body.classList.toggle('still', V.animKey === animKey);
+    V.animKey = animKey;
     const active = view === 'home' ? 'home' : view === 'gallery' ? 'gallery' : view === 'cls' ? 'cls' : 'mine';
-    $('#app').innerHTML = `<header class="top"><button class="brandmark" data-act="go" data-arg="home">❤ <span>${t('appName')}</span></button>
-        <div class="lang" role="group" aria-label="Language"><button class="${S.lang === 'en' ? 'on' : ''}" data-act="lang" data-arg="en">EN</button><button class="${S.lang === 'km' ? 'on' : ''}" data-act="lang" data-arg="km">ខ្មែរ</button></div></header>
+    $('#app').innerHTML = `<header class="top"><button class="brandmark" data-act="go" data-arg="home">${SPARK(22, 'var(--brand)')}<span>${t('appName')}</span></button>
+        <div class="lang" role="group" aria-label="Language / ភាសា"><button class="${S.lang === 'km' ? 'on' : ''}" data-act="lang" data-arg="km">ខ្មែរ</button><button class="${S.lang === 'en' ? 'on' : ''}" data-act="lang" data-arg="en">EN</button></div></header>
       <main id="main" class="v-${view}">${VIEWS[view]()}</main>
       ${V.brand ? brandSheet() : ''}
-      <nav class="bottom">${NAV.map(([k, em, lab]) => `<button class="${active === k ? 'on' : ''}" data-act="nav" data-arg="${k}"><span>${em}</span>${t(lab)}</button>`).join('')}</nav>
+      <nav class="bottom">${NAV.map(([k, em, lab]) => `<button class="${active === k ? 'on' : ''}" data-act="nav" data-arg="${k}"${active === k ? ' aria-current="page"' : ''}>${icon(k)}${t(lab)}</button>`).join('')}</nav>
       <div id="toast" class="toast"></div>`;
     document.title = t('appName');
     if (V.scrollTo !== undefined) { const el = $('#dir-' + V.scrollTo); V.scrollTo = undefined; if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 50); }

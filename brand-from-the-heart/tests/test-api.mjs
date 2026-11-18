@@ -176,5 +176,11 @@ const { callClaude } = await import('../netlify/functions/lib/claude.js');
 delete process.env.ANTHROPIC_API_KEY;
 let err = ''; try { await callClaude('s', 'u', P.HEART_SCHEMA, 100); } catch (e) { err = e.message; }
 ok('no key → NO_KEY from the caller', err === 'NO_KEY');
+process.env.ANTHROPIC_API_KEY = 'sk-test'; process.env.BFH_WORKSPACE_ID = 'wrkspc_test123';
+const realFetch = globalThis.fetch; let sentHeaders = null;
+globalThis.fetch = async (url, init) => { const h = init.headers instanceof Headers ? Object.fromEntries(init.headers) : init.headers; sentHeaders = h; return new Response(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'stop' } }), { status: 400, headers: { 'content-type': 'application/json' } }); };
+try { await callClaude('s', 'u', P.HEART_SCHEMA, 100); } catch (e) {}
+globalThis.fetch = realFetch; delete process.env.ANTHROPIC_API_KEY;
+ok('a workspace id goes on every Claude request', sentHeaders && sentHeaders['anthropic-workspace-id'] === 'wrkspc_test123', sentHeaders);
 
 ok.done();

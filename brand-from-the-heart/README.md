@@ -1,15 +1,18 @@
 # ❤ Brand From the Heart
 
-A mobile-friendly web app for students at a Social Media School in Cambodia. In English and Khmer, each
-student builds an authentic personal or ministry brand, then takes it to Claude (or any AI tool) to
+A mobile-friendly web app for students at a Social Media School in Cambodia. **Khmer first**, with English one
+tap away. Each student builds an authentic personal or ministry brand, then takes it to Claude (or any AI tool) to
 make on-brand posters, graphics and Claude Motion videos.
 
 **The journey:**
-1. **Archetype quiz:** "Which brand archetype are you?", five fun questions.
+1. **Archetype quiz:** 14 situation questions in three parts (how you show up, what drives you, how you
+   create). The result gives your archetype and your mix, how your brand may look and sound, content ideas
+   and a verse. Claude gets the mix and every choice.
 2. **Inspiration:** 25 well-known brands with their real logos, grouped into 7 archetypes.
    "I like this vibe" picks become taste signals.
-3. **Heart interview:** 24 questions in 6 sections, one per screen. It has a progress bar,
-   encouragement, follow-ups when an answer is short, and seven visual "this or that" picks.
+3. **Heart interview:** 15 short questions in 6 sections, one per screen. Every typed question shows an
+   example answer from one student, and there are follow-ups when an answer is short and seven visual
+   "this or that" picks.
 4. **Heart check:** Claude writes "this is who you are" in English and Khmer. The student edits it,
    and their version drives everything after.
 5. **Five brand directions:** heart-true, bolder, softer, rooted in Cambodia, and a wildcard. Each has:
@@ -48,6 +51,19 @@ make on-brand posters, graphics and Claude Motion videos.
    - comment moderation;
    - optional logo uploads.
 
+## The look
+
+The app uses Uriah Lyford's brand:
+- **Colours:** Paper `#faf6f0` and Ink `#17150f` do most of the work, Cobalt `#1f44ff` points (buttons,
+  links, eyebrows), and Marigold `#ffb323` warms (highlights, and buttons on dark).
+- **Type:**
+  - Archivo for English headings and Hanken Grotesk for English text.
+  - Koulen for Khmer headings and Kantumruy Pro for Khmer text.
+  - One Caveat handwritten line.
+- **Shapes and motion:** pill buttons, 14px cards with 2px inset lines, the asterisk spark as the mark,
+  and a slow "rise" when a screen changes.
+- **Themes:** the two brand themes, Paper (light) and Ink (dark).
+
 ## What's in the folder
 
 ```
@@ -82,6 +98,7 @@ brand-from-the-heart/
    |---|---|---|
    | `ANTHROPIC_API_KEY` | yes | Your Claude API key from https://console.anthropic.com → API keys. Server only; it never reaches the page. |
    | `BFH_TEACHER_PASSWORD` | yes | The password a teacher types to make a class. Only people in a class can use Claude, which keeps your API bill to your students. |
+   | `BFH_WORKSPACE_ID` | only for some keys | If your key starts `sk-ant-usr-` (an organization key not tied to a workspace), make a workspace in the Console and put its ID (`wrkspc_…`) here. |
    | `BFH_MODEL` | no | Default `claude-opus-5-5`. |
    | `BFH_EFFORT` | no | Claude's effort: `low` · `medium` (default) · `high`. |
    | `BFH_STUDENT_DAILY` | no | Claude jobs per student per day (default 40). |

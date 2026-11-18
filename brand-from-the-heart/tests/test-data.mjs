@@ -42,14 +42,17 @@ ok('every brand has a logo source and an official page, https only', BR.every(b 
 ok('brand colours are hex', BR.every(b => (b.colours || []).every(h => /^#[0-9A-Fa-f]{6}$/.test(h))));
 
 /* quiz */
-ok('5 quiz questions', W.BFH_QUIZ.length === 5 && W.BFH_QUIZ.every(q => bi(q.q) && q.options.length >= 3 && q.options.every(o => bi(o))));
+ok('a deeper quiz: 12–16 questions in parts', W.BFH_QUIZ.length >= 12 && W.BFH_QUIZ.length <= 16 && W.BFH_QUIZ.every(q => bi(q.q) && q.options.length >= 3 && q.options.every(o => bi(o)) && (W.BFH_QUIZ_PARTS || []).some(p => p.id === q.part)));
+ok('quiz results go deeper: brand look, content ideas, blend', A.every(a => { const R = W.BFH_QUIZ_RESULTS[a.id]; return R && bi(R.brand) && bi(R.blend) && R.content.length === 3 && R.content.every(bi) && R.strengths.length === 3; }));
 ok('a result for each archetype', A.every(a => W.BFH_QUIZ_RESULTS[a.id] && bi(W.BFH_QUIZ_RESULTS[a.id].title) && bi(W.BFH_QUIZ_RESULTS[a.id].text)));
 const r = W.BFH_quizScore(Object.fromEntries(W.BFH_QUIZ.map(q => [q.id, q.options[0].id])));
-ok('quiz scores to an archetype', A.some(a => a.id === r.top));
+ok('quiz scores to an archetype with a mix', A.some(a => a.id === r.top) && r.second && Math.abs(Object.values(r.pct).reduce((x, y) => x + y, 0) - 100) <= 3);
 
 /* interview */
 const Q = W.BFH_QUESTIONS;
-ok('20–25 questions in 6 sections', Q.length >= 20 && Q.length <= 25 && W.BFH_SECTIONS.length === 6);
+ok('a shorter interview: 12–16 questions in 6 sections', Q.length >= 12 && Q.length <= 16 && W.BFH_SECTIONS.length === 6 && W.BFH_SECTIONS.every(sc => Q.some(q => q.section === sc.id)));
+ok('every typed question shows an example answer', Q.filter(q => ['short', 'long', 'words3'].includes(q.type)).every(q => bi(q.example)));
+ok('at most 6 long answers', Q.filter(q => q.type === 'long').length <= 6);
 ok('the original ten are there', ['name', 'story', 'heart', 'person', 'outcome', 'friends3', 'never3', 'moods', 'things', 'verse'].every(id => Q.some(q => q.id === id)));
 ok('moods chips are the eleven', JSON.stringify(Q.find(q => q.id === 'moods').options.map(o => o.id)) === JSON.stringify(['joyful', 'calm', 'bold', 'gentle', 'hopeful', 'playful', 'serious', 'warm', 'modern', 'traditional', 'adventurous']));
 ok('every question bilingual with an encouragement line', Q.every(q => bi(q.q) && bi(q.cheer)));

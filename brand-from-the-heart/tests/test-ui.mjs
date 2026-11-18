@@ -31,18 +31,21 @@ try {
   const p = await newPage(ctxA);
   await p.goto(base + '/?class=' + cls.code);
   await p.waitForSelector('.hero');
-  ok('home renders in English first', (await p.textContent('h1')) === 'Brand From the Heart');
-  await noSideScroll(p, 'home');
-  await tap(p, '.lang button:has-text("ខ្មែរ")');
-  ok('Khmer one tap away', (await p.textContent('h1')) === 'ម៉ាកចេញពីបេះដូង' && await p.evaluate(() => document.documentElement.lang) === 'km');
+  ok('home opens in Khmer first', (await p.textContent('h1')).includes('ម៉ាកចេញពី') && await p.evaluate(() => document.documentElement.lang) === 'km' && (await p.textContent('.lang button.on')) === 'ខ្មែរ');
+  await noSideScroll(p, 'home (Khmer)');
   await tap(p, '.lang button:has-text("EN")');
+  ok('English one tap away', (await p.textContent('h1')).includes('Brand from the') && await p.evaluate(() => document.documentElement.lang) === 'en');
+  ok('in the brand: Archivo headings, cobalt pointing, paper ground', await p.evaluate(() => getComputedStyle(document.querySelector('h1')).fontFamily.includes('Archivo') && getComputedStyle(document.querySelector('.btn.primary')).borderRadius === '999px' && getComputedStyle(document.body).backgroundColor === 'rgb(250, 246, 240)'));
 
   // quiz
   await tap(p, '[data-act="go"][data-arg="quiz"]');
-  for (let i = 0; i < 5; i++) { await p.waitForSelector('.opt'); await p.locator('.opt').nth(i % 3).click(); }
+  const nQuiz = await p.evaluate(() => window.BFH_QUIZ.length);
+  ok('quiz shows its part and an intro', (await p.textContent('.qtop')).length > 3 && await p.locator('.sec-intro').count() === 1);
+  for (let i = 0; i < nQuiz; i++) { await p.waitForSelector('.opt'); await p.locator('.opt').nth(i % 3).click(); }
   await p.waitForSelector('.result');
   ok('quiz gives a result card', (await p.textContent('.result h1')).length > 2);
   ok('result links to matching brands', await p.locator('.mini-brand').count() >= 3);
+  ok('result shows the mix, brand look and content ideas', await p.locator('.mixbar').count() >= 2 && (await p.textContent('main')).includes('Content ideas for you'));
 
   // inspiration
   await tap(p, 'nav.bottom [data-arg="gallery"]');
@@ -63,6 +66,7 @@ try {
   await p.waitForSelector('h2.q');
   ok('interview opens with progress', await p.locator('.bar i').count() === 1 && (await p.textContent('.qtop')).includes('1 of'));
   ok('encouragement on the screen', (await p.textContent('.cheer')).length > 5);
+  ok('an example answer shows by itself', await p.locator('details.example[open] p').count() === 1 && (await p.textContent('details.example p')).length > 3);
   // first question: name — a short answer shows the follow-up
   await p.fill('.big-in', 'S');
   await tap(p, '[data-act="next"]');
@@ -173,6 +177,7 @@ try {
   const ctxB = await browser.newContext(phone);
   const pb = await newPage(ctxB);
   await pb.goto(base + '/#me=' + B.id + '.' + B.key);
+  await pb.waitForSelector('.lang'); await tap(pb, '.lang button:has-text("EN")');
   await tap(pb, 'nav.bottom [data-arg="cls"]');
   await pb.waitForSelector('.mate', { timeout: 5000 });
   ok('classmate sees the shared directions', await pb.locator('.mate-dir').count() === 2);

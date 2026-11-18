@@ -51,11 +51,18 @@ export function keyOk(s, key) {
   const h = hash(String(key || ''));
   return !!s && ((s.kh && same(s.kh, h)) || (Array.isArray(s.khs) && s.khs.some(x => same(x, h))));
 }
+/* Each phone's key is also its own record (k:<sid>:<hash>), so a save from another phone
+   can never write over it — that was logging students out (Nov 2026). */
+export async function keyOkAsync(s, key) {
+  if (!s || !key) return false;
+  if (keyOk(s, key)) return true;
+  return !!(await db.get('k:' + s.id + ':' + hash(String(key))));
+}
 async function student(a) {
   const id = clip(a && a.id, 20), key = String((a && a.key) || '');
   if (!/^[a-z0-9]{12}$/.test(id) || !key) throw new Fail('NO_STUDENT', 401);
   const s = await db.get('s:' + id);
-  if (!s || !keyOk(s, key)) throw new Fail('NO_STUDENT', 401);
+  if (!s || !(await keyOkAsync(s, key))) throw new Fail('NO_STUDENT', 401);
   return s;
 }
 async function teacherClass(a) {
@@ -155,8 +162,7 @@ export const HANDLERS = {
     const s = await db.get('s:' + sid);
     if (!s || s.cls !== code) throw new Fail('NO_STUDENT', 404);
     const key = rnd(24);
-    s.khs = (Array.isArray(s.khs) ? s.khs : []).concat(hash(key)).slice(-10);
-    await db.set('s:' + sid, s);
+    await db.set('k:' + sid + ':' + hash(key), { at: Date.now() });
     return { id: sid, key, cls: code, className: c.name };
   },
 
@@ -175,7 +181,7 @@ export const HANDLERS = {
     const s = await student(a);
     const sum = (await db.get('sum:' + s.id)) || {};
     const c = s.cls ? await db.get('c:' + s.cls) : null;
-    return { data: s.data, cls: s.cls, className: c ? c.name : null, job: s.job || null, feedback: await feedbackFor(s.id) };
+    return { data: s.data, cls: s.cls, className: c ? c.name : null, job: s.job || null, updated: sum.updated || 0, feedback: await feedbackFor(s.id) };
   },
   async save(a) {
     const s = await student(a);

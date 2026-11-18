@@ -3,7 +3,7 @@
     brand directions). api.js genStart checks the student, the class and the daily
     caps and writes job:<jid> as "queued"; the page then posts {id, key, job} here
     and asks api.js job() every 2 seconds until it is "done" or "error". */
-import { db, keyOk } from './api.js';
+import { db, keyOkAsync } from './api.js';
 import { runJob } from './lib/prompts.js';
 import { callClaude } from './lib/claude.js';
 
@@ -12,7 +12,7 @@ export async function work(body) {
   const j = jid && await db.get('job:' + jid);
   if (!j || j.status !== 'queued' || j.sid !== String(body.id || '')) return 'skip';
   const s = await db.get('s:' + j.sid);
-  if (!s || !keyOk(s, body.key)) return 'skip';
+  if (!s || !(await keyOkAsync(s, body.key))) return 'skip';
   j.status = 'running'; j.at = Date.now();
   await db.set('job:' + jid, j);
   try {

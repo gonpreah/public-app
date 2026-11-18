@@ -335,6 +335,16 @@ body.km .copybox { font-family: 'Kantumruy Pro', var(--font); }
 .bl-brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bl-pct { font: 900 1rem/1 var(--display); color: var(--head); padding-top: 4px; }
 
+/* finished */
+.done-card { background: var(--ink-0); box-shadow: none; color: var(--paper-2); }
+.done-card h3 { color: var(--paper); font-size: 1.3rem; }
+.done-card .muted { color: var(--ink-5); }
+.done-card .btn.primary { background: var(--marigold); color: var(--ink-0); }
+.done-card .btn.ghost { border-color: #3a362e; color: var(--paper); }
+.class-brands { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
+.class-brands figure { margin: 0; }
+.class-brands figcaption { font-size: .88rem; margin-top: 6px; }
+
 /* voice */
 .voicebar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 0; }
 .btn.listening { animation: pulse 1.4s ease-in-out infinite; }

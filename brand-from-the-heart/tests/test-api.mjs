@@ -174,6 +174,13 @@ const si = await call('signIn', { code: cls.code, sid: a.id });
 ok('sign in by tapping your name gives this phone its own key', si.id === a.id && si.key && si.key !== a.key && si.cls === cls.code);
 ok('the new phone can load the brand', (await call('load', { id: a.id, key: si.key })).data.answers.name === 'Sokha');
 ok('the old phone still works', !(await call('load', { id: a.id, key: a.key })).error);
+{ // the bug that logged students out: a save from another phone wrote over the new phone's key
+  const before = await globalThis.__bfhStore.get('s:' + a.id);
+  const si2 = await call('signIn', { code: cls.code, sid: a.id });
+  await globalThis.__bfhStore.setJSON('s:' + a.id, before);   // an older copy written back, as a save in flight would
+  ok('signing in on a new phone survives a save from another phone', !(await call('load', { id: a.id, key: si2.key })).error);
+  ok('load says when the server copy was last saved', (await call('load', { id: a.id, key: si2.key })).updated > 0);
+}
 ok('cannot sign in to someone outside the class', (await call('signIn', { code: cls.code, sid: solo.id })).error === 'NO_STUDENT');
 ok('cannot sign in with a bad id', (await call('signIn', { code: cls.code, sid: 'nope' })).error === 'NO_STUDENT');
 await call('save', { id: a.id, key: si.key, data: Object.assign({}, data, { quiz: { result: { top: 'explorer' } } }), stage: 'refine', prog: 70, name: 'Sokha' });

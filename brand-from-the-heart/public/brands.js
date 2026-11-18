@@ -81,8 +81,10 @@ window.BFH_BRANDS = [
 
   { id: 'robinhood', name: 'Robinhood', archetype: 'simple', owner: 'Robinhood Markets, Inc.',
     site: 'https://robinhood.com', brandPage: 'https://newsroom.aboutrobinhood.com/',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/1/10/Robinhood_Markets_logo.png',
-    logoSource: 'Wikimedia Commons', logoBg: 'light',
+    /* Wikimedia has it (commons/1/10/Robinhood_Markets_logo.png) but it could not be verified
+       from here (rate-limited), so the site icon is used until someone checks it. */
+    logo: '',
+    logoSource: 'robinhood.com (site icon)', logoBg: 'light',
     favicon: 'https://www.google.com/s2/favicons?domain=robinhood.com&sz=256',
     colours: ['#CCFF00', '#000000', '#FFFFFF', '#00C805'],
     stands: { en: 'Money and investing should be open to everyone, not only the rich.', km: 'លុយ និងការវិនិយោគគួរតែបើកចំហសម្រាប់មនុស្សគ្រប់គ្នា មិនមែនតែអ្នកមានទេ។' },
@@ -121,14 +123,14 @@ window.BFH_BRANDS = [
 
   { id: 'dove', name: 'Dove', archetype: 'warm', owner: 'Unilever',
     site: 'https://www.dove.com', brandPage: 'https://www.dove.com/us/en/stories/about-dove.html',
-    logo: '',
-    logoSource: 'dove.com (site icon)', logoBg: 'light',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Dove_logo.png',
+    logoSource: 'Wikimedia Commons', logoBg: 'light',
     favicon: 'https://www.google.com/s2/favicons?domain=dove.com&sz=256',
-    colours: ['#FFFFFF', '#002D72', '#C8A464'],
+    colours: ['#003E7E', '#ECD49F', '#FFFFFF'],
     stands: { en: 'Real beauty. Every woman and girl has worth, as she is.', km: 'សម្រស់ពិត។ ស្ត្រី និងក្មេងស្រីគ្រប់រូបមានតម្លៃ ដូចដែលនាងជា។' },
     feeling: { en: 'Soft, safe and accepted.', km: 'ទន់ភ្លន់ មានសុវត្ថិភាព និងត្រូវបានទទួលយក។' },
     colour: { en: 'White and dark blue, with a little gold. Soft light.', km: 'ស និងខៀវចាស់ ជាមួយមាសបន្តិច។ ពន្លឺទន់ៗ។' },
-    type: { en: 'Gentle, elegant letters with soft curves.', km: 'អក្សរទន់ភ្លន់ ស្រស់ស្អាត មានខ្សែកោងទន់ៗ។' },
+    type: { en: 'Gentle, flowing letters with soft curves, and a small gold dove.', km: 'អក្សរទន់ភ្លន់ ហូរៗ មានខ្សែកោងទន់ៗ និងសត្វព្រាបមាសតូចមួយ។' },
     voice: { en: 'Caring and honest. Uses real women, not only models.', km: 'យកចិត្តទុកដាក់ និងស្មោះត្រង់។ ប្រើស្ត្រីពិតៗ មិនមែនតែតារាម៉ូដែលទេ។' },
     lesson: { en: 'Do not hide behind filters. Show real people and tell them they are valuable, because God says so.', km: 'កុំលាក់ខ្លួននៅពីក្រោយ filter។ បង្ហាញមនុស្សពិត ហើយប្រាប់ពួកគេថាពួកគេមានតម្លៃ ព្រោះព្រះមានបន្ទូលដូច្នោះ។' } },
 

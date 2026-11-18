@@ -1,6 +1,7 @@
 /*  The one place that talks to Claude.
     ANTHROPIC_API_KEY lives only in Netlify's environment — never on the page.
-    BFH_MODEL can name another model (default claude-opus-5-5).
+    BFH_MODEL can name another model (default claude-opus-5-5). BFH_WORKSPACE_ID names the workspace for a
+    key that isn't scoped to one (sent as the anthropic-workspace-id header).
     Structured outputs (output_config.format) make the answer valid JSON for our schema.
     Server-side refusal fallbacks are on (BFH_FALLBACKS=off turns them off). */
 import Anthropic from '@anthropic-ai/sdk';
@@ -11,7 +12,8 @@ let client = null;
 export async function callClaude(system, user, schema, maxTokens) {
   if (globalThis.__bfhClaude) return globalThis.__bfhClaude(system, user, schema, maxTokens);   // tests
   if (!process.env.ANTHROPIC_API_KEY) throw new Error('NO_KEY');
-  client = client || new Anthropic({ maxRetries: 3 });
+  // An organization key that isn't scoped to a workspace must name one on every request.
+  client = client || new Anthropic(Object.assign({ maxRetries: 3 }, process.env.BFH_WORKSPACE_ID ? { defaultHeaders: { 'anthropic-workspace-id': process.env.BFH_WORKSPACE_ID } } : {}));
   const params = {
     model: MODEL(),
     max_tokens: maxTokens || 16000,

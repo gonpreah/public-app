@@ -98,6 +98,7 @@ brand-from-the-heart/
    |---|---|---|
    | `ANTHROPIC_API_KEY` | yes | Your Claude API key from https://console.anthropic.com → API keys. Server only; it never reaches the page. |
    | `BFH_TEACHER_PASSWORD` | yes | The password a teacher types to make a class. Only people in a class can use Claude, which keeps your API bill to your students. |
+   | `BFH_WORKSPACE_ID` | only for some keys | If your key starts `sk-ant-usr-` (an organization key not tied to a workspace), make a workspace in the Console and put its ID (`wrkspc_…`) here. |
    | `BFH_MODEL` | no | Default `claude-opus-5-5`. |
    | `BFH_EFFORT` | no | Claude's effort: `low` · `medium` (default) · `high`. |
    | `BFH_STUDENT_DAILY` | no | Claude jobs per student per day (default 40). |

@@ -71,6 +71,13 @@ The app uses Uriah Lyford's brand:
   - Students open it and tap "I'm new" (type a name) or "I've been here" (tap their name).
   - No passwords, on purpose: students forget them. Each phone gets its own key, and a student
     can be signed in on several phones.
+- **Simple login** (no passwords):
+  - The home screen asks for the class code, then the student taps their name.
+  - The phone remembers the class, so next time it's one tap: "Sign in to Social Media School".
+  - Everything saves to their account, so a lost or cleared phone loses nothing.
+  - Class tab → Sign out.
+- **Our class board** (Class tab): every classmate's name, progress %, stage, archetype emoji and
+  finished brand (colours and tagline). It refreshes every 30 s. Answers are never shown.
 - **Speak your answers:**
   - 🎤 uses the phone's speech recognition: Khmer (`km-KH`) when the app is in Khmer, English when
     it's in English. Chrome on Android does Khmer well. On iPhone, students use the Gboard

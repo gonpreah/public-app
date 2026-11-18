@@ -3,6 +3,28 @@
     t('key', {vars}) picks the student's language; {name} style blanks are filled in. */
 window.BFH_T = {
   appName: { en: 'Brand From the Heart', km: 'ម៉ាកចេញពីបេះដូង' },
+  /* simple login + the class board */
+  signInLead: { en: 'Sign in with your class code so your work is saved — on any phone.', km: 'ចូលដោយលេខកូដថ្នាក់ ដើម្បីរក្សាទុកការងាររបស់អ្នក — លើទូរស័ព្ទណាក៏បាន។' },
+  signIn: { en: 'Sign in', km: 'ចូល' },
+  signInTo: { en: 'Sign in to {name}', km: 'ចូលទៅ {name}' },
+  signInWhy: { en: 'No password. Get the code from your teacher, then tap your name.', km: 'គ្មានពាក្យសម្ងាត់។ យកលេខកូដពីគ្រូ រួចចុចលើឈ្មោះរបស់អ្នក។' },
+  tryWithout: { en: 'Try it without a class', km: 'សាកល្បងដោយគ្មានថ្នាក់' },
+  signedInAs: { en: 'Signed in: {name} · {cls}', km: 'បានចូលជា {name} · {cls}' },
+  savedToAccount: { en: 'saved to your account', km: 'រក្សាទុកក្នុងគណនីរបស់អ្នក' },
+  signOut: { en: 'Sign out', km: 'ចាកចេញ' },
+  signOutSure: { en: 'Sign out on this phone? Your work stays saved — sign back in any time by tapping your name.', km: 'ចាកចេញលើទូរស័ព្ទនេះ? ការងាររបស់អ្នកនៅតែរក្សាទុក — ចូលវិញពេលណាក៏បាន ដោយចុចលើឈ្មោះរបស់អ្នក។' },
+  findName: { en: 'Find your name', km: 'ស្វែងរកឈ្មោះរបស់អ្នក' },
+  ourClass: { en: 'Our class', km: 'ថ្នាក់របស់យើង' },
+  boardTitle: { en: '{n} of us · {done} finished', km: 'យើង {n} នាក់ · បញ្ចប់ {done} នាក់' },
+  boardPrivacy: { en: 'Everyone in the class sees names, progress, archetypes and finished brands — never your answers.', km: 'អ្នករាល់គ្នាក្នុងថ្នាក់ឃើញឈ្មោះ វឌ្ឍនភាព ប្រភេទម៉ាក និងម៉ាកដែលបានបញ្ចប់ — មិនដែលឃើញចម្លើយរបស់អ្នកទេ។' },
+  you: { en: 'you', km: 'អ្នក' },
+  stage_start: { en: 'Getting started', km: 'កំពុងចាប់ផ្ដើម' },
+  stage_interview: { en: 'Heart interview', km: 'ការសម្ភាសន៍ពីបេះដូង' },
+  stage_heart: { en: 'Heart check', km: 'ពិនិត្យបេះដូង' },
+  stage_directions: { en: 'Choosing a direction', km: 'កំពុងជ្រើសទិសដៅ' },
+  stage_refine: { en: 'Making it their own', km: 'កំពុងធ្វើឲ្យជារបស់ខ្លួន' },
+  stage_finished: { en: 'Finished ✓', km: 'បានបញ្ចប់ ✓' },
+
   /* classroom link and simple sign-in */
   welcomeEyebrow: { en: 'Welcome to your class', km: 'សូមស្វាគមន៍មកកាន់ថ្នាក់របស់អ្នក' },
   welcomeLead: { en: 'New here? Start your brand. Been here before? Tap your name to carry on.', km: 'ទើបមកថ្មី? ចាប់ផ្ដើមម៉ាករបស់អ្នក។ ធ្លាប់មកហើយ? ចុចលើឈ្មោះរបស់អ្នក ដើម្បីបន្ត។' },

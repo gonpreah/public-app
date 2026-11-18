@@ -261,23 +261,38 @@
     const i = Math.min(V.quizI, QUIZ.length - 1), q = QUIZ[i];
     if (!q) return `<p>${t('errGeneric')}</p>`;
     const chosen = S.quiz.answers[q.id];
-    return `<div class="qtop"><span>${t('quizTitle')}</span><span>${i + 1} / ${QUIZ.length}</span></div>
+    const parts = window.BFH_QUIZ_PARTS || [], part = parts.find(p => p.id === q.part), pi = parts.indexOf(part);
+    const firstOfPart = part && (i === 0 || QUIZ[i - 1].part !== q.part);
+    return `<div class="qtop"><span>${part ? (part.emoji || '') + ' ' + esc(L(part)) : t('quizTitle')}</span><span>${i + 1} / ${QUIZ.length}</span></div>
       <div class="bar"><i style="width:${(i / QUIZ.length) * 100}%"></i></div>
+      ${parts.length ? `<div class="secdots">${parts.map((p, n) => `<i class="${n < pi ? 'done' : n === pi ? 'now' : ''}" title="${esc(L(p))}"></i>`).join('')}</div>` : ''}
+      ${firstOfPart && i === 0 ? `<p class="sec-intro">${t('quizIntro')}</p>` : ''}
       <h2 class="q">${esc(L(q.q))}</h2>
+      ${q.hint ? `<p class="muted">${esc(L(q.hint))}</p>` : ''}
       <div class="opts">${q.options.map(o => `<button class="opt${chosen === o.id ? ' on' : ''}" data-act="quizPick" data-arg="${esc(o.id)}"><span class="em">${o.emoji || ''}</span>${esc(L(o))}</button>`).join('')}</div>
       <div class="nav">${i > 0 ? btn('quizBack', '← ' + t('back'), 'ghost') : btn('go', '← ' + t('home'), 'ghost', 'home')}</div>`;
   };
   VIEWS.quizResult = function () {
     const r = S.quiz.result; if (!r) return VIEWS.quiz();
-    const R = (window.BFH_QUIZ_RESULTS || {})[r.top] || {}, A = ARCH.find(a => a.id === r.top) || {};
+    const RS = window.BFH_QUIZ_RESULTS || {}, R = RS[r.top] || {}, A = ARCH.find(a => a.id === r.top) || {};
+    const R2 = r.second && r.second !== r.top ? RS[r.second] : null;
     const brands = BRANDS.filter(b => b.archetype === r.top);
+    const pct = r.pct || {};
+    const mix = Object.keys(pct).sort((a, b) => pct[b] - pct[a]).slice(0, 3).filter(k => pct[k] > 0);
     return `<section class="result">
         <div class="res-em">${A.emoji || '✨'}</div>
         <p class="muted">${t('youAre')}</p>
         <h1>${esc(L(R.title))}</h1>
+        ${R2 && R2.blend ? `<p class="blend">${esc(L(R2.blend))}</p>` : ''}
         <p class="lead">${esc(L(R.text))}</p>
-        ${R.strengths ? `<ul class="ticks">${R.strengths.map(s => `<li>${esc(L(s))}</li>`).join('')}</ul>` : ''}
+      </section>
+      ${mix.length ? `<section class="card"><h3>📊 ${t('yourMix')}</h3>${mix.map(k => { const a = ARCH.find(x => x.id === k) || {}; return `<div class="mixbar"><span>${a.emoji || ''} ${esc(L((RS[k] || {}).title) || L(a))}</span><div class="bar"><i style="width:${pct[k]}%"></i></div><b>${pct[k]}%</b></div>`; }).join('')}</section>` : ''}
+      <section class="card">
+        ${R.strengths ? `<h3>💪 ${t('yourStrengths')}</h3><ul class="ticks">${R.strengths.map(s => `<li>${esc(L(s))}</li>`).join('')}</ul>` : ''}
         ${R.watch ? `<p class="watch">💡 ${esc(L(R.watch))}</p>` : ''}
+        ${R.brand ? `<h3>🎨 ${t('brandLooks')}</h3><p>${esc(L(R.brand))}</p>` : ''}
+        ${R.content ? `<h3>🎬 ${t('contentIdeas')}</h3><ul class="ticks">${R.content.map(s => `<li>${esc(L(s))}</li>`).join('')}</ul>` : ''}
+        ${R.verse ? `<p class="muted">📖 ${esc(R.verse)}</p>` : ''}
       </section>
       <section class="card"><h3>${t('brandsLikeYou', { a: esc(L(A)) })}</h3>
         <div class="mini-brands">${brands.map(b => `<button class="mini-brand" data-act="brand" data-arg="${b.id}">${logoImg(b)}<span>${esc(b.name)}</span></button>`).join('')}</div>
@@ -348,6 +363,7 @@
       <div class="secdots">${SECTIONS.map((s, n) => `<i class="${n < secIdx ? 'done' : n === secIdx ? 'now' : ''}" title="${esc(L(s))}"></i>`).join('')}</div>
       ${first && sec.intro ? `<p class="sec-intro">${esc(L(sec.intro))}</p>` : ''}
       <h2 class="q">${esc(L(q.q))}${q.optional ? ` <small class="opt-tag">${t('optional')}</small>` : ''}</h2>
+      ${q.example ? `<details class="example" open><summary>💡 ${t('exampleAnswer')}</summary><p>${esc(L(q.example))}</p></details>` : ''}
       ${input}
       ${follow}
       <p class="cheer">✨ ${esc(L(q.cheer))}</p>

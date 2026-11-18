@@ -13,7 +13,7 @@
       package     the finished brand's extras: wordmark ideas, colour rules, type
                   hierarchy, do/don't examples, 5 Claude Motion prompts, 5 poster prompts
 */
-import { PALETTES, FONTS, BRANDS, ARCHETYPES, QUESTIONS, TOT, QUIZ_RESULTS, COLOR } from './data.js';
+import { PALETTES, FONTS, BRANDS, ARCHETYPES, QUESTIONS, TOT, QUIZ, QUIZ_RESULTS, COLOR } from './data.js';
 
 /* ---------------- JSON schema pieces ---------------- */
 const S = { type: 'string' };
@@ -125,7 +125,12 @@ export function profileText(data) {
   let out = `<student_answers>\n${lines.join('\n\n') || '(no answers yet)'}\n</student_answers>`;
   if (taste.length) out += `\n\n<visual_taste>\n${taste.join('\n')}\n</visual_taste>`;
   if (likes.length) out += `\n\n<brands_they_like_the_vibe_of>\n${likes.join('\n')}\n</brands_they_like_the_vibe_of>`;
-  if (quiz && quiz.top) out += `\n\n<archetype_quiz>top: ${quiz.top}${quiz.second ? ', second: ' + quiz.second : ''}${QUIZ_RESULTS[quiz.top] ? ' (' + QUIZ_RESULTS[quiz.top].title.en + ')' : ''}</archetype_quiz>`;
+  if (quiz && quiz.top) {
+    const title = (id) => QUIZ_RESULTS[id] ? `${id} (${QUIZ_RESULTS[id].title.en})` : id;
+    const pct = quiz.pct && typeof quiz.pct === 'object' ? Object.entries(quiz.pct).filter(([k, v]) => ARCHETYPES.some(a => a.id === k) && Number(v) > 0).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${k} ${Math.round(Number(v))}%`).join(', ') : '';
+    const qa = (data.quiz.answers && typeof data.quiz.answers === 'object') ? QUIZ.map(q => { const o = q.options.find(o => o.id === data.quiz.answers[q.id]); return o ? `- ${q.q.en} → ${o.en}` : ''; }).filter(Boolean) : [];
+    out += `\n\n<archetype_quiz>\ntop: ${title(quiz.top)}${quiz.second ? `\nsecond: ${title(quiz.second)}` : ''}${pct ? `\nmix: ${pct}` : ''}${qa.length ? `\nwhat they chose:\n${qa.join('\n')}` : ''}\n</archetype_quiz>`;
+  }
   const h = data.heart;
   if (h && (h.en || h.km)) out += `\n\n<heart_check note="the student read this and confirmed or edited it — it is who they are, let it drive everything">\n${clip(h.en, 2500)}\n${clip(h.km, 2500)}\n</heart_check>`;
   return out;

@@ -18,4 +18,5 @@ export const ARCHETYPES = W.BFH_ARCHETYPES || [];
 export const QUESTIONS = W.BFH_QUESTIONS || [];
 export const TOT = W.BFH_TOT || [];
 export const QUIZ_RESULTS = W.BFH_QUIZ_RESULTS || {};
+export const QUIZ = W.BFH_QUIZ || [];
 export const COLOR = W.BFH_COLOR;

@@ -116,9 +116,15 @@ textarea.big-in { min-height: 150px; resize: vertical; }
 .tot-text { position: relative; font-size: 1.9rem; line-height: 1; }
 .tot-label { position: absolute; left: 6px; right: 6px; bottom: 6px; font-size: .78rem; background: rgba(255,255,255,.85); color: #222; border-radius: 99px; padding: 2px 8px; text-align: center; }
 
+.example { background: var(--card); border: 1px dashed var(--accent); border-radius: 12px; padding: 8px 14px; margin: 0 0 12px; }
+.example summary { cursor: pointer; font-weight: 600; color: var(--accent); min-height: 32px; display: flex; align-items: center; }
+.example p { margin: 4px 0 2px; font-style: italic; color: var(--muted); white-space: pre-line; }
 /* quiz result */
 .result { text-align: center; }
 .res-em { font-size: 3.4rem; }
+.blend { font-family: var(--display); font-size: 1.15rem; color: var(--brand); margin: -4px 0 8px; }
+.mixbar { display: grid; grid-template-columns: 1fr 1.2fr auto; gap: 10px; align-items: center; margin: 8px 0; font-size: .92rem; }
+.mixbar .bar { margin: 0; }
 .ticks { text-align: left; display: inline-block; padding-left: 1.2em; }
 .watch { background: var(--brand-soft); padding: 10px 14px; border-radius: 12px; text-align: left; }
 .mini-brands { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }

@@ -39,10 +39,13 @@ try {
 
   // quiz
   await tap(p, '[data-act="go"][data-arg="quiz"]');
-  for (let i = 0; i < 5; i++) { await p.waitForSelector('.opt'); await p.locator('.opt').nth(i % 3).click(); }
+  const nQuiz = await p.evaluate(() => window.BFH_QUIZ.length);
+  ok('quiz shows its part and an intro', (await p.textContent('.qtop')).length > 3 && await p.locator('.sec-intro').count() === 1);
+  for (let i = 0; i < nQuiz; i++) { await p.waitForSelector('.opt'); await p.locator('.opt').nth(i % 3).click(); }
   await p.waitForSelector('.result');
   ok('quiz gives a result card', (await p.textContent('.result h1')).length > 2);
   ok('result links to matching brands', await p.locator('.mini-brand').count() >= 3);
+  ok('result shows the mix, brand look and content ideas', await p.locator('.mixbar').count() >= 2 && (await p.textContent('main')).includes('Content ideas for you'));
 
   // inspiration
   await tap(p, 'nav.bottom [data-arg="gallery"]');
@@ -63,6 +66,7 @@ try {
   await p.waitForSelector('h2.q');
   ok('interview opens with progress', await p.locator('.bar i').count() === 1 && (await p.textContent('.qtop')).includes('1 of'));
   ok('encouragement on the screen', (await p.textContent('.cheer')).length > 5);
+  ok('an example answer shows by itself', await p.locator('details.example[open] p').count() === 1 && (await p.textContent('details.example p')).length > 3);
   // first question: name — a short answer shows the follow-up
   await p.fill('.big-in', 'S');
   await tap(p, '[data-act="next"]');

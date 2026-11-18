@@ -3,6 +3,82 @@
     t('key', {vars}) picks the student's language; {name} style blanks are filled in. */
 window.BFH_T = {
   appName: { en: 'Brand From the Heart', km: 'ម៉ាកចេញពីបេះដូង' },
+  /* classroom link and simple sign-in */
+  welcomeEyebrow: { en: 'Welcome to your class', km: 'សូមស្វាគមន៍មកកាន់ថ្នាក់របស់អ្នក' },
+  welcomeLead: { en: 'New here? Start your brand. Been here before? Tap your name to carry on.', km: 'ទើបមកថ្មី? ចាប់ផ្ដើមម៉ាករបស់អ្នក។ ធ្លាប់មកហើយ? ចុចលើឈ្មោះរបស់អ្នក ដើម្បីបន្ត។' },
+  imNew: { en: "I'm new here", km: 'ខ្ញុំទើបមកថ្មី' },
+  imBack: { en: "I've been here — find my name", km: 'ខ្ញុំធ្លាប់មកហើយ — រកឈ្មោះខ្ញុំ' },
+  continueAs: { en: 'Continue as {name}', km: 'បន្តជា {name}' },
+  whatName: { en: 'What should we call you?', km: 'តើយើងគួរហៅអ្នកថាអ្វី?' },
+  whatNameWhy: { en: 'Your classmates and teacher will see this name. No password needed.', km: 'មិត្តរួមថ្នាក់ និងគ្រូនឹងឃើញឈ្មោះនេះ។ មិនត្រូវការពាក្យសម្ងាត់ទេ។' },
+  startMyBrand: { en: 'Start my brand', km: 'ចាប់ផ្ដើមម៉ាករបស់ខ្ញុំ' },
+  tapYourName: { en: 'Tap your name', km: 'ចុចលើឈ្មោះរបស់អ្នក' },
+  nobodyYet: { en: 'Nobody has started yet. Tap Back, then "I\'m new here".', km: 'មិនទាន់មាននរណាចាប់ផ្ដើមទេ។ ចុចថយក្រោយ រួចចុច «ខ្ញុំទើបមកថ្មី»។' },
+  areYou: { en: 'Are you {name}?', km: 'តើអ្នកជា {name} មែនទេ?' },
+  areYouWhy: { en: 'Your brand will open on this phone. Only choose your own name.', km: 'ម៉ាករបស់អ្នកនឹងបើកនៅលើទូរស័ព្ទនេះ។ សូមជ្រើសតែឈ្មោះរបស់ខ្លួនឯងប៉ុណ្ណោះ។' },
+  yesItsMe: { en: "Yes, it's me", km: 'បាទ/ចាស គឺខ្ញុំ' },
+  notMe: { en: 'No, go back', km: 'ទេ ថយក្រោយ' },
+  welcomeBack: { en: 'Welcome back, {name}!', km: 'សូមស្វាគមន៍ការត្រឡប់មកវិញ {name}!' },
+  notYou: { en: 'Not you? Sign in as someone else', km: 'មិនមែនអ្នក? ចូលជាមនុស្សផ្សេង' },
+
+  /* speaking an answer */
+  speak: { en: 'Speak', km: 'និយាយ' },
+  stopMic: { en: 'Stop', km: 'ឈប់' },
+  tidy: { en: 'Tidy with Claude', km: 'ឲ្យ Claude រៀបចំ' },
+  undo: { en: 'Undo', km: 'មិនធ្វើវិញ' },
+  job_tidy: { en: 'Claude is tidying your words…', km: 'Claude កំពុងរៀបចំពាក្យរបស់អ្នក…' },
+  micHelp: { en: 'This browser can\'t listen here. Tap the 🎤 on your keyboard instead (on iPhone use the Gboard keyboard set to Khmer), then tap "Tidy with Claude".', km: 'កម្មវិធីរុករកនេះមិនអាចស្ដាប់នៅទីនេះបានទេ។ សូមចុច 🎤 លើក្ដារចុចរបស់អ្នកជំនួសវិញ (លើ iPhone ប្រើក្ដារចុច Gboard ជាភាសាខ្មែរ) រួចចុច «ឲ្យ Claude រៀបចំ»។' },
+  micBlocked: { en: 'Allow the microphone for this site, then try again.', km: 'សូមអនុញ្ញាតមីក្រូហ្វូនសម្រាប់គេហទំព័រនេះ រួចសាកម្ដងទៀត។' },
+
+  /* photo */
+  addPhoto: { en: '📷 Add your photo', km: '📷 បន្ថែមរូបថតរបស់អ្នក' },
+  changePhoto: { en: '📷 Change photo', km: '📷 ប្ដូររូបថត' },
+  photoWhy: { en: 'See yourself on the thumbnail, story and profile header. It stays with your brand.', km: 'មើលខ្លួនឯងនៅលើរូបតូច រឿង និងរូបក្របទំព័រ។ វានៅជាមួយម៉ាករបស់អ្នក។' },
+
+  /* logo files */
+  logoEyebrow: { en: 'Logo', km: 'ឡូហ្គោ' },
+  logoFiles: { en: 'Your logo files', km: 'ឯកសារឡូហ្គោរបស់អ្នក' },
+  logoFilesWhy: { en: 'Your name as a simple wordmark in your fonts and colours. PNG files — the first two have see-through backgrounds.', km: 'ឈ្មោះរបស់អ្នកជាឡូហ្គោអក្សរសាមញ្ញ តាមពុម្ពអក្សរ និងពណ៌របស់អ្នក។ ឯកសារ PNG — ពីរដំបូងមានផ្ទៃខាងក្រោយថ្លា។' },
+  logo_main: { en: 'Main logo', km: 'ឡូហ្គោចម្បង' },
+  logo_light: { en: 'For dark photos', km: 'សម្រាប់រូបថតងងឹត' },
+  logo_badge: { en: 'Profile picture', km: 'រូបប្រវត្តិរូប' },
+
+  /* brand check */
+  checkEyebrow: { en: 'Keep it on-brand', km: 'រក្សាឲ្យត្រូវម៉ាក' },
+  checkTitle: { en: 'Is this on-brand?', km: 'តើនេះត្រូវម៉ាកទេ?' },
+  checkWhy: { en: 'Made a post or poster? Upload a screenshot. Claude scores it against your brand and tells you what to fix.', km: 'បានធ្វើប្រកាស ឬប័ណ្ណប្រកាសហើយ? ដាក់រូបថតអេក្រង់។ Claude ដាក់ពិន្ទុធៀបនឹងម៉ាករបស់អ្នក ហើយប្រាប់អ្វីដែលត្រូវកែ។' },
+  checkPick: { en: 'Choose an image to check', km: 'ជ្រើសរូបភាពដើម្បីពិនិត្យ' },
+  checkGood: { en: "What's working", km: 'អ្វីដែលល្អ' },
+  checkFix: { en: 'What to fix', km: 'អ្វីដែលត្រូវកែ' },
+  job_check: { en: 'Claude is looking at your design…', km: 'Claude កំពុងមើលការរចនារបស់អ្នក…' },
+
+  /* 30-day plan */
+  planEyebrow: { en: 'Next 30 days', km: '៣០ ថ្ងៃខាងមុខ' },
+  planTitle: { en: 'Your 30-day content plan', km: 'ផែនការមាតិកា ៣០ ថ្ងៃរបស់អ្នក' },
+  planWhy: { en: 'One idea a day from your content pillars, with a caption to start from.', km: 'គំនិតមួយក្នុងមួយថ្ងៃ ពីប្រធានបទមាតិការបស់អ្នក ព្រមទាំងចំណងជើងប្រកាសដើម្បីចាប់ផ្ដើម។' },
+  planMake: { en: 'Make my 30-day plan', km: 'បង្កើតផែនការ ៣០ ថ្ងៃរបស់ខ្ញុំ' },
+  planAgain: { en: 'Make a new plan', km: 'បង្កើតផែនការថ្មី' },
+  planReady: { en: 'Your 30-day plan is ready ✓', km: 'ផែនការ ៣០ ថ្ងៃរបស់អ្នករួចរាល់ ✓' },
+  copyPlan: { en: 'Copy the whole plan', km: 'ចម្លងផែនការទាំងមូល' },
+  day: { en: 'Day', km: 'ថ្ងៃទី' },
+  job_plan: { en: 'Claude is planning your month…', km: 'Claude កំពុងរៀបចំផែនការខែរបស់អ្នក…' },
+
+  /* Canva */
+  canvaTitle: { en: 'Use your brand in Canva', km: 'ប្រើម៉ាករបស់អ្នកក្នុង Canva' },
+  canva1: { en: 'Download your logo files above.', km: 'ទាញយកឯកសារឡូហ្គោរបស់អ្នកខាងលើ។' },
+  canva2: { en: 'In Canva, open Brand → Brand Kit (Canva Pro or Canva for Nonprofits). Upload the logos and add your colours.', km: 'ក្នុង Canva បើក Brand → Brand Kit (Canva Pro ឬ Canva for Nonprofits)។ ដាក់ឡូហ្គោ ហើយបន្ថែមពណ៌របស់អ្នក។' },
+  canva3: { en: 'Add your fonts by name — most Google Fonts are in Canva. No Brand Kit? Just type your colour codes into any design.', km: 'បន្ថែមពុម្ពអក្សរតាមឈ្មោះ — Google Fonts ភាគច្រើនមានក្នុង Canva។ គ្មាន Brand Kit? គ្រាន់តែវាយលេខកូដពណ៌ចូលក្នុងការរចនាណាមួយ។' },
+  canva4: { en: 'For Canva AI (Magic Design), paste your universal brand prompt first, then say what you need.', km: 'សម្រាប់ Canva AI (Magic Design) សូមបិទភ្ជាប់ពាក្យបញ្ជាម៉ាករបស់អ្នកជាមុន រួចប្រាប់អ្វីដែលអ្នកត្រូវការ។' },
+  copyColours: { en: 'Copy colour codes', km: 'ចម្លងលេខកូដពណ៌' },
+  openCanva: { en: 'Open Canva Brand', km: 'បើក Canva Brand' },
+
+  /* online / install */
+  offline: { en: 'No internet — your work is saved on this phone and will sync later.', km: 'គ្មានអ៊ីនធឺណិត — ការងាររបស់អ្នកត្រូវបានរក្សាទុកលើទូរស័ព្ទនេះ ហើយនឹងធ្វើសមកាលកម្មពេលក្រោយ។' },
+  installTitle: { en: 'Add to your home screen', km: 'បន្ថែមទៅអេក្រង់ដើម' },
+  installWhy: { en: 'Open it like an app, even with weak internet.', km: 'បើកវាដូចកម្មវិធី ទោះបីអ៊ីនធឺណិតខ្សោយក៏ដោយ។' },
+  install: { en: 'Add to home screen', km: 'បន្ថែមទៅអេក្រង់ដើម' },
+  installIos: { en: 'In Safari, tap Share ⬆︎ then "Add to Home Screen".', km: 'ក្នុង Safari ចុច Share ⬆︎ រួចចុច «Add to Home Screen»។' },
+
   heroEyebrow: { en: 'Social Media School', km: 'សាលាប្រព័ន្ធផ្សព្វផ្សាយសង្គម' },
   heroTitleA: { en: 'Brand from the', km: 'ម៉ាកចេញពី' },
   heroTitleB: { en: 'heart', km: 'បេះដូង' },

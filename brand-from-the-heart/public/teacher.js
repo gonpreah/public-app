@@ -2,7 +2,10 @@
     teacher.html                      → make a class (needs the teacher password, BFH_TEACHER_PASSWORD)
     teacher.html#c=<code>&t=<key>     → the dashboard (bookmark it; the key never goes to the server log in a URL path)
     Shows every student's stage, who looks stuck, a gallery of finished briefs,
-    comments to moderate, and lets the teacher upload logo screenshots for the gallery. */
+    comments to moderate, and lets the teacher upload logo screenshots for the gallery.
+    Also: the join link as a QR code (and full screen for the projector), "Big screen" for live
+    voting and celebration (shared directions by votes, our archetypes, finished brands), and
+    exports (a CSV of every student, every finished brief as one A4 page to print or save as PDF). */
 (function () {
   'use strict';
   const B = window.BFH_BRAND, esc = B.esc, $ = (s) => document.querySelector(s);
@@ -27,6 +30,19 @@
     const idle = now - s.updated;
     if (idle > 20 * 60000 && idle < 8 * 3600000) return 'No progress for ' + Math.round(idle / 60000) + ' min';
     return '';
+  }
+
+  const HEXRE = /^#[0-9A-Fa-f]{6}$/;
+  const col = (x, fb) => HEXRE.test(x) ? x : fb;
+  const cols = (c) => { c = c || {}; return { primary: col(c.primary, '#1f44ff'), secondary: col(c.secondary, '#ffb323'), accent: col(c.accent, '#ffb323'), background: col(c.background, '#faf6f0'), text: col(c.text, '#17150f') }; };
+  const en = (o) => !o ? '' : typeof o === 'string' ? o : (o.en || '');
+  const km = (o) => o && typeof o === 'object' ? (o.km || '') : '';
+  const votesOf = (s) => Object.values(s.votes || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+  const archOf = (s) => { const id = s.arch && typeof s.arch === 'object' ? s.arch.id : s.arch; return (window.BFH_ARCHETYPES || []).find(x => x.id === id) || null; };
+  const joinLink = () => base() + '?class=' + (data ? data.code : code);
+  function qrSvg(text) {
+    try { const q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 2, scalable: true, title: 'Scan to join the class' }); }
+    catch (e) { return ''; }
   }
 
   /* ---- make a class ---- */
@@ -55,7 +71,7 @@
 
   /* ---- the dashboard ---- */
   async function refresh() {
-    try { data = await api('teacher', { code, tkey }); draw(); }
+    try { data = await api('teacher', { code, tkey }); draw(); drawProj(); }
     catch (e) { if (e.code === 'NO_TEACHER') { $('#t').innerHTML = `<p class="err">This teacher link doesn't work.</p><p><button class="btn soft" id="new">Make a new class</button></p>`; $('#new').onclick = () => { code = null; createView(); }; } }
   }
   function draw() {
@@ -65,13 +81,19 @@
     st.forEach(s => counts[status(s)[0]]++);
     const stuckList = st.filter(s => stuck(s, now));
     const finished = st.filter(s => s.brief);
-    const join = base() + '?class=' + d.code;
+    const join = joinLink();
     $('#t').innerHTML = `<h1>${esc(d.name)}</h1>
-      <section class="card"><h3>Students join here</h3>
-        <p>Class code <b style="font-size:1.6rem;letter-spacing:.1em">${esc(d.code)}</b></p>
-        <div class="row"><input readonly value="${esc(join)}"><button class="btn soft small" data-copy="${esc(join)}">Copy link</button></div>
-        <p class="muted small">Your dashboard link is private — bookmark this page. Don't share it with students.</p>
-        <div class="row"><input readonly value="${esc(location.href)}"><button class="btn ghost small" data-copy="${esc(location.href)}">Copy dashboard link</button></div></section>
+      <section class="card joincard">
+        <div class="jq" aria-hidden="true">${qrSvg(join)}</div>
+        <div class="jt"><p class="eyebrow">Students join here</p>
+          <div class="bigcode">${esc(d.code)}</div>
+          <p class="muted small">Scan the QR code, or open the link. New students make their brand; returning ones tap their name.</p>
+          <div class="row"><input readonly value="${esc(join)}" aria-label="Join link"><button class="btn soft small" data-copy="${esc(join)}">Copy link</button></div>
+          <div class="row wrap"><button class="btn primary" data-proj="join">Show on projector</button><button class="btn ghost" data-proj="big">Big screen</button></div></div>
+      </section>
+      <section class="card"><h3>Your dashboard link</h3>
+        <p class="muted small">This link is private — bookmark this page. Don't share it with students.</p>
+        <div class="row"><input readonly value="${esc(location.href)}" aria-label="Dashboard link"><button class="btn ghost small" data-copy="${esc(location.href)}">Copy dashboard link</button></div></section>
       <div class="stats">
         <div class="stat"><b>${st.length}</b>students</div>
         <div class="stat"><b>${counts.none}</b>not started</div>
@@ -82,15 +104,16 @@
       </div>
       <section class="card"><h3>Progress <small class="muted">(refreshes every 30 s)</small></h3><div class="tablewrap"><table>
         <thead><tr><th>Name</th><th>Status</th><th>Progress</th><th>Last active</th><th>Votes</th><th></th></tr></thead>
-        <tbody>${st.map(s => { const [k, lab] = status(s), why = stuck(s, now), v = Object.values(s.votes || {}).reduce((a, b) => a + b, 0);
+        <tbody>${st.map(s => { const [k, lab] = status(s), why = stuck(s, now), v = votesOf(s);
           return `<tr><td><b>${esc(s.name || '(no name yet)')}</b>${why ? `<br><span class="flag">⚠ ${esc(why)}</span>` : ''}</td>
             <td><span class="st st-${k}">${lab}</span></td>
             <td><div class="pbar"><i style="width:${s.prog || 0}%"></i></div><small>${s.prog || 0}%</small></td>
             <td>${ago(now - s.updated)}</td><td>${v ? '👍 ' + v : ''}</td>
             <td><button class="linkish" data-remove="${esc(s.id)}" data-name="${esc(s.name || '')}">remove</button></td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">No students yet. Share the class code.</td></tr>'}</tbody></table></div></section>
-      <section class="card"><h3>Finished brand briefs (${finished.length})</h3>
-        <div class="briefs">${finished.map(s => { const b = s.brief, c = b.colors || {}, f = B.fontById(b.fontId); B.loadFont(f);
-          return `<button class="bcard" data-brief="${esc(s.id)}"><div class="top2" style="background:${c.primary};color:${B.readableOn(c.primary || '#888888')}">
+      <section class="card"><div class="hrow"><h3>Finished brand briefs (${finished.length})</h3>
+          <div class="row wrap"><button class="btn soft small" id="csv">Download CSV (all students)</button><button class="btn soft small" id="pdf"${finished.length ? '' : ' disabled'}>All briefs PDF</button></div></div>
+        <div class="briefs">${finished.map(s => { const b = s.brief, c = cols(b.colors), f = B.fontById(b.fontId); B.loadFont(f);
+          return `<button class="bcard" data-brief="${esc(s.id)}"><div class="top2" style="background:${c.primary};color:${B.readableOn(c.primary)}">
             <div style="font-family:${B.ff(f.heading.family, 'serif')};font-weight:${f.heading.weight};font-size:1.5rem">${esc(b.title)}</div>
             <div style="font-family:${B.ff(f.heading.family, 'serif')}">${esc((b.tagline || {}).en || '')}</div>
             <div style="font-family:${B.ff(f.khHeading.family)}">${esc((b.tagline || {}).km || '')}</div></div>
@@ -105,15 +128,155 @@
       <p><a href="#" id="newcls">Make another class</a></p>`;
   }
   function briefDialog(s) {
-    const b = s.brief, dlg = $('#dlg');
+    const b = s.brief, dlg = $('#dlg'), c = cols(b.colors);
     dlg.innerHTML = `<div class="dlg"><button class="btn ghost small" id="x" style="float:right">Close</button><h2>${esc(b.title)}</h2>
       <p><b>Mission:</b> ${esc((b.mission || {}).en || '')}</p><p><b>Personality:</b> ${esc((b.personality || {}).en || '')}</p>
       <p><b>Audience:</b> ${esc(b.audience || '')}</p>
-      <p>${B.ROLES.map(r => `<code style="background:${(b.colors || {})[r]};color:${B.readableOn((b.colors || {})[r] || '#888888')};padding:2px 6px;border-radius:6px">${r} ${(b.colors || {})[r]}</code>`).join(' ')}</p>
+      <p>${B.ROLES.map(r => `<code style="background:${c[r]};color:${B.readableOn(c[r])};padding:2px 6px;border-radius:6px">${r} ${c[r]}</code>`).join(' ')}</p>
       <h3>Universal prompt</h3><pre class="copybox small">${esc(b.prompt || '')}</pre><button class="btn soft small" data-copy="${esc(b.prompt || '')}">Copy</button></div>`;
     dlg.showModal();
     $('#x').onclick = () => dlg.close();
   }
+  /* ---- the projector: the join screen, and "Big screen" (directions by votes, archetypes, brands) ---- */
+  const PANELS = [['dirs', 'Shared directions'], ['arch', 'Our archetypes'], ['brands', 'Finished brands']];
+  const P = { mode: null, panel: 0, timer: null, html: '', fs: false };
+  function openProj(mode) {
+    P.mode = mode; P.html = '';
+    document.body.classList.add('projOn');
+    $('#proj').hidden = false;
+    drawProj();
+    clearInterval(P.timer);
+    if (mode === 'big') P.timer = setInterval(() => { if (!document.hidden) refresh(); }, 10000);
+    const el = document.documentElement;
+    if (el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().then(() => { P.fs = true; }).catch(() => {});
+    $('#proj').focus();
+  }
+  function closeProj() {
+    if (!P.mode) return;
+    P.mode = null; clearInterval(P.timer);
+    document.body.classList.remove('projOn');
+    $('#proj').hidden = true; $('#proj').innerHTML = ''; P.html = '';
+    if (P.fs && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    P.fs = false;
+  }
+  function movePanel(n) { P.panel = (P.panel + n + PANELS.length) % PANELS.length; drawProj(); $('#proj').scrollTop = 0; }
+  function drawProj() {
+    if (!P.mode || !data) return;
+    const close = `<button class="pj-x" data-pj="close" aria-label="Close">✕</button>`;
+    let html;
+    if (P.mode === 'join') {
+      const join = joinLink();
+      html = `${close}<div class="pj-join"><div class="pj-qr">${qrSvg(join)}</div>
+        <div class="pj-jt"><div class="pj-cname">${esc(data.name)}</div>
+          <div class="pj-label">Class code</div><div class="pj-code">${esc(data.code)}</div>
+          <div class="pj-scan">Scan to join · <span class="pj-km">ស្កេនដើម្បីចូលរួម</span></div>
+          <div class="pj-link">${esc(join)}</div></div></div>`;
+    } else {
+      const [id, label] = PANELS[P.panel];
+      const body = id === 'dirs' ? panelDirs() : id === 'arch' ? panelArch() : panelBrands();
+      html = `<div class="pj-bar">${close}<div class="pj-tabs" role="tablist">${PANELS.map(([pid, lab], i) =>
+          `<button role="tab" aria-selected="${i === P.panel}" class="${i === P.panel ? 'on' : ''}" data-pj="${i}">${esc(lab)}</button>`).join('')}</div>
+        <div class="pj-hint">← → to switch · Esc to close</div></div>
+        <section class="pj-panel"><h2 class="pj-h">${esc(label)}</h2>${body}</section>`;
+    }
+    if (html !== P.html) { P.html = html; $('#proj').innerHTML = html; }
+  }
+  function panelDirs() {
+    const items = [];
+    data.students.forEach(s => ((s.share && s.share.dirs) || []).forEach((d, i) => items.push({ s, d, v: Number((s.votes || {})[i]) || 0 })));
+    if (!items.length) return `<p class="pj-empty">No shared directions yet. Students can share up to two from their app, then vote for each other's.</p>`;
+    items.sort((a, b) => b.v - a.v || String(a.s.name).localeCompare(String(b.s.name)));
+    const top = items[0].v;
+    return `<div class="pj-dirs">${items.map(({ s, d, v }) => {
+      const font = B.fontById(d.fontId); B.loadFont(font);
+      const brand = { title: s.name || '', colors: cols(d.colors), font, tagline: { en: en(d.tagline), km: km(d.tagline) }, tune: d.tune || {}, pillars: [], captions: [] };
+      return `<figure class="pj-dir${v && v === top ? ' lead' : ''}"><div class="pj-mock">${B.mock('post', brand, 'en')}</div>
+        <figcaption><div><b>${esc(s.name || '(no name yet)')}</b><span>${esc(en(d.name))}</span></div>
+          <div class="pj-votes" aria-label="${v} votes">${v}<small>${v === 1 ? 'vote' : 'votes'}</small></div></figcaption></figure>`;
+    }).join('')}</div>`;
+  }
+  function panelArch() {
+    const A = window.BFH_ARCHETYPES || [], n = {}, st = data.students;
+    let none = 0;
+    st.forEach(s => { const a = archOf(s); if (a) n[a.id] = (n[a.id] || 0) + 1; else none++; });
+    const rows = A.map(a => ({ a, c: n[a.id] || 0 })).sort((x, y) => y.c - x.c);
+    const max = Math.max(1, none, ...rows.map(r => r.c));
+    const bar = (lab, c, cls) => `<div class="pj-arow${cls ? ' ' + cls : ''}"><div class="pj-alab">${lab}</div>
+      <div class="pj-track"><i style="width:${(c / max * 100).toFixed(1)}%"></i></div><b class="pj-n">${c}</b></div>`;
+    return `<p class="pj-sub">${st.length - none} of ${st.length} ${st.length === 1 ? 'student leads' : 'students lead'} with…</p>
+      <div class="pj-arch">${rows.map(r => bar(`<span class="pj-emo">${esc(r.a.emoji)}</span>${esc(r.a.en)}`, r.c)).join('')}
+      ${bar('Not taken yet', none, 'none')}</div>`;
+  }
+  function panelBrands() {
+    const fin = data.students.filter(s => s.brief);
+    if (!fin.length) return `<p class="pj-empty">No finished brands yet — they'll appear here as students finish.</p>`;
+    return `<div class="pj-brands">${fin.map(s => {
+      const b = s.brief, c = cols(b.colors), f = B.fontById(b.fontId), on = B.readableOn(c.primary); B.loadFont(f);
+      return `<article class="pj-brand" style="background:${c.background};color:${c.text}">
+        <div class="pj-btop" style="background:${c.primary};color:${on}">
+          <div class="pj-btitle" style="font-family:${B.ff(f.heading.family, 'serif')};font-weight:${f.heading.weight || 700}">${esc(b.title || s.name)}</div>
+          <div class="pj-btl" style="font-family:${B.ff(f.heading.family, 'serif')}">${esc(en(b.tagline))}</div>
+          <div class="pj-btk" style="font-family:${B.ff(f.khHeading.family)}">${esc(km(b.tagline))}</div></div>
+        <div class="pj-bbot" style="font-family:${B.ff(f.body.family)}">
+          <div class="pj-sw">${B.ROLES.map(r => `<i style="background:${c[r]}"></i>`).join('')}</div>
+          <p>${esc(en(b.mission))}</p><div class="pj-by">${esc(s.name || '')}</div></div></article>`;
+    }).join('')}</div>`;
+  }
+
+  /* ---- exports ---- */
+  function downloadCsv() {
+    const cell = (v) => { let x = String(v == null ? '' : v).replace(/\r?\n/g, ' '); if (/^[=+\-@\t]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; };
+    const head = ['Name', 'Status', 'Progress %', 'Last active', 'Archetype', 'Votes', 'Brief title', 'Tagline EN', 'Tagline KM', 'Mission EN',
+      'Primary', 'Secondary', 'Accent', 'Background', 'Text', 'Font pairing'];
+    const rows = data.students.map(s => {
+      const b = s.brief || {}, c = b.colors || {}, a = archOf(s), t = Number(s.updated);
+      return [s.name || '', status(s)[1], Number(s.prog) || 0, Number.isFinite(t) && t > 0 ? new Date(t).toISOString() : '', a ? a.en : '', votesOf(s),
+        b.title || '', en(b.tagline), km(b.tagline), en(b.mission), ...B.ROLES.map(r => c[r] || ''), b.fontId || ''].map(cell).join(',');
+    });
+    const text = '﻿' + [head.map(cell).join(','), ...rows].join('\r\n') + '\r\n';
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'brand-from-the-heart-' + data.code + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  function briefPage(s) {
+    const b = s.brief, c = cols(b.colors), f = B.fontById(b.fontId), on = B.readableOn(c.primary);
+    const st = (x) => `font-family:${B.ff(x.family)};font-weight:${x.weight || 400};`;
+    const H = st(f.heading), Bd = st(f.body), KH = st(f.khHeading), KB = st(f.khBody);
+    const list = (xs) => (Array.isArray(xs) ? xs : []).map(x => `<li>${esc(en(x))}${km(x) ? `<br><span style="${KB}">${esc(km(x))}</span>` : ''}</li>`).join('');
+    const pillars = (Array.isArray(b.pillars) ? b.pillars : []).map(p => p && typeof p === 'object' && p.title ? p.title : p);
+    return `<section class="tp-page" style="background:${c.background};color:${c.text};${Bd}">
+      <div class="tp-band" style="background:${c.primary};color:${on}">
+        <div class="tp-who">${esc(s.name || '')} · Brand From the Heart</div>
+        <div class="tp-title" style="${H}">${esc(b.title || s.name || '')}</div>
+        <div class="tp-tl" style="${H}">${esc(en(b.tagline))}</div>
+        ${km(b.tagline) ? `<div class="tp-tlk" style="${KH}">${esc(km(b.tagline))}</div>` : ''}
+      </div>
+      <div class="tp-body">
+        <div class="tp-two"><div>
+          <h3 style="${H}color:${c.primary}">Mission</h3><p>${esc(en(b.mission))}</p>${km(b.mission) ? `<p style="${KB}">${esc(km(b.mission))}</p>` : ''}
+          <h3 style="${H}color:${c.primary}">Personality</h3><p>${esc(en(b.personality))}</p>
+          <h3 style="${H}color:${c.primary}">Audience</h3><p>${esc(en(b.audience))}</p></div>
+          <div><h3 style="${H}color:${c.primary}">Content pillars</h3><ul>${list(pillars)}</ul></div></div>
+        <h3 style="${H}color:${c.primary}">Colours</h3>
+        <div class="tp-sws">${B.ROLES.map(r => `<div><i style="background:${c[r]}"></i><b>${r}</b><code>${c[r]}</code></div>`).join('')}</div>
+        <p class="tp-fonts">Fonts: ${esc(f.heading.family)} · ${esc(f.body.family)} · Khmer: ${esc(f.khHeading.family)} · ${esc(f.khBody.family)}</p>
+        <div class="tp-two"><div><h3 style="${H}color:${c.primary}">✓ Voice: do</h3><ul>${list(b.voiceDo)}</ul></div>
+          <div><h3 style="${H}color:${c.primary}">✗ Voice: don't</h3><ul>${list(b.voiceDont)}</ul></div></div>
+        ${b.prompt ? `<div class="tp-prompt"><b>Universal prompt</b><pre>${esc(b.prompt)}</pre></div>` : ''}
+      </div></section>`;
+  }
+  async function printBriefs() {
+    const fin = data.students.filter(s => s.brief);
+    if (!fin.length) { toast('No finished briefs yet'); return; }
+    toast('Getting the fonts ready…');
+    $('#print').innerHTML = fin.map(briefPage).join('');
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+    await Promise.race([Promise.all(fin.map(s => B.fontsReady(B.fontById(s.brief.fontId)))).then(() => document.fonts && document.fonts.ready), wait(8000)]);
+    window.print();
+  }
+
   async function resizeLogo(file) {
     const img = new Image(); img.src = URL.createObjectURL(file);
     await img.decode();
@@ -124,14 +287,29 @@
   }
 
   document.addEventListener('click', async (e) => {
-    const el = e.target.closest('[data-copy],[data-hide],[data-remove],[data-brief],[data-unlogo],#newcls');
+    const el = e.target.closest('[data-copy],[data-hide],[data-remove],[data-brief],[data-unlogo],[data-proj],[data-pj],#newcls,#csv,#pdf');
     if (!el) return;
-    if (el.id === 'newcls') { e.preventDefault(); clearInterval(timer); createView(); return; }
+    if (el.dataset.proj) { openProj(el.dataset.proj); return; }
+    if (el.dataset.pj) { if (el.dataset.pj === 'close') closeProj(); else { P.panel = Number(el.dataset.pj) || 0; drawProj(); } return; }
+    if (el.id === 'csv') { downloadCsv(); return; }
+    if (el.id === 'pdf') { printBriefs(); return; }
+    if (el.id === 'newcls') { e.preventDefault(); clearInterval(timer); closeProj(); createView(); return; }
     if (el.dataset.copy !== undefined) { try { await navigator.clipboard.writeText(el.dataset.copy); toast('Copied'); } catch (x) { toast('Copy failed'); } return; }
     if (el.dataset.hide) { const [target, cid, hidden] = el.dataset.hide.split('|'); await api('teacherHide', { code, tkey, target, cid, hidden: hidden === '1' }); refresh(); return; }
     if (el.dataset.remove) { if (!confirm('Remove ' + (el.dataset.name || 'this student') + ' from the class? Their brand stays on their own link.')) return; await api('teacherRemove', { code, tkey, sid: el.dataset.remove }); refresh(); return; }
     if (el.dataset.brief) { const s = data.students.find(x => x.id === el.dataset.brief); if (s) briefDialog(s); return; }
     if (el.dataset.unlogo) { await api('teacherLogo', { code, tkey, brand: el.dataset.unlogo, data: null }); toast('Cleared'); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!P.mode) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeProj(); return; }
+    if (P.mode !== 'big') return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); movePanel(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); movePanel(-1); }
+    else if (/^[1-9]$/.test(e.key) && Number(e.key) <= PANELS.length) { P.panel = Number(e.key) - 1; drawProj(); }
+  });
+  document.addEventListener('fullscreenchange', () => {   // Esc in full screen leaves full screen first: close with it
+    if (!document.fullscreenElement && P.fs) { P.fs = false; closeProj(); }
   });
   document.addEventListener('error', (e) => {   // a logo that won't load: show the name
     const img = e.target;

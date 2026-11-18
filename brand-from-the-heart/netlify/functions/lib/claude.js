@@ -7,15 +7,19 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 export const MODEL = () => process.env.BFH_MODEL || 'claude-opus-5-5';
+/* The heart check and the five directions use the best model; everything else
+   (more like this, refine, the package, the plan, the brand check, tidy) uses Sonnet,
+   which is about half the cost. BFH_MODEL_FAST changes it. */
+export const MODEL_FAST = () => process.env.BFH_MODEL_FAST || 'claude-sonnet-5-5';
 let client = null;
 
-export async function callClaude(system, user, schema, maxTokens) {
-  if (globalThis.__bfhClaude) return globalThis.__bfhClaude(system, user, schema, maxTokens);   // tests
+export async function callClaude(system, user, schema, maxTokens, opts) {
+  if (globalThis.__bfhClaude) return globalThis.__bfhClaude(system, user, schema, maxTokens, opts);   // tests
   if (!process.env.ANTHROPIC_API_KEY) throw new Error('NO_KEY');
   // An organization key that isn't scoped to a workspace must name one on every request.
   client = client || new Anthropic(Object.assign({ maxRetries: 3 }, process.env.BFH_WORKSPACE_ID ? { defaultHeaders: { 'anthropic-workspace-id': process.env.BFH_WORKSPACE_ID } } : {}));
   const params = {
-    model: MODEL(),
+    model: opts && opts.fast ? MODEL_FAST() : MODEL(),
     max_tokens: maxTokens || 16000,
     output_config: { effort: process.env.BFH_EFFORT || 'medium', format: { type: 'json_schema', schema } },
     system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],

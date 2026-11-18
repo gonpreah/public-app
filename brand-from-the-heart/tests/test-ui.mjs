@@ -29,7 +29,7 @@ try {
   const ctxA = await browser.newContext(Object.assign({ acceptDownloads: true }, phone));
   await ctxA.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
   const p = await newPage(ctxA);
-  await p.goto(base + '/?class=' + cls.code);
+  await p.goto(base + '/');
   await p.waitForSelector('.hero');
   ok('home opens in Khmer first', (await p.textContent('h1')).includes('ម៉ាកចេញពី') && await p.evaluate(() => document.documentElement.lang) === 'km' && (await p.textContent('.lang button.on')) === 'ខ្មែរ');
   await noSideScroll(p, 'home (Khmer)');
@@ -37,8 +37,17 @@ try {
   ok('English one tap away', (await p.textContent('h1')).includes('Brand from the') && await p.evaluate(() => document.documentElement.lang) === 'en');
   ok('in the brand: Archivo headings, cobalt pointing, paper ground', await p.evaluate(() => getComputedStyle(document.querySelector('h1')).fontFamily.includes('Archivo') && getComputedStyle(document.querySelector('.btn.primary')).borderRadius === '999px' && getComputedStyle(document.body).backgroundColor === 'rgb(250, 246, 240)'));
 
+  // the classroom link: a welcome screen, "I'm new", a name, no password
+  await p.goto(base + '/?class=' + cls.code);
+  await p.waitForSelector('[data-act="welcomeMode"][data-arg="new"]');
+  ok('class link opens a welcome screen with the class name', (await p.textContent('.hero h1')) === 'Test class' && !(await p.evaluate(() => location.search)).includes('class'));
+  await noSideScroll(p, 'welcome');
+  await tap(p, '[data-act="welcomeMode"][data-arg="new"]');
+  await p.fill('#newName', 'Sokha');
+  await tap(p, '[data-act="welcomeStart"]');
   // quiz
-  await tap(p, '[data-act="go"][data-arg="quiz"]');
+  await p.waitForSelector('.opt');
+  ok('new student is in the class and goes straight to the quiz', await p.evaluate(() => window.BFH_APP.S.cls) === cls.code && await p.evaluate(() => window.BFH_APP.S.answers.name) === 'Sokha');
   const nQuiz = await p.evaluate(() => window.BFH_QUIZ.length);
   ok('quiz shows its part and an intro', (await p.textContent('.qtop')).length > 3 && await p.locator('.sec-intro').count() === 1);
   for (let i = 0; i < nQuiz; i++) { await p.waitForSelector('.opt'); await p.locator('.opt').nth(i % 3).click(); }
@@ -66,6 +75,22 @@ try {
   await p.waitForSelector('h2.q');
   ok('interview opens with progress', await p.locator('.bar i').count() === 1 && (await p.textContent('.qtop')).includes('1 of'));
   ok('encouragement on the screen', (await p.textContent('.cheer')).length > 5);
+  // speak an answer: the phone's recogniser (faked here) listens in Khmer when the app is in Khmer
+  await p.evaluate(() => {
+    window.__heardLang = null;
+    window.SpeechRecognition = window.webkitSpeechRecognition = class { start() { window.__heardLang = this.lang; setTimeout(() => { this.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'ខ្ញុំ  ធំ ឡើង នៅ កំពង់ចាម' }], { isFinal: true })] }); this.onend(); }, 50); } stop() { this.onend && this.onend(); } };
+    const S = window.BFH_APP.S; S.qi = window.BFH_QUESTIONS.findIndex(q => q.id === 'story'); S.lang = 'km'; window.BFH_APP.render();
+  });
+  await tap(p, '[data-act="mic"]');
+  await p.waitForFunction(() => /កំពង់ចាម/.test(window.BFH_APP.S.answers.story || ''));
+  ok('speaking fills the answer, listening in Khmer (km-KH)', await p.evaluate(() => window.__heardLang) === 'km-KH');
+  await tap(p, '[data-act="tidy"]');
+  await p.waitForFunction(() => /។$/.test(window.BFH_APP.S.answers.story || ''), null, { timeout: 8000 });
+  ok('Tidy with Claude cleans up the dictated Khmer', await p.evaluate(() => !/  /.test(window.BFH_APP.S.answers.story)));
+  await p.waitForSelector('[data-act="untidy"]');
+  await tap(p, '[data-act="untidy"]');
+  ok('…and Undo brings back what they said', await p.evaluate(() => /  /.test(window.BFH_APP.S.answers.story)));
+  await p.evaluate(() => { const S = window.BFH_APP.S; S.lang = 'en'; S.qi = 0; S.answers.story = ''; window.BFH_APP.render(); });
   ok('an example answer shows by itself', await p.locator('details.example[open] p').count() === 1 && (await p.textContent('details.example p')).length > 3);
   // first question: name — a short answer shows the follow-up
   await p.fill('.big-in', 'S');
@@ -160,6 +185,25 @@ try {
   await p.waitForFunction(() => window.__printed, null, { timeout: 5000 });
   ok('PDF guide: 9 pages', await p.evaluate(() => window.__printed) === 9);
   ok('save guide checklist', await p.locator('.checklist input').count() === 6);
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFklEQVR4nGP4z8CAFTEMLQkGBgYGAB7XA/0AkPflAAAAAElFTkSuQmCC', 'base64');
+  await p.waitForSelector('.logo-prev canvas');
+  ok('three logo files drawn', await p.locator('.logo-prev canvas').count() === 3);
+  dl = p.waitForEvent('download'); await tap(p, '[data-act="logoDl"][data-arg="main"]'); const lg = await dl;
+  ok('logo downloads as a PNG', (await lg.suggestedFilename()).endsWith('-logo-main.png'));
+  await tap(p, '[data-act="makePlan"]');
+  await p.waitForSelector('.plan li', { timeout: 10000 });
+  ok('30-day content plan', await p.locator('.plan li').count() === 30);
+  await p.locator('input[data-checkimg]').setInputFiles({ name: 'post.png', mimeType: 'image/png', buffer: png });
+  await p.waitForSelector('.check-res .ring', { timeout: 10000 });
+  ok('brand check: a score and what to fix', (await p.textContent('.ring')).trim() === '72' && await p.locator('#checkcard ol li').count() === 2);
+  ok('Canva steps and links', (await p.textContent('main')).includes('Brand Kit') && await p.locator('a[href^="https://www.canva.com"]').count() === 1);
+  await tap(p, '[data-act="go"][data-arg="studio"]');
+  await tap(p, '[data-act="tab"][data-arg="mockups"]');
+  await p.locator('input[data-photo]').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: png });
+  await p.waitForSelector('.photo-pick img');
+  ok('your photo appears on the thumbnail, story and header', await p.locator('.mk-thumb img, .mk-story img, .mk-header img').count() === 3);
+  await tap(p, '[data-act="go"][data-arg="pack"]');
+  await p.waitForSelector('.brief');
   await noSideScroll(p, 'package');
 
   // class: share
@@ -200,6 +244,19 @@ try {
   await pc.waitForSelector('.brief', { timeout: 5000 });
   ok('personal link restores the brand', (await pc.textContent('.brief')).includes('Sokha'));
 
+  /* ---------- signing back in on another phone: tap your name ---------- */
+  const ctxD = await browser.newContext(phone);
+  const pd = await newPage(ctxD);
+  await pd.goto(base + '/?class=' + cls.code);
+  await pd.waitForSelector('[data-act="welcomeMode"][data-arg="back"]');
+  await tap(pd, '[data-act="welcomeMode"][data-arg="back"]');
+  await pd.waitForSelector('.roster');
+  ok('class list shows names', (await pd.textContent('.roster')).includes('Sokha') && (await pd.textContent('.roster')).includes('Dara'));
+  await tap(pd, '.roster .opt:has-text("Sokha")');
+  await tap(pd, '[data-act="welcomeConfirm"]');
+  await pd.waitForSelector('.brief', { timeout: 5000 });
+  ok('tap your name → your brand opens, no password', (await pd.textContent('.brief')).includes('Sokha'));
+
   /* ---------- teacher ---------- */
   const pt = await newPage(await browser.newContext({ viewport: { width: 1100, height: 900 } }));
   await pt.goto(base + '/teacher.html#c=' + cls.code + '&t=' + cls.tkey);
@@ -210,6 +267,13 @@ try {
   await pt.locator('.bcard').click();
   ok('brief opens with the universal prompt', (await pt.textContent('dialog')).includes('=== MY BRAND'));
   await pt.keyboard.press('Escape');
+  ok('join QR code for the classroom link', await pt.locator('svg:has(title)').count() >= 1 && await pt.evaluate((c) => [...document.querySelectorAll('input')].some(i => i.value.includes('?class=' + c)), cls.code));
+  const dlc = pt.waitForEvent('download'); await pt.click('#csv'); const csv = await dlc;
+  ok('CSV of every student downloads', (await csv.suggestedFilename()).endsWith('.csv'));
+  await pt.click('[data-proj="big"]');
+  await pt.waitForTimeout(400);
+  ok('big screen for the projector', (await pt.textContent('body')).includes('Shared directions'));
+  await pt.keyboard.press('Escape'); await pt.waitForTimeout(200);
   ok('comment moderation', await pt.locator('.cm').count() === 1);
   await pt.locator('[data-hide]').click();
   await pt.waitForSelector('.cm.hidden');

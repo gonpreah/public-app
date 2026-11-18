@@ -63,9 +63,9 @@ ok('this-or-that picks', W.BFH_TOT.length >= 5 && W.BFH_TOT.every(p => bi(p.q) &
 const T = W.BFH_T;
 const src = fs.readFileSync(path.join(ROOT, 'public', 'app.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'public', 'brand.js'), 'utf8');
 const used = new Set([...src.matchAll(/\b[tT]\('([a-zA-Z0-9_]+)'/g)].map(m => m[1]));
-for (const [pre, list] of Object.entries({ lane_: ['heart', 'bold', 'soft', 'khmer', 'wild', 'more'], tab_: ['mix', 'colours', 'type', 'words', 'tune', 'mockups'], how_: ['warmer', 'bolder', 'simpler', 'softer', 'khmer', 'playful'], role_: ['primary', 'secondary', 'accent', 'background', 'text'], job_: ['heart', 'more', 'refine', 'package'] })) list.forEach(k => used.add(pre + k));
+for (const [pre, list] of Object.entries({ lane_: ['heart', 'bold', 'soft', 'khmer', 'wild', 'more'], tab_: ['mix', 'colours', 'type', 'words', 'tune', 'mockups'], how_: ['warmer', 'bolder', 'simpler', 'softer', 'khmer', 'playful'], role_: ['primary', 'secondary', 'accent', 'background', 'text'], job_: ['heart', 'more', 'refine', 'package', 'plan', 'check', 'tidy'], logo_: ['main', 'light', 'badge'] })) list.forEach(k => used.add(pre + k));
 ['chk1', 'chk2', 'chk3', 'chk4', 'chk5', 'chk6', 'enc1', 'enc2', 'enc3', 'enc4', 'step1', 'step2', 'step3', 'step4', 'step5', 'navHome', 'navInspire', 'navBrand', 'navClass', 'warm', 'cool', 'bold', 'soft', 'modern', 'classic', 'playful', 'serious', 'mkPost', 'mkStory', 'mkPoster', 'mkThumb', 'mkHeader', 'errNoKey', 'errLimit', 'errRefused', 'errStudent', 'errTimeout', 'errBusyClaude', 'enoughComments'].forEach(k => used.add(k));
-['lane_', 'tab_', 'how_', 'role_', 'job_'].forEach(k => used.delete(k));
+['lane_', 'tab_', 'how_', 'role_', 'job_', 'logo_'].forEach(k => used.delete(k));
 const missing = [...used].filter(k => !T[k]);
 ok('every key used on screen exists', !missing.length, missing);
 const noKm = Object.keys(T).filter(k => !bi(T[k]));

@@ -166,6 +166,45 @@ for (let i = 0; i < 2; i++) { const x = await call('genStart', { id: c.id, key: 
 ok('daily cap per student', (await call('genStart', { id: c.id, key: c.key, kind: 'heart', data })).error === 'LIMIT_STUDENT');
 delete process.env.BFH_STUDENT_DAILY;
 
+/* the classroom link: roster + sign in by tapping your name */
+const roster = await call('classRoster', { code: cls.code });
+ok('class roster lists names only', roster.name === 'Social Media School' && roster.students.some(x => x.name === 'Sokha') && !JSON.stringify(roster).includes('Pailin') && !JSON.stringify(roster).includes(a.key));
+ok('roster for a bad code fails', (await call('classRoster', { code: 'ZZZZZZ' })).error === 'NO_CLASS');
+const si = await call('signIn', { code: cls.code, sid: a.id });
+ok('sign in by tapping your name gives this phone its own key', si.id === a.id && si.key && si.key !== a.key && si.cls === cls.code);
+ok('the new phone can load the brand', (await call('load', { id: a.id, key: si.key })).data.answers.name === 'Sokha');
+ok('the old phone still works', !(await call('load', { id: a.id, key: a.key })).error);
+ok('cannot sign in to someone outside the class', (await call('signIn', { code: cls.code, sid: solo.id })).error === 'NO_STUDENT');
+ok('cannot sign in with a bad id', (await call('signIn', { code: cls.code, sid: 'nope' })).error === 'NO_STUDENT');
+await call('save', { id: a.id, key: si.key, data: Object.assign({}, data, { quiz: { result: { top: 'explorer' } } }), stage: 'refine', prog: 70, name: 'Sokha' });
+ok('teacher sees the archetype', (await call('teacher', { code: cls.code, tkey: cls.tkey })).students.find(x => x.id === a.id).arch === 'explorer');
+ok('the background job accepts a second phone key', await (async () => { globalThis.__bfhClaude = fakeClaude(); const g2 = await call('genStart', { id: a.id, key: si.key, kind: 'heart', data }); return await bg.work({ id: a.id, key: si.key, job: g2.job }) === 'ran'; })());
+
+/* new Claude jobs: 30-day plan, brand check (an image), tidy dictated Khmer — on the cheaper model */
+{
+  const f2 = fakeClaude(); globalThis.__bfhClaude = f2;
+  let g3 = await call('genStart', { id: a.id, key: a.key, kind: 'plan', opts: { brand: brandOpt }, data: saveDirs });
+  await bg.work({ id: a.id, key: a.key, job: g3.job });
+  let j3 = await call('job', { id: a.id, key: a.key, job: g3.job });
+  ok('30-day plan', j3.status === 'done' && j3.result.days.length === 30 && j3.result.days[0].idea.km);
+  ok('the plan uses the cheaper model', f2.calls[f2.calls.length - 1].fast === true);
+  ok('a brand check needs a real image', (await call('genStart', { id: a.id, key: a.key, kind: 'check', opts: { image: 'javascript:1', brand: brandOpt } })).error === 'BAD_IMAGE');
+  g3 = await call('genStart', { id: a.id, key: a.key, kind: 'check', opts: { image: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==', brand: brandOpt } });
+  ok('the image is kept apart from the job record', !JSON.stringify(await globalThis.__bfhStore.get('job:' + g3.job)).includes('base64') && !!(await globalThis.__bfhStore.get('img:' + g3.job)));
+  await bg.work({ id: a.id, key: a.key, job: g3.job });
+  j3 = await call('job', { id: a.id, key: a.key, job: g3.job });
+  const last = f2.calls[f2.calls.length - 1];
+  ok('brand check: score, what is good, what to fix', j3.status === 'done' && j3.result.score === 72 && j3.result.fix.length === 2);
+  ok('the image goes to Claude as an image block', Array.isArray(last.userIn) && last.userIn[0].type === 'image' && last.userIn[0].source.media_type === 'image/jpeg');
+  ok('the image is deleted after the check', !(await globalThis.__bfhStore.get('img:' + g3.job)));
+  ok('tidy needs text', (await call('genStart', { id: a.id, key: a.key, kind: 'tidy', opts: { text: '  ' } })).error === 'EMPTY');
+  g3 = await call('genStart', { id: a.id, key: a.key, kind: 'tidy', opts: { text: 'ខ្ញុំ  ធំ ឡើង នៅ កំពង់ចាម', lang: 'km' } });
+  await bg.work({ id: a.id, key: a.key, job: g3.job });
+  j3 = await call('job', { id: a.id, key: a.key, job: g3.job });
+  ok('tidy returns the cleaned words', j3.status === 'done' && j3.result.text.includes('កំពង់ចាម'));
+  ok('heart and directions still use the best model', f2.calls.every(c => c.fast) && fake.calls.slice(0, 6).every(c => !c.fast));
+}
+
 /* join / remove */
 ok('solo student joins a class', (await call('join', { id: solo.id, key: solo.key, code: cls.code })).cls === cls.code);
 ok('teacher removes a student', (await call('teacherRemove', { code: cls.code, tkey: cls.tkey, sid: solo.id })).ok && !(await call('teacher', { code: cls.code, tkey: cls.tkey })).students.some(s => s.id === solo.id));

@@ -40,7 +40,8 @@
       const args = { id: S.id, key: S.key, data: dataOut(), stage: S.stage, prog: progress(), name: S.answers.name || '' };
       if (S.stage === 'finished' && S.pick) args.brief = briefSnapshot();
       await api('save', args);
-    } catch (e) {}
+      V.unsynced = false;
+    } catch (e) { V.unsynced = true; }
   }
 
   /* ---------------- words on screen ---------------- */
@@ -96,7 +97,7 @@
     if (order.indexOf(st) > order.indexOf(S.stage)) S.stage = st;
   }
   function resumeView() {
-    if (V.job && V.job.status !== 'done' && V.job.status !== 'error') return V.job.kind === 'heart' ? 'heart' : V.job.kind === 'package' ? 'pack' : 'dirs';
+    if (V.job && V.job.status !== 'done' && V.job.status !== 'error') return V.job.kind === 'heart' ? 'heart' : ['package', 'plan', 'check'].includes(V.job.kind) ? 'pack' : V.job.kind === 'tidy' ? 'interview' : 'dirs';
     if (S.pkg || S.stage === 'finished') return 'pack';
     if (S.pick) return 'studio';
     if (S.dirs.length) return 'dirs';
@@ -132,9 +133,10 @@
     return brandFrom(dW, {
       colors: B.tuneColors(P.colors, P.tune), font: B.fontById(P.fontId), tagline: tag, taglines, tune: P.tune,
       name: (S.dirs[P.pal] || dW).name, personality: (S.dirs[P.pal] || dW).personality,
-      words: [].concat(S.answers.friends3 || []).filter(Boolean), heart: S.heart, pkg: S.pkg
+      words: [].concat(S.answers.friends3 || []).filter(Boolean), heart: S.heart, pkg: S.pkg, photo: S.photo || ''
     });
   }
+  function brandOpts() { const b = brand(); return Object.assign({}, b, { font: undefined, fontId: b.font.id, pkg: undefined, heart: undefined, photo: undefined }); }
   function briefSnapshot() {
     const b = brand(); if (!b) return null;
     return { title: b.title, tagline: b.tagline, taglines: b.taglines.slice(0, 4), colors: b.colors, fontId: b.font.id, mission: b.mission, personality: b.personality,
@@ -191,6 +193,9 @@
       toast(t('refined'));
     }
     if (kind === 'package') { S.pkg = r; setStage('finished'); V.view = 'pack'; }
+    if (kind === 'plan') { S.plan = r.days; toast(t('planReady')); }
+    if (kind === 'check') { S.lastCheck = Object.assign({ at: Date.now() }, r); V.scrollCheck = true; }
+    if (kind === 'tidy' && opts.qid) { S.answers[opts.qid] = r.text; V.tidied = opts.qid; }
   }
   function jobText() {
     const j = V.job; if (!j) return '';
@@ -249,6 +254,7 @@
           ${btn('go', t('inspiration') + ' →', 'soft', 'gallery')}
         </div>
       </section>
+      ${installCard()}
       <section class="card">
         <p class="eyebrow">${t('howItWorks')}</p>
         <ol class="steps">${['step1', 'step2', 'step3', 'step4', 'step5'].map(k => `<li>${t(k)}</li>`).join('')}</ol>
@@ -265,6 +271,57 @@
         <label class="btn ghost small">${t('loadFile')}<input type="file" accept=".json,application/json" id="loadFile" hidden></label>
       </section>`;
   };
+
+  /* --- the classroom link: new here, or tap your name to come back --- */
+  VIEWS.welcome = function () {
+    const w = V.welcome || {}, me = S.id && (S.answers.name || '').trim();
+    if (!w.roster) return `<section class="hero"><p class="eyebrow">${t('welcomeEyebrow')}</p><h1>${esc(w.code || '')}</h1><p class="lead">${w.err ? esc(w.err) : t('loading')}</p></section>`;
+    const r = w.roster;
+    let body = '';
+    if (w.mode === 'new') {
+      body = `<section class="card"><h3>${t('whatName')}</h3><p class="muted small">${t('whatNameWhy')}</p>
+        <input id="newName" class="big-in" maxlength="60" placeholder="${t('yourName')}" autocomplete="name">
+        <div class="stack">${btn('welcomeStart', t('startMyBrand') + ' →', 'primary big')}${btn('welcomeMode', '← ' + t('back'), 'ghost small', '')}</div></section>`;
+    } else if (w.mode === 'back') {
+      const pick = w.pick && r.students.find(x => x.id === w.pick);
+      body = pick ? `<section class="card"><h3>${t('areYou', { name: esc(pick.name) })}</h3><p class="muted small">${t('areYouWhy')}</p>
+          <div class="stack">${btn('welcomeConfirm', t('yesItsMe') + ' →', 'primary big', pick.id)}${btn('welcomePick', t('notMe'), 'ghost small', '')}</div></section>`
+        : `<section class="card"><h3>${t('tapYourName')}</h3>
+          ${r.students.length ? `<div class="roster">${r.students.map(x => `<button class="opt" data-act="welcomePick" data-arg="${esc(x.id)}"><span class="avatar">${esc(x.name.trim().slice(0, 1).toUpperCase())}</span><span>${esc(x.name)}</span><small>${x.prog}%</small></button>`).join('')}</div>` : `<p class="muted">${t('nobodyYet')}</p>`}
+          ${btn('welcomeMode', '← ' + t('back'), 'ghost small', '')}</section>`;
+    } else {
+      body = `<div class="stack">
+          ${me ? btn('welcomeContinue', t('continueAs', { name: esc(me) }) + ' →', 'primary big') : ''}
+          ${btn('welcomeMode', t('imNew'), me ? 'soft big' : 'primary big', 'new')}
+          ${btn('welcomeMode', t('imBack'), 'ghost big', 'back')}
+        </div>`;
+    }
+    return `<section class="hero"><div class="hero-spark">${SPARK(116, 'var(--cobalt)')}</div>
+        <p class="eyebrow">${t('welcomeEyebrow')}</p><h1>${esc(r.name)}</h1>
+        <p class="lead">${t('welcomeLead')}</p></section>${body}`;
+  };
+  async function openWelcome(code) {
+    V.welcome = { code: String(code || '').toUpperCase().slice(0, 6), mode: '' };
+    go('welcome');
+    try { V.welcome.roster = await api('classRoster', { code: V.welcome.code }); }
+    catch (e) { V.welcome.err = t(e.code === 'NO_CLASS' ? 'errClass' : 'errNet'); }
+    if (V.view === 'welcome') render();
+  }
+  async function becomeStudent(id, key, cls, className) {
+    const lang = S.lang;
+    const r = await api('load', { id, key });
+    S = Object.assign(fresh(), r.data || {}, { id, key, cls: r.cls || cls, className: r.className || className, lang });
+    if (r.job) S.job = { id: r.job };
+    V.fb = r.feedback; persist();
+  }
+
+  function installCard() {
+    const P = window.BFH_PWA;
+    if (!P || P.isStandalone) return '';
+    if (P.canInstall) return `<section class="card install"><h3>📲 ${t('installTitle')}</h3><p class="muted small">${t('installWhy')}</p>${btn('install', t('install'), 'primary small')}</section>`;
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) return `<section class="card install"><h3>📲 ${t('installTitle')}</h3><p class="muted small">${t('installIos')}</p></section>`;
+    return '';
+  }
 
   /* --- the archetype quiz --- */
   VIEWS.quiz = function () {
@@ -367,6 +424,13 @@
     else if (q.type === 'chips') { const sel = Array.isArray(a) ? a : []; input = `${q.max ? `<p class="muted small">${t('pickUpTo', { n: q.max })}</p>` : ''}<div class="chips wrap">${q.options.map(o => `<button class="chip big${sel.includes(o.id) ? ' on' : ''}" data-act="chip" data-arg="${q.id}|${o.id}">${esc(L(o))}</button>`).join('')}</div>`; }
     else if (q.type === 'choice') input = `<div class="opts">${q.options.map(o => `<button class="opt${a === o.id ? ' on' : ''}" data-act="choice" data-arg="${q.id}|${o.id}">${esc(L(o))}</button>`).join('')}</div>`;
     else if (q.type === 'tot') input = `<div class="tots">${TOT.map(p => `<div class="tot"><p>${esc(L(p.q))}</p><div class="tot-pair">${['a', 'b'].map(s => totCard(p, s)).join('<span class="or">' + t('or') + '</span>')}</div></div>`).join('')}</div>`;
+    const canVoice = q.type === 'long' || q.type === 'short';
+    const busyTidy = V.job && V.job.kind === 'tidy';
+    const voice = canVoice ? `<div class="voicebar">
+        ${btn('mic', V.listening === q.id ? '⏹ ' + t('stopMic') : '🎤 ' + t('speak'), V.listening === q.id ? 'primary small listening' : 'soft small', q.id)}
+        ${busyTidy ? `<span class="muted small">✳︎ ${t('job_tidy')}</span>` : String(a || '').trim().length > 8 ? btn('tidy', '✨ ' + t('tidy'), 'ghost small', q.id) : ''}
+        ${V.tidied === q.id && V.tidyPrev && !busyTidy ? btn('untidy', '↩ ' + t('undo'), 'ghost small') : ''}
+      </div>${V.micHelp === q.id ? `<div class="note small">🎤 ${t('micHelp')}</div>` : ''}` : '';
     const follow = V.follow === q.id && q.follow ? `<div class="follow" role="status">💬 ${esc(L(q.follow))}<div class="row">${btn('followMore', t('addMore'), 'soft small')}${btn('next', t('keepGoing') + ' →', 'ghost small', 'force')}</div></div>` : '';
     return `<div class="qtop"><span>${sec.emoji || ''} ${esc(L(sec))}</span><span>${t('qOf', { i: i + 1, n: qs.length })}</span></div>
       <div class="bar"><i style="width:${Math.round(100 * (i + (answered(q) ? 1 : 0)) / qs.length)}%"></i></div>
@@ -375,6 +439,7 @@
       <h2 class="q">${esc(L(q.q))}${q.optional ? ` <small class="opt-tag">${t('optional')}</small>` : ''}</h2>
       ${q.example ? `<details class="example" open><summary>💡 ${t('exampleAnswer')}</summary><p>${esc(L(q.example))}</p></details>` : ''}
       ${input}
+      ${voice}
       ${follow}
       <p class="cheer">✨ ${esc(L(q.cheer))}</p>
       <div class="nav">${btn('prev', '← ' + t('back'), 'ghost')}${btn('next', (i === qs.length - 1 ? t('finishInterview') : t('next')) + ' →', 'primary')}</div>
@@ -524,7 +589,7 @@
       body = `<p class="muted">${t('tuneWhy')}</p>${sl('warm', 'cool', 'warm')}${sl('bold', 'soft', 'bold')}${sl('modern', 'classic', 'modern')}${sl('playful', 'serious', 'playful')}${btn('tuneReset', t('reset'), 'ghost small')}`;
     } else if (V.tab === 'mockups') {
       const ml = V.mockLang || S.lang;
-      body = `<div class="chips"><button class="chip${ml === 'en' ? ' on' : ''}" data-act="mockLang" data-arg="en">English</button><button class="chip${ml === 'km' ? ' on' : ''}" data-act="mockLang" data-arg="km">ខ្មែរ</button></div>
+      body = `${photoPicker()}<div class="chips"><button class="chip${ml === 'en' ? ' on' : ''}" data-act="mockLang" data-arg="en">English</button><button class="chip${ml === 'km' ? ' on' : ''}" data-act="mockLang" data-arg="km">ខ្មែរ</button></div>
         ${[['post', 'mkPost', 16], ['story', 'mkStory', 14], ['poster', 'mkPoster', 15], ['thumb', 'mkThumb', 13], ['header', 'mkHeader', 11]].map(([k, lab, fs]) => `<figure class="mk mk-${k}"><figcaption>${t(lab)}</figcaption><div style="font-size:${fs}px">${B.mock(k, b, ml)}</div></figure>`).join('')}`;
     }
     const refinePart = { mix: null, colours: 'palette', type: 'fonts', words: 'words', tune: null, mockups: null }[V.tab];
@@ -538,6 +603,47 @@
       <div class="stack">${btn('go', '📦 ' + t('toPackage') + ' →', 'primary big', 'pack')}${btn('go', '← ' + t('allDirections'), 'ghost small', 'dirs')}</div>
     </div>`;
   };
+
+  function photoPicker() {
+    return `<div class="photo-pick">${S.photo ? `<img src="${S.photo}" alt="">` : '<span class="ph">📷</span>'}
+      <div><label class="btn soft small">${t(S.photo ? 'changePhoto' : 'addPhoto')}<input type="file" accept="image/*" data-photo hidden></label>
+      ${S.photo ? btn('photoRemove', t('remove'), 'ghost small') : ''}<p class="muted small">${t('photoWhy')}</p></div></div>`;
+  }
+  function checkCard() {
+    const c = S.lastCheck, busy = V.job && V.job.kind === 'check';
+    const deg = c ? Math.round(c.score * 3.6) : 0;
+    return `<section class="card" id="checkcard"><p class="eyebrow">${t('checkEyebrow')}</p><h3>🔍 ${t('checkTitle')}</h3><p class="muted small">${t('checkWhy')}</p>
+      ${busy ? jobCard() : `<label class="btn primary">${t('checkPick')}<input type="file" accept="image/*" data-checkimg hidden></label>`}
+      ${c && !busy ? `<div class="check-res"><div class="ring" style="background:conic-gradient(var(--brand) ${deg}deg, var(--line) 0)"><b>${c.score}</b></div><p class="lead">${esc(L(c.verdict))}</p></div>
+        <div class="kv two"><div><span>✓ ${t('checkGood')}</span><ul>${c.good.map(x => `<li>${esc(L(x))}</li>`).join('')}</ul></div><div><span>→ ${t('checkFix')}</span><ol>${c.fix.map(x => `<li>${esc(L(x))}</li>`).join('')}</ol></div></div>
+        <div class="kv"><span>${t('palette')}</span><p>${esc(L(c.colours))}</p></div><div class="kv"><span>${t('fonts')}</span><p>${esc(L(c.type))}</p></div><div class="kv"><span>${t('tab_words')}</span><p>${esc(L(c.words))}</p></div>` : ''}
+    </section>`;
+  }
+  function planCard() {
+    const busy = V.job && V.job.kind === 'plan', days = S.plan || [];
+    return `<section class="card"><p class="eyebrow">${t('planEyebrow')}</p><h3>🗓 ${t('planTitle')}</h3><p class="muted small">${t('planWhy')}</p>
+      ${busy ? jobCard() : btn('makePlan', days.length ? '↻ ' + t('planAgain') : '✨ ' + t('planMake'), days.length ? 'ghost small' : 'primary')}
+      ${days.length && !busy ? `${btn('copyPlan', '📋 ' + t('copyPlan'), 'soft small')}<ol class="plan">${days.map((d, i) => `<li><div class="plan-head"><b>${t('day')} ${d.day}</b><span class="pill">${esc(d.format)}</span><small class="muted">${esc(d.pillar)}</small></div>
+        <p>${esc(L(d.idea))}</p><p class="cap">“${esc(L(d.caption))}” <button class="linkish" data-act="copyDay" data-arg="${i}">${t('copy')}</button></p></li>`).join('')}</ol>` : ''}
+    </section>`;
+  }
+  function logoCard() {
+    return `<section class="card"><p class="eyebrow">${t('logoEyebrow')}</p><h3>✍️ ${t('logoFiles')}</h3><p class="muted small">${t('logoFilesWhy')}</p>
+      <div class="logo-files">${B.LOGO_KINDS.map(k => `<div class="lf lf-${k}"><div class="logo-prev" data-logo="${k}"></div><button class="btn soft small" data-act="logoDl" data-arg="${k}">⬇ ${t('logo_' + k)}</button></div>`).join('')}</div></section>`;
+  }
+  function canvaCard() {
+    return `<section class="card"><p class="eyebrow">Canva</p><h3>🎨 ${t('canvaTitle')}</h3><ol class="steps">${['canva1', 'canva2', 'canva3', 'canva4'].map(k => `<li>${t(k)}</li>`).join('')}</ol>
+      <div class="row wrap">${btn('copyColours', '📋 ' + t('copyColours'), 'soft small')}${btn('copyUni', '📋 ' + t('copyPrompt'), 'soft small')}<a class="btn ghost small" href="https://www.canva.com/brand/" target="_blank" rel="noopener">${t('openCanva')} ↗</a></div></section>`;
+  }
+  async function fillLogos() {
+    const b = brand(); if (!b) return;
+    for (const el of document.querySelectorAll('.logo-prev[data-logo]')) {
+      if (el.dataset.done === b.title + b.font.id + JSON.stringify(b.colors)) continue;
+      const cv = await B.logoCanvas(b, el.dataset.logo);
+      el.innerHTML = ''; cv.style.maxWidth = '100%'; cv.style.height = 'auto'; cv.style.maxHeight = '140px'; el.appendChild(cv);
+      el.dataset.done = b.title + b.font.id + JSON.stringify(b.colors);
+    }
+  }
 
   /* --- the brand package --- */
   VIEWS.pack = function () {
@@ -590,6 +696,7 @@
           <div style="font-family:${B.ff(b.font.heading.family, 'serif')};font-size:1.25em">${t('sampleSub')}</div><p class="muted small">${esc(L(pk.typeRules.subheading))}</p>
           <div style="font-family:${B.ff(b.font.body.family)}">${t('sampleBody')}</div><p class="muted small">${esc(L(pk.typeRules.body))}</p></div>
           <div class="kv two"><div><span>✓ ${t('doExamples')}</span><ul>${pk.doExamples.map(x => `<li>${esc(L(x))}</li>`).join('')}</ul></div><div><span>✗ ${t('dontExamples')}</span><ul>${pk.dontExamples.map(x => `<li>${esc(L(x))}</li>`).join('')}</ul></div></div></section>` : ''}
+      ${logoCard()}${checkCard()}${planCard()}${canvaCard()}
       <section class="card"><h3>✅ ${t('saveGuide')}</h3>
         <ul class="checklist">${checks.map(k => `<li><label><input type="checkbox" data-check="${k}"${S.checks[k] ? ' checked' : ''}> <span>${t(k)}</span></label></li>`).join('')}</ul></section>
       <section class="card"><h3>👥 ${t('shareClass')}</h3><p class="muted small">${t('shareWhy')}</p>${btn('go', t('openClass') + ' →', 'soft', 'cls')}</section>
@@ -625,7 +732,7 @@
         ${link ? `<p class="muted small">${t('myLinkWhy')}</p><pre class="copybox small">${esc(link)}</pre>${btn('copyLink', '📋 ' + t('copyLink'), 'primary small')}` : `<p class="muted small">${t('noLinkYet')}</p>${btn('makeLink', t('makeLink'), 'primary small')}`}
       </section>
       <section class="card"><h3>🏫 ${t('yourClass')}</h3>
-        ${S.cls ? `<p>${t('inClass', { name: esc(S.className || S.cls) })}</p>` : `<p class="muted small">${t('joinWhy')}</p>`}
+        ${S.cls ? `<p>${t('inClass', { name: esc(S.className || S.cls) })}</p>${btn('switchUser', t('notYou'), 'ghost small')}` : `<p class="muted small">${t('joinWhy')}</p>`}
         <div class="row"><input id="joinCode" placeholder="${t('classCode')}" maxlength="6" autocapitalize="characters"><button class="btn ${S.cls ? 'ghost' : 'primary'} small" data-act="join">${S.cls ? t('changeClass') : t('join')}</button></div>
       </section>
       ${share}${gallery}`;
@@ -643,11 +750,14 @@
     const active = view === 'home' ? 'home' : view === 'gallery' ? 'gallery' : view === 'cls' ? 'cls' : 'mine';
     $('#app').innerHTML = `<header class="top"><button class="brandmark" data-act="go" data-arg="home">${SPARK(22, 'var(--brand)')}<span>${t('appName')}</span></button>
         <div class="lang" role="group" aria-label="Language / ភាសា"><button class="${S.lang === 'km' ? 'on' : ''}" data-act="lang" data-arg="km">ខ្មែរ</button><button class="${S.lang === 'en' ? 'on' : ''}" data-act="lang" data-arg="en">EN</button></div></header>
+      ${navigator.onLine === false ? `<div class="offline" role="status">${t('offline')}</div>` : ''}
       <main id="main" class="v-${view}">${VIEWS[view]()}</main>
       ${V.brand ? brandSheet() : ''}
       <nav class="bottom">${NAV.map(([k, em, lab]) => `<button class="${active === k ? 'on' : ''}" data-act="nav" data-arg="${k}"${active === k ? ' aria-current="page"' : ''}>${icon(k)}${t(lab)}</button>`).join('')}</nav>
       <div id="toast" class="toast"></div>`;
     document.title = t('appName');
+    if (view === 'pack') setTimeout(fillLogos, 0);
+    if (V.scrollCheck && view === 'pack') { V.scrollCheck = false; setTimeout(() => { const el = $('#checkcard'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 60); }
     if (V.scrollTo !== undefined) { const el = $('#dir-' + V.scrollTo); V.scrollTo = undefined; if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 50); }
   }
   function go(view) {
@@ -668,6 +778,26 @@
   /* ---------------- actions ---------------- */
   const ACT = {
     go: (a) => go(a), nav: (a) => go(a),
+    welcomeMode: (a) => { V.welcome.mode = a; V.welcome.pick = null; render(); if (a === 'new') setTimeout(() => { const el = $('#newName'); if (el) el.focus(); }, 50); },
+    welcomePick: (a) => { V.welcome.pick = a || null; render(); },
+    welcomeConfirm: async (a) => {
+      try { const r = await api('signIn', { code: V.welcome.code, sid: a }); await becomeStudent(r.id, r.key, r.cls, r.className); toast(t('welcomeBack', { name: S.answers.name || '' })); loadLogos(); go(resumeView()); }
+      catch (e) { toast(t('errNet')); }
+    },
+    welcomeStart: async () => {
+      const name = (($('#newName') || {}).value || '').trim();
+      if (!name) { const el = $('#newName'); if (el) el.focus(); return; }
+      try {
+        const r = await api('start', { name, code: V.welcome.code });
+        const lang = S.lang;
+        S = Object.assign(fresh(), { id: r.id, key: r.key, cls: r.cls, className: V.welcome.roster.name, lang });
+        S.answers.name = name; save(true); loadLogos(); go('quiz');
+      } catch (e) { toast(t(e.code === 'NO_CLASS' ? 'errClass' : 'errNet')); }
+    },
+    welcomeContinue: async () => {
+      try { const r = await api('join', { id: S.id, key: S.key, code: V.welcome.code }); S.cls = r.cls; S.className = r.className; save(true); loadLogos(); go(resumeView()); }
+      catch (e) { toast(t('errNet')); }
+    },
     lang: (a) => { S.lang = a; persist(); render(); },
     closeSheet: () => { V.brand = null; render(); },
     brand: (a) => { V.brand = a; render(); },
@@ -691,11 +821,11 @@
     },
     choice: (a) => { const [qid, oid] = a.split('|'); S.answers[qid] = oid; save(); render(); },
     tot: (a) => { const [pid, s] = a.split('|'); S.tot[pid] = s; save(); render(); },
-    prev: () => { V.follow = null; if (S.qi > 0) { S.qi--; persist(); render(); window.scrollTo(0, 0); } else go(S.quiz.result ? 'quizResult' : 'home'); },
+    prev: () => { V.follow = null; if (rec) try { rec.stop(); } catch (e) {} if (S.qi > 0) { S.qi--; persist(); render(); window.scrollTo(0, 0); } else go(S.quiz.result ? 'quizResult' : 'home'); },
     next: async (a) => {
       const qs = askable(), q = qs[S.qi];
       if (a !== 'force' && q.follow && !q.optional && short(q)) { V.follow = q.id; render(); const f = $('.follow'); if (f) f.scrollIntoView({ block: 'nearest' }); return; }
-      V.follow = null;
+      V.follow = null; V.micHelp = null; V.tidied = null; if (rec) try { rec.stop(); } catch (e) {}
       if (S.qi === 0) ensureAccount();
       if (S.qi < qs.length - 1) { S.qi++; save(); render(); window.scrollTo(0, 0); return; }
       setStage('heart'); save(true); go('heart');
@@ -733,7 +863,17 @@
       if (part === 'palette') opts.colors = S.pick.colors;
       startJob('refine', opts);
     },
-    makePack: () => { const b = brand(); startJob('package', { brand: Object.assign({}, b, { font: undefined, fontId: b.font.id, pkg: undefined, heart: undefined }) }); },
+    makePack: () => startJob('package', { brand: brandOpts() }),
+    makePlan: () => startJob('plan', { brand: brandOpts() }),
+    copyDay: (a) => { const d = (S.plan || [])[Number(a)]; if (d) copy(L(d.caption)); },
+    copyPlan: () => copy((S.plan || []).map(d => `${t('day')} ${d.day} · ${d.format} · ${d.pillar}\n${L(d.idea)}\n${L(d.caption)}`).join('\n\n')),
+    logoDl: async (a) => { const cv = await B.logoCanvas(brand(), a); cv.toBlob(bl => download(bl, fileName('-logo-' + a + '.png')), 'image/png'); },
+    copyColours: () => { const c = brand().colors; copy(B.ROLES.map(r => `${t('role_' + r)} ${c[r]}`).join('\n')); },
+    photoRemove: () => { delete S.photo; save(); render(); },
+    install: async () => { if (window.BFH_PWA) { await window.BFH_PWA.install(); render(); } },
+    mic: (a) => startMic(a),
+    tidy: (a) => { const q = QS.find(x => x.id === a), text = q && q.type === 'words3' ? '' : String(S.answers[a] || ''); if (!text.trim()) return; V.tidyPrev = { qid: a, text }; startJob('tidy', { text, lang: S.lang, qid: a }); },
+    untidy: () => { if (V.tidyPrev) { S.answers[V.tidyPrev.qid] = V.tidyPrev.text; V.tidyPrev = null; save(); render(); } },
     packLang: (a) => { V.packLang = a; render(); },
     copyHex: (a) => copy(a),
     copyBrief: () => copy(B.briefText(brand(), V.packLang || S.lang, t)),
@@ -746,11 +886,9 @@
     makeLink: async () => { if (await ensureAccount()) { render(); } else toast(t('errNet')); },
     join: async () => {
       const code = (($('#joinCode') || {}).value || '').trim().toUpperCase();
-      if (!code) return;
-      if (!S.id) { S.pendingClass = code; if (!(await ensureAccount())) { toast(t('errClass')); return; } if (S.cls) { toast(t('joined')); render(); loadLogos(); return; } }
-      try { const r = await api('join', { id: S.id, key: S.key, code }); S.cls = r.cls; S.className = r.className; save(true); toast(t('joined')); loadLogos(); loadClass(); render(); }
-      catch (e) { toast(t(e.code === 'NO_CLASS' ? 'errClass' : 'errNet')); }
+      if (code) openWelcome(code);
     },
+    switchUser: () => { if (S.cls) openWelcome(S.cls); },
     shareDir: (a) => {
       const k = S.share.keys || (S.share.keys = []), i = k.indexOf(a);
       if (i >= 0) k.splice(i, 1); else { if (k.length >= 2) k.shift(); k.push(a); }
@@ -788,6 +926,48 @@
       return { key: d.key, name: d.name, personality: d.personality, tagline: b ? b.tagline : (d.taglines || [])[0], fontId: b ? b.font.id : d.fontId, colors: b ? b.colors : d.colors, tune: b ? b.tune : {} };
     });
     try { await api('share', { id: S.id, key: S.key, on: S.share.on && dirs.length > 0, dirs, name: S.answers.name || '' }); V.fb = await api('feedback', { id: S.id, key: S.key }); } catch (e) { toast(t('errNet')); }
+  }
+
+  /* ---------------- speaking an answer ----------------
+     Claude can't hear audio, so the phone turns speech into text (Khmer: km-KH — Chrome on
+     Android does this well; iPhones need the Gboard keyboard's 🎤 set to Khmer), then
+     "Tidy with Claude" fixes spelling and punctuation without changing their words. */
+  let rec = null;
+  function startMic(qid) {
+    if (V.listening) { try { rec && rec.stop(); } catch (e) {} return; }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { V.micHelp = qid; render(); return; }
+    rec = new SR();
+    rec.lang = S.lang === 'km' ? 'km-KH' : 'en-US';
+    rec.continuous = true; rec.interimResults = true;
+    const base = String(S.answers[qid] || '').trim();
+    let finals = '';
+    rec.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const tx = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finals += (finals ? ' ' : '') + tx.trim(); else interim += tx;
+      }
+      const text = [base, finals, interim.trim()].filter(Boolean).join(' ');
+      S.answers[qid] = text.slice(0, 1500);
+      const el = document.querySelector(`[data-bind="${qid}"]`); if (el) el.value = S.answers[qid];
+      persist();
+    };
+    rec.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') toast(t('micBlocked')); else if (e.error === 'language-not-supported' || e.error === 'network') V.micHelp = qid; };
+    rec.onend = () => { V.listening = null; rec = null; save(); render(); };
+    try { rec.start(); V.listening = qid; V.micHelp = null; render(); } catch (e) { V.micHelp = qid; render(); }
+  }
+
+  /* a picture from the phone, made small enough to keep and send */
+  function readImage(file, max, q) {
+    return new Promise((res, rej) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url); res(cv.toDataURL('image/jpeg', q)); };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); };
+      img.src = url;
+    });
   }
 
   /* ---------------- exports ---------------- */
@@ -856,6 +1036,8 @@
     if (d.check) { S.checks[d.check] = el.checked; save(); return; }
     if (d.actChange === 'shareOn') { S.share.on = el.checked; persist(); pushShare().then(render); return; }
     if (el.id === 'loadFile' && el.files[0]) loadJson(el.files[0]);
+    if (d.photo !== undefined && el.files[0]) readImage(el.files[0], 720, 0.82).then(u => { S.photo = u; save(); render(); }).catch(() => toast(t('fileBad')));
+    if (d.checkimg !== undefined && el.files[0]) readImage(el.files[0], 1280, 0.85).then(u => startJob('check', { image: u, brand: brandOpts() })).catch(() => toast(t('fileBad')));
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && V.brand) { V.brand = null; render(); }
@@ -875,6 +1057,11 @@
     if (V.tab === 'mockups') document.querySelectorAll('.mk').forEach(fig => { const k = fig.className.match(/mk-(\w+)/)[1]; fig.querySelector('div').innerHTML = B.mock(k, b, V.mockLang || S.lang); });
   }
 
+  const typing = () => document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  window.addEventListener('online', () => { if (V.unsynced) syncUp(); if (!typing()) render(); });
+  window.addEventListener('offline', () => { if (!typing()) render(); });
+  document.addEventListener('bfh-pwa', () => { if (V.view === 'home' && !typing()) render(); });
+
   /* ---------------- start ---------------- */
   async function loadLogos() {
     if (!S.cls) return;
@@ -883,7 +1070,7 @@
   async function boot() {
     const h = new URLSearchParams(location.hash.slice(1)), qp = new URLSearchParams(location.search);
     const me = h.get('me');
-    if (qp.get('class')) { S.pendingClass = qp.get('class').toUpperCase().slice(0, 6); persist(); }
+    const classLink = qp.get('class') ? qp.get('class').toUpperCase().slice(0, 6) : null;
     if (me && /^[a-z0-9]{12}\.[a-z0-9]{24}$/.test(me)) {
       const [id, key] = me.split('.');
       if (id !== S.id) {
@@ -899,7 +1086,11 @@
     } else if (S.id) {
       try { const r = await api('load', { id: S.id, key: S.key }); S.cls = r.cls; S.className = r.className; V.fb = r.feedback; if (r.job && !S.job) S.job = { id: r.job }; persist(); } catch (e) { if (e.code === 'NO_STUDENT') { S.id = null; S.key = null; persist(); } }
     }
-    if (S.pendingClass && S.id && !S.cls) { try { const r = await api('join', { id: S.id, key: S.key, code: S.pendingClass }); S.cls = r.cls; S.className = r.className; delete S.pendingClass; persist(); } catch (e) {} }
+    delete S.pendingClass;
+    if (classLink) {
+      history.replaceState(null, '', location.pathname + location.hash);
+      if (S.cls !== classLink) { openWelcome(classLink); if (S.job && S.job.id) { V.job = { kind: S.job.kind, opts: S.job.opts, status: 'running', started: Date.now() }; poll(); } return; }
+    }
     if (S.job && S.job.id) { V.job = { kind: S.job.kind, opts: S.job.opts, status: 'running', started: Date.now() }; poll(); }
     render();
     loadLogos();

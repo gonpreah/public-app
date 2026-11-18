@@ -35,14 +35,18 @@ export function fakeClaude(opts) {
   opts = opts || {};
   const calls = [];
   const W = globalThis;
-  const fn = async (system, user, schema) => {
-    calls.push({ system, user, schema });
+  const fn = async (system, userIn, schema, maxTokens, copts) => {
+    const user = typeof userIn === 'string' ? userIn : JSON.stringify(userIn);
+    calls.push({ system, user, userIn, schema, fast: !!(copts && copts.fast) });
     if (opts.delay) await new Promise(r => setTimeout(r, opts.delay));
     if (opts.fail) throw Object.assign(new Error('boom'), { status: 500 });
     const P = W.BFH_PALETTES, F = W.BFH_FONTS;
     const bi = (s) => ({ en: s, km: 'ខ្មែរ ' + s });
     const props = schema.properties || {};
     n++;
+    if (props.days) return { days: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, pillar: 'Pillar ' + (i % 5 + 1), format: i % 2 ? 'reel' : 'carousel', idea: bi('Idea for day ' + (i + 1)), caption: bi('Caption for day ' + (i + 1)) })) };
+    if (props.score) return { score: 72, verdict: bi('Nearly on-brand.'), good: [bi('Warm colours'), bi('Clear words')], fix: [bi('Use your background colour'), bi('Bigger title')], colours: bi('Close'), type: bi('Good'), words: bi('Kind') };
+    if (props.text && Object.keys(props).length === 1) { const m = /<dictated[^>]*>\n([\s\S]*)\n<\/dictated>/.exec(user); return { text: (m ? m[1] : '').trim().replace(/\s+/g, ' ') + '។' }; }
     if (props.title && props.en && props.km && !props.name) return { title: bi('A bridge of hope'), en: 'You are someone who listens. Test heart story.', km: 'អ្នកជាមនុស្សដែលស្ដាប់។' };
     if (props.motion) {
       const item = (k, i) => ({ kind: k, title: bi(k + ' ' + i), use: bi('When to use ' + k), prompt: `Make a ${k} in #C8553D and Playfair Display. [date]` });

@@ -134,6 +134,7 @@
     B.loadFont(b.font);
     const k = css(b), c = k.c, ty = k.ty, tl = b.tagline || { en: '', km: '' };
     const title = esc(b.title || 'Your name'), en = esc(tl.en), km = esc(tl.km);
+    const photo = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(b.photo || '') ? b.photo : '';
     const pillar = b.pillars && b.pillars[0] ? esc(pick(b.pillars[0].title, lang)) : '';
     const cap = b.captions && b.captions[0] ? esc(pick(b.captions[0], lang)) : en;
     const r = ty.radius, onP = B.readableOn(c.primary), onS = B.readableOn(c.secondary), onA = B.readableOn(c.accent);
@@ -150,6 +151,7 @@
     }
     if (kind === 'story') {
       return box('9 / 16', `<div style="position:absolute;inset:0;background:linear-gradient(180deg,${c.primary} 0 46%,${c.background} 46%)"></div>
+        ${photo ? `<img src="${photo}" alt="" style="position:absolute;left:0;top:0;width:100%;height:46%;object-fit:cover"><div style="position:absolute;left:0;top:0;width:100%;height:46%;background:linear-gradient(180deg,${c.primary}EE 0%,${c.primary}66 55%,${c.primary}11 100%)"></div>` : ''}
         ${ty.stickers ? `<div style="position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) rotate(${ty.tilt}deg);width:34%;aspect-ratio:1;border-radius:50%;background:${c.accent};border:.25em solid ${c.background}"></div>` : `<div style="position:absolute;left:8%;right:8%;top:46%;height:.3em;background:${c.accent}"></div>`}
         <div style="position:absolute;left:8%;right:8%;top:9%;color:${onP}">
           <div style="${k.b}font-size:.75em;opacity:.9;margin-bottom:.6em">${title}</div>
@@ -176,7 +178,7 @@
     }
     if (kind === 'thumb') {
       return box('16 / 9', `<div style="position:absolute;inset:0 45% 0 0;background:${c.primary}"></div>
-        <div style="position:absolute;right:6%;top:12%;bottom:12%;width:34%;border-radius:${ty.stickers ? Math.max(r, 12) * 0.08 + 'em' : '0'};background:${B.mix(c.secondary, c.background, .15)};display:flex;align-items:center;justify-content:center;${k.b}color:${onS};font-size:.8em;transform:rotate(${ty.tilt / 2}deg)">${lang === 'km' ? '[រូបថតរបស់អ្នក]' : '[your photo]'}</div>
+        <div style="position:absolute;right:6%;top:12%;bottom:12%;width:34%;overflow:hidden;border-radius:${ty.stickers ? Math.max(r, 12) * 0.08 + 'em' : '0'};background:${B.mix(c.secondary, c.background, .15)};display:flex;align-items:center;justify-content:center;${k.b}color:${onS};font-size:.8em;transform:rotate(${ty.tilt / 2}deg)">${photo ? `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : (lang === 'km' ? '[រូបថតរបស់អ្នក]' : '[your photo]')}</div>
         <div style="position:absolute;left:5%;top:12%;width:48%;color:${onP}">
           <div style="${k.h}font-size:2em">${en || title}</div>
           ${km ? `<div style="${k.kh}font-size:1.05em;margin-top:.3em">${km}</div>` : ''}
@@ -187,7 +189,7 @@
       return box('820 / 312', `<div style="position:absolute;inset:0;background:linear-gradient(90deg,${c.background} 0 55%,${c.primary} 55%)"></div>
         ${shape(c, ty, 'right:20%;top:-30%')}
         <div style="position:absolute;left:5%;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:.8em;max-width:62%">
-          <div style="flex:0 0 3.6em;height:3.6em;border-radius:50%;background:${c.primary};color:${onP};display:flex;align-items:center;justify-content:center;${k.h}font-size:1em;border:.18em solid ${c.background};box-shadow:0 0 0 .12em ${c.accent}">${esc(String(b.title || '?').trim().slice(0, 1).toUpperCase())}</div>
+          <div style="flex:0 0 3.6em;height:3.6em;overflow:hidden;border-radius:50%;background:${c.primary};color:${onP};display:flex;align-items:center;justify-content:center;${k.h}font-size:1em;border:.18em solid ${c.background};box-shadow:0 0 0 .12em ${c.accent}">${photo ? `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : esc(String(b.title || '?').trim().slice(0, 1).toUpperCase())}</div>
           <div><div style="${k.h}font-size:1.5em;color:${c.primary}">${title}</div>
           <div style="${k.b}font-size:.8em">${en}</div>${km ? `<div style="${k.kb}font-size:.8em">${km}</div>` : ''}</div>
         </div>`);
@@ -381,6 +383,38 @@ RULES:
     }
     x.fillStyle = c.primary; x.fillRect(0, H - 120, W, 120);
     x.fillStyle = B.readableOn(c.primary); x.font = fb(30); x.fillText('Brand From the Heart', 80, H - 76);
+    return cv;
+  };
+
+  /* ---------------- logo files: the name as a wordmark, as a PNG ----------------
+     kind: 'main' (primary colour, transparent), 'light' (background colour, transparent — for dark
+     photos), 'badge' (on the primary colour, rounded square, for a profile picture). */
+  B.LOGO_KINDS = ['main', 'light', 'badge'];
+  B.logoCanvas = async function (b, kind) {
+    await B.fontsReady(b.font);
+    const c = b.colors, f = b.font, ty = B.tuneType(b.tune), kh = /[\u1780-\u17FF]/.test(b.title || '');
+    const fam = kh ? f.khHeading : f.heading;
+    const text = ty.upper && !kh ? String(b.title || '').toUpperCase() : String(b.title || '');
+    const meas = document.createElement('canvas').getContext('2d');
+    const font = (sz) => `${ty.italic ? 'italic ' : ''}${fam.weight || 700} ${sz}px ${B.ff(fam.family, B.ff(f.khHeading.family))}`;
+    if (kind === 'badge') {
+      const S = 1080, cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+      const x = cv.getContext('2d');
+      x.fillStyle = c.primary; x.beginPath(); x.roundRect ? x.roundRect(0, 0, S, S, 160) : x.rect(0, 0, S, S); x.fill();
+      let sz = 300; meas.font = font(sz);
+      while (meas.measureText(text).width > S * 0.8 && sz > 60) { sz -= 10; meas.font = font(sz); }
+      x.font = font(sz); x.fillStyle = B.readableOn(c.primary); x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(text, S / 2, S / 2);
+      x.fillStyle = c.accent; x.beginPath(); x.arc(S / 2, S / 2 + sz * 0.75, Math.max(14, sz * 0.09), 0, Math.PI * 2); x.fill();
+      return cv;
+    }
+    const sz = 240; meas.font = font(sz);
+    const w = Math.ceil(meas.measureText(text).width) + 160 + (kind === 'main' ? 70 : 0), h = Math.round(sz * (kh ? 1.9 : 1.6));
+    const cv = document.createElement('canvas'); cv.width = Math.min(4000, w); cv.height = h;
+    const x = cv.getContext('2d');
+    x.font = font(sz); x.textBaseline = 'middle'; x.fillStyle = kind === 'light' ? c.background : c.primary;
+    x.fillText(text, 80, h / 2);
+    if (kind === 'main') { x.fillStyle = c.accent; x.beginPath(); x.arc(80 + meas.measureText(text).width + 45, h / 2 + sz * 0.28, 26, 0, Math.PI * 2); x.fill(); }
     return cv;
   };
 

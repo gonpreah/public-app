@@ -16,6 +16,21 @@ logo, by Uriah's choice (Nov 2026: "load em").
 - **Quiz and interview** (Uriah: "too many questions … too much answering in the storyline", "the
   archetype too basic"): the quiz has 14 questions in 3 parts with a deeper result; the interview has 15
   questions, each typed one with an `example` shown open.
+- **Sign-in is simple on purpose** (Uriah: "keep security to a minimum as students often forget
+  passwords"):
+  - The class link shows the class roster (names only), and a student taps their name
+    (`classRoster`, `signIn`).
+  - `signIn` adds a key to `s.khs` (one per phone, last 10; `keyOk` checks `kh` or `khs`).
+  - No PINs or passwords, and don't add any.
+- **Voice** (Uriah: "make sure Claude can listen to their voice in Khmer"): the Messages API can't take
+  audio. The phone's SpeechRecognition (`km-KH`) writes the text, and the `tidy` job (Sonnet) cleans it
+  up. On iPhone, students use the Gboard 🎤 in Khmer.
+- **Models:**
+  - `claude-opus-5-5` for the heart check and the directions.
+  - `claude-sonnet-5-5` (`{fast:true}` → `BFH_MODEL_FAST`) for more, refine, package, plan,
+    check and tidy.
+  - `BFH_WORKSPACE_ID` is sent as `anthropic-workspace-id`, because the live key is an
+    organization key not scoped to a workspace.
 - Uriah's decisions (Nov 2026):
   - load the real brand logos from the web (teacher uploads can replace them);
   - a new Netlify site;

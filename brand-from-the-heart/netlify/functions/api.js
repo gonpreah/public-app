@@ -46,11 +46,16 @@ const today = () => new Date().toISOString().slice(0, 10);
 const STAGES = ['start', 'interview', 'heart', 'directions', 'refine', 'finished'];
 export class Fail extends Error { constructor(code, status) { super(code); this.code = code; this.status = status || 400; } }
 
+/* A student can be signed in on several phones: one key per phone, only hashes kept. */
+export function keyOk(s, key) {
+  const h = hash(String(key || ''));
+  return !!s && ((s.kh && same(s.kh, h)) || (Array.isArray(s.khs) && s.khs.some(x => same(x, h))));
+}
 async function student(a) {
   const id = clip(a && a.id, 20), key = String((a && a.key) || '');
   if (!/^[a-z0-9]{12}$/.test(id) || !key) throw new Fail('NO_STUDENT', 401);
   const s = await db.get('s:' + id);
-  if (!s || !same(s.kh, hash(key))) throw new Fail('NO_STUDENT', 401);
+  if (!s || !keyOk(s, key)) throw new Fail('NO_STUDENT', 401);
   return s;
 }
 async function teacherClass(a) {
@@ -84,7 +89,7 @@ function cleanBrief(b) {
   return JSON.parse(s);   // plain data only; the teacher page escapes every string it shows
 }
 function summaryOut(sum) {
-  return { id: sum.id, name: sum.name, stage: sum.stage, prog: sum.prog, updated: sum.updated, created: sum.created, lastErr: sum.lastErr || null };
+  return { id: sum.id, name: sum.name, stage: sum.stage, prog: sum.prog, updated: sum.updated, created: sum.created, lastErr: sum.lastErr || null, arch: sum.arch || null };
 }
 
 /* ---------------- daily caps on Claude jobs ---------------- */
@@ -113,6 +118,32 @@ export const HANDLERS = {
     return { code: c.code, name: c.name };
   },
 
+  /* --- the classroom link: who's in this class, and signing back in by tapping your name ---
+     Uriah (Nov 2026): keep security to a minimum, students forget passwords. So a returning
+     student opens the class link and taps their name; that phone gets its own key. */
+  async classRoster(a) {
+    const c = await db.get('c:' + clip(a.code, 8).toUpperCase());
+    if (!c) throw new Fail('NO_CLASS', 404);
+    const out = [];
+    await Promise.all((await members(c.code)).map(async id => {
+      const sum = await db.get('sum:' + id);
+      if (sum && sum.name) out.push({ id, name: sum.name, prog: sum.prog || 0, updated: sum.updated || 0 });
+    }));
+    out.sort((x, y) => x.name.localeCompare(y.name));
+    return { code: c.code, name: c.name, students: out };
+  },
+  async signIn(a) {
+    const code = clip(a.code, 8).toUpperCase(), sid = clip(a.sid, 20);
+    const c = await db.get('c:' + code);
+    if (!c || !(await db.get('cs:' + code + ':' + sid))) throw new Fail('NO_STUDENT', 404);
+    const s = await db.get('s:' + sid);
+    if (!s || s.cls !== code) throw new Fail('NO_STUDENT', 404);
+    const key = rnd(24);
+    s.khs = (Array.isArray(s.khs) ? s.khs : []).concat(hash(key)).slice(-10);
+    await db.set('s:' + sid, s);
+    return { id: sid, key, cls: code, className: c.name };
+  },
+
   /* --- a student --- */
   async start(a) {
     const id = rnd(12), key = rnd(24), now = Date.now();
@@ -139,6 +170,8 @@ export const HANDLERS = {
     const sum = (await db.get('sum:' + s.id)) || { id: s.id, created: s.created };
     sum.name = clip(a.name, 60).trim() || sum.name || '';
     if (STAGES.includes(a.stage)) sum.stage = a.stage;
+    const top = s.data && s.data.quiz && s.data.quiz.result && s.data.quiz.result.top;
+    sum.arch = ['bold', 'simple', 'warm', 'explorer', 'sage', 'faith', 'playful'].includes(top) ? top : null;
     const p = Number(a.prog); if (Number.isFinite(p)) sum.prog = Math.max(0, Math.min(100, Math.round(p)));
     if (a.brief !== undefined) sum.brief = cleanBrief(a.brief);
     sum.updated = Date.now(); sum.cls = s.cls;
@@ -218,7 +251,7 @@ export const HANDLERS = {
   /* --- Claude jobs (the work itself runs in generate-background.js) --- */
   async genStart(a) {
     const s = await student(a);
-    const KINDS = ['heart', 'directions', 'more', 'refine', 'package'];
+    const KINDS = ['heart', 'directions', 'more', 'refine', 'package', 'plan', 'check', 'tidy'];
     if (!KINDS.includes(a.kind)) throw new Fail('BAD_KIND');
     if (!s.cls) throw new Fail('NEED_CLASS', 403);
     if (!process.env.ANTHROPIC_API_KEY && !globalThis.__bfhClaude) throw new Fail('NO_KEY', 503);
@@ -236,7 +269,18 @@ export const HANDLERS = {
       s.data = JSON.parse(raw);
     }
     const jid = rnd(16);
-    const opts = a.opts && typeof a.opts === 'object' ? JSON.parse(JSON.stringify(a.opts).slice(0, 60000)) : {};
+    const raw = a.opts && typeof a.opts === 'object' ? Object.assign({}, a.opts) : {};
+    let image = null;
+    if (a.kind === 'check') {   // a post or poster to check against the brand: kept apart from the job record
+      image = String(raw.image || '');
+      if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image) || image.length > 2400000) throw new Fail('BAD_IMAGE');
+      delete raw.image;
+    }
+    if (a.kind === 'tidy' && !String(raw.text || '').trim()) throw new Fail('EMPTY');
+    const ojs = JSON.stringify(raw);
+    if (ojs.length > 60000) throw new Fail('TOO_BIG', 413);
+    const opts = JSON.parse(ojs);
+    if (image) await db.set('img:' + jid, { data: image });
     await db.set('job:' + jid, { id: jid, sid: s.id, kind: a.kind, opts, status: 'queued', at: Date.now() });
     s.job = jid;
     await db.set('s:' + s.id, s);

@@ -311,6 +311,41 @@ body.km .copybox { font-family: 'Kantumruy Pro', var(--font); }
 .comments { padding-left: 1.1em; } .comments li { margin: 6px 0; }
 .votes div { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
 
+/* welcome (classroom link) */
+.roster { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; max-height: 60vh; overflow-y: auto; }
+.roster .opt small { width: auto; margin-left: auto; }
+.avatar { width: 38px; height: 38px; flex: none; border-radius: 50%; background: var(--head); color: var(--bg); display: grid; place-items: center; font: 800 1rem/1 var(--display); }
+
+/* voice */
+.voicebar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0 0; }
+.btn.listening { animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 45%, transparent); } 50% { box-shadow: 0 0 0 10px transparent; } }
+
+/* photo, logo files, brand check, plan */
+.photo-pick { display: flex; gap: 14px; align-items: center; background: var(--card); box-shadow: inset 0 0 0 2px var(--line); border-radius: var(--r); padding: 12px; margin: 6px 0 14px; }
+.photo-pick img, .photo-pick .ph { width: 72px; height: 72px; flex: none; border-radius: 20px; object-fit: cover; display: grid; place-items: center; background: var(--brand-soft); font-size: 1.6rem; }
+.photo-pick p { margin: 6px 0 0; }
+.logo-files { display: grid; gap: 10px; }
+.lf { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.logo-prev { width: 100%; min-height: 90px; display: flex; align-items: center; justify-content: center; border-radius: var(--r); padding: 10px;
+  background-color: #fff; background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+.lf-light .logo-prev { background: #2a2721; }
+.lf-badge .logo-prev canvas { max-width: 140px !important; }
+.check-res { display: flex; gap: 16px; align-items: center; margin: 14px 0 4px; }
+.ring { width: 84px; height: 84px; flex: none; border-radius: 50%; display: grid; place-items: center; position: relative; }
+.ring::after { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: var(--card); }
+.ring b { position: relative; z-index: 1; font: 900 1.6rem/1 var(--display); color: var(--head); }
+.check-res .lead { margin: 0; }
+.plan { list-style: none; padding: 0; margin: 12px 0 0; }
+.plan li { padding: 12px 0; border-top: 2px solid var(--line); }
+.plan-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.plan-head b { font-family: var(--display); font-weight: 800; }
+.plan p { margin: 4px 0; } .plan .cap { color: var(--muted); }
+
+/* online / install */
+.offline { position: sticky; top: 58px; z-index: 19; background: var(--marigold); color: var(--ink-0); text-align: center; font-weight: 700; font-size: .88rem; padding: 6px 12px; }
+.install { box-shadow: inset 4px 0 0 var(--brand), inset 0 0 0 2px var(--line); }
+
 /* print ("Save as PDF") */
 #print { display: none; }
 @page { size: A4; margin: 0; }

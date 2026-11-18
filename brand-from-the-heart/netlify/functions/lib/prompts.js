@@ -67,6 +67,10 @@ export const PACKAGE_SCHEMA = obj({
   posters: arr(PROMPT_ITEM)
 });
 
+export const PLAN_SCHEMA = obj({ days: arr(obj({ day: { type: 'integer' }, pillar: S, format: S, idea: BI, caption: BI })) });
+export const CHECK_SCHEMA = obj({ score: { type: 'integer' }, verdict: BI, good: arr(BI), fix: arr(BI), colours: BI, type: BI, words: BI });
+export const TIDY_SCHEMA = obj({ text: S });
+
 /* ---------------- the system prompt (stable — cached) ---------------- */
 function paletteLines() {
   return PALETTES.map(p => `${p.id} | ${p.mood} | ${p.name.en} | primary ${p.colors.primary} secondary ${p.colors.secondary} accent ${p.colors.accent} background ${p.colors.background} text ${p.colors.text}`).join('\n');
@@ -277,7 +281,7 @@ export async function runJob(kind, data, opts, call, progress) {
       { id: 'more', title: 'Close cousin — new colours', brief: 'Keep its personality and type feel; try a different but related palette and fresh taglines.', pal: [base.mood], font: [] },
       { id: 'more', title: 'Close cousin — new type', brief: 'Keep its colours close; try a different font pairing, voice and taglines.', pal: [base.mood], font: [] }
     ];
-    const settled = await Promise.allSettled(vs.map(v => call(sys, `${prof}\n\n${baseText}\n\nThe student said "show me more like this". Variation: ${v.title} — ${v.brief}\n\n${DIR_ASK}`, DIRECTION_SCHEMA, 16000)
+    const settled = await Promise.allSettled(vs.map(v => call(sys, `${prof}\n\n${baseText}\n\nThe student said "show me more like this". Variation: ${v.title} — ${v.brief}\n\n${DIR_ASK}`, DIRECTION_SCHEMA, 16000, { fast: true })
       .then(r => cleanDirection(Object.assign(r, { lane: 'more' }), Object.assign({}, v, { pal: [base.mood], font: [] })))));
     const dirs = settled.map(s => s.status === 'fulfilled' ? s.value : null).filter(Boolean);
     if (!dirs.length) throw new Error((settled[0].reason && settled[0].reason.message) || 'no variations');
@@ -290,12 +294,35 @@ export async function runJob(kind, data, opts, call, progress) {
     const cur = {};
     for (const k of REFINE_PARTS[opts.part]) cur[k] = dir[k];
     if (opts.part === 'palette' && opts.colors) cur.colors = cleanColors(opts.colors, dir.colors);
-    const r = await call(sys, `${prof}\n\n<direction>\nName: ${dir.name.en}. Personality: ${dir.personality.en}\n</direction>\n\n<part_to_change name="${opts.part}">\n${JSON.stringify(cur)}\n</part_to_change>\n\nThe student asked to make the ${opts.part} ${REFINE_HOW[opts.how]}. Keep what already works and stays true to them; change only this part. Answer with the new ${opts.part} as JSON (every text field in English and Khmer${opts.part === 'words' ? '; 8 taglines, 3 captions, 8 hashtags' : ''}).`, refineSchema(opts.part), 10000);
+    const r = await call(sys, `${prof}\n\n<direction>\nName: ${dir.name.en}. Personality: ${dir.personality.en}\n</direction>\n\n<part_to_change name="${opts.part}">\n${JSON.stringify(cur)}\n</part_to_change>\n\nThe student asked to make the ${opts.part} ${REFINE_HOW[opts.how]}. Keep what already works and stays true to them; change only this part. Answer with the new ${opts.part} as JSON (every text field in English and Khmer${opts.part === 'words' ? '; 8 taglines, 3 captions, 8 hashtags' : ''}).`, refineSchema(opts.part), 10000, { fast: true });
     return { part: opts.part, value: cleanPart(opts.part, r, dir) };
   }
   if (kind === 'package') {
-    const r = await call(sys, `${prof}\n\n${brandText(opts.brand)}\n\n${PACKAGE_ASK}`, PACKAGE_SCHEMA, 16000);
+    const r = await call(sys, `${prof}\n\n${brandText(opts.brand)}\n\n${PACKAGE_ASK}`, PACKAGE_SCHEMA, 16000, { fast: true });
     return cleanPackage(r);
+  }
+  if (kind === 'plan') {
+    const r = await call(sys, `${prof}\n\n${brandText(opts.brand)}\n\nMake this student a 30-day content plan as JSON: "days", exactly 30 items, day 1 to 30. Rotate through their 5 content pillars (use the pillar's English title in "pillar"); mix formats (reel, carousel, photo + caption, story, short testimony video, quote graphic, live or Q&A) — "format" in simple English. Each "idea" is one concrete, doable sentence for THIS student (their story, their people, their place in Cambodia); each "caption" is a ready-to-post first line or two in their voice. English and Khmer for idea and caption. Make Sundays lighter (a verse reference or a thank-you), and build a little story arc across the month.`, PLAN_SCHEMA, 16000, { fast: true });
+    const days = (Array.isArray(r.days) ? r.days : []).slice(0, 31).map((d, i) => ({ day: Number.isInteger(d.day) ? Math.max(1, Math.min(31, d.day)) : i + 1, pillar: clip(d.pillar, 80), format: clip(d.format, 60), idea: biOk(d.idea), caption: biOk(d.caption) })).filter(d => d.idea.en || d.idea.km);
+    if (!days.length) throw new Error('BAD_JSON');
+    return { days };
+  }
+  if (kind === 'check') {
+    const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(String(opts.image || ''));
+    if (!m) throw new Error('bad image');
+    const content = [
+      { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } },
+      { type: 'text', text: `${brandText(opts.brand)}\n\nThe image is a post, poster or graphic this student made. Check it against THEIR brand above, kindly and specifically, like an encouraging design teacher. As JSON: "score" 0–100 (how on-brand it is: colours, fonts/type feel, voice of any words, audience fit — not how "professional"), a one-sentence "verdict", 2–3 things that are "good", 2–3 concrete "fix" steps (most important first, e.g. "Change the yellow background to your background #FFF5E9"), and one line each on "colours", "type" and "words". English and Khmer for every text. If the image has no design in it (a random photo), say so kindly and score it low. Never comment on people's bodies or faces.` }
+    ];
+    const r = await call(sys, content, CHECK_SCHEMA, 6000, { fast: true });
+    const sc = Number(r.score);
+    return { score: Number.isFinite(sc) ? Math.max(0, Math.min(100, Math.round(sc))) : 0, verdict: biOk(r.verdict), good: biArr(r.good, 4), fix: biArr(r.fix, 4), colours: biOk(r.colours), type: biOk(r.type), words: biOk(r.words) };
+  }
+  if (kind === 'tidy') {
+    const text = clip(opts.text, 3000), lang = opts.lang === 'km' ? 'Khmer' : 'English';
+    const r = await call('You tidy up text that a student dictated with phone speech recognition. Fix spelling, spacing, punctuation and obvious mis-heard words. Keep their words, meaning, order and language; do not add ideas, do not translate, do not make it formal. For Khmer: correct Khmer spelling and spacing, end sentences with ។ Answer only with the JSON the schema asks for.',
+      `<dictated language="${lang}">\n${text}\n</dictated>`, TIDY_SCHEMA, 4000, { fast: true });
+    return { text: clip(r.text, 3000) || text };
   }
   throw new Error('unknown job');
 }

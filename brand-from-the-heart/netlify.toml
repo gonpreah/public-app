@@ -1,0 +1,15 @@
+# Brand From the Heart — its own Netlify site.
+# In Netlify: "Add new site" → set Base directory to  brand-from-the-heart
+# (or deploy this folder on its own). See README.md.
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

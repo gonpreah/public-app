@@ -1,0 +1,24 @@
+name: brand-from-the-heart tests
+on:
+  pull_request:
+    paths: ['brand-from-the-heart/**', '.github/workflows/brand-tests.yml']
+  push:
+    branches: [main]
+    paths: ['brand-from-the-heart/**']
+jobs:
+  test:
+    name: brand tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: brand-from-the-heart
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - run: node tests/test-data.mjs
+      - run: node tests/test-api.mjs
+      - run: npm install --no-save playwright && npx playwright install --with-deps chromium
+      - run: node tests/test-ui.mjs

@@ -80,6 +80,11 @@ Netlify site (base directory `brand-from-the-heart`), Blobs store ("bfh"), env v
 (`.github/workflows/brand-tests.yml`). GonPreah's rules above (no YWAM on screen, no comments) don't
 apply to it. See brand-from-the-heart/CLAUDE.md and its README.
 
+## Lordship (`lordship/`) — a separate app
+Not part of GonPreah: Uriah & Naomi's 5-day DTS teaching "Lordship: All In, Full of Joy" (Nov 2026), React +
+Vite, its own Netlify site (base directory `lordship`), Blobs store ("lordship"), env vars (`LS_*`), tests and CI
+(`.github/workflows/lordship-tests.yml`). GonPreah's rules above don't apply to it. See lordship/CLAUDE.md.
+
 ## Accounts
 A **username and password** (`registerPassword` / `loginPassword`; Nov 2026, Uriah: "a basic
 login besides Google") or Google sign-in (`loginGoogle` / `register`), then a username (unique,

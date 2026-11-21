@@ -187,7 +187,7 @@ export const CHURCH = {
   }
 };
 
-/* Connect page. PLACEHOLDER: Uriah to fill in every href below. */
+/* Connect page. Any href still containing PLACEHOLDER is hidden on the page until it's filled in. */
 export const LINKS = {
   support: { label: 'Support a Cambodian Leader', href: 'https://example.org/PLACEHOLDER-ywam-siem-reap-support' },
   instagram: [
@@ -195,7 +195,8 @@ export const LINKS = {
     { label: 'YWAM Experience Asia', href: 'https://instagram.com/PLACEHOLDER_ywamea' }
   ],
   people: [
-    { name: 'Uriah', links: [{ label: 'Instagram', href: 'https://instagram.com/PLACEHOLDER_uriah' }, { label: 'Facebook', href: 'https://facebook.com/PLACEHOLDER_uriah' }] },
+    { name: 'Uriah', links: [{ label: 'Instagram', href: 'https://www.instagram.com/you_ry_khmer/' }, { label: 'Facebook', href: 'https://www.facebook.com/pouyoury' },
+      { label: 'YouTube', href: 'https://youtube.com/user/uriahlyford' }, { label: 'TikTok', href: 'https://www.tiktok.com/@uriahlyford' }] },
     { name: 'Naomi', links: [{ label: 'Instagram', href: 'https://instagram.com/PLACEHOLDER_naomi' }, { label: 'Facebook', href: 'https://facebook.com/PLACEHOLDER_naomi' }] }
   ],
   contact: [

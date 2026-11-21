@@ -185,7 +185,8 @@ try {
   await p2.goto(U + '/#/church/questions');
   ok('class tools not reachable in church mode', (await p2.locator('main').textContent()).includes('Respond'));
   await p2.goto(U + '/#/church/connect');
-  ok('connect page: support button and contacts', (await p2.locator('.support').innerText()).includes('Support a Cambodian Leader') && (await p2.locator('main').textContent()).includes('WhatsApp'));
+  const cn = await p2.locator('main').textContent();
+  ok('connect page: real links shown, placeholders hidden', cn.includes('TikTok') && cn.includes('gonpreah.org') && (await p2.locator('a[href*="PLACEHOLDER"]').count()) === 0);
   await p2.goto(U + '/#/church/wheel');
   for (let i = 0; i < 9; i++) await p2.locator('.scale').nth(i).locator('button').nth(5).click();
   await p2.click('text=Start with the coach');

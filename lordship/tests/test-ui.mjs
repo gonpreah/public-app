@@ -7,7 +7,7 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(require.res
 const { chromium } = pw;
 
 globalThis.__lsStore = memStore();
-globalThis.__lsClaude = fakeClaude();
+globalThis.__lsClaude = fakeClaude({ delay: 400 });
 process.env.LS_CLASS_CODE = 'TEST1';
 process.env.LS_ADMIN_PASSWORD = 'admin';
 const ok = checker();
@@ -58,11 +58,14 @@ try {
   await page.goto(U + '/#/day/wed');
   await page.waitForSelector('.scripture');
   const wed = await text();
-  ok('day shows title, big idea, scripture text, questions', wed.includes('Laying Down') && wed.includes('take up his cross daily') && wed.includes('What is your Isaac'));
+  ok('day shows title, big idea, scripture text, questions', wed.includes('Laying Down') && wed.includes('take up his cross, and follow me') && wed.includes('What is your Isaac'));
   ok('all three Wednesday passages', (await page.locator('.scripture').count()) === 3);
   await page.waitForSelector('text=Slides for this day aren’t up yet');
   ok('no slides yet says so', true);
   ok('people group of the day shown', (await text()).includes('People group of the day'));
+  ok('Wednesday responds with Lay Down and Not so, Lord', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('Lay Down, Take Up'));
+  await page.click('text=I’ve responded today');
+  ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);
   await noScroll('day');
 
   /* admin: upload slides, a link */
@@ -102,19 +105,31 @@ try {
   ok('lowest areas shown', (await text()).includes('Lowest right now'));
   await noScroll('wheel');
   await page.click('text=Start with the coach');
-  await page.waitForSelector('.msg.assistant:not(.typing)');
+  await page.waitForSelector('.msg.live');
+  ok('the reply shows while it is written', (await page.locator('.msg.live').innerText()).length > 0);
+  await page.waitForSelector('.msg.assistant:not(.typing):not(.live)');
   ok('coach asks first', (await page.locator('.msg.assistant').first().innerText()).includes('?'));
+  ok('help link on the coach', (await page.locator('.helplink').getAttribute('href')) === '#/t/help');
   await page.fill('.say textarea', 'My peace is really low this week.');
   await page.click('.say button');
-  await page.waitForFunction(() => document.querySelectorAll('.msg.assistant:not(.typing)').length === 2);
+  await page.waitForFunction(() => document.querySelectorAll('.msg.assistant:not(.typing):not(.live)').length === 2);
   ok('reply comes back', (await page.locator('.msg.user').innerText()).includes('peace'));
   await page.click('text=Save my lay down / take up');
-  await page.waitForSelector('text=Saved', { timeout: 10000 });
+  await page.waitForSelector('.card h3:text-is("Saved")', { timeout: 15000 });
   ok('saved lay down / take up', (await text()).includes('Test laydown'));
   await page.click('text=Make "take up" a daily habit');
+  await page.click('text=Save today’s check');
+  await page.evaluate(() => { const h = JSON.parse(localStorage.getItem('gp.lordship.wheelHistory')); h[0].d = '2026-01-05'; h[0].out.faith = 1; localStorage.setItem('gp.lordship.wheelHistory', JSON.stringify(h)); });
+  await page.reload();
+  await page.waitForSelector('.prevline');
+  ok('an earlier check shows as a dashed line and a change', (await page.locator('.prevline').count()) >= 1 && (await page.locator('.pill.up').count()) >= 1);
+  await page.click('text=Add my numbers to the class totals');
   await page.reload();
   await page.waitForSelector('.msg.user');
   ok('chat kept on the phone after reload', (await page.locator('.msg.user').innerText()).includes('peace'));
+
+  await page.goto(U + '/#/t/help');
+  ok('help page: staff and emergency numbers', (await text()).includes('staff member') && (await text()).includes('999'));
 
   /* list + habits */
   await page.goto(U + '/#/t/list');
@@ -140,10 +155,10 @@ try {
   await page.goto(U + '/#/t/scroll');
   await page.fill('#draft', 'I keep thinking about young Lao believers and training them to lead.');
   await page.click('text=Start with the coach');
-  await page.waitForSelector('.msg.assistant:not(.typing)');
+  await page.waitForSelector('.msg.assistant:not(.typing):not(.live)');
   await page.fill('.say textarea', 'It started on outreach last year.');
   await page.click('.say button');
-  await page.waitForFunction(() => document.querySelectorAll('.msg.assistant:not(.typing)').length === 2);
+  await page.waitForFunction(() => document.querySelectorAll('.msg.assistant:not(.typing):not(.live)').length === 2);
   await page.click('text=Shape my scroll statement');
   await page.waitForSelector('.scroll-card');
   ok('scroll statement saved', (await page.locator('.scroll-card').innerText()).includes('Test scroll'));
@@ -154,6 +169,9 @@ try {
   await page.click('text=Declare it');
   await page.waitForSelector('.declare');
   ok('declared', (await page.locator('.declare').innerText()).includes('every two weeks'));
+  const [ics] = await Promise.all([page.waitForEvent('download'), page.click('text=Add 30- and 90-day check-ins to my calendar')]);
+  const icsText = require('node:fs').readFileSync(await ics.path(), 'utf8');
+  ok('calendar file has both check-ins with reminders', ics.suggestedFilename().endsWith('.ics') && (icsText.match(/BEGIN:VEVENT/g) || []).length === 2 && icsText.includes('VALARM') && icsText.includes('30-day check-in'));
   await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('gp.lordship.commit')); c.declaredAt = '2026-01-01'; localStorage.setItem('gp.lordship.commit', JSON.stringify(c)); });
   await page.goto(U + '/#/class');
   await page.reload();
@@ -174,9 +192,46 @@ try {
   await page.click('.chip:has-text("Thursday panel (")');
   ok('marked for the Thursday panel', (await text()).includes('How do I know'));
 
+  /* save my work, then restore on a fresh phone */
+  await page.goto(U + '/#/t/data');
+  await page.click('text=Save and get my code');
+  await page.waitForSelector('.bigcode');
+  const code = (await page.locator('.bigcode').innerText()).match(/[A-Z2-9]{5}-[A-Z2-9]{5}/)[0];
+  ok('backup code shown', !!code);
+
+  /* admin: class totals and the Thursday panel screen */
+  await page.goto(U + '/#/admin');
+  await page.click('.chip:has-text("Class totals")');
+  await page.waitForSelector('.stats');
+  const st = (await page.locator('.stats').innerText()).replace(/\s+/g, ' ');
+  ok('class totals: one sharing, committed, wheel bars', [st, await page.locator('.tbar').count()] && (await page.locator('.stats').innerText()).replace(/\s+/g, ' ').includes('1 sharing') && (await page.locator('.stats').innerText()).replace(/\s+/g, ' ').includes('1 committed') && (await page.locator('.tbar').count()) > 5, [st, await page.locator('.tbar').count()]);
+  await page.click('.chip:has-text("Questions")');
+  await page.click('text=Thursday panel screen');
+  await page.waitForSelector('.screen.panel');
+  ok('panel screen shows the question big', (await page.locator('.screen-q').innerText()).includes('date someone on my team') && (await page.locator('.top').count()) === 0);
+  await page.click('text=✓ Answered');
+  await page.waitForSelector('text=No panel questions yet.');
+  ok('answered on the panel moves it off', true);
+
+  /* light / dark */
+  await page.goto(U + '/#/class');
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.waitForSelector('.themebtn');
+  await page.click('.themebtn');   // auto → light
+  const light = await bg();
+  await page.click('.themebtn');   // light → dark
+  await page.waitForTimeout(400);
+  const dark = await bg();
+  ok('theme switches light → dark', light === 'rgb(250, 246, 240)' && dark === 'rgb(23, 21, 15)', [light, dark]);
+  await page.reload();
+  ok('theme remembered', (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark');
+  await noScroll('dark home');
+  await page.click('.themebtn');   // back to auto
+
   /* church mode, on a fresh phone */
   const p2 = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   p2.on('pageerror', e => errors.push(String(e)));
+  p2.on('dialog', d => d.accept());
   await p2.goto(U + '/?church');
   await p2.waitForSelector('.hero');
   const ch = await p2.locator('main').textContent();
@@ -190,12 +245,20 @@ try {
   await p2.goto(U + '/#/church/wheel');
   for (let i = 0; i < 9; i++) await p2.locator('.scale').nth(i).locator('button').nth(5).click();
   await p2.click('text=Start with the coach');
-  await p2.waitForSelector('.msg.assistant:not(.typing)');
+  await p2.waitForSelector('.msg.assistant:not(.typing):not(.live)');
   ok('church wheel coach works without a code', true);
   await p2.goto(U + '/#/church/notso');
   ok('Not so, Lord reflection', (await p2.locator('main').textContent()).includes('Not so, Lord; for I have never eaten'));
   await p2.evaluate(() => window.scrollTo(0, 0));
   ok('no sideways scroll: church', await p2.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  await p2.goto(U + '/#/church/data');
+  await p2.fill('input[aria-label="Your code"]', code.toLowerCase());
+  await p2.click('button:has-text("Restore")');
+  await p2.waitForSelector('text=Restored');
+  ok('restore by code on a new phone', (await p2.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.scroll') || '{}').statement || '')).includes('Test scroll'));
+  await p2.goto(U + '/#/church/screen');
+  await p2.waitForSelector('.screen');
+  ok('Sunday screen: question, QR, people group, no header', (await p2.locator('.screen-q').innerText()).includes('not so') && (await p2.locator('.screen svg[aria-label^="QR"]').count()) === 1 && (await p2.locator('.top').count()) === 0);
   await p2.goto(U + '/#/class');
   ok('class needs the code on a new phone', (await p2.locator('main').textContent()).includes('Class code'));
 

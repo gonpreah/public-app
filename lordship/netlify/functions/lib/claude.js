@@ -25,13 +25,15 @@ export async function callClaude(system, messages, schema, opts) {
   };
   let msg;
   const useFallbacks = process.env.LS_FALLBACKS !== 'off';
+  /* opts.onText(soFar) is called as the reply is written, so the page can show it growing. */
+  const run = (stream) => { if (opts && opts.onText) stream.on('text', (_d, soFar) => opts.onText(soFar)); return stream.finalMessage(); };
   try {
     msg = useFallbacks
-      ? await client.beta.messages.stream(Object.assign({ betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' }, params)).finalMessage()
-      : await client.messages.stream(params).finalMessage();
+      ? await run(client.beta.messages.stream(Object.assign({ betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' }, params)))
+      : await run(client.messages.stream(params));
   } catch (e) {
     if (useFallbacks && e instanceof Anthropic.BadRequestError && /fallback/i.test(e.message || '')) {
-      msg = await client.messages.stream(params).finalMessage();
+      msg = await run(client.messages.stream(params));
     } else throw e;
   }
   if (msg.stop_reason === 'refusal') throw new Error('REFUSED');

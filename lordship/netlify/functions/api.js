@@ -6,6 +6,9 @@
       sp:<day>:<kind>:<v>:<i> one part of an uploaded file (base64, ≤ 3 MB of file each)
       q:<id>                  an anonymous question: {id, text, topic, day, status} — no name, no device, no IP
       job:<id>                a coaching turn waiting for Claude (deleted once read; the chat itself lives on the phone)
+      bk:<code>               a cloud backup a student asked for: their own saved answers, found only by its code (180 days)
+      an:<class>:<anon>       anonymous class totals a student opted into: wheel numbers, HOT numbers, committed yes/no —
+                              keyed by a random id made on the phone, never a name
       n:<day>, nch:<day>, nq:<day>, bad:<day>   daily counters
 
     Who can do what:
@@ -45,6 +48,10 @@ const CAP_CHURCH = () => num(process.env.LS_CAP_CHURCH, 1000);
 const CAP_Q = () => num(process.env.LS_CAP_QUESTIONS, 400);
 async function bump(k) { const n = ((await db.get(k)) || 0) + 1; await db.set(k, n); return n; }
 
+const BK = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const bkCode = () => { const b = crypto.randomBytes(10); let s = ''; for (let i = 0; i < 10; i++) s += BK[b[i] % BK.length]; return s; };
+const normBk = (c) => { const s = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return /^[A-Z0-9]{10}$/.test(s) ? s : ''; };
+const fmtBk = (s) => s.slice(0, 5) + '-' + s.slice(5);
 const normCode = (c) => clip(c, 20).toUpperCase().replace(/[^A-Z0-9]/g, '');
 export async function cfg() {
   const c = (await db.get('cfg')) || {};
@@ -148,7 +155,66 @@ export const HANDLERS = {
     if (!j) throw new Fail('NO_JOB', 404);
     if ((j.status === 'queued' || j.status === 'running') && Date.now() - j.at > 5 * 60000) { j.status = 'error'; j.error = 'TIMEOUT'; }
     if (j.status === 'done' || j.status === 'error') await db.del('job:' + id);
-    return { status: j.status, result: j.result == null ? null : j.result, error: j.error || null };
+    return { status: j.status, result: j.result == null ? null : j.result, partial: j.partial || null, error: j.error || null };
+  },
+
+  /* --- "Save my work": a backup found only by its code (no account) --- */
+  async backupSave(a) {
+    const raw = JSON.stringify(a.data == null ? null : a.data);
+    if (!a.data || typeof a.data !== 'object' || Array.isArray(a.data)) throw new Fail('EMPTY');
+    if (raw.length > 400000) throw new Fail('TOO_BIG', 413);
+    let code = normBk(a.code);
+    if (code && !(await db.get('bk:' + code))) code = '';
+    if (!code) {
+      if (await bump('nb:' + today()) > num(process.env.LS_CAP_BACKUPS, 3000)) throw new Fail('LIMIT', 429);
+      code = bkCode();
+    }
+    await db.set('bk:' + code, { data: JSON.parse(raw), at: Date.now() });
+    return { code: fmtBk(code) };
+  },
+  async backupLoad(a) {
+    const code = normBk(a.code);
+    const k = 'nbx:' + today();
+    if (((await db.get(k)) || 0) > 2000) throw new Fail('LOCKED', 429);
+    const b = code && await db.get('bk:' + code);
+    if (!b || Date.now() - b.at > 180 * 86400000) { await bump(k); throw new Fail('NO_BACKUP', 404); }
+    return { data: b.data, at: b.at };
+  },
+
+  /* --- anonymous class totals (opt-in on the phone) --- */
+  async shareTotals(a) {
+    const c = await classOk(a);
+    const anon = String(a.anon || '');
+    if (!/^[a-z0-9]{16}$/.test(anon)) throw new Fail('BAD_ID');
+    const k = 'an:' + c.code + ':' + anon;
+    if (a.off) { await db.del(k); return { ok: true }; }
+    const nums = (o, max) => {
+      const out = {};
+      if (o && typeof o === 'object') for (const [id, v] of Object.entries(o).slice(0, 12)) {
+        const n = parseInt(v, 10);
+        if (/^[a-z]{2,12}$/.test(id) && n >= 1 && n <= max) out[id] = n;
+      }
+      return out;
+    };
+    const w = a.wheel || {};
+    await db.set(k, { out: nums(w.out, 10), in: nums(w.in, 10), hot: nums(a.hot, 5), committed: !!a.committed, day: today() });
+    return { ok: true };
+  },
+  async adminTotals(a) {
+    await admin(a);
+    const c = await cfg();
+    const sums = { out: {}, in: {}, hot: {} };
+    let n = 0, committed = 0, wheels = 0;
+    for (const k of await db.keys('an:' + c.code + ':')) {
+      const r = await db.get(k); if (!r) continue;
+      n++; if (r.committed) committed++;
+      if (Object.keys(r.out || {}).length + Object.keys(r.in || {}).length) wheels++;
+      for (const side of ['out', 'in', 'hot']) for (const [id, v] of Object.entries(r[side] || {})) {
+        const s = sums[side][id] || (sums[side][id] = { t: 0, n: 0 }); s.t += v; s.n++;
+      }
+    }
+    const avg = (o) => Object.fromEntries(Object.entries(o).map(([id, s]) => [id, { avg: Math.round(s.t / s.n * 10) / 10, n: s.n }]));
+    return { n, wheels, committed, out: avg(sums.out), in: avg(sums.in), hot: avg(sums.hot) };
   },
 
   /* --- the admin page --- */

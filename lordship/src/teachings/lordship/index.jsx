@@ -16,6 +16,9 @@ import Questions from './tools/Questions.jsx';
 import PeopleGroup from './tools/PeopleGroup.jsx';
 import Connect from './tools/Connect.jsx';
 import Day from './tools/Day.jsx';
+import Help from './tools/Help.jsx';
+import MyData from './tools/MyData.jsx';
+import Sunday from './tools/Sunday.jsx';
 
 const People = () => (<><h1>Pray for the unreached</h1><p className="muted">A new people group every day — most in Cambodia, Laos and South-East Asia.</p><PeopleGroup big /></>);
 
@@ -33,7 +36,10 @@ export const TOOLS = [
   { id: 'questions', emoji: '❓', title: 'Anonymous question box', sub: 'Ask anything', C: Questions, cls: true },
   { id: 'list', emoji: '📝', title: 'My list', sub: 'Lay down / take up', C: List, church: true, cls: true },
   { id: 'people', emoji: '🌏', title: 'People group of the day', sub: 'Pray for the unreached', C: People, church: true, cls: true },
-  { id: 'connect', emoji: '🤝', title: 'Connect', sub: 'Stay in touch', C: Connect, church: true }
+  { id: 'connect', emoji: '🤝', title: 'Connect', sub: 'Stay in touch', C: Connect, church: true },
+  { id: 'data', emoji: '💾', title: 'Save my work', sub: 'Back up with a code', C: MyData, church: true, cls: true },
+  { id: 'help', emoji: '💛', title: 'Need to talk to someone?', sub: 'Help, now', C: Help, church: true, cls: true, hidden: true },
+  { id: 'screen', emoji: '📽️', title: 'Sunday screen', sub: 'For the projector', C: Sunday, church: true, hidden: true, bare: true }
 ];
 
 export default { ...TEACHING, DAYS, TOOLS, Day };

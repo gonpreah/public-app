@@ -2,7 +2,7 @@
    and QR codes for the class and church links. Password: LS_ADMIN_PASSWORD in Netlify. */
 import { useEffect, useState } from 'react';
 import { api, errText } from './core/api.js';
-import { DAYS, TOPICS } from './teachings/lordship/content.js';
+import { DAYS, TOPICS, WHEEL_OUT, WHEEL_IN, GROUPS } from './teachings/lordship/content.js';
 import { toast, copyText } from './core/ui.jsx';
 import Qr from './core/Qr.jsx';
 
@@ -41,11 +41,12 @@ export default function Admin() {
     <>
       <h1>Admin</h1>
       {!d.hasKey && <p className="note small">No <code>ANTHROPIC_API_KEY</code> on the server yet — the coach won’t answer until it’s set in Netlify.</p>}
-      <div className="chips">{[['questions', 'Questions'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
+      <div className="chips">{[['questions', 'Questions'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
         <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}</div>
       {tab === 'class' && <ClassSettings pw={pw} cfg={d.cfg} onSaved={(cfg) => setD(Object.assign({}, d, { cfg }))} />}
       {tab === 'slides' && <SlidesAdmin pw={pw} slides={d.slides} onChange={(slides) => setD(Object.assign({}, d, { slides }))} />}
       {tab === 'questions' && <QuestionsAdmin pw={pw} />}
+      {tab === 'totals' && <Totals pw={pw} />}
       <button className="linkish" onClick={() => { ss.set(''); setPw(''); setD(null); }}>Sign out</button>
     </>
   );
@@ -86,7 +87,10 @@ function ClassSettings({ pw, cfg, onSaved }) {
         <h3>Church (public) link</h3>
         <Qr text={churchLink} />
         <p><code>{churchLink}</code></p>
-        <button className="btn soft small" onClick={() => copyText(churchLink)}>Copy</button>
+        <div className="row wrap" style={{ justifyContent: 'center' }}>
+          <button className="btn soft small" onClick={() => copyText(churchLink)}>Copy</button>
+          <a className="btn primary small" href="#/church/screen">▶ Sunday screen</a>
+        </div>
       </div>
     </>
   );
@@ -175,6 +179,7 @@ function QuestionsAdmin({ pw }) {
           <button key={k} className={'chip' + (f === k ? ' on' : '')} onClick={() => setF(k)}>{l} ({qs.filter(q => k === 'open' ? ['new', 'class', 'panel'].includes(q.status) : q.status === k).length})</button>)}
         <button className="chip" onClick={load}>↻</button>
       </div>
+      <a className="btn primary" href="#/panel">▶ Thursday panel screen ({qs.filter(q => q.status === 'panel').length})</a>
       {err && <p className="err">{err}</p>}
       {!shown.length && <p className="muted">No questions here.</p>}
       {shown.map(q => (
@@ -186,5 +191,69 @@ function QuestionsAdmin({ pw }) {
         </div>
       ))}
     </>
+  );
+}
+
+/* Anonymous class totals: averages from students who switched sharing on. */
+function Totals({ pw }) {
+  const [t, setT] = useState(null);
+  const [err, setErr] = useState('');
+  const load = async () => { try { setT(await api('adminTotals', { pw })); } catch (e) { setErr(errText(e)); } };
+  useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (err) return <p className="err">{err}</p>;
+  if (!t) return <p className="muted">Loading…</p>;
+  const col = (g) => (GROUPS.find(x => x.id === g) || {}).color;
+  const rows = (areas, side) => areas.map(a => ({ a, v: t[side][a.id] })).filter(x => x.v).sort((x, y) => x.v.avg - y.v.avg);
+  const Bars = ({ list }) => list.map(({ a, v }) => (
+    <div key={a.id} className="tbar"><span>{a.name}</span><div className="bar"><i style={{ width: v.avg * 10 + '%', background: col(a.g) }} /></div><b>{v.avg}</b></div>));
+  const hot = [['hx', 'Humble'], ['ox', 'Open'], ['tx', 'Transparent']].filter(([k]) => t.hot[k]);
+  return (
+    <>
+      <div className="stats">
+        <div><b>{t.n}</b><span>sharing</span></div><div><b>{t.wheels}</b><span>wheels</span></div><div><b>{t.committed}</b><span>committed</span></div>
+      </div>
+      <p className="muted small">Only students who switched on “Add my numbers to the class totals” — no names. Lowest first. <button className="linkish" onClick={load}>Refresh</button></p>
+      {t.wheels > 0 ? <>
+        <div className="card"><h3>Outer life</h3><Bars list={rows(WHEEL_OUT, 'out')} /></div>
+        <div className="card"><h3>Inner life</h3><Bars list={rows(WHEEL_IN, 'in')} /></div>
+      </> : <p className="muted">No wheels shared yet.</p>}
+      {hot.length > 0 && <div className="card"><h3>HOT (1–5)</h3>{hot.map(([k, l]) => <div key={k} className="tbar"><span>{l}</span><div className="bar"><i style={{ width: t.hot[k].avg * 20 + '%' }} /></div><b>{t.hot[k].avg}</b></div>)}</div>}
+    </>
+  );
+}
+
+/* The Thursday panel on the projector: the questions marked "Thursday panel", big, one at a time. */
+export function Panel() {
+  const [qs, setQs] = useState(null);
+  const [i, setI] = useState(0);
+  const [err, setErr] = useState('');
+  const pw = ss.get();
+  useEffect(() => {
+    document.body.classList.add('bigScreen');
+    api('adminQuestions', { pw }).then(r => setQs(r.questions.filter(q => q.status === 'panel'))).catch(e => setErr(errText(e)));
+    const key = (e) => { if (e.key === 'ArrowRight' || e.key === ' ') setI(x => x + 1); if (e.key === 'ArrowLeft') setI(x => Math.max(0, x - 1)); };
+    window.addEventListener('keydown', key);
+    return () => { document.body.classList.remove('bigScreen'); window.removeEventListener('keydown', key); };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (err) return <div className="screen"><p className="err">{err} <a href="#/admin">Sign in</a></p></div>;
+  if (!qs) return <div className="screen"><p>Loading…</p></div>;
+  const n = qs.length, k = Math.min(i, Math.max(0, n - 1)), q = qs[k];
+  async function answered() {
+    try { await api('adminMark', { pw, id: q.id, status: 'answered' }); setQs(qs.filter(x => x.id !== q.id)); } catch (e) { setErr(errText(e)); }
+  }
+  return (
+    <div className="screen panel">
+      <div className="screen-main">
+        <p className="eyebrow">Thursday panel · {n ? `${k + 1} of ${n}` : 'no questions'}</p>
+        {q ? <h1 className="screen-q" key={q.id}>{q.text}</h1> : <h1 className="screen-q">No panel questions yet.</h1>}
+        {q && <p className="screen-ref">{(TOPICS.find(t => t.id === q.topic) || {}).name} · asked anonymously</p>}
+      </div>
+      <div className="panel-nav">
+        <button className="btn ghost" disabled={k <= 0} onClick={() => setI(k - 1)}>‹ Back</button>
+        {q && <button className="btn soft" onClick={answered}>✓ Answered</button>}
+        <button className="btn primary" disabled={k >= n - 1} onClick={() => setI(k + 1)}>Next ›</button>
+      </div>
+      <a className="screen-exit" href="#/admin">✕</a>
+    </div>
   );
 }

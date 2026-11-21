@@ -3,11 +3,19 @@
 import { api } from './api.js';
 
 const blobs = {};
-export async function getSlides(code) { return (await api('slides', { code })).slides; }
+export async function getSlides(code) {
+  try { const s = (await api('slides', { code })).slides; try { localStorage.setItem('gp.lordship.slidesMeta', JSON.stringify(s)); } catch (e) { /* */ } return s; }
+  catch (e) { const s = JSON.parse(localStorage.getItem('gp.lordship.slidesMeta') || 'null'); if (s && e.code === 'OFFLINE') return s; throw e; }
+}
 
 export async function getFile(code, day, kind, meta, onProgress) {
   const key = `${day}:${kind}:${meta.v}`;
   if (blobs[key]) return blobs[key];
+  const cacheUrl = `/__slides/${day}/${kind}/${meta.v}`;   // kept on the phone once seen, for offline
+  try {
+    const hit = 'caches' in window && await (await caches.open('ls-slides')).match(cacheUrl);
+    if (hit) { blobs[key] = await hit.blob(); onProgress && onProgress(1); return blobs[key]; }
+  } catch (e) { /* no cache */ }
   const chunks = [];
   for (let i = 0; i < meta.parts; i++) {
     const { d } = await api('slideGet', { code, day, kind, i });
@@ -18,6 +26,7 @@ export async function getFile(code, day, kind, meta, onProgress) {
     onProgress && onProgress((i + 1) / meta.parts);
   }
   blobs[key] = new Blob(chunks, { type: meta.type || (kind === 'pdf' ? 'application/pdf' : 'application/octet-stream') });
+  try { if ('caches' in window) await (await caches.open('ls-slides')).put(cacheUrl, new Response(blobs[key])); } catch (e) { /* full */ }
   return blobs[key];
 }
 

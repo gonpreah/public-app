@@ -19,7 +19,7 @@ export default function LayDown({ code, church }) {
     <>
       <p className="eyebrow">Luke 9:23</p>
       <h1>Lay Down, Take Up</h1>
-      <p className="lead">“Let him deny himself, take up his cross daily, and follow me.”</p>
+      <p className="lead">“Let him deny himself, take up his cross, and follow me.”</p>
       <p className="muted">Pick an area. The coach will ask a few questions: what’s my “Not so, Lord” here, and what is God asking me to pick up? Go through as many as you like.</p>
       <div className="tiles">
         {LIFE_AREAS.map(x => (

@@ -15,7 +15,9 @@ export function ClassHome({ cls }) {
   const d = DAYS.find(x => x.id === tid);
   const due = dueCheckin(c);
   const t = todayStr();
-  const tools = TOOLS.filter(x => x.cls);
+  const tools = TOOLS.filter(x => x.cls && !x.hidden);
+  const [done] = useLocal(K.days, {});
+  const nDone = DAYS.filter(x => done[x.id]).length;
   return (
     <>
       <section className="hero">
@@ -23,6 +25,11 @@ export function ClassHome({ cls }) {
         <p className="eyebrow">{cls.name}</p>
         <h1>Lordship:<br /><em>All in,</em> full of joy</h1>
         <p className="hand">Uriah &amp; Naomi Lyford</p>
+        <div className="weekring" aria-label={`${nDone} of 5 days responded`}>
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="3.2" />
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--marigold)" strokeWidth="3.2" strokeLinecap="round" strokeDasharray={`${nDone / 5 * 100} 100`} transform="rotate(-90 18 18)" className="ringfill" /></svg>
+          <span><b>{nDone}/5</b><small>days</small></span>
+        </div>
       </section>
       {due && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/commit">🚩 <b>Time for your {due === 'd30' ? '30' : '90'}-day check-in</b> on “{c.text}”</a>}
       {d ? (
@@ -43,7 +50,7 @@ export function ClassHome({ cls }) {
 }
 
 export function ChurchHome() {
-  const tools = TOOLS.filter(x => x.church && !['list', 'connect', 'people'].includes(x.id));
+  const tools = TOOLS.filter(x => x.church && !x.hidden && !['list', 'connect', 'people', 'data'].includes(x.id));
   return (
     <>
       <section className="hero">
@@ -63,6 +70,7 @@ export function ChurchHome() {
       <div className="tiles">
         <Tile href="#/church/list" emoji="📝" title="My list" sub="What you saved" />
         <Tile href="#/church/connect" emoji="🤝" title="Connect" sub="Stay in touch" />
+        <Tile href="#/church/data" emoji="💾" title="Save my work" sub="Back up with a code" />
       </div>
     </>
   );

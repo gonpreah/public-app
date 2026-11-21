@@ -2,11 +2,14 @@
    (viewed in the app, PDF download, PPTX if uploaded), my notes, and today's people group. */
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { DAYS, TEACHING } from '../content.js';
-import { useLocal } from '../../../core/store.js';
+import { useLocal, todayStr } from '../../../core/store.js';
 import { K } from '../state.js';
 import { getSlides, getFile, saveBlob } from '../../../core/slides.js';
 import { errText } from '../../../core/api.js';
 import PeopleGroup from './PeopleGroup.jsx';
+import { burst } from '../../../core/ui.jsx';
+
+export const DAY_COLORS = { mon: '#e0503d', tue: '#e09a12', wed: '#7b4bd6', thu: '#ef5b2a', fri: '#1f44ff' };
 
 const PdfView = lazy(() => import('../../../core/PdfView.jsx'));
 let slidesCache = null;
@@ -22,10 +25,35 @@ export function todayDayId(weekStart) {
 }
 
 export function DayTabs({ cur, today }) {
+  const [done] = useLocal('lordship.daysDone', {});
   return (
     <div className="daytabs">
-      {DAYS.map(d => <a key={d.id} href={'#/day/' + d.id} className={(cur === d.id ? 'on ' : '') + (today === d.id ? 'today' : '')}>{d.name.slice(0, 3)}<small>{today === d.id ? 'today' : ''}</small></a>)}
+      {DAYS.map(d => <a key={d.id} href={'#/day/' + d.id} style={{ '--day': DAY_COLORS[d.id] }} className={(cur === d.id ? 'on ' : '') + (today === d.id ? 'today ' : '') + (done[d.id] ? 'done' : '')}>
+        {d.name.slice(0, 3)}<small>{done[d.id] ? '✓' : today === d.id ? 'today' : '\u00a0'}</small></a>)}
     </div>
+  );
+}
+
+const TOOL_NAMES = { wheel: ['🎯', 'The wheel'], habits: ['✅', 'Daily habits'], commit: ['🚩', 'My commitment'], godthing: ['⚖️', 'God thing or good thing?'],
+  laydown: ['🙌', 'Lay Down, Take Up'], notso: ['✋', '“Not so, Lord”'], hot: ['🔥', 'Stay HOT'], questions: ['❓', 'Question box'], scroll: ['📜', 'My Scroll'], growth: ['🌱', 'Self-Development Plan'] };
+
+function Respond({ d }) {
+  const [done, setDone] = useLocal('lordship.daysDone', {});
+  return (
+    <section className="respond" style={{ '--day': DAY_COLORS[d.id] }}>
+      <p className="eyebrow">Respond</p>
+      <h2>Today’s response</h2>
+      <div className="tiles one">
+        {d.respond.map((r, i) => (
+          <a key={r.tool + i} className="tile" href={'#/t/' + r.tool}>
+            <span className="em">{TOOL_NAMES[r.tool][0]}</span><span><b>{TOOL_NAMES[r.tool][1]}</b><small>{r.why}</small></span><span className="go" aria-hidden="true">›</span>
+          </a>
+        ))}
+      </div>
+      {done[d.id]
+        ? <p className="ok">✓ You responded on {done[d.id]}. <button className="linkish" onClick={() => { const n = Object.assign({}, done); delete n[d.id]; setDone(n); }}>Undo</button></p>
+        : <button className="btn primary big" onClick={(e) => { setDone(Object.assign({}, done, { [d.id]: todayStr() })); burst(e.currentTarget); }}>I’ve responded today</button>}
+    </section>
   );
 }
 
@@ -66,11 +94,13 @@ export default function Day({ code, id, weekStart }) {
   const [notes, setNotes] = useLocal(K.notes(d.id), '');
   const today = todayDayId(weekStart);
   return (
-    <>
+    <div className="dayview" style={{ '--day': DAY_COLORS[d.id] }}>
       <DayTabs cur={d.id} today={today} />
-      <p className="eyebrow">{d.name}</p>
-      <h1>{d.title}</h1>
-      <p className="bigidea">{d.bigIdea}</p>
+      <header className="dayhead" key={d.id}>
+        <p className="eyebrow">Day {DAYS.indexOf(d) + 1} · {d.name}</p>
+        <h1>{d.title}</h1>
+        <p className="bigidea">{d.bigIdea}</p>
+      </header>
       <h4>Scripture</h4>
       {d.scripture.map(s => <div className="scripture" key={s.ref}><b>{s.ref}</b><p>{s.text}</p></div>)}
       <p className="tiny muted">{TEACHING.translation}</p>
@@ -80,7 +110,8 @@ export default function Day({ code, id, weekStart }) {
       <Slides code={code} day={d.id} />
       <h4>My notes</h4>
       <textarea rows={4} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Stays on this phone" />
+      <Respond d={d} />
       <PeopleGroup />
-    </>
+    </div>
   );
 }

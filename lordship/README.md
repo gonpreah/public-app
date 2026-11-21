@@ -32,6 +32,11 @@ group, ways to join God's mission, and a small Connect page with the "Support a 
 sent in 3 MB parts) or a link; QR codes for the class and church links; the question box — mark
 "Answer in class", "Thursday panel", "Answered", hide or delete.
 
+**Also:** each day ends with a "Respond" step that opens that day's tools; calendar reminders for the
+30/90-day check-ins; "Save my work" (a backup code or a file); wheel history; the coach's replies appear as they're
+written; a "Need to talk to someone?" page on every coach; anonymous class totals (opt-in); a Thursday panel screen
+and a Sunday screen for the projector; works offline once opened; light and dark mode.
+
 ## Privacy
 Everything students write stays in their phone's localStorage (`gp.lordship.*`). The server keeps a coaching
 turn only until it's answered, then deletes it. Questions keep no name, account, device or IP.

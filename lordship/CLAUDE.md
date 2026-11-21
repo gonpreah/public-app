@@ -19,5 +19,17 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   for tools marked `church` (wheel, laydown, notso) on the server and in `index.jsx`.
 - **Privacy**: student data only in localStorage (`gp.lordship.*`); questions keep text, topic, day, status.
 - Scripture is the World English Bible (public domain) — keep it that way unless a licence is in hand.
+- **Nov 2026, second round** (Uriah: "do them all … more dynamic … light, dark"):
+  - each day ends with **Respond** (`respond` in content.js → tools) and "I've responded today" (`lordship.daysDone`, the ring on Home);
+  - the commitment's 30/90-day check-ins download as a calendar file with reminders (`core/ics.js`);
+  - **Save my work** (`data` tool): a backup found only by its code (`backupSave`/`backupLoad`, `bk:<code>`, 180 days) or a file;
+  - the coach's reply shows while it's written (`partial` on the job, polled every 0.7 s);
+  - wheel history (`lordship.wheelHistory`, a dashed line for the last check, ▲▼ changes);
+  - **anonymous class totals**, opt-in on the wheel page (`shareTotals`/`adminTotals`, `an:<class>:<random id>`: numbers only);
+  - "Need to talk to someone?" on every coach (`help` tool, `HELP` in content.js);
+  - the **Thursday panel screen** (`#/panel`) and the **Sunday screen** (`#/church/screen`) for the projector;
+  - offline: `public/sw.js` (app shell) and slides kept in Cache "ls-slides";
+  - light / dark / follow the phone (`core/theme.jsx`, `gp.theme`, `<html data-theme>`), and livelier visuals (day colours, a glowing hero, wheels that grow, little bursts).
+- Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

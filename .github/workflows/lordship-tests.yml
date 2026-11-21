@@ -1,0 +1,24 @@
+name: lordship tests
+on:
+  pull_request:
+    paths: ['lordship/**', '.github/workflows/lordship-tests.yml']
+  push:
+    branches: [main]
+    paths: ['lordship/**']
+jobs:
+  test:
+    name: lordship tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: lordship
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: node tests/test-api.mjs
+      - run: npm run build
+      - run: npm install --no-save playwright && npx playwright install --with-deps chromium
+      - run: node tests/test-ui.mjs

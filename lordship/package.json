@@ -1,0 +1,25 @@
+{
+  "name": "lordship",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Lordship: All In, Full of Joy — a 5-day DTS teaching app (React + Vite, Netlify Functions + Blobs + Claude).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "npm run build && node tests/serve.mjs",
+    "test": "node tests/test-api.mjs && npm run build && node tests/test-ui.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.10.0",
+    "@netlify/blobs": "^10.7.12",
+    "pdfjs-dist": "^5.4.0",
+    "qrcode-generator": "^1.5.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^7.0.0"
+  }
+}

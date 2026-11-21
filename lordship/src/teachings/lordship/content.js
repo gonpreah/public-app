@@ -189,7 +189,7 @@ export const CHURCH = {
 
 /* Connect page. Any href still containing PLACEHOLDER is hidden on the page until it's filled in. */
 export const LINKS = {
-  support: { label: 'Support a Cambodian Leader', href: 'https://example.org/PLACEHOLDER-ywam-siem-reap-support' },
+  support: { label: 'Support a Cambodian Leader', href: 'https://ywamsiemreap.org/give/staff/' },
   instagram: [
     { label: 'YWAM Siem Reap', href: 'https://instagram.com/PLACEHOLDER_ywamsiemreap' },
     { label: 'YWAM Experience Asia', href: 'https://instagram.com/PLACEHOLDER_ywamea' }

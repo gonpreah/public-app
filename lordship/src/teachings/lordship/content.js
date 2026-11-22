@@ -15,8 +15,12 @@ export const DAYS = [
     id: 'mon', dow: 1, name: 'Monday', title: "Lordship Doesn't Go Away",
     bigIdea: 'Jesus is Lord on the good days and the manna days. Complaining is what it sounds like when part of me is still trying to be in charge.',
     scripture: [
-      { ref: 'Numbers 11:1, 4–6', text: 'The people were complaining in the ears of Yahweh. When Yahweh heard it, his anger burned; and Yahweh’s fire burned among them, and consumed some of the outskirts of the camp. … The mixed multitude that was among them lusted exceedingly; and the children of Israel also wept again, and said, “Who will give us meat to eat? We remember the fish, which we ate in Egypt for nothing; the cucumbers, and the melons, and the leeks, and the onions, and the garlic; but now we have lost our appetite. There is nothing at all except this manna to look at.”' },
-      { ref: 'Philippians 2:14–15', text: 'Do all things without complaining and arguing, that you may become blameless and harmless, children of God without defect in the middle of a crooked and perverse generation, among whom you are seen as lights in the world.' }
+      { ref: 'Numbers 11:1, 4–6', text: 'The people were complaining in the ears of Yahweh. When Yahweh heard it, his anger burned; and Yahweh’s fire burned among them, and consumed some of the outskirts of the camp. … The mixed multitude that was among them lusted exceedingly: and the children of Israel also wept again, and said, “Who will give us meat to eat? We remember the fish, which we ate in Egypt for nothing; the cucumbers, and the melons, and the leeks, and the onions, and the garlic; but now we have lost our appetite. There is nothing at all except this manna to look at.”' },
+      { ref: 'Philippians 2:14–15', text: 'Do all things without murmurings and disputes, that you may become blameless and harmless, children of God without defect in the middle of a crooked and perverse generation, among whom you are seen as lights in the world.' }
+    ],
+    respond: [
+      { tool: 'wheel', why: 'Take an honest look at your whole life — heart, soul, mind and strength.' },
+      { tool: 'habits', why: 'Swap one complaint for one thank-you, every day this week.' }
     ],
     questions: [
       'What is your "manna" right now — the thing God is providing that you’re tired of?',
@@ -32,6 +36,10 @@ export const DAYS = [
       { ref: 'Matthew 21:28–31', text: '“But what do you think? A man had two sons, and he came to the first, and said, ‘Son, go work today in my vineyard.’ He answered, ‘I will not,’ but afterward he changed his mind, and went. He came to the second, and said the same thing. He answered, ‘I’m going, sir,’ but he didn’t go. Which of the two did the will of his father?” They said to him, “The first.”' },
       { ref: 'Luke 14:28', text: '“For which of you, desiring to build a tower, doesn’t first sit down and count the cost, to see if he has enough to complete it?”' }
     ],
+    respond: [
+      { tool: 'commit', why: 'Count the cost, then draft one thing you will actually do (you’ll declare it Friday).' },
+      { tool: 'godthing', why: 'Weigh something you’ve said yes to but haven’t done.' }
+    ],
     questions: [
       'Which son are you more like right now? Where have you said "I’m going, sir" and not gone?',
       'What’s one thing God has asked of you that you keep putting off?',
@@ -41,11 +49,15 @@ export const DAYS = [
   },
   {
     id: 'wed', dow: 3, name: 'Wednesday', title: 'Laying Down',
-    bigIdea: 'Every follower of Jesus has an Isaac — a good gift we can grip so tightly it becomes our god. Laying it down isn’t losing it; it’s trusting the Provider more than the provision.',
+    bigIdea: 'My plan or God’s plan? Every follower of Jesus has an Isaac — a good gift we grip so tightly it becomes our god. Laying it down isn’t losing it; it’s trusting the Provider more than the provision.',
     scripture: [
-      { ref: 'Luke 9:23', text: 'He said to all, “If anyone desires to come after me, let him deny himself, take up his cross daily, and follow me.”' },
-      { ref: 'Genesis 22:1–2, 14', text: 'After these things, God tested Abraham, and said to him, “Abraham!” He said, “Here I am.” He said, “Now take your son, your only son, Isaac, whom you love, and go into the land of Moriah. Offer him there as a burnt offering on one of the mountains which I will tell you of.” … Abraham called the name of that place “Yahweh Will Provide.” As it is said to this day, “On Yahweh’s mountain, it will be provided.”' },
-      { ref: 'Philippians 2:5–11', text: 'Have this in your mind, which was also in Christ Jesus, who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men. And being found in human form, he humbled himself, becoming obedient to death, yes, the death of the cross. Therefore God also highly exalted him, and gave to him the name which is above every name, that at the name of Jesus every knee should bow, of those in heaven, those on earth, and those under the earth, and that every tongue should confess that Jesus Christ is Lord, to the glory of God the Father.' }
+      { ref: 'Luke 9:23', text: 'He said to all, “If anyone desires to come after me, let him deny himself, take up his cross, and follow me.”' },
+      { ref: 'Genesis 22:1–2, 14', text: 'After these things, God tested Abraham, and said to him, “Abraham!” He said, “Here I am.” He said, “Now take your son, your only son, whom you love, even Isaac, and go into the land of Moriah. Offer him there as a burnt offering on one of the mountains which I will tell you of.” … Abraham called the name of that place Yahweh Will Provide. As it is said to this day, “On Yahweh’s mountain, it will be provided.”' },
+      { ref: 'Philippians 2:5–11', text: 'Have this in your mind, which was also in Christ Jesus, who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men. And being found in human form, he humbled himself, becoming obedient to death, yes, the death of the cross. Therefore God also highly exalted him, and gave to him the name which is above every name; that at the name of Jesus every knee should bow, of those in heaven, those on earth, and those under the earth, and that every tongue should confess that Jesus Christ is Lord, to the glory of God the Father.' }
+    ],
+    respond: [
+      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live — and name your Isaac.' },
+      { tool: 'notso', why: 'Find the place you say “Lord” and “not so” in the same breath.' }
     ],
     questions: [
       'What is your Isaac — the good thing you’d find hardest to hand back to God?',
@@ -59,7 +71,11 @@ export const DAYS = [
     bigIdea: 'Sin grows in the dark and loses its power in the light. Staying humble, open and transparent with a few safe people is how lordship stays real.',
     scripture: [
       { ref: '1 John 1:7', text: 'But if we walk in the light, as he is in the light, we have fellowship with one another, and the blood of Jesus Christ, his Son, cleanses us from all sin.' },
-      { ref: '2 Corinthians 12:9–10', text: 'He has said to me, “My grace is sufficient for you, for my power is made perfect in weakness.” Most gladly therefore I will rather glory in my weaknesses, that the power of Christ may rest on me. Therefore I take pleasure in weaknesses, in injuries, in necessities, in persecutions, and in distresses, for Christ’s sake. For when I am weak, then am I strong.' }
+      { ref: '2 Corinthians 12:9–10', text: 'He has said to me, “My grace is sufficient for you, for my power is made perfect in weakness.” Most gladly therefore I will rather glory in my weaknesses, that the power of Christ may rest on me. Therefore I take pleasure in weaknesses, in injuries, in necessities, in persecutions, in distresses, for Christ’s sake. For when I am weak, then am I strong.' }
+    ],
+    respond: [
+      { tool: 'hot', why: 'The honesty check, then map who speaks into your life — and the gaps.' },
+      { tool: 'questions', why: 'Ask the question you wouldn’t ask out loud. It’s anonymous.' }
     ],
     questions: [
       'Which is hardest for you: humble, open or transparent? Why?',
@@ -73,9 +89,15 @@ export const DAYS = [
     bigIdea: 'We don’t just lay down — we take up. A living sacrifice gets up off the altar every morning and does what it sees the Father doing.',
     scripture: [
       { ref: 'Romans 12:1', text: 'Therefore I urge you, brothers, by the mercies of God, to present your bodies a living sacrifice, holy, acceptable to God, which is your spiritual service.' },
-      { ref: '2 Timothy 2:3–6', text: 'You therefore must endure hardship as a good soldier of Christ Jesus. No soldier on duty entangles himself in the affairs of life, that he may please him who enrolled him as a soldier. Also, if anyone competes in athletics, he isn’t crowned unless he has competed by the rules. The farmer who labors must be the first to get a share of the crops.' },
+      { ref: '2 Timothy 2:3–6', text: 'You therefore must endure hardship, as a good soldier of Christ Jesus. No soldier on duty entangles himself in the affairs of life, that he may please him who enrolled him as a soldier. Also, if anyone competes in athletics, he isn’t crowned unless he has competed by the rules. The farmer who labors must be the first to get a share of the crops.' },
       { ref: 'Luke 4:18–19', text: '“The Spirit of the Lord is on me, because he has anointed me to preach good news to the poor. He has sent me to heal the broken hearted, to proclaim release to the captives, recovering of sight to the blind, to deliver those who are crushed, and to proclaim the acceptable year of the Lord.”' },
       { ref: 'John 5:19', text: 'Jesus therefore answered them, “Most certainly, I tell you, the Son can do nothing of himself, but what he sees the Father doing. For whatever things he does, these the Son also does likewise.”' }
+    ],
+    respond: [
+      { tool: 'scroll', why: 'Write what you sense is on your scroll.' },
+      { tool: 'godthing', why: 'Test an opportunity: God thing or good thing?' },
+      { tool: 'growth', why: 'Plan how you’ll keep growing while you serve.' },
+      { tool: 'commit', why: 'Throw down your commitment and declare it.' }
     ],
     questions: [
       'Soldier, athlete, farmer: which picture speaks to you most about the next season?',
@@ -116,16 +138,49 @@ export const WHEEL_IN = [
   { id: 'patience', name: 'Patience', g: 'strength', q: 'How patient am I with people, God and myself?' }
 ];
 
-/* Lay Down, Take Up: the areas to walk through. */
+/* My plan vs God's plan (it was "Lay Down, Take Up"): for each area, what I'm planning, what I sense God's plan is,
+   how close they are, and what I'll lay down and take up. Each area has a verse (WEB) and prompts for both sides. */
+export const PLAN_VERSE = { ref: 'Proverbs 16:9', text: 'A man’s heart plans his course, but Yahweh directs his steps.' };
+export const PLAN_VERSE2 = { ref: 'Isaiah 55:8–9', text: '“For my thoughts are not your thoughts, and your ways are not my ways,” says Yahweh. “For as the heavens are higher than the earth, so are my ways higher than your ways, and my thoughts than your thoughts.”' };
 export const LIFE_AREAS = [
-  { id: 'money', name: 'Money', emoji: '💸', hint: 'Support raising, spending, giving, saving, what you want to own.' },
-  { id: 'romance', name: 'Romance', emoji: '💛', hint: 'Singleness, dating, marriage, hopes, timelines.' },
-  { id: 'health', name: 'Health', emoji: '🏃', hint: 'Sleep, food, exercise, screens, rhythms.' },
-  { id: 'home', name: 'Where I live', emoji: '🏠', hint: 'Your country, city, home, being near family.' },
-  { id: 'team', name: 'My role on team', emoji: '🤝', hint: 'Position, title, being seen, serving behind the scenes.' },
-  { id: 'education', name: 'Education', emoji: '🎓', hint: 'Degrees, plans, the career you pictured.' },
-  { id: 'mentors', name: 'Mentors', emoji: '🧭', hint: 'Who speaks into your life, and whether you let them.' }
+  { id: 'future', name: 'My future', emoji: '🧭', hint: 'Where your life is heading in the next few years.',
+    mine: ['In 5 years I want to be…', 'The life I picture is…', 'What I’m most afraid of missing out on…'],
+    gods: ['What I sense God has made me for…', 'What keeps coming up when I pray…', 'What others see God doing in me…'],
+    verse: { ref: 'Ephesians 2:10', text: 'For we are his workmanship, created in Christ Jesus for good works, which God prepared before that we would walk in them.' } },
+  { id: 'money', name: 'Money', emoji: '💸', hint: 'Support raising, spending, giving, saving, what you want to own.',
+    mine: ['I’m saving for…', 'I feel secure when…', 'What I’d spend more on if I could…'],
+    gods: ['Where my treasure should be…', 'What generosity would look like…', 'Where I need to trust him to provide…'],
+    verse: { ref: 'Matthew 6:21, 33', text: 'For where your treasure is, there your heart will be also. … But seek first God’s Kingdom, and his righteousness; and all these things will be given to you as well.' } },
+  { id: 'romance', name: 'Romance', emoji: '💛', hint: 'Singleness, dating, marriage, hopes, timelines.',
+    mine: ['My timeline is…', 'The kind of person I want…', 'What I’m doing to make it happen…'],
+    gods: ['What God might be saying about this season…', 'What it would look like to trust him with it…', 'What wise people have told me…'],
+    verse: { ref: 'Psalm 37:4–5', text: 'Also delight yourself in Yahweh, and he will give you the desires of your heart. Commit your way to Yahweh. Trust also in him.' } },
+  { id: 'health', name: 'Health', emoji: '🏃', hint: 'Sleep, food, exercise, screens, rhythms.',
+    mine: ['My habits right now are…', 'What I use to cope…', 'What I keep meaning to change…'],
+    gods: ['How God sees my body…', 'What rest he might be inviting me into…', 'One rhythm that would honour him…'],
+    verse: { ref: '1 Corinthians 6:19–20', text: 'Or don’t you know that your body is a temple of the Holy Spirit who is in you, whom you have from God? You are not your own, for you were bought with a price. Therefore glorify God in your body and in your spirit, which are God’s.' } },
+  { id: 'home', name: 'Where I live', emoji: '🏠', hint: 'Your country, city, home, being near family.',
+    mine: ['Where I plan to live…', 'What I’d never want to give up…', 'Why that place matters to me…'],
+    gods: ['Where God might be sending me…', 'Who he might want me near…', 'What it would cost to go — or to stay…'],
+    verse: { ref: 'Acts 17:26–27', text: 'He made from one blood every nation of men to dwell on all the surface of the earth, having determined appointed seasons, and the boundaries of their dwellings, that they should seek the Lord, if perhaps they might reach out for him and find him, though he is not far from each one of us.' } },
+  { id: 'team', name: 'My role on team', emoji: '🤝', hint: 'Position, title, being seen, serving behind the scenes.',
+    mine: ['The role I want…', 'Where I want to be noticed…', 'What I’d rather not do…'],
+    gods: ['Where he might want me to serve…', 'Who I could make great…', 'What hidden faithfulness looks like…'],
+    verse: { ref: 'Mark 10:43–45', text: 'Whoever wants to become great among you shall be your servant. Whoever of you wants to become first among you, shall be bondservant of all. For the Son of Man also came not to be served, but to serve, and to give his life as a ransom for many.' } },
+  { id: 'education', name: 'Education & work', emoji: '🎓', hint: 'Degrees, plans, the career you pictured.',
+    mine: ['The study or career I planned…', 'Why I want it…', 'What others expect of me…'],
+    gods: ['How it could serve his purposes…', 'What he might be asking me to add — or drop…', 'Who I’d be doing it for…'],
+    verse: { ref: 'Colossians 3:23', text: 'And whatever you do, work heartily, as for the Lord, and not for men.' } },
+  { id: 'time', name: 'My time', emoji: '⏳', hint: 'Phone, free time, weekends, what fills your days.',
+    mine: ['Where my hours actually go…', 'What I do when I’m bored…', 'What I’d protect at all costs…'],
+    gods: ['What he’d want more of in my week…', 'Where I could make room for people…', 'What I’d stop if I counted my days…'],
+    verse: { ref: 'Psalm 90:12', text: 'So teach us to count our days, that we may gain a heart of wisdom.' } },
+  { id: 'mentors', name: 'Mentors', emoji: '🗣️', hint: 'Who speaks into your life, and whether you let them.',
+    mine: ['Who I go to (and who I avoid)…', 'What I don’t let anyone see…', 'How I make big decisions…'],
+    gods: ['Who God has put around me…', 'What I need to bring into the light…', 'Who I could ask to walk with me…'],
+    verse: { ref: 'Proverbs 15:22', text: 'Where there is no counsel, plans fail; but in a multitude of counselors they are established.' } }
 ];
+export const ALIGN = ['', 'Far apart', 'Some overlap', 'Getting closer', 'Mostly the same', 'One plan'];
 
 /* HOT check: 1 (not me) – 5 (very me). */
 export const HOT = [
@@ -167,6 +222,16 @@ export const PEOPLE_GROUPS = [
   { name: 'Acehnese', where: 'Indonesia', about: 'A strongly Muslim people at the northern tip of Sumatra, still remembered for the 2004 tsunami.', pray: 'Pray for peace, for good work and families, and for the Acehnese to hear of Jesus.' },
   { name: 'Mon', where: 'Myanmar & Thailand', about: 'An ancient Buddhist people who helped shape the culture of the region, now a minority.', pray: 'Pray for the Mon church to grow, and for peace in Myanmar.' }
 ];
+
+/* "Need to talk to someone now?" — shown from every coaching screen. Naomi's numbers fill in from LINKS.contact. */
+export const HELP = {
+  intro: 'You don’t have to carry this alone. If something is heavy right now, please talk to a real person today.',
+  staff: 'In the DTS: find any staff member or your small-group leader — tonight is not too soon. You won’t be in trouble for asking for help.',
+  emergency: [
+    { where: 'If you are in danger right now', text: 'Call local emergency services — Cambodia: 117 (police), 119 (ambulance). Malaysia: 999.' },
+    { where: 'Malaysia — someone to talk to', text: 'Befrienders Kuala Lumpur, 24 hours: 03-7627 2929 (befrienders.org.my).' }
+  ]
+};
 
 /* Church mode. */
 export const CHURCH = {

@@ -125,6 +125,42 @@ delete process.env.ANTHROPIC_API_KEY;
 ok('no key → NO_KEY', (await call('coachStart', { code: 'DTS26', tool: 'wheel', messages: [] })).error === 'NO_KEY');
 globalThis.__lsClaude = claude;
 
+/* --- the reply grows while it's written --- */
+globalThis.__lsClaude = fakeClaude({ delay: 250 });
+const pj = await call('coachStart', { code: 'DTS26', tool: 'wheel', messages: [] });
+const running = bg.work({ job: pj.job });
+await new Promise(r => setTimeout(r, 900));
+const mid = await call('coachJob', { job: pj.job });
+ok('partial reply while running', mid.status === 'running' && typeof mid.partial === 'string' && mid.partial.length > 0, mid);
+await running;
+const fin = await call('coachJob', { job: pj.job });
+ok('then the whole reply, no partial', fin.status === 'done' && fin.partial === null && /\?/.test(fin.result), fin);
+globalThis.__lsClaude = claude;
+
+/* --- backups: found only by their code --- */
+ok('empty backup refused', (await call('backupSave', { data: null })).error === 'EMPTY');
+const bk = await call('backupSave', { data: { 'lordship.scroll': { statement: 'Train Lao leaders' } } });
+ok('backup gives a code like ABCDE-FGHJK', /^[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(bk.code), bk);
+ok('load by code, any case/spacing', (await call('backupLoad', { code: bk.code.toLowerCase().replace('-', ' ') })).data['lordship.scroll'].statement === 'Train Lao leaders');
+const bk2 = await call('backupSave', { code: bk.code, data: { 'lordship.scroll': { statement: 'v2' } } });
+ok('saving again with the code keeps the code', bk2.code === bk.code && (await call('backupLoad', { code: bk.code })).data['lordship.scroll'].statement === 'v2');
+ok('unknown code', (await call('backupLoad', { code: 'AAAAA-AAAAA' })).error === 'NO_BACKUP');
+ok('a made-up code on save gets a new one', (await call('backupSave', { code: 'BBBBB-BBBBB', data: { a: 1 } })).code !== 'BBBBB-BBBBB');
+ok('too-big backup refused', (await call('backupSave', { data: { a: 'x'.repeat(410000) } })).error === 'TOO_BIG');
+
+/* --- anonymous class totals --- */
+ok('totals need the class code', (await call('shareTotals', { code: 'x', anon: 'a'.repeat(16) })).error === 'NO_CLASS');
+ok('bad anon id refused', (await call('shareTotals', { code: 'DTS26', anon: 'Sam' })).error === 'BAD_ID');
+await call('shareTotals', { code: 'DTS26', anon: 'a'.repeat(16), wheel: { out: { faith: 8, money: 99, 'Bad Key': 3 }, in: { peace: 2 } }, hot: { H: 4 }, committed: true, name: 'Sam' });
+await call('shareTotals', { code: 'DTS26', anon: 'b'.repeat(16), wheel: { out: { faith: 4 }, in: { peace: 6 } }, committed: false });
+await call('shareTotals', { code: 'DTS26', anon: 'b'.repeat(16), wheel: { out: { faith: 6 }, in: { peace: 6 } }, committed: false });
+const tot = await call('adminTotals', { pw: 'pw' });
+ok('totals: count, averages, commitments', tot.n === 2 && tot.committed === 1 && tot.out.faith.avg === 7 && tot.in.peace.avg === 4, tot);
+ok('out-of-range and odd keys dropped', !tot.out.money && !JSON.stringify(tot).includes('Bad Key'));
+ok('no names in totals', !all().includes('"Sam"'));
+ok('turning sharing off removes it', (await call('shareTotals', { code: 'DTS26', anon: 'b'.repeat(16), off: true })).ok && (await call('adminTotals', { pw: 'pw' })).n === 1);
+ok('totals need admin', (await call('adminTotals', { pw: 'x' })).error === 'BAD_PASSWORD');
+
 /* --- prompts --- */
 ok('every tool has instructions', Object.values(P.TOOLS).every(t => t.say.length > 50));
 ok('church tools are wheel, laydown, notso', Object.keys(P.TOOLS).filter(k => P.TOOLS[k].church).sort().join() === 'laydown,notso,wheel');

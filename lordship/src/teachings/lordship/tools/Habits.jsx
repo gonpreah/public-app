@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useLocal, todayStr, addDays } from '../../../core/store.js';
 import { K, addHabit, streakOf } from '../state.js';
+import { burst } from '../../../core/ui.jsx';
 
 export default function Habits() {
   const [hs, setHs] = useLocal(K.habits, []);
@@ -29,7 +30,7 @@ export default function Habits() {
           const s = streakOf(h.days, t);
           return (
             <div className="habit" key={h.id}>
-              <button className={'tick' + (h.days[t] ? ' on' : '')} onClick={() => toggle(h.id)} aria-pressed={!!h.days[t]} aria-label={'Done today: ' + h.name}>{h.days[t] ? '✓' : ''}</button>
+              <button className={'tick' + (h.days[t] ? ' on' : '')} onClick={(e) => { if (!h.days[t]) burst(e.currentTarget, 10); toggle(h.id); }} aria-pressed={!!h.days[t]} aria-label={'Done today: ' + h.name}>{h.days[t] ? '✓' : ''}</button>
               <div className="grow">
                 <b>{h.name}</b>
                 <div className="days14" aria-hidden="true">{last14.map(d => <i key={d} className={h.days[d] ? 'on' : ''} />)}</div>

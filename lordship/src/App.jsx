@@ -9,7 +9,8 @@ import { Spark, Toast } from './core/ui.jsx';
 import L from './teachings/lordship/index.jsx';
 import { ClassHome, ChurchHome } from './teachings/lordship/Home.jsx';
 import { todayDayId } from './teachings/lordship/tools/Day.jsx';
-import Admin from './Admin.jsx';
+import Admin, { Panel } from './Admin.jsx';
+import { ThemeToggle } from './core/theme.jsx';
 
 const CLS = 'lordship.class';
 
@@ -48,7 +49,7 @@ function Landing({ onJoin, initial }) {
         {err && <p className="err">{err}</p>}
         <button className="btn primary big" style={{ marginTop: 12 }} disabled={busy || code.trim().length < 4}>{busy ? 'Checking…' : 'Open this week’s class'}</button>
       </form>
-      <a className="tile" href="#/church"><span className="em">⛪</span><span><b>Visiting from church?</b><small>The wheel, the reflection, Lay Down Take Up and today’s people group — no code needed.</small></span></a>
+      <a className="tile" href="#/church"><span className="em">⛪</span><span><b>Visiting from church?</b><small>My plan vs God’s plan, the wheel, the reflection and today’s people group — no code needed.</small></span></a>
     </>
   );
 }
@@ -65,6 +66,9 @@ export default function App() {
 
   const church = r[0] === 'church';
   const admin = r[0] === 'admin';
+  if (r[0] === 'panel') return <><Panel /><Toast /></>;
+  const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
+  if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];
   const join = (c) => { write(CLS, c); setCls(c); go('class'); };
 
@@ -72,29 +76,29 @@ export default function App() {
   if (admin) page = <Admin />;
   else if (church) {
     const t = r[1] && L.TOOLS.find(x => x.id === r[1] && x.church);
-    page = t ? <><a className="back" href="#/church">‹ Home</a><t.C church code="" /></> : <ChurchHome />;
+    page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/church">‹ Home</a>}<t.C church code="" sub={r[2]} /></div> : <ChurchHome />;
   } else if (!cls || pending && pending.toUpperCase() !== (cls && cls.code)) {
     page = <Landing onJoin={join} initial={pending} />;
   } else if (r[0] === 'day') {
     page = <L.Day code={cls.code} id={r[1]} weekStart={cls.weekStart} />;
   } else if (r[0] === 't') {
     const t = L.TOOLS.find(x => x.id === r[1] && x.cls);
-    page = t ? <><a className="back" href="#/class">‹ Home</a><t.C code={cls.code} /></> : <ClassHome cls={cls} />;
+    page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/class">‹ Home</a>}<t.C code={cls.code} sub={r[2]} /></div> : <ClassHome cls={cls} />;
   } else page = <ClassHome cls={cls} />;
 
   const tid = cls && todayDayId(cls.weekStart);
   const nav = church
-    ? [['church', '🏠', 'Home'], ['church/wheel', '🎯', 'Wheel'], ['church/laydown', '🙌', 'Lay down'], ['church/people', '🌏', 'Pray'], ['church/connect', '🤝', 'Connect']]
+    ? [['church', '🏠', 'Home'], ['church/wheel', '🎯', 'Wheel'], ['church/laydown', '⚖️', 'My plan'], ['church/people', '🌏', 'Pray'], ['church/connect', '🤝', 'Connect']]
     : cls && needsClass ? [['class', '🏠', 'Home'], ['day/' + (tid || 'mon'), '📖', 'Sessions'], ['t/wheel', '🎯', 'Wheel'], ['t/habits', '✅', 'Habits'], ['t/questions', '❓', 'Ask']]
       : null;
   const here = r.join('/') || 'class';
-  const on = (p) => here === p || (p.startsWith('day/') && r[0] === 'day');
+  const on = (p) => here === p || (r.length > 2 && here.startsWith(p + '/')) || (p.startsWith('day/') && r[0] === 'day');
 
   return (
     <>
       <header className="top">
         <a className="brandmark" href={church ? '#/church' : '#/class'}><Spark size={20} color="var(--accent)" /> Lordship</a>
-        <span className="mode">{admin ? 'Admin' : church ? 'Public' : cls ? cls.name : ''}</span>
+        <span className="top-r"><span className="mode">{admin ? 'Admin' : church ? 'Public' : cls ? cls.name : ''}</span><ThemeToggle /></span>
       </header>
       <main>{page}</main>
       {nav && <nav className="bottom">{nav.map(([p, e, l]) => <a key={p} href={'#/' + p} className={on(p) ? 'on' : ''}><span aria-hidden="true">{e}</span>{l}</a>)}</nav>}

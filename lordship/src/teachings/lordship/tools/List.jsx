@@ -11,8 +11,8 @@ export default function List({ church }) {
   return (
     <>
       <p className="eyebrow">Personal</p>
-      <h1>My lay down / take up list</h1>
-      {!list.length && <p className="muted">Nothing yet. Try the <a href={church ? '#/church/wheel' : '#/t/wheel'}>wheel</a> or <a href={church ? '#/church/laydown' : '#/t/laydown'}>Lay Down, Take Up</a>.</p>}
+      <h1>Lay down / take up</h1><p className="muted">Where my plan and God’s plan differ — what I’m letting go of and what I’m picking up.</p>
+      {!list.length && <p className="muted">Nothing yet. Try the <a href={church ? '#/church/wheel' : '#/t/wheel'}>wheel</a> or <a href={church ? '#/church/laydown' : '#/t/laydown'}>My plan vs God’s plan</a>.</p>}
       {list.map(x => (
         <div className="card" key={x.id}>
           <p className="muted tiny">{x.from} · {x.at}</p>

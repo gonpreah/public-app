@@ -7,6 +7,44 @@ import { Spark, Tile } from '../../core/ui.jsx';
 import { todayDayId, DayTabs } from './tools/Day.jsx';
 import { dueCheckin } from './tools/Commit.jsx';
 import PeopleGroup from './tools/PeopleGroup.jsx';
+import { planAreas, Venn } from './tools/LayDown.jsx';
+import { ALIGN } from './content.js';
+
+function PlansGlance({ base }) {
+  const [plans] = useLocal('lordship.plans', {});
+  const areas = planAreas().filter(a => plans[a.id] && plans[a.id].align);
+  return (
+    <a className="card glance" href={base}>
+      <div className="glance-h"><div><p className="eyebrow">My plan vs God’s plan</p>
+        <h3>{areas.length ? `${areas.length} area${areas.length > 1 ? 's' : ''} laid side by side` : 'Lay your plans next to his'}</h3></div>
+        <Venn align={areas.length ? Math.round(areas.reduce((s, a) => s + plans[a.id].align, 0) / areas.length) : 2} size={80} labels={false} /></div>
+      {areas.length > 0 && <div className="glance-row">{areas.slice(0, 6).map(a => <span key={a.id} className="pill" title={ALIGN[plans[a.id].align]}>{a.emoji} {a.name} · {plans[a.id].align}/5</span>)}</div>}
+    </a>
+  );
+}
+
+function Welcome({ church }) {
+  const [seen, setSeen] = useLocal('lordship.welcomed' + (church ? '.church' : ''), false);
+  if (seen) return null;
+  return (
+    <div className="card welcome">
+      <h3>👋 How this works</h3>
+      <ol className="small">
+        {church ? <>
+          <li><b>My plan vs God’s plan</b> — lay your plans for money, romance, your future next to what you sense God’s plan is.</li>
+          <li><b>The wheel</b> — an honest look at your whole life.</li>
+          <li><b>Pray</b> for today’s unreached people group.</li>
+        </> : <>
+          <li>Each day: read the session, then do <b>today’s response</b> at the bottom.</li>
+          <li>At the heart of the week: <b>my plan vs God’s plan</b>, area by area.</li>
+          <li>Friday: write your scroll and <b>throw down your commitment</b>.</li>
+        </>}
+      </ol>
+      <p className="tiny muted">Everything you write stays on this phone. Use “Save my work” to keep a copy.</p>
+      <button className="btn soft small" onClick={() => setSeen(true)}>Got it</button>
+    </div>
+  );
+}
 
 export function ClassHome({ cls }) {
   const [hs] = useLocal(K.habits, []);
@@ -15,15 +53,24 @@ export function ClassHome({ cls }) {
   const d = DAYS.find(x => x.id === tid);
   const due = dueCheckin(c);
   const t = todayStr();
-  const tools = TOOLS.filter(x => x.cls);
+  const tools = TOOLS.filter(x => x.cls && !x.hidden);
+  const [done] = useLocal(K.days, {});
+  const nDone = DAYS.filter(x => done[x.id]).length;
   return (
     <>
       <section className="hero">
         <div className="spark-bg"><Spark size={110} color="var(--cobalt)" /></div>
         <p className="eyebrow">{cls.name}</p>
         <h1>Lordship:<br /><em>All in,</em> full of joy</h1>
+        <p className="tagline">My plan, or God’s plan?</p>
         <p className="hand">Uriah &amp; Naomi Lyford</p>
+        <div className="weekring" aria-label={`${nDone} of 5 days responded`}>
+          <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="3.2" />
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--marigold)" strokeWidth="3.2" strokeLinecap="round" strokeDasharray={`${nDone / 5 * 100} 100`} transform="rotate(-90 18 18)" className="ringfill" /></svg>
+          <span><b>{nDone}/5</b><small>days</small></span>
+        </div>
       </section>
+      <Welcome />
       {due && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/commit">🚩 <b>Time for your {due === 'd30' ? '30' : '90'}-day check-in</b> on “{c.text}”</a>}
       {d ? (
         <a className="card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href={'#/day/' + d.id}>
@@ -34,6 +81,7 @@ export function ClassHome({ cls }) {
         </a>
       ) : <h4>The week</h4>}
       <DayTabs cur={null} today={tid} />
+      <PlansGlance base="#/t/laydown" />
       {hs.length > 0 && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/habits">✅ Habits today: <b>{hs.filter(h => h.days[t]).length} of {hs.length}</b></a>}
       <h4>Tools</h4>
       <div className="tiles">{tools.map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
@@ -43,16 +91,19 @@ export function ClassHome({ cls }) {
 }
 
 export function ChurchHome() {
-  const tools = TOOLS.filter(x => x.church && !['list', 'connect', 'people'].includes(x.id));
+  const tools = TOOLS.filter(x => x.church && !x.hidden && !['list', 'connect', 'people', 'data'].includes(x.id));
   return (
     <>
       <section className="hero">
         <div className="spark-bg"><Spark size={110} color="var(--cobalt)" /></div>
         <p className="eyebrow">{TEACHING.by}</p>
         <h1>Lordship:<br /><em>All in,</em> full of joy</h1>
-        <p>Jesus is Lord — not just on Sunday, and not just of the easy parts. That’s good news: it leads to freedom and joy.</p>
+        <p className="tagline">My plan, or God’s plan?</p>
+        <p>Jesus is Lord — not just on Sunday, and not just of the easy parts. Laying our plans next to his is good news: it leads to freedom and joy.</p>
       </section>
       <p className="lead">{CHURCH.affirm}</p>
+      <Welcome church />
+      <PlansGlance base="#/church/laydown" />
       <h4>Respond</h4>
       <div className="tiles one">{tools.map(x => <Tile key={x.id} href={'#/church/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
       <PeopleGroup />
@@ -63,6 +114,7 @@ export function ChurchHome() {
       <div className="tiles">
         <Tile href="#/church/list" emoji="📝" title="My list" sub="What you saved" />
         <Tile href="#/church/connect" emoji="🤝" title="Connect" sub="Stay in touch" />
+        <Tile href="#/church/data" emoji="💾" title="Save my work" sub="Back up with a code" />
       </div>
     </>
   );

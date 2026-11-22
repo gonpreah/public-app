@@ -26,17 +26,27 @@ export async function work(body) {
   if (!j || j.status !== 'queued') return 'skip';
   j.status = 'running'; j.at = Date.now();
   await db.set('job:' + id, j);
+  const pending = { n: 0 };
   try {
     const r = buildRequest(j);
-    const result = await callClaude(r.system, r.messages, r.schema, { maxTokens: j.distill ? 3000 : 2000 });
-    Object.assign(j, { status: 'done', result, messages: null, context: null });
+    let last = 0, writing = false;
+    const onText = j.distill ? null : (soFar) => {   // show the reply growing: write what's there every ~0.6 s
+      if (writing || Date.now() - last < 600) return;
+      writing = true; last = Date.now(); pending.n++;
+      db.get('job:' + id).then(cur => (cur && cur.status === 'running') ? db.set('job:' + id, Object.assign(cur, { partial: soFar })) : null)
+        .catch(() => {}).finally(() => { writing = false; pending.n--; });
+    };
+    const result = await callClaude(r.system, r.messages, r.schema, { maxTokens: j.distill ? 3000 : 2000, onText });
+    Object.assign(j, { status: 'done', result, partial: null, messages: null, context: null });
   } catch (e) {
     const msg = String((e && e.message) || e);
     const code = ['NO_KEY', 'REFUSED', 'TOO_LONG', 'BAD_JSON'].includes(msg) ? msg
       : (e && e.status === 429) ? 'BUSY' : (e && e.status === 401) ? 'BAD_KEY' : (e && e.status >= 500) ? 'CLAUDE_DOWN' : 'FAILED';
     console.error('coach', id, j.tool, msg);
-    Object.assign(j, { status: 'error', error: code, messages: null, context: null });
+    Object.assign(j, { status: 'error', error: code, partial: null, messages: null, context: null });
   }
+  // a partial write still in flight must not land after the final answer
+  for (let i = 0; i < 50 && pending.n; i++) await new Promise(r => setTimeout(r, 50));
   await db.set('job:' + id, j);
   return 'ran';
 }

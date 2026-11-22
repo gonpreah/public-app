@@ -5,21 +5,24 @@ import { coach, errText } from './api.js';
 import { useLocal } from './store.js';
 import { Spark } from './ui.jsx';
 
-export default function Coach({ tool, code, context, storeKey, intro, canSave = true, saveLabel = 'Save what I’m taking away', onSaved, startLabel = 'Start with the coach' }) {
+export default function Coach({ tool, code, context, storeKey, intro, optional = true, canSave = true, saveLabel = 'Save what I’m taking away', onSaved, startLabel = 'Start with the coach' }) {
   const [msgs, setMsgs] = useLocal(storeKey, []);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
+  const [partial, setPartial] = useState('');
+  const [open, setOpen] = useState(false);
   const end = useRef(null);
-  useEffect(() => { if (msgs.length && end.current) end.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [msgs.length, busy]);
+  useEffect(() => { if (msgs.length && end.current) end.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [msgs.length, busy, partial.length > 0]);
 
   async function turn(next) {
-    setErr(''); setBusy('think');
+    setErr(''); setBusy('think'); setPartial('');
+    if (next.length) setMsgs(next);
     try {
-      const reply = await coach({ code, tool, messages: next, context });
+      const reply = await coach({ code, tool, messages: next, context, onPartial: setPartial });
       setMsgs(next.concat([{ role: 'assistant', content: String(reply || '').trim() || '…' }]));
     } catch (e) { setErr(errText(e)); setMsgs(next); }
-    setBusy('');
+    setBusy(''); setPartial('');
   }
   function send(e) {
     e && e.preventDefault();
@@ -35,15 +38,24 @@ export default function Coach({ tool, code, context, storeKey, intro, canSave = 
     setBusy('');
   }
   const userTurns = msgs.filter(m => m.role === 'user').length;
+  if (optional && !open && !msgs.length) return (
+    <button className="coach-mini" onClick={() => setOpen(true)}>
+      <span className="coach-av"><Spark size={14} color="currentColor" /></span>
+      <span><b>Stuck? Ask for a question</b><small>An optional AI coach asks one question at a time.</small></span><span className="go">›</span>
+    </button>
+  );
 
   return (
     <div className="coach card">
-      <div className="coach-h"><Spark size={18} color="var(--accent)" /> <b>Coach</b><span className="muted small"> · one question at a time</span></div>
+      <div className="coach-h"><span className="coach-av"><Spark size={16} color="currentColor" /></span> <b>Coach</b><span className="muted small"> · one question at a time</span>
+        <a className="helplink" href={(location.hash.startsWith('#/church') ? '#/church' : '#/t') + '/help'}>Need to talk to someone?</a></div>
       {intro && !msgs.length && <p className="muted">{intro}</p>}
       {!msgs.length && <button className="btn primary big" disabled={!!busy} onClick={() => turn([])}>{busy ? 'Thinking…' : startLabel}</button>}
       <div className="msgs">
         {msgs.map((m, i) => <div key={i} className={'msg ' + m.role}>{m.content}</div>)}
-        {busy === 'think' && <div className="msg assistant typing"><i /><i /><i /></div>}
+        {busy === 'think' && (partial
+          ? <div className="msg assistant live">{partial}<span className="caret" /></div>
+          : <div className="msg assistant typing" aria-label="The coach is thinking"><i /><i /><i /></div>)}
         <div ref={end} />
       </div>
       {err && <p className="err">{err}</p>}

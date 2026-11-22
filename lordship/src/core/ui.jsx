@@ -42,3 +42,20 @@ export async function shareText(text, title) {
 export async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast('Copied'); } catch (e) { toast('Couldn’t copy'); }
 }
+
+/* A small burst of sparks from a button: for "declared", "responded", a habit ticked. */
+export function burst(el, n = 14) {
+  try {
+    if (!el || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    const r = el.getBoundingClientRect();
+    const colors = ['#ffb323', '#1f44ff', '#e0503d', '#7b4bd6', '#2F7D4F'];
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('i');
+      s.className = 'spark-p';
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.4, d = 50 + Math.random() * 60;
+      s.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;background:${colors[i % colors.length]};--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px`;
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 900);
+    }
+  } catch (e) { /* decoration only */ }
+}

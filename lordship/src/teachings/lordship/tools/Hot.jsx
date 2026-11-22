@@ -2,7 +2,7 @@
    who speaks into which areas — with the gaps shown. */
 import { HOT, MENTOR_AREAS } from '../content.js';
 import { useLocal, uid } from '../../../core/store.js';
-import { K } from '../state.js';
+import { K, syncTotals } from '../state.js';
 
 const NOTE = {
   H: ['Humility grows when we practise saying "I was wrong" and "I need help." Start small this week.', 'You’re growing here. Keep asking for help early.', 'Lovely. Keep celebrating others — and receiving help.'],
@@ -10,8 +10,9 @@ const NOTE = {
   T: ['You’re not alone. Is there one safe person you could tell one true thing this week?', 'Some light, some shadow. What’s one thing still hidden?', 'Walking in the light (1 John 1:7). Keep it up — and keep it current.']
 };
 
-export default function Hot() {
-  const [hot, setHot] = useLocal(K.hot, {});
+export default function Hot({ code }) {
+  const [hot, setHot0] = useLocal(K.hot, {});
+  const setHot = (v) => { setHot0(v); syncTotals(code); };
   const [ms, setMs] = useLocal(K.mentors, []);
   const scores = HOT.map(h => {
     const vals = h.items.map((_, i) => hot[h.l + i]).filter(Boolean);

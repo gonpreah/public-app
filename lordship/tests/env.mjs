@@ -32,10 +32,14 @@ export function checker() {
 export function fakeClaude(opts) {
   opts = opts || {};
   const calls = [];
-  const fn = async (system, messages, schema) => {
+  const fn = async (system, messages, schema, copts) => {
     calls.push({ system, messages, schema });
     if (opts.fail) throw Object.assign(new Error('boom'), { status: 500 });
-    if (!schema) return `What feels most important to you about that? (${calls.length})`;
+    if (!schema) {
+      const reply = `What feels most important to you about that? (${calls.length})`;
+      if (copts && copts.onText) for (let i = 8; i < reply.length; i += 8) { copts.onText(reply.slice(0, i)); if (opts.delay) await new Promise(r => setTimeout(r, opts.delay)); }
+      return reply;
+    }
     const out = {};
     for (const [k, v] of Object.entries(schema.properties)) out[k] = v.enum ? v.enum[0] : `Test ${k}`;
     return out;

@@ -30,6 +30,13 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   - the **Thursday panel screen** (`#/panel`) and the **Sunday screen** (`#/church/screen`) for the projector;
   - offline: `public/sw.js` (app shell) and slides kept in Cache "ls-slides";
   - light / dark / follow the phone (`core/theme.jsx`, `gp.theme`, `<html data-theme>`), and livelier visuals (day colours, a glowing hero, wheels that grow, little bursts).
+- **My plan vs God's plan** (Nov 2026, Uriah: "all about my plan versus God's plan … I don't really love the coach thing"):
+  the centre of the app. The `laydown` tool (id kept for the server's church list) is now My plan vs God's plan (Proverbs 16:9):
+  nine areas (`LIFE_AREAS`: each with a WEB verse and prompts for "my plan" and "God's plan"), two columns, "How close are they?"
+  (two circles that move together, `Venn`, `ALIGN`), then "Not so, Lord" / lay down / take up → the list (`lordship.plans`).
+  The wheel sends its lowest spokes there (`openFromWheel`, custom areas `lordship.planAreas`); My Scroll is "my plan for my
+  life" vs "what God might have written"; God thing or good thing is my plan vs what the Father is doing, five checks, my own
+  verdict. **The coach is optional everywhere**: collapsed to "Stuck? Ask for a question" (`Coach optional`, default on).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

@@ -42,11 +42,12 @@ export function syncTotals(code, off, now) {
   let anon = read(K.anon, '');
   if (!/^[a-z0-9]{16}$/.test(anon)) { anon = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join(''); write(K.anon, anon); }
   clearTimeout(syncT);
-  syncT = setTimeout(() => {
+  const go = () => {
     const w = read(K.wheel, {});
     const hot = read(K.hot, {});
     const avg = (l) => { const v = [0, 1, 2].map(i => hot[l + i]).filter(Boolean); return v.length === 3 ? Math.round(v.reduce((a, b) => a + b, 0) / 3) : undefined; };
     const h = {}; ['H', 'O', 'T'].forEach(l => { const v = avg(l); if (v) h[l.toLowerCase() + 'x'] = v; });
-    api('shareTotals', off ? { code, anon, off: true } : { code, anon, wheel: { out: w.out || {}, in: w.in || {} }, hot: h, committed: !!read(K.commit, {}).declaredAt }).catch(() => {});
-  }, off || now ? 0 : 1500);
+    api('shareTotals', off ? { code, anon, off: true } : { code, anon, wheel: { out: w.out || {}, in: w.in || {} }, hot: h, committed: !!read(K.commit, {}).declaredAt }, { keepalive: true }).catch(() => {});
+  };
+  if (off || now) go(); else syncT = setTimeout(go, 1500);
 }

@@ -5,12 +5,13 @@ import { coach, errText } from './api.js';
 import { useLocal } from './store.js';
 import { Spark } from './ui.jsx';
 
-export default function Coach({ tool, code, context, storeKey, intro, canSave = true, saveLabel = 'Save what I’m taking away', onSaved, startLabel = 'Start with the coach' }) {
+export default function Coach({ tool, code, context, storeKey, intro, optional = true, canSave = true, saveLabel = 'Save what I’m taking away', onSaved, startLabel = 'Start with the coach' }) {
   const [msgs, setMsgs] = useLocal(storeKey, []);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
   const [partial, setPartial] = useState('');
+  const [open, setOpen] = useState(false);
   const end = useRef(null);
   useEffect(() => { if (msgs.length && end.current) end.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [msgs.length, busy, partial.length > 0]);
 
@@ -37,6 +38,12 @@ export default function Coach({ tool, code, context, storeKey, intro, canSave = 
     setBusy('');
   }
   const userTurns = msgs.filter(m => m.role === 'user').length;
+  if (optional && !open && !msgs.length) return (
+    <button className="coach-mini" onClick={() => setOpen(true)}>
+      <span className="coach-av"><Spark size={14} color="currentColor" /></span>
+      <span><b>Stuck? Ask for a question</b><small>An optional AI coach asks one question at a time.</small></span><span className="go">›</span>
+    </button>
+  );
 
   return (
     <div className="coach card">

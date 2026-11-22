@@ -49,7 +49,7 @@ function Landing({ onJoin, initial }) {
         {err && <p className="err">{err}</p>}
         <button className="btn primary big" style={{ marginTop: 12 }} disabled={busy || code.trim().length < 4}>{busy ? 'Checking…' : 'Open this week’s class'}</button>
       </form>
-      <a className="tile" href="#/church"><span className="em">⛪</span><span><b>Visiting from church?</b><small>The wheel, the reflection, Lay Down Take Up and today’s people group — no code needed.</small></span></a>
+      <a className="tile" href="#/church"><span className="em">⛪</span><span><b>Visiting from church?</b><small>My plan vs God’s plan, the wheel, the reflection and today’s people group — no code needed.</small></span></a>
     </>
   );
 }
@@ -76,23 +76,23 @@ export default function App() {
   if (admin) page = <Admin />;
   else if (church) {
     const t = r[1] && L.TOOLS.find(x => x.id === r[1] && x.church);
-    page = t ? <div className="toolpage" key={t.id}><a className="back" href="#/church">‹ Home</a><t.C church code="" /></div> : <ChurchHome />;
+    page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/church">‹ Home</a>}<t.C church code="" sub={r[2]} /></div> : <ChurchHome />;
   } else if (!cls || pending && pending.toUpperCase() !== (cls && cls.code)) {
     page = <Landing onJoin={join} initial={pending} />;
   } else if (r[0] === 'day') {
     page = <L.Day code={cls.code} id={r[1]} weekStart={cls.weekStart} />;
   } else if (r[0] === 't') {
     const t = L.TOOLS.find(x => x.id === r[1] && x.cls);
-    page = t ? <div className="toolpage" key={t.id}><a className="back" href="#/class">‹ Home</a><t.C code={cls.code} /></div> : <ClassHome cls={cls} />;
+    page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/class">‹ Home</a>}<t.C code={cls.code} sub={r[2]} /></div> : <ClassHome cls={cls} />;
   } else page = <ClassHome cls={cls} />;
 
   const tid = cls && todayDayId(cls.weekStart);
   const nav = church
-    ? [['church', '🏠', 'Home'], ['church/wheel', '🎯', 'Wheel'], ['church/laydown', '🙌', 'Lay down'], ['church/people', '🌏', 'Pray'], ['church/connect', '🤝', 'Connect']]
+    ? [['church', '🏠', 'Home'], ['church/wheel', '🎯', 'Wheel'], ['church/laydown', '⚖️', 'My plan'], ['church/people', '🌏', 'Pray'], ['church/connect', '🤝', 'Connect']]
     : cls && needsClass ? [['class', '🏠', 'Home'], ['day/' + (tid || 'mon'), '📖', 'Sessions'], ['t/wheel', '🎯', 'Wheel'], ['t/habits', '✅', 'Habits'], ['t/questions', '❓', 'Ask']]
       : null;
   const here = r.join('/') || 'class';
-  const on = (p) => here === p || (p.startsWith('day/') && r[0] === 'day');
+  const on = (p) => here === p || (r.length > 2 && here.startsWith(p + '/')) || (p.startsWith('day/') && r[0] === 'day');
 
   return (
     <>

@@ -1,10 +1,10 @@
 /* Talking to the server: one POST endpoint, plus the coach's background turns. */
 export class ApiError extends Error { constructor(code, status) { super(code); this.code = code; this.status = status; } }
 
-export async function api(fn, args) {
+export async function api(fn, args, opts) {
   let r;
   try {
-    r = await fetch('/.netlify/functions/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn, args: args || {} }) });
+    r = await fetch('/.netlify/functions/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fn, args: args || {} }), keepalive: !!(opts && opts.keepalive) });
   } catch (e) { throw new ApiError('OFFLINE', 0); }
   let j = {};
   try { j = await r.json(); } catch (e) { /* not JSON */ }

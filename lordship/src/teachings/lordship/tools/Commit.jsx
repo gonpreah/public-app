@@ -21,7 +21,7 @@ export default function Commit({ code }) {
   const [show, setShow] = useState(false);
   const [ck, setCk] = useState({ score: 0, note: '' });
   const due = dueCheckin(c);
-  const declare = () => { setC(Object.assign({}, c, { text: text.trim(), declaredAt: c.declaredAt || todayStr() })); setShow(true); setTimeout(() => syncTotals(code, false, true), 50); setTimeout(() => burst(document.querySelector('.declare .big'), 24), 250); };
+  const declare = () => { setC(Object.assign({}, c, { text: text.trim(), declaredAt: c.declaredAt || todayStr() })); setShow(true); syncTotals(code, false, true); setTimeout(() => burst(document.querySelector('.declare .big'), 24), 250); };
   const cal = () => downloadIcs([30, 90].map(n => ({ date: addDays(c.declaredAt || todayStr(), n), title: `Lordship: ${n}-day check-in`, text: `My commitment: “${c.text || text}”. Open the Lordship app and do your check-in — and tell your mentor how it’s going.` })), 'lordship-check-ins.ics');
   const msg = `My throw-down commitment from Lordship week (${c.declaredAt || todayStr()}):\n\n“${c.text || text}”\n\nWould you check in with me on this in 30 days and again in 90?`;
 

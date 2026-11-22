@@ -106,7 +106,7 @@ input[type=range] { padding: 0; border: 0; min-height: 32px; accent-color: var(-
 .hero .btn.primary { background: var(--marigold); color: var(--ink-0); }
 
 /* tiles */
-.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
 .tile { display: flex; gap: 10px; align-items: flex-start; padding: 14px; border-radius: var(--r); background: var(--card); box-shadow: inset 0 0 0 2px var(--line);
   text-decoration: none; color: var(--ink); min-height: 74px; transition: transform var(--quick), box-shadow var(--quick); }
 .tile:active { transform: scale(.98); }
@@ -314,3 +314,48 @@ body.bigScreen .top, body.bigScreen nav.bottom { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .hero::before, .hero .spark-bg, .hero h1 em, .screen::before, .declare::before, .wheel .wedge, .tile, .msg, .dayhead, .toolpage, .dayview { animation: none !important; }
 }
+
+/* ---------- My plan vs God's plan ---------- */
+:root { --mine: #1f44ff; --gods: #ffb323; }
+:root[data-theme="dark"] { --mine: #6f86ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mine: #6f86ff; } }
+.tagline { font: 800 1.15rem var(--display); color: var(--paper); margin: 4px 0 2px; letter-spacing: -.01em; }
+.venn { display: block; margin: 8px auto; overflow: visible; }
+.venn .vc { transition: transform .8s cubic-bezier(.34,1.56,.64,1); }
+.venn circle { stroke-width: 3; }
+.venn circle.mine { fill: color-mix(in srgb, var(--mine) 22%, transparent); stroke: var(--mine); }
+.venn circle.gods { fill: color-mix(in srgb, var(--gods) 30%, transparent); stroke: var(--gods); mix-blend-mode: multiply; }
+:root[data-theme="dark"] .venn circle.gods { mix-blend-mode: screen; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .venn circle.gods { mix-blend-mode: screen; } }
+.venn.one circle { animation: glowp 2.4s ease-in-out infinite; }
+@keyframes glowp { 50% { stroke-width: 6; } }
+.venn .vl { font: 800 13px var(--display); fill: var(--head); transition: opacity .4s, x .8s; }
+.twoplans { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 16px 0; }
+@media (min-width: 600px) { .twoplans { grid-template-columns: 1fr 1fr; } }
+.plan-col { border-radius: var(--r); padding: 16px; background: var(--card); animation: rise .5s var(--ease) both; }
+.plan-col.mine { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mine) 45%, var(--line)), inset 0 4px 0 var(--mine); }
+.plan-col.gods { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--gods) 60%, var(--line)), inset 0 4px 0 var(--gods); animation-delay: 80ms; }
+.plan-col h3 { margin: 4px 0 2px; display: flex; align-items: center; gap: 8px; }
+.plan-col textarea { margin-top: 8px; }
+.dotc { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.dotc.mine { background: var(--mine); } .dotc.gods { background: var(--gods); }
+.small-chips .chip { min-height: 34px; padding: 4px 11px; font-size: .82rem; font-weight: 600; }
+.align-card { text-align: center; }
+.align-chips { justify-content: center; }
+.planhero { display: flex; align-items: center; gap: 14px; margin: 10px 0; padding: 14px 16px; border-radius: 18px; background: linear-gradient(135deg, color-mix(in srgb, var(--mine) 12%, var(--card)), color-mix(in srgb, var(--gods) 16%, var(--card))); }
+.planhero .venn { margin: 0; flex: none; width: 120px; height: auto; }
+.planhero .lead { margin: 0; font-family: var(--display); font-weight: 700; color: var(--head); }
+.areatile { min-height: 70px; align-items: center; }
+.areatile.v { padding-right: 46px; }
+.tile b, .tile small { overflow-wrap: break-word; hyphens: auto; }
+.areatile.has { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--gods) 55%, var(--line)); }
+.minivenn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.minivenn .venn { margin: 0; }
+.twoplans.mini { gap: 8px; margin: 10px 0 4px; }
+.twoplans.mini .plan-col { padding: 10px 12px; animation: none; }
+.twoplans.mini p { margin: 4px 0 0; font-size: .9rem; white-space: pre-wrap; }
+.sumcard { display: block; text-decoration: none; color: inherit; }
+.coach-mini { display: flex; width: 100%; align-items: center; gap: 12px; margin: 18px 0; padding: 12px 14px; border: 2px dashed var(--line); border-radius: var(--r); background: transparent; color: var(--ink); text-align: left; cursor: pointer; font: inherit; transition: border-color .2s, background .2s; }
+.coach-mini:hover { border-color: var(--accent); background: var(--card); }
+.coach-mini small { display: block; color: var(--muted); font-size: .8rem; }
+.coach-mini .go { margin-left: auto; font-size: 1.4rem; color: var(--muted); }

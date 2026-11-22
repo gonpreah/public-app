@@ -6,6 +6,7 @@ import { GROUPS, WHEEL_OUT, WHEEL_IN } from '../content.js';
 import { useLocal, todayStr } from '../../../core/store.js';
 import { K, addToList, addHabit, syncTotals } from '../state.js';
 import Coach from '../../../core/Coach.jsx';
+import { openFromWheel } from './LayDown.jsx';
 import { toast, burst } from '../../../core/ui.jsx';
 
 const color = (g) => (GROUPS.find(x => x.id === g) || {}).color || '#888';
@@ -125,12 +126,20 @@ export default function Wheel({ code, church }) {
           <span><b>Add my numbers to the class totals</b><small>No name, no words — just your wheel numbers, your HOT scores and whether you’ve declared a commitment, averaged with everyone else so Uriah and Naomi know what to teach into. Switch off any time.</small></span>
         </label>
       )}
-      {rated >= 6
-        ? <Coach tool="wheel" code={code} context={wheelContext(w)} storeKey={K.chat('wheel', church ? 'church' : '')}
-            intro="When you’re ready, the coach will look at your wheel with you and help you pick one thing to lay down and one to take up."
+      {low.length > 0 && (
+        <div className="card">
+          <h3>My plan vs God’s plan, starting with the lowest</h3>
+          <p className="muted small">For each low area, write your plan next to what you sense God’s plan is — then decide what to lay down and take up.</p>
+          <div className="tiles one">{low.map(x => (
+            <button key={x.a.id} className="tile" onClick={() => openFromWheel(x.a, church)}>
+              <span className="em" style={{ background: color(x.a.g) + '22' }}>{x.v}</span><span><b>{x.a.name}</b><small>{x.a.q}</small></span><span className="go">›</span>
+            </button>))}</div>
+        </div>
+      )}
+      {rated >= 6 && <Coach tool="wheel" code={code} context={wheelContext(w)} storeKey={K.chat('wheel', church ? 'church' : '')}
+            intro="The coach can look at your wheel with you and help you pick one thing to lay down and one to take up."
             saveLabel="Save my lay down / take up"
-            onSaved={(r) => { const it = addToList({ from: 'Wheel', area: r.area, laydown: r.laydown, takeup: r.takeup }); setSaved(it); toast('Saved to your list'); }} />
-        : <p className="muted">Rate at least 6 areas to talk it through with the coach.</p>}
+            onSaved={(r) => { const it = addToList({ from: 'Wheel', area: r.area, laydown: r.laydown, takeup: r.takeup }); setSaved(it); toast('Saved to your list'); }} />}
       {saved && (
         <div className="card">
           <h3>Saved</h3>

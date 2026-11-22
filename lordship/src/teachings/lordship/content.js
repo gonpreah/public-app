@@ -49,14 +49,14 @@ export const DAYS = [
   },
   {
     id: 'wed', dow: 3, name: 'Wednesday', title: 'Laying Down',
-    bigIdea: 'Every follower of Jesus has an Isaac — a good gift we can grip so tightly it becomes our god. Laying it down isn’t losing it; it’s trusting the Provider more than the provision.',
+    bigIdea: 'My plan or God’s plan? Every follower of Jesus has an Isaac — a good gift we grip so tightly it becomes our god. Laying it down isn’t losing it; it’s trusting the Provider more than the provision.',
     scripture: [
       { ref: 'Luke 9:23', text: 'He said to all, “If anyone desires to come after me, let him deny himself, take up his cross, and follow me.”' },
       { ref: 'Genesis 22:1–2, 14', text: 'After these things, God tested Abraham, and said to him, “Abraham!” He said, “Here I am.” He said, “Now take your son, your only son, whom you love, even Isaac, and go into the land of Moriah. Offer him there as a burnt offering on one of the mountains which I will tell you of.” … Abraham called the name of that place Yahweh Will Provide. As it is said to this day, “On Yahweh’s mountain, it will be provided.”' },
       { ref: 'Philippians 2:5–11', text: 'Have this in your mind, which was also in Christ Jesus, who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men. And being found in human form, he humbled himself, becoming obedient to death, yes, the death of the cross. Therefore God also highly exalted him, and gave to him the name which is above every name; that at the name of Jesus every knee should bow, of those in heaven, those on earth, and those under the earth, and that every tongue should confess that Jesus Christ is Lord, to the glory of God the Father.' }
     ],
     respond: [
-      { tool: 'laydown', why: 'Walk through money, romance, health, where you live… and name your Isaac.' },
+      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live — and name your Isaac.' },
       { tool: 'notso', why: 'Find the place you say “Lord” and “not so” in the same breath.' }
     ],
     questions: [
@@ -138,16 +138,49 @@ export const WHEEL_IN = [
   { id: 'patience', name: 'Patience', g: 'strength', q: 'How patient am I with people, God and myself?' }
 ];
 
-/* Lay Down, Take Up: the areas to walk through. */
+/* My plan vs God's plan (it was "Lay Down, Take Up"): for each area, what I'm planning, what I sense God's plan is,
+   how close they are, and what I'll lay down and take up. Each area has a verse (WEB) and prompts for both sides. */
+export const PLAN_VERSE = { ref: 'Proverbs 16:9', text: 'A man’s heart plans his course, but Yahweh directs his steps.' };
+export const PLAN_VERSE2 = { ref: 'Isaiah 55:8–9', text: '“For my thoughts are not your thoughts, and your ways are not my ways,” says Yahweh. “For as the heavens are higher than the earth, so are my ways higher than your ways, and my thoughts than your thoughts.”' };
 export const LIFE_AREAS = [
-  { id: 'money', name: 'Money', emoji: '💸', hint: 'Support raising, spending, giving, saving, what you want to own.' },
-  { id: 'romance', name: 'Romance', emoji: '💛', hint: 'Singleness, dating, marriage, hopes, timelines.' },
-  { id: 'health', name: 'Health', emoji: '🏃', hint: 'Sleep, food, exercise, screens, rhythms.' },
-  { id: 'home', name: 'Where I live', emoji: '🏠', hint: 'Your country, city, home, being near family.' },
-  { id: 'team', name: 'My role on team', emoji: '🤝', hint: 'Position, title, being seen, serving behind the scenes.' },
-  { id: 'education', name: 'Education', emoji: '🎓', hint: 'Degrees, plans, the career you pictured.' },
-  { id: 'mentors', name: 'Mentors', emoji: '🧭', hint: 'Who speaks into your life, and whether you let them.' }
+  { id: 'future', name: 'My future', emoji: '🧭', hint: 'Where your life is heading in the next few years.',
+    mine: ['In 5 years I want to be…', 'The life I picture is…', 'What I’m most afraid of missing out on…'],
+    gods: ['What I sense God has made me for…', 'What keeps coming up when I pray…', 'What others see God doing in me…'],
+    verse: { ref: 'Ephesians 2:10', text: 'For we are his workmanship, created in Christ Jesus for good works, which God prepared before that we would walk in them.' } },
+  { id: 'money', name: 'Money', emoji: '💸', hint: 'Support raising, spending, giving, saving, what you want to own.',
+    mine: ['I’m saving for…', 'I feel secure when…', 'What I’d spend more on if I could…'],
+    gods: ['Where my treasure should be…', 'What generosity would look like…', 'Where I need to trust him to provide…'],
+    verse: { ref: 'Matthew 6:21, 33', text: 'For where your treasure is, there your heart will be also. … But seek first God’s Kingdom, and his righteousness; and all these things will be given to you as well.' } },
+  { id: 'romance', name: 'Romance', emoji: '💛', hint: 'Singleness, dating, marriage, hopes, timelines.',
+    mine: ['My timeline is…', 'The kind of person I want…', 'What I’m doing to make it happen…'],
+    gods: ['What God might be saying about this season…', 'What it would look like to trust him with it…', 'What wise people have told me…'],
+    verse: { ref: 'Psalm 37:4–5', text: 'Also delight yourself in Yahweh, and he will give you the desires of your heart. Commit your way to Yahweh. Trust also in him.' } },
+  { id: 'health', name: 'Health', emoji: '🏃', hint: 'Sleep, food, exercise, screens, rhythms.',
+    mine: ['My habits right now are…', 'What I use to cope…', 'What I keep meaning to change…'],
+    gods: ['How God sees my body…', 'What rest he might be inviting me into…', 'One rhythm that would honour him…'],
+    verse: { ref: '1 Corinthians 6:19–20', text: 'Or don’t you know that your body is a temple of the Holy Spirit who is in you, whom you have from God? You are not your own, for you were bought with a price. Therefore glorify God in your body and in your spirit, which are God’s.' } },
+  { id: 'home', name: 'Where I live', emoji: '🏠', hint: 'Your country, city, home, being near family.',
+    mine: ['Where I plan to live…', 'What I’d never want to give up…', 'Why that place matters to me…'],
+    gods: ['Where God might be sending me…', 'Who he might want me near…', 'What it would cost to go — or to stay…'],
+    verse: { ref: 'Acts 17:26–27', text: 'He made from one blood every nation of men to dwell on all the surface of the earth, having determined appointed seasons, and the boundaries of their dwellings, that they should seek the Lord, if perhaps they might reach out for him and find him, though he is not far from each one of us.' } },
+  { id: 'team', name: 'My role on team', emoji: '🤝', hint: 'Position, title, being seen, serving behind the scenes.',
+    mine: ['The role I want…', 'Where I want to be noticed…', 'What I’d rather not do…'],
+    gods: ['Where he might want me to serve…', 'Who I could make great…', 'What hidden faithfulness looks like…'],
+    verse: { ref: 'Mark 10:43–45', text: 'Whoever wants to become great among you shall be your servant. Whoever of you wants to become first among you, shall be bondservant of all. For the Son of Man also came not to be served, but to serve, and to give his life as a ransom for many.' } },
+  { id: 'education', name: 'Education & work', emoji: '🎓', hint: 'Degrees, plans, the career you pictured.',
+    mine: ['The study or career I planned…', 'Why I want it…', 'What others expect of me…'],
+    gods: ['How it could serve his purposes…', 'What he might be asking me to add — or drop…', 'Who I’d be doing it for…'],
+    verse: { ref: 'Colossians 3:23', text: 'And whatever you do, work heartily, as for the Lord, and not for men.' } },
+  { id: 'time', name: 'My time', emoji: '⏳', hint: 'Phone, free time, weekends, what fills your days.',
+    mine: ['Where my hours actually go…', 'What I do when I’m bored…', 'What I’d protect at all costs…'],
+    gods: ['What he’d want more of in my week…', 'Where I could make room for people…', 'What I’d stop if I counted my days…'],
+    verse: { ref: 'Psalm 90:12', text: 'So teach us to count our days, that we may gain a heart of wisdom.' } },
+  { id: 'mentors', name: 'Mentors', emoji: '🗣️', hint: 'Who speaks into your life, and whether you let them.',
+    mine: ['Who I go to (and who I avoid)…', 'What I don’t let anyone see…', 'How I make big decisions…'],
+    gods: ['Who God has put around me…', 'What I need to bring into the light…', 'Who I could ask to walk with me…'],
+    verse: { ref: 'Proverbs 15:22', text: 'Where there is no counsel, plans fail; but in a multitude of counselors they are established.' } }
 ];
+export const ALIGN = ['', 'Far apart', 'Some overlap', 'Getting closer', 'Mostly the same', 'One plan'];
 
 /* HOT check: 1 (not me) – 5 (very me). */
 export const HOT = [

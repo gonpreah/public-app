@@ -29,7 +29,7 @@ export const TOOLS = {
   },
   laydown: {
     church: true,
-    say: `Tool: Lay Down, Take Up. They are walking through one area of life (in the context). Ask coaching questions such as: What's my "Not so, Lord" here? What am I holding on to? What is God asking me to pick up? What would it look like this week? Keep to that one area.`,
+    say: `Tool: My plan vs God's plan (Proverbs 16:9). They are laying their own plan for one area of life next to what they sense God's plan is (both in the context; either may be blank). Ask questions such as: Where are the two plans different? What's my "Not so, Lord" here? What am I holding on to, and why? What would trusting God's plan look like this week? Don't tell them what God's plan is — help them listen. Keep to that one area.`,
     distill: { type: 'object', additionalProperties: false, required: ['notSoLord', 'laydown', 'takeup'],
       properties: { notSoLord: { type: 'string', description: 'their "Not so, Lord" in this area, under 20 words' },
         laydown: { type: 'string', description: 'what they will lay down, under 20 words' },

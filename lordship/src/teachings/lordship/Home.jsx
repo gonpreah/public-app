@@ -24,6 +24,7 @@ export function ClassHome({ cls }) {
         <div className="spark-bg"><Spark size={110} color="var(--cobalt)" /></div>
         <p className="eyebrow">{cls.name}</p>
         <h1>Lordship:<br /><em>All in,</em> full of joy</h1>
+        <p className="tagline">My plan, or God’s plan?</p>
         <p className="hand">Uriah &amp; Naomi Lyford</p>
         <div className="weekring" aria-label={`${nDone} of 5 days responded`}>
           <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="3.2" />
@@ -57,7 +58,8 @@ export function ChurchHome() {
         <div className="spark-bg"><Spark size={110} color="var(--cobalt)" /></div>
         <p className="eyebrow">{TEACHING.by}</p>
         <h1>Lordship:<br /><em>All in,</em> full of joy</h1>
-        <p>Jesus is Lord — not just on Sunday, and not just of the easy parts. That’s good news: it leads to freedom and joy.</p>
+        <p className="tagline">My plan, or God’s plan?</p>
+        <p>Jesus is Lord — not just on Sunday, and not just of the easy parts. Laying our plans next to his is good news: it leads to freedom and joy.</p>
       </section>
       <p className="lead">{CHURCH.affirm}</p>
       <h4>Respond</h4>

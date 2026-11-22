@@ -63,7 +63,7 @@ try {
   await page.waitForSelector('text=Slides for this day aren’t up yet');
   ok('no slides yet says so', true);
   ok('people group of the day shown', (await text()).includes('People group of the day'));
-  ok('Wednesday responds with Lay Down and Not so, Lord', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('Lay Down, Take Up'));
+  ok('Wednesday responds with My plan vs God’s plan and Not so, Lord', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
   await page.click('text=I’ve responded today');
   ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);
   await noScroll('day');
@@ -104,7 +104,7 @@ try {
   const np = await page.locator('.wheel path').count(); ok('wheel draws the ratings', np === 12, [np, await page.evaluate(() => localStorage.getItem('gp.lordship.wheel'))]);
   ok('lowest areas shown', (await text()).includes('Lowest right now'));
   await noScroll('wheel');
-  await page.click('text=Start with the coach');
+  await page.click('text=Stuck? Ask for a question'); await page.click('text=Start with the coach');
   await page.waitForSelector('.msg.live');
   ok('the reply shows while it is written', (await page.locator('.msg.live').innerText()).length > 0);
   await page.waitForSelector('.msg.assistant:not(.typing):not(.live)');
@@ -131,6 +131,54 @@ try {
   await page.goto(U + '/#/t/help');
   ok('help page: staff and emergency numbers', (await text()).includes('staff member') && (await text()).includes('999'));
 
+  /* my plan vs God's plan */
+  await page.goto(U + '/#/t/laydown');
+  ok('plan tool: Proverbs 16:9 and the areas', (await text()).includes('A man’s heart plans his course') && (await page.locator('.areatile').count()) >= 9);
+  await noScroll('plan overview');
+  await page.click('.areatile:has-text("Money")');
+  await page.waitForSelector('.twoplans');
+  ok('area: verse, my plan and God’s plan side by side', (await text()).includes('where your treasure is') && (await page.locator('.plan-col').count()) === 2);
+  await noScroll('plan area');
+  ok('one back link', (await page.locator('a.back').count()) === 1);
+  ok('coach is optional (collapsed)', (await page.locator('.coach-mini').count()) === 1 && (await page.locator('.coach .msgs').count()) === 0);
+  await page.click('.plan-col.mine .chip >> nth=0');
+  await page.locator('textarea[aria-label^="My plan"]').pressSequentially('a car by 25');
+  await page.fill('textarea[aria-label^="God\'s plan"]', 'Seek first his Kingdom; give more.');
+  ok('prompt chips start a line', (await page.locator('textarea[aria-label^="My plan"]').inputValue()).startsWith('I’m saving for… a car'));
+  await page.click('.align-chips .chip:has-text("Some overlap")');
+  ok('the two circles show how close they are', (await page.locator('.venn[aria-label*="Some overlap"]').count()) === 1);
+  await page.fill('input[placeholder="Lord, but not…"]', 'Lord, but not my car fund');
+  await page.fill('input[placeholder^="My plan for"]', 'Needing the car to feel secure');
+  await page.fill('input[placeholder="One thing I’ll actually do"]', 'Give 10% this month');
+  await page.click('text=Save to my list');
+  await page.click('a.back:has-text("All areas")');
+  await page.waitForSelector('.areatile.has .minivenn', { timeout: 5000 }).catch(() => {});
+  ok('overview shows the area started, with mini circles', (await page.locator('.areatile.has .minivenn').count()) === 1, [page.url(), await page.evaluate(() => localStorage.getItem('gp.lordship.plans')), await page.locator('.areatile.has').count()]);
+  await page.click('text=See them side by side');
+  await page.waitForSelector('.sumcard', { timeout: 5000 }).catch(() => {});
+  ok('side-by-side summary', (await text()).includes('a car by 25') && (await text()).includes('Seek first'));
+  await page.goto(U + '/#/t/list');
+  ok('lay down / take up saved', (await text()).includes('Give 10% this month') && (await text()).includes('Lord, but not my car fund'));
+
+  /* wheel → plan for the lowest area */
+  await page.goto(U + '/#/t/wheel');
+  await page.locator('.card', { hasText: 'starting with the lowest' }).locator('.tile').first().click();
+  await page.waitForSelector('.twoplans');
+  ok('wheel opens its lowest area in My plan vs God’s plan', page.url().includes('/t/laydown/w-') && (await page.locator('h1').innerText()).includes('🎯'));
+
+  /* God thing or good thing, without the coach */
+  await page.goto(U + '/#/t/godthing');
+  await page.fill('#what', 'Staffing the next DTS');
+  await page.fill('textarea[aria-label="My plan for it"]', 'I love it here and want to stay.');
+  await page.fill('textarea[aria-label="What I see the Father doing"]', 'Leaders keep asking me; doors are opening.');
+  for (const q of ['scroll', 'peace', 'wise']) await page.locator('.rate').filter({ hasText: { scroll: 'scroll', peace: 'peace', wise: 'Wise' }[q] }).locator('.chip:has-text("Yes")').click();
+  await page.locator('.rate', { hasText: 'praised me' }).locator('.chip:text-is("No")').click();
+  ok('checks move the circles', (await page.locator('.venn').count()) === 1 && (await text()).includes('3 of 5 checks'));
+  await page.click('.chip:has-text("God thing")');
+  await page.fill('input[placeholder^="Pray a week"]', 'Ask my mentor');
+  await page.click('button:has-text("Save")');
+  ok('decision saved without the coach', (await text()).includes('What I’ve weighed') && (await text()).includes('being seen'));
+
   /* list + habits */
   await page.goto(U + '/#/t/list');
   ok('list has the saved item', (await text()).includes('Test takeup'));
@@ -154,7 +202,7 @@ try {
   /* scroll */
   await page.goto(U + '/#/t/scroll');
   await page.fill('#draft', 'I keep thinking about young Lao believers and training them to lead.');
-  await page.click('text=Start with the coach');
+  await page.click('text=Stuck? Ask for a question'); await page.click('text=Start with the coach');
   await page.waitForSelector('.msg.assistant:not(.typing):not(.live)');
   await page.fill('.say textarea', 'It started on outreach last year.');
   await page.click('.say button');
@@ -235,7 +283,7 @@ try {
   await p2.goto(U + '/?church');
   await p2.waitForSelector('.hero');
   const ch = await p2.locator('main').textContent();
-  ok('church home: affirmation, tools, people group, join God’s mission', [ch.includes('Malaysia'), ch.includes('Lay Down, Take Up'), ch.includes('People group of the day'), ch.includes('Join God’s mission')].every(Boolean), ch.slice(0, 600)); void (ch.includes('Malaysia') && ch.includes('Lay Down, Take Up') && ch.includes('People group of the day') && ch.includes('Join God’s mission'));
+  ok('church home: affirmation, tools, people group, join God’s mission', [ch.includes('Malaysia'), ch.includes('My plan vs God’s plan'), ch.includes('People group of the day'), ch.includes('Join God’s mission')].every(Boolean), ch.slice(0, 600)); void (ch.includes('Malaysia') && ch.includes('Lay Down, Take Up') && ch.includes('People group of the day') && ch.includes('Join God’s mission'));
   ok('church home has no class-only tools', !ch.includes('Question box') && !ch.includes('My Scroll'));
   await p2.goto(U + '/#/church/questions');
   ok('class tools not reachable in church mode', (await p2.locator('main').textContent()).includes('Respond'));
@@ -244,7 +292,7 @@ try {
   ok('connect page: real links shown, placeholders hidden', cn.includes('TikTok') && cn.includes('gonpreah.org') && (await p2.locator('a.support[href="https://ywamsiemreap.org/give/staff/"]').count()) === 1 && (await p2.locator('a[href*="PLACEHOLDER"]').count()) === 0);
   await p2.goto(U + '/#/church/wheel');
   for (let i = 0; i < 9; i++) await p2.locator('.scale').nth(i).locator('button').nth(5).click();
-  await p2.click('text=Start with the coach');
+  await p2.click('text=Stuck? Ask for a question'); await p2.click('text=Start with the coach');
   await p2.waitForSelector('.msg.assistant:not(.typing):not(.live)');
   ok('church wheel coach works without a code', true);
   await p2.goto(U + '/#/church/notso');

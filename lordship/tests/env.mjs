@@ -48,12 +48,16 @@ export function fakeClaude(opts) {
   return fn;
 }
 
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg' };
 export async function serve(port) {
   const api = (await import('../netlify/functions/api.js')).default;
   const bg = await import('../netlify/functions/coach-background.js');
   const srv = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
+    if (url.pathname === '/app.webmanifest') {
+      const { manifestFor } = await import('../netlify/functions/manifest.js');
+      res.writeHead(200, { 'Content-Type': 'application/manifest+json' }); res.end(JSON.stringify(manifestFor(url.searchParams))); return;
+    }
     if (url.pathname.startsWith('/.netlify/functions/')) {
       const chunks = []; for await (const c of req) chunks.push(c);
       const body = Buffer.concat(chunks).toString();

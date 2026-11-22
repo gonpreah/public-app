@@ -52,6 +52,15 @@ try {
   await page.waitForSelector('nav.bottom');
   ok('class link opens the class home', (await text()).includes('Tools') && (await page.locator('.top .mode').innerText()).includes('Lordship DTS'));
   ok('code removed from the address', !page.url().includes('class='));
+  const mhref = await page.locator('#manifest').getAttribute('href');
+  const man = await (await page.request.get(U + mhref)).json();
+  ok('Home Screen app opens straight into the class', mhref === '/app.webmanifest?class=TEST1' && man.start_url === '/?class=TEST1' && man.display === 'standalone' && man.icons.some(i => i.sizes === '512x512'));
+  ok('install card on Home', (await page.locator('.install').count()) === 1);
+  await page.click('.install button:has-text("Add")');
+  ok('install sheet with steps', (await page.locator('.sheet').innerText()).includes('Add to Home screen'));
+  await page.click('.sheet .install-x');
+  await page.click('.install .install-x');
+  ok('"Later" hides the install card', (await page.locator('.install').count()) === 0);
   await noScroll('class home');
 
   /* a day */
@@ -304,6 +313,7 @@ try {
   p2.on('dialog', d => d.accept());
   await p2.goto(U + '/?church');
   await p2.waitForSelector('.hero');
+  ok('church: manifest opens church mode', (await p2.locator('#manifest').getAttribute('href')) === '/app.webmanifest?church=1');
   const ch = await p2.locator('main').textContent();
   ok('church home: affirmation, tools, people group, join God’s mission', [ch.includes('Malaysia'), ch.includes('My plan vs God’s plan'), ch.includes('People group of the day'), ch.includes('Join God’s mission')].every(Boolean), ch.slice(0, 600)); void (ch.includes('Malaysia') && ch.includes('Lay Down, Take Up') && ch.includes('People group of the day') && ch.includes('Join God’s mission'));
   ok('church home has no class-only tools', !ch.includes('Question box') && !ch.includes('My Scroll'));
@@ -331,6 +341,18 @@ try {
   ok('Sunday screen: question, QR, people group, no header', (await p2.locator('.screen-q').innerText()).includes('not so') && (await p2.locator('.screen svg[aria-label^="QR"]').count()) === 1 && (await p2.locator('.top').count()) === 0);
   await p2.goto(U + '/#/class');
   ok('class needs the code on a new phone', (await p2.locator('main').textContent()).includes('Class code'));
+
+  /* iPhone Safari and Instagram's browser get the right steps */
+  const iphone = await (await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' })).newPage();
+  await iphone.goto(U + '/?church'); await iphone.waitForSelector('.install');
+  await iphone.click('.install button:has-text("Add")');
+  ok('iPhone: Share → Add to Home Screen steps', (await iphone.locator('.sheet').innerText()).includes('Add to Home Screen') && (await iphone.locator('.point-down').count()) === 1);
+  const insta = await (await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 300.0' })).newPage();
+  await insta.goto(U + '/?church'); await insta.waitForSelector('.install');
+  await insta.click('.install button:has-text("Add")');
+  ok('Instagram browser: copy the link and open Safari', (await insta.locator('.sheet').innerText()).includes('Copy link'));
+  const ps = await (await page.request.get(U + '/icon-512.png')).body();
+  ok('app icons exist', ps.length > 5000 && (await page.request.get(U + '/apple-touch-icon.png')).ok());
 
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {

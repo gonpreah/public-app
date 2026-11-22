@@ -258,8 +258,8 @@ export const CHURCH = {
 export const LINKS = {
   support: { label: 'Support a Cambodian Leader', href: 'https://ywamsiemreap.org/give/staff/' },
   instagram: [
-    { label: 'YWAM Siem Reap', href: 'https://instagram.com/PLACEHOLDER_ywamsiemreap' },
-    { label: 'YWAM Experience Asia', href: 'https://instagram.com/PLACEHOLDER_ywamea' }
+    { label: 'YWAM Siem Reap', href: 'https://www.instagram.com/ywamsiemreap/' },
+    { label: 'YWAM Experience Asia', href: 'https://www.instagram.com/ywamea/' }
   ],
   people: [
     { name: 'Uriah', links: [{ label: 'Instagram', href: 'https://www.instagram.com/you_ry_khmer/' }, { label: 'Facebook', href: 'https://www.facebook.com/pouyoury' },

@@ -15,10 +15,11 @@ export default function Sunday() {
         <p className="eyebrow"><Spark size={18} color="var(--marigold)" /> Lordship · All in, full of joy</p>
         <h1 className="screen-q">Where do I call Jesus “Lord” — and also say <em>“not so”</em>?</h1>
         <p className="screen-ref">“Not so, Lord …” — Peter, {CHURCH.notSo.ref}</p>
-        <div className="screen-pg">
+        <div className="screen-pg" style={g.photo ? { backgroundImage: `linear-gradient(90deg, rgba(23,21,15,.92) 45%, rgba(23,21,15,.55)), url(${g.photo.src})` } : null}>
           <p className="eyebrow">Pray today for</p>
           <h2>{g.name} <span>· {g.where}</span></h2>
           <p>{g.pray}</p>
+          {g.photo && <p className="screen-credit">Photo: {g.photo.caption} · {g.photo.by} · {g.photo.license}</p>}
         </div>
       </div>
       <div className="screen-qr">

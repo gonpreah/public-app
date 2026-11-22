@@ -21,6 +21,8 @@ export default function Commit({ code }) {
   const [show, setShow] = useState(false);
   const [ck, setCk] = useState({ score: 0, note: '' });
   const due = dueCheckin(c);
+  const [list] = useLocal(K.list, []);
+  const ideas = [...new Set(list.map(x => x.takeup || x.yes).filter(Boolean))].slice(0, 4);
   const declare = () => { setC(Object.assign({}, c, { text: text.trim(), declaredAt: c.declaredAt || todayStr() })); setShow(true); syncTotals(code, false, true); setTimeout(() => burst(document.querySelector('.declare .big'), 24), 250); };
   const cal = () => downloadIcs([30, 90].map(n => ({ date: addDays(c.declaredAt || todayStr(), n), title: `Lordship: ${n}-day check-in`, text: `My commitment: “${c.text || text}”. Open the Lordship app and do your check-in — and tell your mentor how it’s going.` })), 'lordship-check-ins.ics');
   const msg = `My throw-down commitment from Lordship week (${c.declaredAt || todayStr()}):\n\n“${c.text || text}”\n\nWould you check in with me on this in 30 days and again in 90?`;
@@ -63,6 +65,8 @@ export default function Commit({ code }) {
         <textarea id="commit" rows={3} value={text} maxLength={280} onChange={e => setText(e.target.value)}
           placeholder="e.g. I will meet with my mentor every two weeks and tell her the truth about my finances." />
         <p className="tiny muted">{text.length}/280 · Specific, doable, someone could ask you about it.</p>
+        {ideas.length > 0 && !c.declaredAt && <><p className="small muted" style={{ marginBottom: 0 }}>From what you’ve taken up this week:</p>
+          <div className="chips">{ideas.map(i => <button key={i} className="chip" onClick={() => setText(`I will ${i.charAt(0).toLowerCase() + i.slice(1)}`)}>+ {i}</button>)}</div></>}
         <div className="row wrap">
           <button className="btn primary" disabled={text.trim().length < 8} onClick={declare}>{c.declaredAt ? 'Update & declare' : 'Declare it'}</button>
           {c.text && <button className="btn ghost" onClick={() => shareText(msg, 'My commitment')}>Share with a mentor</button>}

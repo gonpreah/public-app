@@ -37,6 +37,10 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   The wheel sends its lowest spokes there (`openFromWheel`, custom areas `lordship.planAreas`); My Scroll is "my plan for my
   life" vs "what God might have written"; God thing or good thing is my plan vs what the Father is doing, five checks, my own
   verdict. **The coach is optional everywhere**: collapsed to "Stuck? Ask for a question" (`Coach optional`, default on).
+- **More (Nov 2026):** a surrender prayer per area made from their own words (`prayerFor`, no AI); how-close history per
+  area (`p.hist`); "My plan vs God's plan" at a glance on Home (`PlansGlance`); a first-visit "How this works" card
+  (`lordship.welcomed`); commitment ideas from their take-ups; **My Lordship week** (`week` tool): everything they wrote on
+  one page to share or print/PDF (`@media print`).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

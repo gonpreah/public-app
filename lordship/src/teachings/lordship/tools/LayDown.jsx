@@ -36,6 +36,31 @@ function Prompts({ list, onPick }) {
   return <div className="chips small-chips">{list.map(p => <button key={p} className="chip" onClick={() => onPick(p)}>+ {p.replace(/…$/, '')}</button>)}</div>;
 }
 
+/* A surrender prayer made from their own words — no AI, nothing sent anywhere. */
+export function prayerFor(a, p) {
+  const clean = (t) => String(t || '').trim().replace(/\s+/g, ' ').replace(/[.…\s]+$/, '');
+  const lines = [`Lord, here is my plan for ${a.name.toLowerCase()}: ${clean(p.mine) || 'I’m still working it out'}.`];
+  if (p.gods) lines.push(`Here is what I sense you’re saying: ${clean(p.gods)}.`);
+  if (p.notso) lines.push(`I confess I’ve said “not so” — ${clean(p.notso)}.`);
+  if (p.laydown) lines.push(`I lay down ${clean(p.laydown)}.`);
+  if (p.takeup) lines.push(`I take up ${clean(p.takeup)}.`);
+  lines.push('Not my will, but yours be done. Your plan is better than mine. Amen.');
+  return lines.join(' ');
+}
+function Prayer({ a, p }) {
+  const [open, setOpen] = useState(false);
+  const text = prayerFor(a, p);
+  return (
+    <div className="card prayer">
+      <h3>🙏 Pray it</h3>
+      {!open ? <><p className="muted small">Turn your two plans into a prayer of surrender, in your own words.</p>
+        <button className="btn soft" onClick={() => setOpen(true)}>Make my prayer</button></>
+        : <><p className="prayer-text">{text}</p><p className="tiny muted">“Not my will, but yours, be done.” — Luke 22:42</p>
+          <div className="row wrap"><button className="btn ghost small" onClick={() => shareText(text, 'My prayer')}>Share or copy</button></div></>}
+    </div>
+  );
+}
+
 function Area({ a, code, church, base, next }) {
   const [plans, setPlans] = useLocal('lordship.plans', {});
   const [list, setList] = useLocal(K.list, []);
@@ -77,9 +102,11 @@ function Area({ a, code, church, base, next }) {
         <h3>How close are they?</h3>
         <Venn align={p.align} />
         <div className="chips align-chips">{[1, 2, 3, 4, 5].map(n =>
-          <button key={n} className={'chip' + (p.align === n ? ' on' : '')} onClick={() => set({ align: n })}>{ALIGN[n]}</button>)}</div>
+          <button key={n} className={'chip' + (p.align === n ? ' on' : '')} onClick={() => set({ align: n, hist: (p.hist || []).filter(h => h.d !== todayStr()).concat([{ d: todayStr(), a: n }]).slice(-12) })}>{ALIGN[n]}</button>)}</div>
       </div>
 
+      {(p.hist || []).length > 1 && (() => { const first = p.hist[0], last = p.hist[p.hist.length - 1]; return (
+        <p className="muted small align-hist">{first.d}: {ALIGN[first.a]} → {last.d}: {ALIGN[last.a]} {last.a > first.a ? '▲ closer' : last.a < first.a ? '▼ further' : ''}</p>); })()}
       <div className="card">
         <h3>Where they’re different</h3>
         <label className="lab">My “Not so, Lord” here (Acts 10:14)</label>
@@ -93,6 +120,7 @@ function Area({ a, code, church, base, next }) {
           {p.takeup && <button className="btn soft" onClick={() => toast(addHabit(p.takeup) ? 'Added to your habits' : 'Already a habit')}>Make it a daily habit</button>}
         </div>
       </div>
+      {(p.mine || p.gods) && <Prayer a={a} p={p} />}
       {next && <a className="btn ghost big" href={base + '/' + next.id}>Next: {next.emoji} {next.name} ›</a>}
       <Coach tool="laydown" code={code} context={ctx} storeKey={K.chat('laydown', a.id + (church ? '.church' : ''))} optional
         intro="Stuck between the two? The coach can ask you one question at a time." saveLabel="Fill in lay down / take up from our chat"

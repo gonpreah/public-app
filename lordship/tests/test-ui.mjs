@@ -151,6 +151,11 @@ try {
   await page.fill('input[placeholder^="My plan for"]', 'Needing the car to feel secure');
   await page.fill('input[placeholder="One thing I’ll actually do"]', 'Give 10% this month');
   await page.click('text=Save to my list');
+  await page.click('text=Make my prayer');
+  ok('surrender prayer from their own words', (await page.locator('.prayer-text').innerText()).includes('I lay down Needing the car to feel secure') && (await page.locator('.prayer-text').innerText()).includes('Amen'));
+  await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('gp.lordship.plans')); p.money.hist = [{ d: '2026-11-01', a: 1 }].concat(p.money.hist); localStorage.setItem('gp.lordship.plans', JSON.stringify(p)); });
+  await page.reload(); await page.waitForSelector('.align-hist');
+  ok('how-close history shows the change', (await page.locator('.align-hist').innerText()).includes('▲ closer'));
   await page.click('a.back:has-text("All areas")');
   await page.waitForSelector('.areatile.has .minivenn', { timeout: 5000 }).catch(() => {});
   ok('overview shows the area started, with mini circles', (await page.locator('.areatile.has .minivenn').count()) === 1, [page.url(), await page.evaluate(() => localStorage.getItem('gp.lordship.plans')), await page.locator('.areatile.has').count()]);
@@ -212,7 +217,15 @@ try {
   ok('scroll statement saved', (await page.locator('.scroll-card').innerText()).includes('Test scroll'));
 
   /* commitment */
+  await page.goto(U + '/#/class');
+  ok('home: plans at a glance', (await page.locator('.glance').innerText()).includes('laid side by side'));
+  ok('home: welcome card', (await page.locator('.welcome').count()) === 1);
+  await page.click('.welcome button');
+  ok('welcome dismissed', (await page.locator('.welcome').count()) === 0);
   await page.goto(U + '/#/t/commit');
+  ok('commitment ideas from take-ups', (await page.locator('.chip:has-text("Give 10% this month")').count()) === 1);
+  await page.click('.chip:has-text("Give 10% this month")');
+  ok('idea starts the commitment', (await page.locator('#commit').inputValue()) === 'I will give 10% this month');
   await page.fill('#commit', 'I will meet my mentor every two weeks.');
   await page.click('text=Declare it');
   await page.waitForSelector('.declare');
@@ -239,6 +252,11 @@ try {
   await page.locator('.card', { hasText: 'How do I know' }).locator('.chip:has-text("Thursday panel")').click();
   await page.click('.chip:has-text("Thursday panel (")');
   ok('marked for the Thursday panel', (await text()).includes('How do I know'));
+
+  /* my Lordship week */
+  await page.goto(U + '/#/t/week');
+  const wk = await text();
+  ok('my week page gathers it all', wk.includes('My plan vs God’s plan') && wk.includes('My scroll') && wk.includes('every two weeks') && wk.includes('Lowest:'));
 
   /* save my work, then restore on a fresh phone */
   await page.goto(U + '/#/t/data');

@@ -359,3 +359,23 @@ body.bigScreen .top, body.bigScreen nav.bottom { display: none; }
 .coach-mini:hover { border-color: var(--accent); background: var(--card); }
 .coach-mini small { display: block; color: var(--muted); font-size: .8rem; }
 .coach-mini .go { margin-left: auto; font-size: 1.4rem; color: var(--muted); }
+
+/* ---------- more: prayer, glance, welcome, my week, print ---------- */
+.prayer { background: linear-gradient(135deg, color-mix(in srgb, var(--gods) 14%, var(--card)), var(--card)); }
+.prayer-text { font-family: Georgia, serif; font-size: 1.12rem; line-height: 1.6; color: var(--head); animation: rise .5s var(--ease) both; }
+.align-hist { text-align: center; margin-top: -6px; }
+.glance { display: block; text-decoration: none; color: inherit; background: linear-gradient(135deg, color-mix(in srgb, var(--mine) 10%, var(--card)), color-mix(in srgb, var(--gods) 14%, var(--card))); }
+.glance-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.glance-h h3 { margin: 4px 0 0; }
+.glance-h .venn { margin: 0; flex: none; }
+.glance-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.welcome { box-shadow: inset 0 0 0 2px var(--accent); }
+.welcome ol { padding-left: 1.2em; margin: 8px 0; } .welcome li { margin: 6px 0; }
+.wk-line { margin: 6px 0; white-space: pre-wrap; }
+@media print {
+  .top, nav.bottom, .back, .noprint, .toast, .themebtn { display: none !important; }
+  body { background: #fff; color: #000; }
+  main { padding: 0; max-width: none; }
+  .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+  main > * { animation: none !important; }
+}

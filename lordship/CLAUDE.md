@@ -41,6 +41,10 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   area (`p.hist`); "My plan vs God's plan" at a glance on Home (`PlansGlance`); a first-visit "How this works" card
   (`lordship.welcomed`); commitment ideas from their take-ups; **My Lordship week** (`week` tool): everything they wrote on
   one page to share or print/PDF (`@media print`).
+- **People group photos** (Nov 2026, Uriah: "add photos to the people groups"): `public/people/<id>.jpg` (≤960px), each
+  CC BY / CC BY-SA from Flickr via Openverse, credited on the card (`photo` in `PEOPLE_GROUPS`: caption, by, licence, link).
+  Some show where a group lives, not its people (Kuy, Tai Dam, Brao…) — the caption says what's shown. tests/test-data.mjs
+  checks every group has one. A better photo (one Uriah took, with permission) can replace any file.
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

@@ -7,10 +7,23 @@ export function groupFor(d) {
   return PEOPLE_GROUPS[n % PEOPLE_GROUPS.length];
 }
 
+export function Photo({ g, big }) {
+  if (!g.photo) return null;
+  const p = g.photo;
+  return (
+    <figure className={'pg-photo' + (big ? ' big' : '')}>
+      <img src={p.src} alt={p.caption} loading="lazy" decoding="async" style={p.pos ? { objectPosition: p.pos } : null} />
+      <figcaption><span>{p.caption}</span>
+        <small>Photo: <a href={p.link} target="_blank" rel="noopener noreferrer">{p.by}</a> · <a href={p.licenseUrl} target="_blank" rel="noopener noreferrer">{p.license}</a></small></figcaption>
+    </figure>
+  );
+}
+
 export default function PeopleGroup({ big }) {
   const g = groupFor();
   return (
-    <div className="card">
+    <div className="card pg-card">
+      <Photo g={g} big={big} />
       <p className="eyebrow">People group of the day</p>
       <h3 style={big ? { fontSize: '1.5rem' } : null}>{g.name}</h3>
       <p className="muted small">{g.where}</p>

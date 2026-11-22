@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "npm run build && node tests/serve.mjs",
-    "test": "node tests/test-api.mjs && npm run build && node tests/test-ui.mjs"
+    "test": "node tests/test-data.mjs && node tests/test-api.mjs && npm run build && node tests/test-ui.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",

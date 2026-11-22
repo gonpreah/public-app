@@ -63,6 +63,10 @@ try {
   await page.waitForSelector('text=Slides for this day aren’t up yet');
   ok('no slides yet says so', true);
   ok('people group of the day shown', (await text()).includes('People group of the day'));
+  const pgImg = page.locator('.pg-photo img');
+  await page.evaluate(() => document.querySelector('.pg-photo').scrollIntoView());
+  await page.waitForFunction(() => { const i = document.querySelector('.pg-photo img'); return i && i.complete && i.naturalWidth > 200; });
+  ok('people group has a photo with a credit and licence', (await page.locator('.pg-photo figcaption').innerText()).includes('Photo:') && /CC BY/.test(await page.locator('.pg-photo figcaption').innerText()));
   ok('Wednesday responds with My plan vs God’s plan and Not so, Lord', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
   await page.click('text=I’ve responded today');
   ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);

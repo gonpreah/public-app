@@ -1,6 +1,7 @@
 /* The shell: landing (class code), the class view, the public church view, and the admin page.
    Routes: #/ · #/class · #/day/<mon…fri> · #/t/<tool> · #/church · #/church/<tool> · #/admin
-   ?class=CODE opens the class; ?church opens church mode. */
+   ?class=CODE opens the class; ?church opens church mode; ?quiz the base-wide profile quiz (#/quiz),
+   whose live results are #/quiz-results. */
 import { useEffect, useState } from 'react';
 import { useRoute, go } from './core/router.js';
 import { read, write } from './core/store.js';
@@ -14,6 +15,7 @@ import Join from './core/Join.jsx';
 import { getMe } from './core/account.js';
 import { ThemeToggle } from './core/theme.jsx';
 import Install from './core/Install.jsx';
+import PubQuiz, { QuizResults } from './teachings/lordship/tools/PubQuiz.jsx';
 
 const CLS = 'lordship.class';
 
@@ -21,7 +23,8 @@ const CLS = 'lordship.class';
 const PENDING = (() => {
   const p = new URLSearchParams(location.search);
   const c = p.get('class');
-  if (p.has('church') || c) history.replaceState(null, '', location.pathname + (p.has('church') ? '#/church' : '#/'));
+  if (p.has('quiz')) history.replaceState(null, '', location.pathname + '#/quiz');
+  else if (p.has('church') || c) history.replaceState(null, '', location.pathname + (p.has('church') ? '#/church' : '#/'));
   return c || '';
 })();
 
@@ -78,6 +81,7 @@ export default function App() {
   const admin = r[0] === 'admin';
   if (r[0] === 'panel') return <><Panel /><Toast /></>;
   if (r[0] === 'game') return <><GameScreen /><Toast /></>;
+  if (r[0] === 'quiz-results') return <><QuizResults /><Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];
@@ -85,6 +89,7 @@ export default function App() {
 
   let page;
   if (admin) page = <Admin />;
+  else if (r[0] === 'quiz') page = <PubQuiz />;
   else if (church) {
     const t = r[1] && L.TOOLS.find(x => x.id === r[1] && x.church);
     page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/church">‹ Home</a>}<t.C church code="" sub={r[2]} /></div> : <ChurchHome />;
@@ -112,7 +117,7 @@ export default function App() {
       <header className="top">
         <a className="brandmark" href={church ? '#/church' : '#/class'}><Spark size={20} color="var(--accent)" /> Lordship</a>
         <span className="top-r">{!admin && !church && cls && me ? <a className="mechip" href="#/t/me" aria-label={'Me: ' + me.name}><span>{me.name.slice(0, 1).toUpperCase()}</span>{me.name.split(' ')[0]}</a>
-          : <span className="mode">{admin ? 'Admin' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
+          : <span className="mode">{admin ? 'Admin' : r[0] === 'quiz' ? 'Just for fun' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
       </header>
       <main>{page}</main>
       {nav && <nav className="bottom">{nav.map(([p, e, l]) => <a key={p} href={'#/' + p} className={on(p) ? 'on' : ''}><span aria-hidden="true">{e}</span>{l}</a>)}</nav>}

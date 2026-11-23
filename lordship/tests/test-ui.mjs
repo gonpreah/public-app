@@ -479,6 +479,29 @@ try {
   const ps = await (await page.request.get(U + '/icon-512.png')).body();
   ok('app icons exist', ps.length > 5000 && (await page.request.get(U + '/apple-touch-icon.png')).ok());
 
+  /* the base-wide profile quiz: ?quiz, no sign-in, and the live results */
+  const pq = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await pq.goto(U + '/?quiz'); await pq.waitForSelector('#pqname');
+  ok('?quiz opens with no class code or PIN', (await pq.locator('.pinbox').count()) === 0 && (await pq.locator('.pq-faces svg').count()) === 8);
+  await pq.fill('#pqname', 'Bopha Lim'); await pq.click('.chip:text-is("DBS")'); await pq.click('text=Start the quiz');
+  for (let i = 0; i < 8; i++) await pq.locator('.opt-btn').nth(2).click();
+  await pq.waitForSelector('.pcard .avatar');
+  await pq.waitForSelector('button:has-text("✓ On the big screen")');
+  ok('the result has a cartoon and goes straight to the big screen', true);
+  const pr = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await pr.goto(U + '/#/quiz-results'); await pr.waitForSelector('.qrecent .pchip');
+  ok('live results: bars for all 8, the name and group', (await pr.locator('.qbar').count()) === 8 && (await pr.locator('.qrecent').innerText()).includes('Bopha') && (await pr.locator('.qbar.lead b').innerText()) === '1');
+  await pr.click('.qr-tabs button:has-text("DTS")');
+  ok('the DTS tab shows only DTS', (await pr.locator('.qrecent').count()) === 0 && (await pr.locator('.qbar.lead').count()) === 0);
+  await pr.click('.qr-tabs button:has-text("All")');
+  await pr.click('text=Hide names');
+  ok('names can be hidden', (await pr.locator('.qrecent').count()) === 0);
+  await pq.click('text=Take it again');
+  for (let i = 0; i < 8; i++) await pq.locator('.opt-btn').nth(0).click();
+  await pq.waitForSelector('button:has-text("✓ On the big screen")');
+  await pr.waitForTimeout(3500);
+  ok('a retake replaces, not adds', (await pr.locator('.qr-total b').innerText()) === '1');
+
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {
   ok('ran without throwing: ' + e.message, false);

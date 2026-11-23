@@ -43,6 +43,7 @@ export default function Admin() {
       <h1>Admin</h1>
       {!d.hasKey && <p className="note small">No <code>ANTHROPIC_API_KEY</code> on the server yet — the coach won’t answer until it’s set in Netlify.</p>}
       <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
+      <a className="btn soft big" href="#/quiz-results" style={{ marginBottom: 8 }}>😂 Base-wide profile quiz: live results (projector)</a>
       <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
         <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}</div>
       {tab === 'class' && <ClassSettings pw={pw} cfg={d.cfg} onSaved={(cfg) => setD(Object.assign({}, d, { cfg }))} />}

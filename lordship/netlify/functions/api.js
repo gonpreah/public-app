@@ -42,6 +42,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 export class Fail extends Error { constructor(code, status) { super(code); this.code = code; this.status = status || 400; } }
 
 export const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+export const PUB_GROUPS = ['dts', 'dbs', 'staff', 'visitor'];
 export const TOPICS = ['romance', 'sexuality', 'finances', 'struggles', 'faith', 'calling', 'other'];
 export const STATUSES = ['new', 'class', 'panel', 'answered', 'hidden'];
 const KINDS = { pdf: /^application\/pdf$/, pptx: /^application\/(vnd\.openxmlformats-officedocument\.presentationml\.presentation|vnd\.ms-powerpoint|octet-stream)$/ };
@@ -230,6 +231,44 @@ export const HANDLERS = {
     const { s, c } = await student(a);
     if (!PROFILE_IDS.includes(a.profile)) throw new Fail('BAD_PROFILE');
     await db.set('qz:' + c.code + ':' + s.id, { p: a.profile, at: Date.now() });
+    return { ok: true };
+  },
+
+  /* --- the base-wide profile quiz (?quiz): no class code, no account. Everything lives in the key itself
+     (pq:<phone id>:<time>:<group>:<profile>:<first name>) so the projector's results are one list call. --- */
+  async pubQuiz(a) {
+    const rid = String(a.rid || '');
+    if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    if (!PUB_GROUPS.includes(a.group)) throw new Fail('BAD_GROUP');
+    if (!PROFILE_IDS.includes(a.profile)) throw new Fail('BAD_PROFILE');
+    const name = clip(a.name, 40).replace(/[\u200B-\u200F\u2028-\u202E\u2066-\u2069]/g, '').trim().split(/\s+/)[0].slice(0, 20);
+    if (!name) throw new Fail('NO_NAME');
+    const k = 'pqn:' + today();
+    const n = (await db.get(k)) || 0;
+    if (n > 3000) throw new Fail('BUSY', 429);
+    await db.set(k, n + 1);
+    for (const old of await db.keys('pq:' + rid + ':')) await db.del(old);
+    await db.set(['pq', rid, Date.now().toString(36), a.group, a.profile, Buffer.from(name).toString('base64url')].join(':'), 1);
+    return { ok: true };
+  },
+  async pubQuizResults() {
+    const rows = [];
+    for (const k of await db.keys('pq:')) {
+      const [, , t, g, p, n] = k.split(':');
+      if (!PUB_GROUPS.includes(g) || !PROFILE_IDS.includes(p)) continue;
+      let name = ''; try { name = Buffer.from(n || '', 'base64url').toString('utf8').slice(0, 20); } catch { name = ''; }
+      rows.push({ t: parseInt(t, 36) || 0, g, p, n: name });
+    }
+    rows.sort((x, y) => x.t - y.t);
+    const counts = {};
+    for (const g of ['all'].concat(PUB_GROUPS)) counts[g] = Object.fromEntries(PROFILE_IDS.map(p => [p, 0]));
+    for (const r of rows) { counts.all[r.p]++; counts[r.g][r.p]++; }
+    const totals = Object.fromEntries(Object.keys(counts).map(g => [g, Object.values(counts[g]).reduce((x, y) => x + y, 0)]));
+    return { counts, totals, recent: rows.slice(-18).reverse().map(r => ({ n: r.n, g: r.g, p: r.p })) };
+  },
+  async pubQuizReset(a) {
+    await admin(a);
+    for (const k of await db.keys('pq:')) await db.del(k);
     return { ok: true };
   },
 

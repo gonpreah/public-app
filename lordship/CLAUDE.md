@@ -78,6 +78,12 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   map is Paul / Barnabas / Timothy (`MENTOR_ROLES`, `m.kind`) with one name circled to invite this month. Tuesday: daily acts
   of obedience as habit chips (`DAILY_OBEDIENCE`). Friday: **My 2 · 5 · 10** is back (`growth`): firm foundations, force for
   change, frontier missions (`HORIZONS`). The wheel's rest is in Strength (body, rest & finances).
+- **Base-wide profile quiz** (Nov 2026, Uriah: both classes "do the profile all together … while we watch the live results"):
+  `/?quiz` → `#/quiz` (tools/PubQuiz.jsx): no class code, PIN or account — a first name and DTS / DBS / Staff / Visitor, then
+  the profile quiz; the result goes straight to the big screen (`pubQuiz`). `#/quiz-results` is the projector: a bar per
+  profile, live every 3 s, All / DTS / DBS / Staff tabs, the latest first names (Hide names), Reset behind the admin password
+  (`pubQuizReset`). Everything is in the blob key (`pq:<phone id>:<time>:<group>:<profile>:<name>`), so the results are one
+  list call and a retake replaces; never in the class list. Each profile has a cartoon (tools/Avatars.jsx, SVG).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLocal, todayStr, addDays } from '../../../core/store.js';
 import { K, addHabit, streakOf } from '../state.js';
 import { burst } from '../../../core/ui.jsx';
+import { DAILY_OBEDIENCE } from '../content.js';
 
 export default function Habits() {
   const [hs, setHs] = useLocal(K.habits, []);
@@ -45,6 +46,9 @@ export default function Habits() {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="A new habit, e.g. 10 minutes in the Word" maxLength={120} aria-label="New habit" />
         <button className="btn primary" disabled={!name.trim()}>Add</button>
       </form>
+      <h4>One daily act of obedience</h4>
+      <p className="muted small">Plod, don’t sprint: small enough to do tomorrow, and the next day.</p>
+      <div className="chips">{DAILY_OBEDIENCE.filter(i => !hs.some(h => h.name.toLowerCase() === i.toLowerCase())).map(i => <button key={i} className="chip" onClick={() => addHabit(i)}>+ {i}</button>)}</div>
       {ideas.length > 0 && (
         <>
           <h4>From your take-up list</h4>

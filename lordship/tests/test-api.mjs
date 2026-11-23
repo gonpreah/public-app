@@ -233,6 +233,23 @@ ok('church tools are wheel, laydown, notso', Object.keys(P.TOOLS).filter(k => P.
 ok('base prompt has Uriah\'s words', P.BASE.includes('warm, honest discipleship coach') && P.BASE.includes('Point serious struggles to a trusted leader or counsellor'));
 ok('schemas are strict', Object.values(P.TOOLS).filter(t => t.distill).every(t => t.distill.additionalProperties === false && t.distill.required.length === Object.keys(t.distill.properties).length));
 
+/* --- the base-wide profile quiz: no class, no account --- */
+const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';
+ok('public quiz needs a phone id', (await call('pubQuiz', { rid: 'x', name: 'Sokha', group: 'dts', profile: 'netflix' })).error === 'BAD_ID');
+ok('public quiz needs a real group', (await call('pubQuiz', { rid: R1, name: 'Sokha', group: 'cats', profile: 'netflix' })).error === 'BAD_GROUP');
+ok('public quiz needs a real profile', (await call('pubQuiz', { rid: R1, name: 'Sokha', group: 'dts', profile: 'pope' })).error === 'BAD_PROFILE');
+ok('public quiz needs a name', (await call('pubQuiz', { rid: R1, name: '  ', group: 'dts', profile: 'netflix' })).error === 'NO_NAME');
+await call('pubQuiz', { rid: R1, name: 'Sokha Chan', group: 'dts', profile: 'netflix' });
+await call('pubQuiz', { rid: R2, name: 'Ruth:x', group: 'staff', profile: 'sahara' });
+await call('pubQuiz', { rid: R1, name: 'Sokha', group: 'dts', profile: 'wifi' });
+let pr = await call('pubQuizResults', {});
+ok('a retake replaces the first answer', pr.totals.all === 2 && pr.counts.all.netflix === 0 && pr.counts.dts.wifi === 1 && pr.counts.staff.sahara === 1);
+ok('results carry first names only, newest first', pr.recent[0].n === 'Sokha' && pr.recent[1].n === 'Ruth:x' && pr.recent.every(r => !('rid' in r)));
+ok('the public quiz stays out of the class list', ![...S._m.keys()].some(k => k.startsWith('st:') || k.startsWith('qz:') ? k.includes('Sokha') : false));
+ok('reset needs the admin', (await call('pubQuizReset', { pw: 'nope' })).error === 'BAD_PASSWORD');
+await call('pubQuizReset', { pw: 'pw' });
+ok('reset clears the results', (await call('pubQuizResults', {})).totals.all === 0);
+
 /* --- admin lock --- */
 for (let i = 0; i < 62; i++) await call('adminLogin', { pw: 'guess' + i });  // (keep last: it locks the admin)
 ok('too many wrong passwords locks for the day', (await call('adminLogin', { pw: 'pw' })).error === 'LOCKED');

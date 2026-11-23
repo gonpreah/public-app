@@ -481,3 +481,44 @@ body.bigScreen .top, body.bigScreen nav.bottom { display: none; }
 details.more { margin: 8px 0 16px; }
 details.more summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: 10px 0; list-style: none; }
 details.more summary::before { content: '＋ '; } details.more[open] summary::before { content: '－ '; }
+
+/* Lordship week in James: sticky line, James card, listen box, check-in */
+.sticky { display: inline-block; font-family: var(--hand); font-weight: 600; font-size: 1.45rem; line-height: 1.15; color: #3a2a00; background: #ffd75e; padding: 6px 12px 8px; border-radius: 4px; transform: rotate(-1.2deg); box-shadow: 0 6px 14px rgba(0,0,0,.18); margin: 8px 0 4px; }
+.james { border-left: 4px solid var(--day, var(--accent)); background: var(--card); border-radius: 14px; padding: 12px 14px; margin: 14px 0; }
+.james h3 { margin: 2px 0 4px; } .james h3 a { color: inherit; } .james p { margin: 4px 0 10px; }
+.listen { border: 1px dashed var(--day, var(--accent)); border-radius: 14px; padding: 12px 14px; margin: 14px 0; }
+.listen p { margin: 4px 0; } .listen p:nth-child(2) { font-family: var(--display); font-weight: 700; color: var(--head); }
+.checkin-q { background: var(--card); border-radius: 12px; padding: 10px 12px; margin: 10px 0; font-size: .95rem; }
+.checkin-q b { color: var(--day, var(--accent)); margin-right: 6px; }
+.study .kv { margin-top: 10px; }
+.mentor-role h3 small { font-weight: 500; font-size: .85rem; }
+.mentor-role .row { align-items: center; margin: 6px 0; }
+.study .linkish { text-decoration: none; text-align: left; color: var(--head); }
+
+/* the base-wide profile quiz and its live results */
+.pcard-emoji .avatar { display: block; margin: 0 auto; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.pubquiz h1 em { font-style: normal; color: var(--accent); }
+.pq-faces { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
+.pq-faces span { animation: pop .6s var(--ease) both; } .pq-faces .avatar { display: block; border-radius: 50%; }
+.chips.big .chip { font-size: 1.05rem; padding: 10px 18px; }
+.center { text-align: center; }
+.qresults { align-items: stretch; }
+.qresults .screen-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.qresults .screen-q { margin: 0 0 1.2vh; font-size: clamp(1.6rem, 3.6vw, 3.4rem); }
+.qr-tabs { display: flex; gap: 8px; margin-bottom: 1.6vh; flex-wrap: wrap; }
+.qr-tabs button { font: 800 clamp(.95rem, 1.5vw, 1.35rem) var(--display); padding: 8px 18px; border-radius: 999px; border: 2px solid rgba(255,255,255,.18); background: transparent; color: var(--paper); cursor: pointer; }
+.qr-tabs button.on { background: var(--marigold); border-color: var(--marigold); color: #17150f; }
+.qr-tabs small { opacity: .7; margin-left: 4px; }
+.qbars { display: grid; gap: 1.1vh; }
+.qbar { display: grid; grid-template-columns: auto minmax(130px, 28%) 1fr 56px; gap: 14px; align-items: center; font: 700 clamp(.95rem, 1.6vw, 1.5rem) var(--display); color: var(--paper); transition: opacity .4s; }
+.qbar .avatar { width: clamp(38px, 5.2vh, 64px); height: auto; border-radius: 50%; transition: transform .4s var(--ease); }
+.qbar.lead .avatar { transform: scale(1.18) rotate(-6deg); } .qbar.lead .qbar-name { color: var(--marigold); }
+.qbar.zero { opacity: .45; }
+.qbar-track { height: clamp(18px, 3.2vh, 34px); border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+.qbar-track i { display: block; height: 100%; background: var(--marigold); border-radius: 999px; transition: width .8s var(--ease); }
+.qbar b { text-align: right; font-size: clamp(1.1rem, 2vw, 1.9rem); }
+.qrecent { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.8vh; }
+.qrecent .pchip { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.08); border-radius: 999px; padding: 4px 12px 4px 4px; color: var(--paper); font-weight: 700; animation: pop .5s var(--ease) both; }
+.qrecent .pchip .avatar { border-radius: 50%; } .qrecent .pchip em { font-style: normal; opacity: .6; font-size: .8em; }
+.qr-tools { margin-top: auto; padding-top: 1.5vh; display: flex; gap: 18px; } .qr-tools .linkish { color: var(--ink-5); }
+.qr-total { font: 800 clamp(1.2rem, 2.2vw, 2rem) var(--display); } .qr-total b { color: var(--marigold); }

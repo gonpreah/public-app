@@ -81,8 +81,14 @@ try {
   await page.goto(U + '/#/day/wed');
   await page.waitForSelector('.scripture');
   const wed = await text();
-  ok('day shows title, big idea, scripture text, questions', wed.includes('Laying Down') && wed.includes('take up his cross, and follow me') && wed.includes('What is your Isaac'));
-  ok('all three Wednesday passages', (await page.locator('.scripture').count()) === 3);
+  ok('day shows title, big idea, scripture text, questions', wed.includes('Laying Down') && wed.includes('take up his cross, and follow me') && wed.includes('never, Lord'));
+  ok('all four Wednesday passages', (await page.locator('.scripture').count()) === 4);
+  ok('the day’s sticky line, James chapter, check-in and listening prayer', (await page.locator('.dayhead .sticky').innerText()).includes('You can’t hold what he asks you to lay down')
+    && (await page.locator('.james h3').innerText()).includes('James 3') && wed.includes('What did you lay down or take up since yesterday?') && wed.includes('what are you asking me to put in your hands?'));
+  await page.click('.james button:has-text("I read it")');
+  ok('ticking James 3 as read', (await page.locator('.james button').innerText()).includes('✓ Read'));
+  await page.click('text=Bible study: Say · Mean · Do');
+  ok('Say · Mean · Do opens', (await page.locator('.study .kv').innerText()).includes('What do I do with this today?'));
   await page.waitForSelector('text=Slides for this day aren’t up yet');
   ok('no slides yet says so', true);
   ok('people group of the day shown', (await text()).includes('People group of the day'));
@@ -90,7 +96,7 @@ try {
   await page.evaluate(() => document.querySelector('.pg-photo').scrollIntoView());
   await page.waitForFunction(() => { const i = document.querySelector('.pg-photo img'); return i && i.complete && i.naturalWidth > 200; });
   ok('people group has a photo with a credit and licence', (await page.locator('.pg-photo figcaption').innerText()).includes('Photo:') && /CC BY/.test(await page.locator('.pg-photo figcaption').innerText()));
-  ok('Wednesday responds with My plan vs God’s plan', (await page.locator('.respond .tile').count()) === 1 && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
+  ok('Wednesday responds with lay down a right and My plan vs God’s plan', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('Lay down a right') && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
   await page.click('text=I’ve responded today');
   ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);
   await noScroll('day');
@@ -211,6 +217,18 @@ try {
   await page.click('button:has-text("Save")');
   ok('decision saved without the coach', (await text()).includes('What I’ve weighed') && (await text()).includes('being seen'));
 
+  /* Wednesday: lay down a right */
+  await page.goto(U + '/#/t/rights');
+  await page.click('.chip:text-is("Reputation")');
+  await page.click('button:has-text("Jesus, reputation is yours.")');
+  ok('a right laid down is kept and goes on the list', (await text()).includes('In his hands') && (await text()).includes('🤲 Reputation'));
+
+  /* Friday: 2 · 5 · 10 */
+  await page.goto(U + '/#/t/growth');
+  await page.click('.horizon:has-text("Firm foundations") .chip:has-text("DTS")');
+  await page.fill('textarea[aria-label="10 years: Frontier missions"]', 'Pioneer a base in Laos');
+  ok('2 · 5 · 10 keeps each horizon', (await page.inputValue('textarea[aria-label="2 years: Firm foundations"]')) === 'DTS' && (await text()).includes('Share or copy my plan'));
+
   /* list + habits */
   await page.goto(U + '/#/t/list');
   ok('list has the saved item', (await text()).includes('Test takeup'));
@@ -221,15 +239,20 @@ try {
   await page.locator('.habit', { hasText: 'Read a Psalm' }).locator('.tick').click();
   ok('ticking starts a streak', (await page.locator('.habit', { hasText: 'Read a Psalm' }).innerText()).includes('🔥 1'));
   ok('home counts habits today', true);
+  await page.click('.chip:has-text("Say sorry first")');
+  ok('a daily act of obedience becomes a habit', (await page.locator('.habit', { hasText: 'Say sorry first' }).count()) === 1);
 
   /* HOT + mentor map */
   await page.goto(U + '/#/t/hot');
   for (const l of ['H', 'O', 'T']) for (let i = 0; i < 3; i++) await page.locator(`button[aria-label$=": 4"]`).nth(['H', 'O', 'T'].indexOf(l) * 3 + i).click();
   ok('HOT scores shown', (await text()).includes('Where you are'));
-  await page.click('text=+ Add a person');
-  await page.fill('input[aria-label="Name"]', 'Naomi');
-  await page.locator('.card', { has: page.locator('input[aria-label="Name"]') }).locator('.chip:has-text("Finances")').click();
-  ok('mentor map shows the gaps', (await text()).includes('Gaps:') && (await page.locator('td:has-text("Naomi")').count()) === 1);
+  await page.click('text=+ Add a Paul');
+  await page.fill('input[aria-label="Paul name"]', 'Naomi');
+  ok('no Barnabas yet is pointed out', (await text()).includes('No Barnabas yet'));
+  await page.click('text=+ Add a Barnabas');
+  await page.fill('input[aria-label="Barnabas name"]', 'Dara');
+  await page.click('button[aria-label="Invite Dara this month"]');
+  ok('mentor map: Paul, Barnabas, one to invite', !(await text()).includes('No Barnabas yet') && (await text()).includes('This month I’ll invite Dara'));
 
   /* scroll */
   await page.goto(U + '/#/t/scroll');
@@ -455,6 +478,29 @@ try {
   ok('Instagram browser: copy the link and open Safari', (await insta.locator('.sheet').innerText()).includes('Copy link'));
   const ps = await (await page.request.get(U + '/icon-512.png')).body();
   ok('app icons exist', ps.length > 5000 && (await page.request.get(U + '/apple-touch-icon.png')).ok());
+
+  /* the base-wide profile quiz: ?quiz, no sign-in, and the live results */
+  const pq = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await pq.goto(U + '/?quiz'); await pq.waitForSelector('#pqname');
+  ok('?quiz opens with no class code or PIN', (await pq.locator('.pinbox').count()) === 0 && (await pq.locator('.pq-faces svg').count()) === 8);
+  await pq.fill('#pqname', 'Bopha Lim'); await pq.click('.chip:text-is("DBS")'); await pq.click('text=Start the quiz');
+  for (let i = 0; i < 8; i++) await pq.locator('.opt-btn').nth(2).click();
+  await pq.waitForSelector('.pcard .avatar');
+  await pq.waitForSelector('button:has-text("✓ On the big screen")');
+  ok('the result has a cartoon and goes straight to the big screen', true);
+  const pr = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await pr.goto(U + '/#/quiz-results'); await pr.waitForSelector('.qrecent .pchip');
+  ok('live results: bars for all 8, the name and group', (await pr.locator('.qbar').count()) === 8 && (await pr.locator('.qrecent').innerText()).includes('Bopha') && (await pr.locator('.qbar.lead b').innerText()) === '1');
+  await pr.click('.qr-tabs button:has-text("DTS")');
+  ok('the DTS tab shows only DTS', (await pr.locator('.qrecent').count()) === 0 && (await pr.locator('.qbar.lead').count()) === 0);
+  await pr.click('.qr-tabs button:has-text("All")');
+  await pr.click('text=Hide names');
+  ok('names can be hidden', (await pr.locator('.qrecent').count()) === 0);
+  await pq.click('text=Take it again');
+  for (let i = 0; i < 8; i++) await pq.locator('.opt-btn').nth(0).click();
+  await pq.waitForSelector('button:has-text("✓ On the big screen")');
+  await pr.waitForTimeout(3500);
+  ok('a retake replaces, not adds', (await pr.locator('.qr-total b').innerText()) === '1');
 
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {

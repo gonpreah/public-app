@@ -3,6 +3,8 @@ import { read } from '../../../core/store.js';
 import { K } from '../state.js';
 import { WHEEL_OUT, WHEEL_IN, ALIGN } from '../content.js';
 import { planAreas } from './LayDown.jsx';
+import { HORIZONS, MENTOR_ROLES } from '../content.js';
+import { val } from './Growth.jsx';
 import { shareText } from '../../../core/ui.jsx';
 
 export function weekText() {
@@ -16,6 +18,10 @@ export function weekText() {
   if (list.length) out.push({ h: 'Lay down / take up', lines: list.map(x => `${x.area ? x.area + ': ' : ''}lay down ${x.laydown || '—'}; take up ${x.takeup || x.yes || '—'}`) });
   if (sc.statement) out.push({ h: 'My scroll', lines: [sc.statement] });
   if (dec.length) out.push({ h: 'God thing or good thing?', lines: dec.map(d => `${d.what} — ${d.lean}${d.nextStep ? `; next: ${d.nextStep}` : ''}`) });
+  const g = read(K.growth, {}), ms = read(K.mentors, []).filter(m => m.name);
+  const gl = HORIZONS.filter(x => val(g[x.id]).trim()).map(x => `${x.name} (${x.title}): ${val(g[x.id]).replace(/\n/g, '; ')}`);
+  if (gl.length) out.push({ h: 'My 2 · 5 · 10', lines: gl });
+  if (ms.length) out.push({ h: 'My mentor map', lines: MENTOR_ROLES.map(([k, n]) => [n, ms.filter(m => (m.kind || 'barnabas') === k)]).filter(x => x[1].length).map(([n, l]) => `${n}: ${l.map(m => m.name + (m.invite ? ' (inviting this month)' : '')).join(', ')}`) });
   if (hs.length) out.push({ h: 'Daily habits', lines: hs.map(h => h.name) });
   if (c.text) out.push({ h: 'My throw-down commitment', lines: [`“${c.text}” (declared ${c.declaredAt})`] });
   return out;

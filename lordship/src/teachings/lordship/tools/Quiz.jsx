@@ -6,6 +6,7 @@ import { useLocal } from '../../../core/store.js';
 import { api, errText } from '../../../core/api.js';
 import { authArgs, getMe } from '../../../core/account.js';
 import { burst, shareText, toast } from '../../../core/ui.jsx';
+import Avatar from './Avatars.jsx';
 
 export function score(answers) {
   const n = {};
@@ -19,7 +20,7 @@ export function ProfileCard({ id, name, big }) {
   if (!p) return null;
   return (
     <div className={'pcard' + (big ? ' big' : '')}>
-      <div className="pcard-emoji">{p.emoji}</div>
+      <div className="pcard-emoji"><Avatar id={id} size={big ? 180 : 120} /></div>
       {name && <p className="pcard-who">{name} is…</p>}
       <h2>{p.name}</h2>
       <p className="pcard-tag">“{p.tag}”</p>
@@ -27,8 +28,8 @@ export function ProfileCard({ id, name, big }) {
   );
 }
 
-export default function Quiz({ code, church, onPosted }) {
-  const [res, setRes] = useLocal('lordship.quiz', null);
+export default function Quiz({ code, church, onPosted, storeKey = 'lordship.quiz', onResult, pubName, posted: pubPosted }) {
+  const [res, setRes] = useLocal(storeKey, null);
   const [ans, setAns] = useState([]);
   const [show, setShow] = useState(false);
   const [posted, setPosted] = useState(false);
@@ -39,7 +40,7 @@ export default function Quiz({ code, church, onPosted }) {
   function pick(p, e) {
     const next = ans.concat([p]);
     burst(e.currentTarget, 6);
-    if (next.length === QUIZ.length) { const r = score(next); setRes(Object.assign({ at: Date.now() }, r)); setAns([]); setTimeout(() => burst(document.querySelector('.pcard'), 24), 300); }
+    if (next.length === QUIZ.length) { const r = score(next); setRes(Object.assign({ at: Date.now() }, r)); onResult && onResult(r); setAns([]); setTimeout(() => burst(document.querySelector('.pcard'), 24), 300); }
     else setAns(next);
   }
   async function post() {
@@ -51,7 +52,7 @@ export default function Quiz({ code, church, onPosted }) {
 
   if (res && !ans.length && show) return (
     <div className="pshow" onClick={() => setShow(false)}>
-      <ProfileCard id={res.top} name={me ? me.name.split(' ')[0] : ''} big />
+      <ProfileCard id={res.top} name={me ? me.name.split(' ')[0] : pubName || ''} big />
       <p className="muted small">Tap to close</p>
     </div>
   );
@@ -70,11 +71,12 @@ export default function Quiz({ code, church, onPosted }) {
         </div>
         <div className="stack">
           <button className="btn primary big" onClick={() => setShow(true)}>👀 Show your neighbour</button>
+          {onResult && <button className="btn soft big" disabled={pubPosted === res.top} onClick={() => onResult(res)}>{pubPosted === res.top ? '✓ On the big screen' : '📽️ Put it on the big screen'}</button>}
           {me && <button className="btn soft big" disabled={busy || posted} onClick={post}>{posted ? '✓ On the big screen' : '📽️ Put it on the big screen'}</button>}
           <button className="btn ghost" onClick={() => shareText(`My Lordship profile: ${p.emoji} ${p.name} — “${p.tag}”`, 'My Lordship profile')}>Share</button>
           <button className="linkish" onClick={() => { setRes(null); setPosted(false); }}>Take it again</button>
         </div>
-        <a className="btn ghost" href={(church ? '#/church/' : '#/t/') + 'laydown'}>Now for real: my plan vs God’s plan ›</a>
+        {!onResult && <a className="btn ghost" href={(church ? '#/church/' : '#/t/') + 'laydown'}>Now for real: my plan vs God’s plan ›</a>}
       </div>
     );
   }

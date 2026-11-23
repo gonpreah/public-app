@@ -455,3 +455,29 @@ body.bigScreen .top, body.bigScreen nav.bottom { display: none; }
 .podium { display: grid; gap: 12px; margin-top: 3vh; max-width: 700px; }
 .pod { display: flex; align-items: center; gap: 18px; padding: 14px 22px; border-radius: 18px; background: rgba(255,255,255,.07); color: var(--paper); font: 800 clamp(1.2rem, 2.2vw, 2rem) var(--display); animation: chipin .6s cubic-bezier(.34,1.56,.64,1) both; }
 .pod em { margin-left: auto; font-style: normal; color: var(--marigold); }
+
+/* Lordship profile quiz */
+.quiz { animation: rise .35s var(--ease) both; }
+.quiz h1 { font-size: 1.8rem; }
+.qdots { display: flex; gap: 6px; margin: 8px 0 4px; }
+.qdots i { flex: 1; height: 6px; border-radius: 999px; background: var(--line); transition: background .3s; }
+.qdots i.on { background: var(--marigold); } .qdots i.cur { background: var(--accent); }
+.pcard { text-align: center; padding: 26px 18px 22px; margin: 14px 0; border-radius: 22px; color: var(--paper); background: radial-gradient(80% 70% at 85% 0%, #2a3fd6, #17150f 70%); box-shadow: var(--lift); animation: flipin .7s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes flipin { from { transform: perspective(800px) rotateY(80deg) scale(.8); opacity: 0; } }
+.pcard-emoji { font-size: 4rem; line-height: 1; animation: pop .8s var(--ease) .3s both; }
+.pcard h2 { color: var(--marigold); font-size: 1.9rem; margin: 10px 0 6px; }
+.pcard-tag { font-family: var(--hand); font-size: 1.6rem; line-height: 1.2; margin: 0; color: var(--paper-2); }
+.pcard-who { margin: 8px 0 0; color: var(--paper-2); font-weight: 700; }
+.pshow { position: fixed; inset: 0; z-index: 70; background: var(--ink-0); display: flex; flex-direction: column; justify-content: center; padding: 20px; text-align: center; }
+.pcard.big { padding: 46px 22px 40px; } .pcard.big .pcard-emoji { font-size: 6rem; } .pcard.big h2 { font-size: 2.6rem; } .pcard.big .pcard-tag { font-size: 2.1rem; }
+.quizres { animation: rise .4s var(--ease) both; }
+.profile-wall { display: flex; flex-wrap: wrap; gap: 10px; margin: 2.5vh 0; max-height: 34vh; overflow: hidden; }
+.pchip { padding: 10px 16px; border-radius: 16px; background: rgba(255,255,255,.08); color: var(--paper); font: 700 clamp(.95rem, 1.4vw, 1.3rem) var(--display); animation: chipin .5s cubic-bezier(.34,1.56,.64,1) both; }
+.pchip b { font-size: 1.3em; } .pchip em { font-style: normal; color: var(--marigold); margin-left: 6px; font-weight: 600; }
+.ptally { display: grid; gap: 8px; max-width: 760px; }
+.ptally .pbar { grid-template-columns: minmax(200px, 42%) 1fr 40px; font-size: clamp(.9rem, 1.3vw, 1.2rem); }
+.ptally .pbar div { height: 22px; }
+.screen-q em { font-style: normal; color: var(--marigold); }
+details.more { margin: 8px 0 16px; }
+details.more summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: 10px 0; list-style: none; }
+details.more summary::before { content: '＋ '; } details.more[open] summary::before { content: '－ '; }

@@ -217,6 +217,14 @@ await call('gameAdmin', { pw: 'pw', action: 'reveal' });
 ok('poll results are counts only', JSON.stringify((await call('gameState', { code: 'DTS26' })).counts) === JSON.stringify([2, 0, 0, 0]));
 await call('gameAdmin', { pw: 'pw', action: 'end' });
 ok('end: leaderboard', (await call('gameState', { code: 'DTS26' })).top[0].name === 'Ana');
+await call('gameAdmin', { pw: 'pw', action: 'quiz' });
+ok('quiz phase reaches phones', (await call('gameState', { code: 'DTS26' })).phase === 'quiz');
+ok('bad profile refused', (await call('quizSave', { code: 'DTS26', sid: sam.sid, token: sam.token, profile: 'pope' })).error === 'BAD_PROFILE');
+ok('quiz needs to have joined', (await call('quizSave', { code: 'DTS26', profile: 'netflix' })).error === 'NO_STUDENT');
+await call('quizSave', { code: 'DTS26', sid: sam.sid, token: sam.token, profile: 'netflix' });
+await call('quizSave', { code: 'DTS26', sid: ana.sid, token: ana.token, profile: 'ring' });
+const qs2 = await call('gameScreen', { pw: 'pw' });
+ok('projector shows each name with a profile', qs2.profiles.length === 2 && qs2.profiles[0].name === 'Sam Lee' && qs2.profiles[0].p === 'netflix');
 ok('admin removes a student', (await call('adminStudent', { pw: 'pw', sid: ana.sid, remove: true })).ok && (await call('signIn', { code: 'DTS26', name: 'Ana', pin: '5555' })).error === 'NO_NAME');
 
 /* --- prompts --- */

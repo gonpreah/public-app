@@ -23,7 +23,7 @@
 import { getStore } from '@netlify/blobs';
 import crypto from 'node:crypto';
 import { TOOLS, LIFE_AREA_IDS } from './lib/prompts.js';
-import { POLLS, nextRound } from './lib/game.js';
+import { POLLS, nextRound, PROFILE_IDS } from './lib/game.js';
 
 /* ---------------- storage ---------------- */
 function store() { return globalThis.__lsStore || getStore({ name: 'lordship', consistency: 'strong' }); }
@@ -225,6 +225,14 @@ export const HANDLERS = {
     return { ok: true };
   },
 
+  /* --- the Lordship profile quiz: a joined student puts their profile on the big screen --- */
+  async quizSave(a) {
+    const { s, c } = await student(a);
+    if (!PROFILE_IDS.includes(a.profile)) throw new Fail('BAD_PROFILE');
+    await db.set('qz:' + c.code + ':' + s.id, { p: a.profile, at: Date.now() });
+    return { ok: true };
+  },
+
   /* --- the anonymous question box: only the words and a topic are kept --- */
   async ask(a) {
     await classOk(a);
@@ -366,6 +374,12 @@ export const HANDLERS = {
     const g = (await db.get('game:' + c.code)) || { phase: 'off' };
     const st = await allStudents(c);
     const out = { phase: g.phase, reveal: !!g.reveal, code: c.code, names: st.map(x => x.name), facts: st.filter(x => x.fact).length, questions: (await db.keys('q:')).length };
+    if (g.phase === 'quiz') {
+      const byId = Object.fromEntries(st.map(x => [x.id, x.name]));
+      const list = [];
+      for (const k of await db.keys('qz:' + c.code + ':')) { const r = await db.get(k); const sid = k.split(':').pop(); if (r && byId[sid]) list.push({ name: byId[sid], p: r.p, at: r.at }); }
+      out.profiles = list.sort((x, y) => x.at - y.at).map(({ name, p }) => ({ name, p }));
+    }
     const r = g.rounds && g.rounds[g.rounds.length - 1];
     if (r && g.phase === 'q') {
       out.round = g.rounds.length - 1; out.kind = r.kind; out.q = r.kind === 'poll' ? r.q : r.fact; out.opts = r.kind === 'poll' ? r.opts : null;
@@ -382,7 +396,10 @@ export const HANDLERS = {
     if (!c.code) throw new Fail('NO_CLASS', 403);
     const k = 'game:' + c.code;
     let g = (await db.get(k)) || { phase: 'off' };
-    if (a.action === 'lobby') {
+    if (a.action === 'quiz') {
+      if (!(g.phase === 'quiz')) for (const qk of await db.keys('qz:' + c.code + ':')) await db.del(qk);
+      g = Object.assign({}, g, { phase: 'quiz', reveal: false });
+    } else if (a.action === 'lobby') {
       for (const vk of await db.keys('gv:' + c.code + ':')) await db.del(vk);
       g = { phase: 'lobby', rounds: [], reveal: false };
     } else if (a.action === 'next') {

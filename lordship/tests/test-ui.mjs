@@ -90,7 +90,7 @@ try {
   await page.evaluate(() => document.querySelector('.pg-photo').scrollIntoView());
   await page.waitForFunction(() => { const i = document.querySelector('.pg-photo img'); return i && i.complete && i.naturalWidth > 200; });
   ok('people group has a photo with a credit and licence', (await page.locator('.pg-photo figcaption').innerText()).includes('Photo:') && /CC BY/.test(await page.locator('.pg-photo figcaption').innerText()));
-  ok('Wednesday responds with My plan vs God’s plan and Not so, Lord', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
+  ok('Wednesday responds with My plan vs God’s plan', (await page.locator('.respond .tile').count()) === 1 && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
   await page.click('text=I’ve responded today');
   ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);
   await noScroll('day');
@@ -245,6 +245,7 @@ try {
 
   /* commitment */
   await page.goto(U + '/#/class');
+  ok('home: six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 6 && (await page.locator('details.more .tile').count()) >= 5);
   ok('home: plans at a glance', (await page.locator('.glance').innerText()).includes('laid side by side'));
   ok('home: welcome card', (await page.locator('.welcome').count()) === 1);
   await page.click('.welcome button');
@@ -358,11 +359,26 @@ try {
   ok('home says the game is on', (await pk.locator('.gamebanner').innerText()).includes('join in'));
   await pj.waitForFunction(() => document.querySelectorAll('.name-chip').length === 2);
   ok('new names pop onto the wall', true);
-  await pj.click('text=Start the game');
+  /* the Lordship profile quiz, then the game */
+  await pj.click('text=Lordship profile quiz');
+  await pj.waitForSelector('.quizwall');
+  await pk.reload(); await pk.waitForSelector('.gamebanner'); await pk.click('.gamebanner');
+  await pk.waitForSelector('.quiz');
+  for (let i = 0; i < 8; i++) { await pk.locator('.quiz .opt-btn').first().click(); await pk.waitForTimeout(120); }
+  await pk.waitForSelector('.pcard');
+  const prof = await pk.locator('.pcard h2').innerText();
+  ok('8 questions → a Lordship profile', prof.length > 3);
+  await pk.click('text=Show your neighbour'); await pk.waitForSelector('.pshow');
+  ok('big card to show a neighbour, with my name', (await pk.locator('.pshow').innerText()).includes('Dara is'));
+  await pk.click('.pshow');
+  await pk.click('text=Put it on the big screen'); await pk.waitForSelector('text=✓ On the big screen');
+  await pj.waitForSelector('.pchip');
+  ok('projector: name + profile pops up, with a tally', (await pj.locator('.pchip').innerText()).includes('Dara') && (await pj.locator('.ptally .pbar').count()) === 1);
+  await pj.click('text=Who wrote this?');
   await pj.waitForSelector('.screen-q:has-text("born on a boat")', { timeout: 10000 }).catch(() => {});
+  await pk.goto(U + '/#/t/game');
   ok('round 1 on the projector: who wrote this?', (await pj.locator('.screen-q').innerText()).includes('born on a boat'));
-  await pk.click('.gamebanner');
-  await pk.waitForSelector('.opt-btn');
+  await pk.waitForSelector('.opt-btn:has-text("Sokha")');
   await pk.click('.opt-btn:has-text("Sokha")');
   await pk.waitForSelector('text=Locked in');
   ok('phone: tap a name, locked in', true);
@@ -409,6 +425,10 @@ try {
   await p2.click('text=Stuck? Ask for a question'); await p2.click('text=Start with the coach');
   await p2.waitForSelector('.msg.assistant:not(.typing):not(.live)');
   ok('church wheel coach works without a code', true);
+  await p2.goto(U + '/#/church/quiz');
+  for (let i = 0; i < 8; i++) { await p2.locator('.quiz .opt-btn').nth(1).click(); await p2.waitForTimeout(100); }
+  await p2.waitForSelector('.pcard');
+  ok('church: the quiz works, no big-screen button', (await p2.locator('text=Put it on the big screen').count()) === 0);
   await p2.goto(U + '/#/church/notso');
   ok('Not so, Lord reflection', (await p2.locator('main').textContent()).includes('Not so, Lord; for I have never eaten'));
   await p2.evaluate(() => window.scrollTo(0, 0));

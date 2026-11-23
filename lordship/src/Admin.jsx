@@ -5,6 +5,7 @@ import { api, errText } from './core/api.js';
 import { DAYS, TOPICS, WHEEL_OUT, WHEEL_IN, GROUPS } from './teachings/lordship/content.js';
 import { toast, copyText } from './core/ui.jsx';
 import Qr, { downloadQrPng } from './core/Qr.jsx';
+import { PROFILES } from './teachings/lordship/content.js';
 
 const STATUS = [
   { id: 'new', name: 'New' }, { id: 'class', name: 'Answer in class' }, { id: 'panel', name: 'Thursday panel' },
@@ -316,7 +317,9 @@ export function GameScreen() {
   const controls = (
     <div className="panel-nav game-nav">
       {(g.phase === 'off' || g.phase === 'end') && <button className="btn primary" disabled={busy} onClick={() => act('lobby')}>{g.phase === 'end' ? 'New game' : 'Open the join wall'}</button>}
-      {g.phase === 'lobby' && <button className="btn primary" disabled={busy || !g.names.length} onClick={() => act('next')}>Start the game ▶</button>}
+      {(g.phase === 'lobby' || g.phase === 'off') && <button className="btn primary" disabled={busy} onClick={() => act('quiz')}>😂 Lordship profile quiz</button>}
+      {(g.phase === 'lobby' || g.phase === 'quiz') && <button className={'btn ' + (g.phase === 'quiz' ? 'primary' : 'ghost')} disabled={busy || !g.names.length} onClick={() => act('next')}>Who wrote this? ▶</button>}
+      {g.phase === 'quiz' && <button className="btn ghost" disabled={busy} onClick={() => act('lobby')}>Back to the join wall</button>}
       {g.phase === 'q' && !g.reveal && <button className="btn primary" disabled={busy} onClick={() => act('reveal')}>Reveal</button>}
       {g.phase === 'q' && g.reveal && (g.more ? <button className="btn primary" disabled={busy} onClick={() => act('next')}>Next ▶</button> : <button className="btn primary" disabled={busy} onClick={() => act('end')}>Finish 🏁</button>)}
       {g.phase === 'q' && <button className="btn ghost" disabled={busy} onClick={() => act('end')}>End</button>}
@@ -336,6 +339,25 @@ export function GameScreen() {
       <a className="screen-exit" href="#/admin">✕</a>
     </div>
   );
+  if (g.phase === 'quiz') {
+    const n = {}; (g.profiles || []).forEach(x => { n[x.p] = (n[x.p] || 0) + 1; });
+    const max = Math.max(1, ...Object.values(n));
+    return (
+      <div className="screen quizwall">
+        <div className="screen-main">
+          <p className="eyebrow">Lordship · Day 1</p>
+          <h1 className="screen-q">What’s your <em>Lordship profile?</em></h1>
+          <p className="screen-ref">8 quick questions on your phone → show your neighbour → put it on the big screen</p>
+          <div className="profile-wall">{(g.profiles || []).slice(-24).map((x, i) => <span key={x.name + i} className="pchip"><b>{(PROFILES[x.p] || {}).emoji}</b> {x.name} <em>{(PROFILES[x.p] || {}).name}</em></span>)}</div>
+          <div className="ptally">{Object.keys(PROFILES).filter(k => n[k]).sort((a, b) => n[b] - n[a]).map(k => (
+            <div key={k} className="pbar"><span>{PROFILES[k].emoji} {PROFILES[k].name}</span><div><i style={{ width: n[k] / max * 100 + '%' }} /></div><b>{n[k]}</b></div>))}</div>
+          {controls}
+        </div>
+        <div className="screen-qr"><Qr text={link} size={240} /><p><b>{(g.profiles || []).length}</b> of {g.names.length} in</p></div>
+        <a className="screen-exit" href="#/admin">✕</a>
+      </div>
+    );
+  }
   if (g.phase === 'end') return (
     <div className="screen panel">
       <div className="screen-main"><p className="eyebrow">Day 1 game</p><h1 className="screen-q">🏆 Top guessers</h1>

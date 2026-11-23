@@ -28,6 +28,7 @@ export default function Me() {
         <div className="row"><input value={fact} maxLength={160} onChange={e => setFact(e.target.value)} aria-label="Fun fact" />
           <button className="btn soft small" onClick={async () => { await saveFact(fact.trim()); toast('Saved'); }}>Save</button></div>
       </div>
+      <a className="btn ghost small" href="#/t/data">Download a copy of my answers</a>
       <p className="small muted">Forgot your PIN? Ask Uriah or Naomi — they can set a new one.</p>
       <button className="btn ghost" onClick={() => { if (confirm('Sign out on this phone? Your answers stay saved to your account.')) { signOut(); location.hash = '#/class'; } }}>Sign out</button>
     </>

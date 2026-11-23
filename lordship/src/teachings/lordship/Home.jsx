@@ -61,7 +61,9 @@ export function ClassHome({ cls }) {
   const d = DAYS.find(x => x.id === tid);
   const due = dueCheckin(c);
   const t = todayStr();
-  const tools = TOOLS.filter(x => x.cls && !x.hidden);
+  const ORDER = ['quiz', 'game', 'laydown', 'wheel', 'commit', 'questions'];
+  const tools = ORDER.map(id => TOOLS.find(x => x.id === id)).filter(Boolean);
+  const more = TOOLS.filter(x => x.cls && x.more);
   const [done] = useLocal(K.days, {});
   const nDone = DAYS.filter(x => done[x.id]).length;
   return (
@@ -92,9 +94,12 @@ export function ClassHome({ cls }) {
       ) : <h4>The week</h4>}
       <DayTabs cur={null} today={tid} />
       <PlansGlance base="#/t/laydown" />
-      {hs.length > 0 && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/habits">✅ Habits today: <b>{hs.filter(h => h.days[t]).length} of {hs.length}</b></a>}
       <h4>Tools</h4>
       <div className="tiles">{tools.map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
+      <details className="more">
+        <summary>More tools</summary>
+        <div className="tiles">{more.map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
+      </details>
       <PeopleGroup />
     </>
   );

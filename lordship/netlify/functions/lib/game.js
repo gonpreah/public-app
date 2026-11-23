@@ -26,3 +26,6 @@ export function nextRound(g, facts) {
   if (pollsUsed < POLLS.length) return Object.assign({ kind: 'poll' }, POLLS[pollsUsed]);
   return null;
 }
+
+/* The Lordship profile quiz: the profile ids a phone may post (texts live in the app's content.js). */
+export const PROFILE_IDS = ['netflix', 'bentley', 'ring', 'sahara', 'gym', 'wifi', 'planner', 'pleaser'];

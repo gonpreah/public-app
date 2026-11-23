@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, errText } from '../../../core/api.js';
 import { authArgs, getMe, saveFact } from '../../../core/account.js';
 import { burst, toast } from '../../../core/ui.jsx';
+import Quiz from './Quiz.jsx';
 
 export function useGame(code, ms) {
   const [g, setG] = useState(null);
@@ -69,6 +70,7 @@ export default function Game({ code }) {
   }
   const head = <><p className="eyebrow">🎲 Day 1 game</p></>;
   if (g.phase === 'off') return (<>{head}<h1>The game hasn’t started</h1><p className="muted">When Uriah starts it, it’ll appear here. Meanwhile:</p><FactBox /><AskBox code={code} /></>);
+  if (g.phase === 'quiz') return (<>{head}<Quiz code={code} /></>);
   if (g.phase === 'lobby') return (<>{head}<h1>You’re in! 👀</h1><p className="lead">Watch the big screen — {g.joined} joined so far.</p><FactBox /><AskBox code={code} /></>);
   if (g.phase === 'end') return (
     <>{head}<h1>That’s a wrap 🎉</h1>

@@ -102,10 +102,10 @@ export default function App() {
   const tid = cls && todayDayId(cls.weekStart);
   const nav = church
     ? [['church', '🏠', 'Home'], ['church/wheel', '🎯', 'Wheel'], ['church/laydown', '⚖️', 'My plan'], ['church/people', '🌏', 'Pray'], ['church/connect', '🤝', 'Connect']]
-    : cls && me && needsClass ? [['class', '🏠', 'Home'], ['day/' + (tid || 'mon'), '📖', 'Sessions'], ['t/wheel', '🎯', 'Wheel'], ['t/habits', '✅', 'Habits'], ['t/questions', '❓', 'Ask']]
+    : cls && me && needsClass ? [['class', '🏠', 'Home'], ['day/' + (tid || 'mon'), '📖', 'Sessions'], ['t/laydown', '⚖️', 'My plan'], ['t/questions', '❓', 'Ask']]
       : null;
   const here = r.join('/') || 'class';
-  const on = (p) => here === p || (r.length > 2 && here.startsWith(p + '/')) || (p.startsWith('day/') && r[0] === 'day');
+  const on = (p) => here === p || (here.startsWith(p + '/')) || (p.startsWith('day/') && r[0] === 'day');
 
   return (
     <>

@@ -19,6 +19,7 @@ export const DAYS = [
       { ref: 'Philippians 2:14–15', text: 'Do all things without murmurings and disputes, that you may become blameless and harmless, children of God without defect in the middle of a crooked and perverse generation, among whom you are seen as lights in the world.' }
     ],
     respond: [
+      { tool: 'quiz', why: 'Warm up: what’s your Lordship profile? (Netflix Martyr? Sahara Saint?)' },
       { tool: 'wheel', why: 'Take an honest look at your whole life — heart, soul, mind and strength.' },
       { tool: 'habits', why: 'Swap one complaint for one thank-you, every day this week.' }
     ],
@@ -56,8 +57,7 @@ export const DAYS = [
       { ref: 'Philippians 2:5–11', text: 'Have this in your mind, which was also in Christ Jesus, who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men. And being found in human form, he humbled himself, becoming obedient to death, yes, the death of the cross. Therefore God also highly exalted him, and gave to him the name which is above every name; that at the name of Jesus every knee should bow, of those in heaven, those on earth, and those under the earth, and that every tongue should confess that Jesus Christ is Lord, to the glory of God the Father.' }
     ],
     respond: [
-      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live — and name your Isaac.' },
-      { tool: 'notso', why: 'Find the place you say “Lord” and “not so” in the same breath.' }
+      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live — and name your Isaac.' }
     ],
     questions: [
       'What is your Isaac — the good thing you’d find hardest to hand back to God?',
@@ -96,7 +96,6 @@ export const DAYS = [
     respond: [
       { tool: 'scroll', why: 'Write what you sense is on your scroll.' },
       { tool: 'godthing', why: 'Test an opportunity: God thing or good thing?' },
-      { tool: 'growth', why: 'Plan how you’ll keep growing while you serve.' },
       { tool: 'commit', why: 'Throw down your commitment and declare it.' }
     ],
     questions: [
@@ -273,3 +272,42 @@ export const LINKS = {
   ],
   gonpreah: { label: 'gonpreah.org', href: 'https://gonpreah.org' }
 };
+
+/* "What's your Lordship profile?" — a funny day-one quiz. Each answer points to a profile; the most points wins.
+   Every profile is a joke with a true edge: the thing we'd die for Jesus for, except… */
+export const PROFILES = {
+  netflix: { emoji: '📺', name: 'The Netflix Martyr', tag: 'I’ll die for Jesus — just don’t touch my Netflix.',
+    about: 'Ready for the cross, not ready to cancel the subscription. Comfort is your quiet little god.',
+    notso: 'Not so, Lord… not my evenings.', down: 'One night of comfort a week', up: 'Something hard and holy instead', ref: 'Luke 9:23' },
+  bentley: { emoji: '🚗', name: 'The Bentley Believer', tag: 'Use me, Lord… in a nice car.',
+    about: 'You want to serve God and look good doing it. Money and nice things whisper “security”.',
+    notso: 'Not so, Lord… not my savings.', down: 'Needing stuff to feel secure', up: 'Give something away this week', ref: 'Matthew 6:21' },
+  ring: { emoji: '💍', name: 'Ring by Spring', tag: 'Give me a spouse or give me death.',
+    about: 'You trust God with everything except the timeline of your love life.',
+    notso: 'Not so, Lord… not my timeline.', down: 'My romance deadline', up: 'Trust him with the waiting', ref: 'Psalm 37:4–5' },
+  sahara: { emoji: '🐪', name: 'The Sahara Saint', tag: 'Send me to the desert. Today. Alone. Barefoot.',
+    about: 'All in — maybe a bit too fast. Watch for pride, burnout, and skipping the people right next to you.',
+    notso: 'Not so, Lord… not slow and ordinary.', down: 'Needing it to be dramatic', up: 'Faithful in the small, boring things', ref: 'Luke 16:10' },
+  gym: { emoji: '🏋️', name: 'The Gym-Exempt Missionary', tag: 'Ready to die for Jesus. Not ready for leg day.',
+    about: 'Spirit willing, flesh on the couch. Your body is a temple — currently under renovation.',
+    notso: 'Not so, Lord… not my sleep-in.', down: 'Snooze and snacks', up: 'One rhythm for your body', ref: '1 Corinthians 6:19–20' },
+  wifi: { emoji: '📶', name: 'The Wi-Fi Warrior', tag: 'I’ll go anywhere, Lord — as long as there’s Wi-Fi.',
+    about: 'Your phone is your third hand. Lordship might mean a little more airplane mode.',
+    notso: 'Not so, Lord… not my screen time.', down: 'The scroll before bed', up: 'Phone-free time with God', ref: 'Psalm 90:12' },
+  planner: { emoji: '📋', name: 'Plan A Planner', tag: 'I’ve planned my life to 2047. God can sign off.',
+    about: 'Twelve kids, a farmhouse and a career path — you just need God’s signature at the bottom.',
+    notso: 'Not so, Lord… not my plan.', down: 'Gripping the five-year plan', up: 'Pray “your will” and mean it', ref: 'Proverbs 16:9' },
+  pleaser: { emoji: '🙏', name: 'The People-Pleaser Prophet', tag: 'Whatever you want, Lord… and also everyone else.',
+    about: 'You hear God fine — and your mum, your leader and the group chat a bit louder.',
+    notso: 'Not so, Lord… not if they’ll be upset.', down: 'Needing everyone’s approval', up: 'Obey God first, kindly', ref: 'Galatians 1:10' }
+};
+export const QUIZ = [
+  { q: 'God says “Go.” Your first thought?', opts: [['Is there Wi-Fi?', 'wifi'], ['Tonight? I’m mid-season…', 'netflix'], ['Already packed. Barefoot.', 'sahara'], ['Let me check it fits my 5-year plan', 'planner']] },
+  { q: 'Your dream ministry ride:', opts: [['A Bentley, for God’s glory', 'bentley'], ['A camel', 'sahara'], ['Whatever my leader thinks is best', 'pleaser'], ['A minivan for my future 12 kids', 'planner']] },
+  { q: 'It’s 6 a.m. prayer meeting. You…', opts: [['Pray from bed (it counts)', 'gym'], ['Were up at 4 already', 'sahara'], ['Go, because everyone else is', 'pleaser'], ['Scroll first, pray later', 'wifi']] },
+  { q: 'The hardest thing to lay down:', opts: [['My savings account', 'bentley'], ['My future spouse (I’ve named them)', 'ring'], ['My streaming queue', 'netflix'], ['My phone', 'wifi']] },
+  { q: 'Outreach is in a village with no power. You:', opts: [['Pack a power bank. Or six.', 'wifi'], ['Ask what’s for dinner — and is it spicy?', 'gym'], ['Finally. Real ministry.', 'sahara'], ['Hope someone cute is on the team', 'ring']] },
+  { q: 'Your Sabbath looks like:', opts: [['Couch. Blanket. Episode 9.', 'netflix'], ['Colour-coding next week', 'planner'], ['Saying yes to everyone who asks', 'pleaser'], ['Online shopping “just looking”', 'bentley']] },
+  { q: 'Fasting week! Your survival plan:', opts: [['I’ll fast… from the gym', 'gym'], ['Fast from social media (sobbing)', 'wifi'], ['Already on day 40', 'sahara'], ['Only if my small group is', 'pleaser']] },
+  { q: 'Your prayer request, honestly:', opts: [['A husband/wife by spring', 'ring'], ['Financial breakthrough (a Bentley)', 'bentley'], ['That God approves my plan', 'planner'], ['More hours in the day for shows', 'netflix']] }
+];

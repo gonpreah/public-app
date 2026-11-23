@@ -7,6 +7,10 @@
       q:<id>                  an anonymous question: {id, text, topic, day, status} — no name, no device, no IP
       job:<id>                a coaching turn waiting for Claude (deleted once read; the chat itself lives on the phone)
       bk:<code>               a cloud backup a student asked for: their own saved answers, found only by its code (180 days)
+      st:<class>:<sid>        a student who joined: name, PIN (salted scrypt hash), phones' keys (hashed), fun fact
+      stn:<class>:<name>      the student id for a name (one name per class)
+      sd:<sid>                a student's saved answers (synced from their phone; only they can load them)
+      game:<class>            the Day 1 game: phase, rounds, reveal; gv:<class>:<round>:<sid> a vote
       an:<class>:<anon>       anonymous class totals a student opted into: wheel numbers, HOT numbers, committed yes/no —
                               keyed by a random id made on the phone, never a name
       n:<day>, nch:<day>, nq:<day>, bad:<day>   daily counters
@@ -19,6 +23,7 @@
 import { getStore } from '@netlify/blobs';
 import crypto from 'node:crypto';
 import { TOOLS, LIFE_AREA_IDS } from './lib/prompts.js';
+import { POLLS, nextRound, PROFILE_IDS } from './lib/game.js';
 
 /* ---------------- storage ---------------- */
 function store() { return globalThis.__lsStore || getStore({ name: 'lordship', consistency: 'strong' }); }
@@ -63,6 +68,32 @@ async function classOk(a) {
   if (!c.code || !code || !same(code, c.code)) throw new Fail('NO_CLASS', 403);
   return c;
 }
+/* ---- students: a name and a 4-digit PIN (Uriah: "a basic 4-pin thing") ---- */
+const normName = (n) => clip(n, 40).trim().replace(/\s+/g, ' ');
+const nameKey = (n) => normName(n).toLowerCase().replace(/[^a-z0-9\u00c0-\uffff ]/g, '').replace(/ /g, '-').slice(0, 40);
+const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex');
+function pinHash(pin, salt) { return crypto.scryptSync(String(pin), salt, 32).toString('hex'); }
+async function student(a, c) {
+  c = c || await classOk(a);
+  const t = String(a.token || '');
+  const sid = clip(a.sid, 20);
+  const s = sid && await db.get('st:' + c.code + ':' + sid);
+  if (!s || !t || !(s.keys || []).includes(sha(t))) throw new Fail('NO_STUDENT', 401);
+  return { s, c };
+}
+async function issueKey(s, c) {
+  const token = rnd(24);
+  s.keys = [sha(token)].concat(s.keys || []).slice(0, 6);
+  s.seen = Date.now();
+  await db.set('st:' + c.code + ':' + s.id, s);
+  return { token, sid: s.id, name: s.name, fact: s.fact || '' };
+}
+async function allStudents(c) {
+  const out = [];
+  for (const k of await db.keys('st:' + c.code + ':')) { const s = await db.get(k); if (s) out.push(s); }
+  return out.sort((x, y) => (x.at || 0) - (y.at || 0));
+}
+
 async function admin(a) {
   const pw = process.env.LS_ADMIN_PASSWORD;
   if (!pw) throw new Fail('NO_ADMIN_PASSWORD', 503);
@@ -113,6 +144,93 @@ export const HANDLERS = {
     const p = await db.get(`sp:${d}:${k}:${meta.v}:${i}`);
     if (!p) throw new Fail('NO_FILE', 404);
     return { d: p.d };
+  },
+
+  /* --- joining the class: name + 4-digit PIN --- */
+  async join(a) {
+    const c = await classOk(a);
+    const name = normName(a.name);
+    if (name.length < 2) throw new Fail('BAD_NAME');
+    if (!/^\d{4}$/.test(String(a.pin || ''))) throw new Fail('BAD_PIN');
+    const nk = nameKey(name);
+    if (!nk) throw new Fail('BAD_NAME');
+    if (await db.get('stn:' + c.code + ':' + nk)) throw new Fail('NAME_TAKEN', 409);
+    if (await bump('nj:' + c.code + ':' + today()) > num(process.env.LS_CAP_JOINS, 300)) throw new Fail('LIMIT', 429);
+    const id = rnd(12), salt = rnd(16);
+    const s = { id, name, salt, pin: pinHash(a.pin, salt), at: Date.now(), keys: [] };
+    await db.set('stn:' + c.code + ':' + nk, id);
+    return issueKey(s, c);
+  },
+  async signIn(a) {
+    const c = await classOk(a);
+    const sid = await db.get('stn:' + c.code + ':' + nameKey(a.name));
+    const s = sid && await db.get('st:' + c.code + ':' + sid);
+    if (!s) throw new Fail('NO_NAME', 404);
+    const k = 'pinbad:' + s.id + ':' + new Date().toISOString().slice(0, 13);
+    if (((await db.get(k)) || 0) >= 8) throw new Fail('LOCKED', 429);
+    if (!/^\d{4}$/.test(String(a.pin || '')) || !same(pinHash(a.pin, s.salt), s.pin)) { await bump(k); throw new Fail('BAD_PIN', 403); }
+    return issueKey(s, c);
+  },
+  async me(a) { const { s } = await student(a); return { sid: s.id, name: s.name, fact: s.fact || '' }; },
+  async setFact(a) {
+    const { s, c } = await student(a);
+    s.fact = clip(a.fact, 160).trim();
+    await db.set('st:' + c.code + ':' + s.id, s);
+    return { ok: true, fact: s.fact };
+  },
+  async syncSave(a) {
+    const { s } = await student(a);
+    if (!a.data || typeof a.data !== 'object' || Array.isArray(a.data)) throw new Fail('EMPTY');
+    const raw = JSON.stringify(a.data);
+    if (raw.length > 400000) throw new Fail('TOO_BIG', 413);
+    const at = Math.min(parseInt(a.at, 10) || Date.now(), Date.now());
+    await db.set('sd:' + s.id, { data: JSON.parse(raw), at });
+    return { ok: true, at };
+  },
+  async syncLoad(a) {
+    const { s } = await student(a);
+    const d = await db.get('sd:' + s.id);
+    return { data: d ? d.data : null, at: d ? d.at : 0 };
+  },
+
+  /* --- the Day 1 game (phones) --- */
+  async gameState(a) {
+    const c = await classOk(a);
+    let me = null;
+    try { me = (await student(a, c)).s; } catch (e) { /* not signed in: can watch, can't vote */ }
+    const g = (await db.get('game:' + c.code)) || { phase: 'off' };
+    const out = { phase: g.phase, round: g.rounds ? g.rounds.length - 1 : -1, reveal: !!g.reveal, joined: (await db.keys('st:' + c.code + ':')).length };
+    const r = g.rounds && g.rounds[g.rounds.length - 1];
+    if (r && g.phase === 'q') {
+      out.kind = r.kind;
+      out.q = r.kind === 'poll' ? r.q : r.fact;
+      out.opts = r.kind === 'poll' ? r.opts : (await allStudents(c)).map(x => ({ id: x.id, name: x.name }));
+      if (me) out.mine = await db.get(`gv:${c.code}:${out.round}:${me.id}`);
+      if (g.reveal) Object.assign(out, await tally(c, g, out.round));
+      if (me && r.kind === 'who') out.isMe = r.sid === me.id;
+    }
+    if (g.phase === 'end' || (g.phase === 'q' && g.reveal)) { const b = await board(c, g); out.top = b.slice(0, 5); if (me) out.myScore = (b.find(x => x.id === me.id) || {}).score || 0; }
+    return out;
+  },
+  async gameVote(a) {
+    const { s, c } = await student(a);
+    const g = await db.get('game:' + c.code);
+    const round = parseInt(a.round, 10);
+    if (!g || g.phase !== 'q' || g.reveal || round !== g.rounds.length - 1) throw new Fail('CLOSED', 409);
+    const r = g.rounds[round];
+    const choice = r.kind === 'poll' ? parseInt(a.choice, 10) : clip(a.choice, 20);
+    if (r.kind === 'poll' && !(choice >= 0 && choice < r.opts.length)) throw new Fail('BAD_CHOICE');
+    if (r.kind === 'who' && !(await db.get('st:' + c.code + ':' + choice))) throw new Fail('BAD_CHOICE');
+    await db.set(`gv:${c.code}:${round}:${s.id}`, choice);
+    return { ok: true };
+  },
+
+  /* --- the Lordship profile quiz: a joined student puts their profile on the big screen --- */
+  async quizSave(a) {
+    const { s, c } = await student(a);
+    if (!PROFILE_IDS.includes(a.profile)) throw new Fail('BAD_PROFILE');
+    await db.set('qz:' + c.code + ':' + s.id, { p: a.profile, at: Date.now() });
+    return { ok: true };
   },
 
   /* --- the anonymous question box: only the words and a topic are kept --- */
@@ -227,6 +345,76 @@ export const HANDLERS = {
     await db.set('cfg', { name: clip(a.name, 80).trim() || 'Lordship DTS', code, weekStart: ws });
     return { cfg: await cfg() };
   },
+  /* --- the class roster and the game (projector) --- */
+  async adminRoster(a) {
+    await admin(a);
+    const c = await cfg();
+    if (!c.code) return { students: [] };
+    const st = await allStudents(c);
+    return { students: await Promise.all(st.map(async x => ({ id: x.id, name: x.name, at: x.at, seen: x.seen || 0, fact: !!x.fact, saved: ((await db.get('sd:' + x.id)) || {}).at || 0 }))) };
+  },
+  async adminStudent(a) {
+    await admin(a);
+    const c = await cfg();
+    const s = await db.get('st:' + c.code + ':' + clip(a.sid, 20));
+    if (!s) throw new Fail('NO_STUDENT', 404);
+    if (a.remove) {
+      await db.del('st:' + c.code + ':' + s.id); await db.del('stn:' + c.code + ':' + nameKey(s.name)); await db.del('sd:' + s.id);
+      return { ok: true };
+    }
+    if (!/^\d{4}$/.test(String(a.pin || ''))) throw new Fail('BAD_PIN');
+    s.salt = rnd(16); s.pin = pinHash(a.pin, s.salt);
+    await db.set('st:' + c.code + ':' + s.id, s);
+    return { ok: true };
+  },
+  async gameScreen(a) {
+    await admin(a);
+    const c = await cfg();
+    if (!c.code) throw new Fail('NO_CLASS', 403);
+    const g = (await db.get('game:' + c.code)) || { phase: 'off' };
+    const st = await allStudents(c);
+    const out = { phase: g.phase, reveal: !!g.reveal, code: c.code, names: st.map(x => x.name), facts: st.filter(x => x.fact).length, questions: (await db.keys('q:')).length };
+    if (g.phase === 'quiz') {
+      const byId = Object.fromEntries(st.map(x => [x.id, x.name]));
+      const list = [];
+      for (const k of await db.keys('qz:' + c.code + ':')) { const r = await db.get(k); const sid = k.split(':').pop(); if (r && byId[sid]) list.push({ name: byId[sid], p: r.p, at: r.at }); }
+      out.profiles = list.sort((x, y) => x.at - y.at).map(({ name, p }) => ({ name, p }));
+    }
+    const r = g.rounds && g.rounds[g.rounds.length - 1];
+    if (r && g.phase === 'q') {
+      out.round = g.rounds.length - 1; out.kind = r.kind; out.q = r.kind === 'poll' ? r.q : r.fact; out.opts = r.kind === 'poll' ? r.opts : null;
+      out.answered = (await db.keys(`gv:${c.code}:${out.round}:`)).length;
+      if (g.reveal) Object.assign(out, await tally(c, g, out.round));
+    }
+    if (g.phase === 'end' || (g.phase === 'q' && g.reveal)) out.top = (await board(c, g)).slice(0, 5);
+    out.more = !!nextRound(g.rounds ? g : Object.assign({}, g, { rounds: [] }), st.filter(x => x.fact).map(x => ({ sid: x.id, text: x.fact })));
+    return out;
+  },
+  async gameAdmin(a) {
+    await admin(a);
+    const c = await cfg();
+    if (!c.code) throw new Fail('NO_CLASS', 403);
+    const k = 'game:' + c.code;
+    let g = (await db.get(k)) || { phase: 'off' };
+    if (a.action === 'quiz') {
+      if (!(g.phase === 'quiz')) for (const qk of await db.keys('qz:' + c.code + ':')) await db.del(qk);
+      g = Object.assign({}, g, { phase: 'quiz', reveal: false });
+    } else if (a.action === 'lobby') {
+      for (const vk of await db.keys('gv:' + c.code + ':')) await db.del(vk);
+      g = { phase: 'lobby', rounds: [], reveal: false };
+    } else if (a.action === 'next') {
+      if (!g.rounds) g.rounds = [];
+      const facts = (await allStudents(c)).filter(x => x.fact).map(x => ({ sid: x.id, text: x.fact }));
+      const r = nextRound(g, facts);
+      if (r) { g.rounds.push(r); g.phase = 'q'; g.reveal = false; } else g.phase = 'end';
+    } else if (a.action === 'reveal') { if (g.phase === 'q') g.reveal = true; }
+    else if (a.action === 'end') g.phase = 'end';
+    else if (a.action === 'off') g = { phase: 'off' };
+    else throw new Fail('BAD_ACTION');
+    await db.set(k, g);
+    return { ok: true, phase: g.phase };
+  },
+
   async adminQuestions(a) {
     await admin(a);
     const out = [];
@@ -294,7 +482,28 @@ export const HANDLERS = {
   }
 };
 
-export { LIFE_AREA_IDS };
+/* Results of a round: counts per option (polls) or per name, and for "who" the right answer. */
+async function tally(c, g, round) {
+  const r = g.rounds[round];
+  const counts = {};
+  for (const k of await db.keys(`gv:${c.code}:${round}:`)) { const v = await db.get(k); counts[v] = (counts[v] || 0) + 1; }
+  if (r.kind === 'poll') return { counts: r.opts.map((_, i) => counts[i] || 0) };
+  const who = await db.get('st:' + c.code + ':' + r.sid);
+  return { counts, answer: { id: r.sid, name: who ? who.name : '?' }, right: counts[r.sid] || 0 };
+}
+/* Points: one for each "who wrote this?" guessed right (only revealed rounds count). */
+async function board(c, g) {
+  const st = await allStudents(c);
+  const score = {};
+  for (let i = 0; i < (g.rounds || []).length; i++) {
+    const r = g.rounds[i];
+    if (r.kind !== 'who' || (i === g.rounds.length - 1 && !g.reveal && g.phase !== 'end')) continue;
+    for (const k of await db.keys(`gv:${c.code}:${i}:`)) { if ((await db.get(k)) === r.sid) { const sid = k.split(':').pop(); score[sid] = (score[sid] || 0) + 1; } }
+  }
+  return st.map(x => ({ id: x.id, name: x.name, score: score[x.id] || 0 })).filter(x => x.score > 0).sort((x, y) => y.score - x.score);
+}
+
+export { LIFE_AREA_IDS, POLLS };
 
 /* ---------------- the endpoint ---------------- */
 const json = (o, status) => new Response(JSON.stringify(o), { status: status || 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });

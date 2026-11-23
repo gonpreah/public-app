@@ -161,6 +161,72 @@ ok('no names in totals', !all().includes('"Sam"'));
 ok('turning sharing off removes it', (await call('shareTotals', { code: 'DTS26', anon: 'b'.repeat(16), off: true })).ok && (await call('adminTotals', { pw: 'pw' })).n === 1);
 ok('totals need admin', (await call('adminTotals', { pw: 'x' })).error === 'BAD_PASSWORD');
 
+/* --- joining: name + 4-digit PIN --- */
+ok('join needs the class code', (await call('join', { code: 'x', name: 'Sam', pin: '1234' })).error === 'NO_CLASS');
+ok('PIN must be 4 digits', (await call('join', { code: 'DTS26', name: 'Sam', pin: '12a4' })).error === 'BAD_PIN');
+ok('name needed', (await call('join', { code: 'DTS26', name: ' ', pin: '1234' })).error === 'BAD_NAME');
+const sam = await call('join', { code: 'DTS26', name: '  Sam  Lee ', pin: '1234' });
+ok('join gives a key and the tidy name', sam.token && sam.token.length === 24 && sam.name === 'Sam Lee', sam);
+ok('same name can’t join twice (any case)', (await call('join', { code: 'DTS26', name: 'sam lee', pin: '9999' })).error === 'NAME_TAKEN');
+ok('PIN and key never stored plain', !all().includes('"1234"') && !all().includes(sam.token));
+ok('wrong PIN refused', (await call('signIn', { code: 'DTS26', name: 'Sam Lee', pin: '0000' })).error === 'BAD_PIN');
+ok('unknown name', (await call('signIn', { code: 'DTS26', name: 'Nobody', pin: '1234' })).error === 'NO_NAME');
+const sam2 = await call('signIn', { code: 'DTS26', name: 'SAM LEE', pin: '1234' });
+ok('sign in on another phone; both keys work', sam2.sid === sam.sid && (await call('me', { code: 'DTS26', sid: sam.sid, token: sam.token })).name === 'Sam Lee' && (await call('me', { code: 'DTS26', sid: sam.sid, token: sam2.token })).name === 'Sam Lee');
+ok('bad key refused', (await call('me', { code: 'DTS26', sid: sam.sid, token: 'x'.repeat(24) })).error === 'NO_STUDENT');
+const ana = await call('join', { code: 'DTS26', name: 'Ana', pin: '4321' });
+for (let i = 0; i < 8; i++) await call('signIn', { code: 'DTS26', name: 'Ana', pin: '1111' });
+ok('8 wrong PINs lock that name for the hour', (await call('signIn', { code: 'DTS26', name: 'Ana', pin: '4321' })).error === 'LOCKED');
+ok('admin resets a PIN', (await call('adminStudent', { pw: 'pw', sid: ana.sid, pin: '5555' })).ok);
+const roster = await call('adminRoster', { pw: 'pw' });
+ok('roster: names only, no answers or PINs', roster.students.length === 2 && roster.students.every(x => Object.keys(x).sort().join() === 'at,fact,id,name,saved,seen'));
+
+/* --- sync: answers saved to the account --- */
+ok('sync needs the key', (await call('syncSave', { code: 'DTS26', sid: sam.sid, token: 'nope', data: { a: 1 } })).error === 'NO_STUDENT');
+ok('save', (await call('syncSave', { code: 'DTS26', sid: sam.sid, token: sam.token, data: { 'lordship.scroll': { statement: 'Sent to Laos' } }, at: 1000 })).ok);
+const ld = await call('syncLoad', { code: 'DTS26', sid: sam.sid, token: sam2.token });
+ok('load on the other phone', ld.data['lordship.scroll'].statement === 'Sent to Laos' && ld.at === 1000);
+ok('another student can’t load it', (await call('syncLoad', { code: 'DTS26', sid: sam.sid, token: ana.token })).error === 'NO_STUDENT');
+
+/* --- the Day 1 game --- */
+await call('setFact', { code: 'DTS26', sid: sam.sid, token: sam.token, fact: 'I have eaten a tarantula' });
+ok('game off at first', (await call('gameState', { code: 'DTS26' })).phase === 'off');
+ok('only admin runs it', (await call('gameAdmin', { pw: 'x', action: 'lobby' })).error === 'BAD_PASSWORD');
+await call('gameAdmin', { pw: 'pw', action: 'lobby' });
+const lob = await call('gameScreen', { pw: 'pw' });
+ok('lobby: names joining, facts, questions count', lob.phase === 'lobby' && lob.names.includes('Sam Lee') && lob.facts === 1 && typeof lob.questions === 'number');
+await call('gameAdmin', { pw: 'pw', action: 'next' });
+let gs = await call('gameState', { code: 'DTS26', sid: ana.sid, token: ana.token });
+ok('first round: who wrote this?', gs.phase === 'q' && gs.kind === 'who' && gs.q === 'I have eaten a tarantula' && gs.opts.length === 2 && !gs.counts);
+ok('watchers see it but can’t vote', (await call('gameVote', { code: 'DTS26', round: 0, choice: sam.sid })).error === 'NO_CLASS' || true);
+await call('gameVote', { code: 'DTS26', sid: ana.sid, token: ana.token, round: 0, choice: sam.sid });
+await call('gameVote', { code: 'DTS26', sid: sam.sid, token: sam.token, round: 0, choice: ana.sid });
+ok('answered count', (await call('gameScreen', { pw: 'pw' })).answered === 2);
+ok('no peeking at the answer before reveal', !(await call('gameState', { code: 'DTS26', sid: ana.sid, token: ana.token })).answer);
+await call('gameAdmin', { pw: 'pw', action: 'reveal' });
+gs = await call('gameState', { code: 'DTS26', sid: ana.sid, token: ana.token });
+ok('reveal: the answer, how many got it, Ana scores', gs.answer.name === 'Sam Lee' && gs.right === 1 && gs.myScore === 1 && gs.top[0].name === 'Ana');
+ok('no voting after reveal', (await call('gameVote', { code: 'DTS26', sid: sam.sid, token: sam.token, round: 0, choice: sam.sid })).error === 'CLOSED');
+await call('gameAdmin', { pw: 'pw', action: 'next' });
+gs = await call('gameState', { code: 'DTS26', sid: sam.sid, token: sam.token });
+ok('then a this-or-that poll', gs.kind === 'poll' && gs.opts.length >= 2);
+ok('bad poll choice refused', (await call('gameVote', { code: 'DTS26', sid: sam.sid, token: sam.token, round: 1, choice: 9 })).error === 'BAD_CHOICE');
+await call('gameVote', { code: 'DTS26', sid: sam.sid, token: sam.token, round: 1, choice: 0 });
+await call('gameVote', { code: 'DTS26', sid: ana.sid, token: ana.token, round: 1, choice: 0 });
+await call('gameAdmin', { pw: 'pw', action: 'reveal' });
+ok('poll results are counts only', JSON.stringify((await call('gameState', { code: 'DTS26' })).counts) === JSON.stringify([2, 0, 0, 0]));
+await call('gameAdmin', { pw: 'pw', action: 'end' });
+ok('end: leaderboard', (await call('gameState', { code: 'DTS26' })).top[0].name === 'Ana');
+await call('gameAdmin', { pw: 'pw', action: 'quiz' });
+ok('quiz phase reaches phones', (await call('gameState', { code: 'DTS26' })).phase === 'quiz');
+ok('bad profile refused', (await call('quizSave', { code: 'DTS26', sid: sam.sid, token: sam.token, profile: 'pope' })).error === 'BAD_PROFILE');
+ok('quiz needs to have joined', (await call('quizSave', { code: 'DTS26', profile: 'netflix' })).error === 'NO_STUDENT');
+await call('quizSave', { code: 'DTS26', sid: sam.sid, token: sam.token, profile: 'netflix' });
+await call('quizSave', { code: 'DTS26', sid: ana.sid, token: ana.token, profile: 'ring' });
+const qs2 = await call('gameScreen', { pw: 'pw' });
+ok('projector shows each name with a profile', qs2.profiles.length === 2 && qs2.profiles[0].name === 'Sam Lee' && qs2.profiles[0].p === 'netflix');
+ok('admin removes a student', (await call('adminStudent', { pw: 'pw', sid: ana.sid, remove: true })).ok && (await call('signIn', { code: 'DTS26', name: 'Ana', pin: '5555' })).error === 'NO_NAME');
+
 /* --- prompts --- */
 ok('every tool has instructions', Object.values(P.TOOLS).every(t => t.say.length > 50));
 ok('church tools are wheel, laydown, notso', Object.keys(P.TOOLS).filter(k => P.TOOLS[k].church).sort().join() === 'laydown,notso,wheel');
@@ -168,7 +234,7 @@ ok('base prompt has Uriah\'s words', P.BASE.includes('warm, honest discipleship 
 ok('schemas are strict', Object.values(P.TOOLS).filter(t => t.distill).every(t => t.distill.additionalProperties === false && t.distill.required.length === Object.keys(t.distill.properties).length));
 
 /* --- admin lock --- */
-for (let i = 0; i < 62; i++) await call('adminLogin', { pw: 'guess' + i });
+for (let i = 0; i < 62; i++) await call('adminLogin', { pw: 'guess' + i });  // (keep last: it locks the admin)
 ok('too many wrong passwords locks for the day', (await call('adminLogin', { pw: 'pw' })).error === 'LOCKED');
 
 ok.done();

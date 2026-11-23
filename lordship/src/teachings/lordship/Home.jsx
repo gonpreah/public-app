@@ -8,6 +8,7 @@ import { todayDayId, DayTabs } from './tools/Day.jsx';
 import { dueCheckin } from './tools/Commit.jsx';
 import PeopleGroup from './tools/PeopleGroup.jsx';
 import Install from '../../core/Install.jsx';
+import { useGame } from './tools/Game.jsx';
 import { planAreas, Venn } from './tools/LayDown.jsx';
 import { ALIGN } from './content.js';
 
@@ -47,6 +48,12 @@ function Welcome({ church }) {
   );
 }
 
+function GameBanner({ code }) {
+  const [g] = useGame(code, 8000);
+  if (!g || g.phase === 'off') return null;
+  return <a className="gamebanner" href="#/t/game"><span>🎲</span><b>{g.phase === 'end' ? 'See the game results' : 'The game is on — join in!'}</b><span className="go">›</span></a>;
+}
+
 export function ClassHome({ cls }) {
   const [hs] = useLocal(K.habits, []);
   const [c] = useLocal(K.commit, {});
@@ -54,7 +61,9 @@ export function ClassHome({ cls }) {
   const d = DAYS.find(x => x.id === tid);
   const due = dueCheckin(c);
   const t = todayStr();
-  const tools = TOOLS.filter(x => x.cls && !x.hidden);
+  const ORDER = ['quiz', 'game', 'laydown', 'wheel', 'commit', 'questions'];
+  const tools = ORDER.map(id => TOOLS.find(x => x.id === id)).filter(Boolean);
+  const more = TOOLS.filter(x => x.cls && x.more);
   const [done] = useLocal(K.days, {});
   const nDone = DAYS.filter(x => done[x.id]).length;
   return (
@@ -71,6 +80,7 @@ export function ClassHome({ cls }) {
           <span><b>{nDone}/5</b><small>days</small></span>
         </div>
       </section>
+      <GameBanner code={cls.code} />
       <Install where="class" />
       <Welcome />
       {due && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/commit">🚩 <b>Time for your {due === 'd30' ? '30' : '90'}-day check-in</b> on “{c.text}”</a>}
@@ -84,9 +94,12 @@ export function ClassHome({ cls }) {
       ) : <h4>The week</h4>}
       <DayTabs cur={null} today={tid} />
       <PlansGlance base="#/t/laydown" />
-      {hs.length > 0 && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/habits">✅ Habits today: <b>{hs.filter(h => h.days[t]).length} of {hs.length}</b></a>}
       <h4>Tools</h4>
       <div className="tiles">{tools.map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
+      <details className="more">
+        <summary>More tools</summary>
+        <div className="tiles">{more.map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
+      </details>
       <PeopleGroup />
     </>
   );

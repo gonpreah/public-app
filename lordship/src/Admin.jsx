@@ -5,6 +5,7 @@ import { api, errText } from './core/api.js';
 import { DAYS, TOPICS, WHEEL_OUT, WHEEL_IN, GROUPS } from './teachings/lordship/content.js';
 import { toast, copyText } from './core/ui.jsx';
 import Qr, { downloadQrPng } from './core/Qr.jsx';
+import { PROFILES } from './teachings/lordship/content.js';
 
 const STATUS = [
   { id: 'new', name: 'New' }, { id: 'class', name: 'Answer in class' }, { id: 'panel', name: 'Thursday panel' },
@@ -41,12 +42,14 @@ export default function Admin() {
     <>
       <h1>Admin</h1>
       {!d.hasKey && <p className="note small">No <code>ANTHROPIC_API_KEY</code> on the server yet — the coach won’t answer until it’s set in Netlify.</p>}
-      <div className="chips">{[['questions', 'Questions'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
+      <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
+      <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
         <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}</div>
       {tab === 'class' && <ClassSettings pw={pw} cfg={d.cfg} onSaved={(cfg) => setD(Object.assign({}, d, { cfg }))} />}
       {tab === 'slides' && <SlidesAdmin pw={pw} slides={d.slides} onChange={(slides) => setD(Object.assign({}, d, { slides }))} />}
       {tab === 'questions' && <QuestionsAdmin pw={pw} />}
       {tab === 'totals' && <Totals pw={pw} />}
+      {tab === 'roster' && <Roster pw={pw} />}
       <button className="linkish" onClick={() => { ss.set(''); setPw(''); setD(null); }}>Sign out</button>
     </>
   );
@@ -257,6 +260,123 @@ export function Panel() {
         {q && <button className="btn soft" onClick={answered}>✓ Answered</button>}
         <button className="btn primary" disabled={k >= n - 1} onClick={() => setI(k + 1)}>Next ›</button>
       </div>
+      <a className="screen-exit" href="#/admin">✕</a>
+    </div>
+  );
+}
+
+/* Who has joined (names only), with a PIN reset for anyone who forgets. */
+function Roster({ pw }) {
+  const [st, setSt] = useState(null);
+  const [err, setErr] = useState('');
+  const load = async () => { try { setSt((await api('adminRoster', { pw })).students); } catch (e) { setErr(errText(e)); } };
+  useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (err) return <p className="err">{err}</p>;
+  if (!st) return <p className="muted">Loading…</p>;
+  const ago = (t) => t ? new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '—';
+  async function reset(s) {
+    const pin = prompt(`New 4-number PIN for ${s.name}:`, String(Math.floor(1000 + Math.random() * 9000)));
+    if (!pin) return;
+    try { await api('adminStudent', { pw, sid: s.id, pin }); toast(`${s.name}'s PIN is now ${pin}`); } catch (e) { setErr(e.code === 'BAD_PIN' ? 'A PIN is 4 numbers.' : errText(e)); }
+  }
+  async function remove(s) {
+    if (!confirm(`Remove ${s.name} from the class? Their saved answers are deleted too.`)) return;
+    try { await api('adminStudent', { pw, sid: s.id, remove: true }); load(); } catch (e) { setErr(errText(e)); }
+  }
+  return (
+    <>
+      <div className="stats"><div><b>{st.length}</b><span>joined</span></div><div><b>{st.filter(s => s.fact).length}</b><span>fun facts</span></div><div><b>{st.filter(s => s.saved).length}</b><span>saving</span></div></div>
+      <p className="muted small">Names only — you never see their answers. <button className="linkish" onClick={load}>Refresh</button></p>
+      <div className="card">{!st.length && <p className="muted">No one yet.</p>}
+        {st.map(s => <div className="item row wrap" key={s.id} style={{ justifyContent: 'space-between' }}>
+          <span><b>{s.name}</b>{s.fact ? ' 🤫' : ''}<br /><small className="muted">joined {ago(s.at)} · last seen {ago(s.seen)}</small></span>
+          <span><button className="btn soft small" onClick={() => reset(s)}>New PIN</button> <button className="linkish" onClick={() => remove(s)}>Remove</button></span>
+        </div>)}
+      </div>
+    </>
+  );
+}
+
+/* The projector: a join wall (names pop up as they join), then the game rounds with live answers and reveals. */
+export function GameScreen() {
+  const pw = ss.get();
+  const [g, setG] = useState(null);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = async () => { try { setG(await api('gameScreen', { pw })); setErr(''); } catch (e) { setErr(errText(e)); } };
+  useEffect(() => {
+    document.body.classList.add('bigScreen');
+    load(); const t = setInterval(load, 2500);
+    return () => { clearInterval(t); document.body.classList.remove('bigScreen'); };
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  async function act(action) { setBusy(true); try { await api('gameAdmin', { pw, action }); await load(); } catch (e) { setErr(errText(e)); } setBusy(false); }
+  if (err && !g) return <div className="screen"><p className="err">{err} — <a href="#/admin">sign in to the admin page first</a></p><a className="screen-exit" href="#/admin">✕</a></div>;
+  if (!g) return <div className="screen"><p>Loading…</p></div>;
+  const link = location.origin + '/?class=' + g.code;
+  const total = g.counts ? (g.kind === 'who' ? Object.values(g.counts).reduce((a, b) => a + b, 0) : g.counts.reduce((a, b) => a + b, 0)) : 0;
+  const controls = (
+    <div className="panel-nav game-nav">
+      {(g.phase === 'off' || g.phase === 'end') && <button className="btn primary" disabled={busy} onClick={() => act('lobby')}>{g.phase === 'end' ? 'New game' : 'Open the join wall'}</button>}
+      {(g.phase === 'lobby' || g.phase === 'off') && <button className="btn primary" disabled={busy} onClick={() => act('quiz')}>😂 Lordship profile quiz</button>}
+      {(g.phase === 'lobby' || g.phase === 'quiz') && <button className={'btn ' + (g.phase === 'quiz' ? 'primary' : 'ghost')} disabled={busy || !g.names.length} onClick={() => act('next')}>Who wrote this? ▶</button>}
+      {g.phase === 'quiz' && <button className="btn ghost" disabled={busy} onClick={() => act('lobby')}>Back to the join wall</button>}
+      {g.phase === 'q' && !g.reveal && <button className="btn primary" disabled={busy} onClick={() => act('reveal')}>Reveal</button>}
+      {g.phase === 'q' && g.reveal && (g.more ? <button className="btn primary" disabled={busy} onClick={() => act('next')}>Next ▶</button> : <button className="btn primary" disabled={busy} onClick={() => act('end')}>Finish 🏁</button>)}
+      {g.phase === 'q' && <button className="btn ghost" disabled={busy} onClick={() => act('end')}>End</button>}
+    </div>
+  );
+  if (g.phase === 'off' || g.phase === 'lobby') return (
+    <div className="screen joinwall">
+      <div className="screen-main">
+        <p className="eyebrow">Lordship · Day 1</p>
+        <h1 className="screen-q">Join the class</h1>
+        <p className="screen-ref">Scan → your name + a 4-number PIN → one fun fact</p>
+        <div className="names-wall">{g.names.map((n, i) => <span key={n + i} className="name-chip" style={{ animationDelay: Math.min(i, 20) * 30 + 'ms' }}>{n}</span>)}</div>
+        <p className="screen-ref"><b>{g.names.length}</b> joined · <b>{g.facts}</b> fun facts · <b>{g.questions}</b> questions in the box</p>
+        {controls}
+      </div>
+      <div className="screen-qr"><Qr text={link} size={300} /><p><b>Scan to join</b><br />{link.replace(/^https?:\/\//, '')}</p></div>
+      <a className="screen-exit" href="#/admin">✕</a>
+    </div>
+  );
+  if (g.phase === 'quiz') {
+    const n = {}; (g.profiles || []).forEach(x => { n[x.p] = (n[x.p] || 0) + 1; });
+    const max = Math.max(1, ...Object.values(n));
+    return (
+      <div className="screen quizwall">
+        <div className="screen-main">
+          <p className="eyebrow">Lordship · Day 1</p>
+          <h1 className="screen-q">What’s your <em>Lordship profile?</em></h1>
+          <p className="screen-ref">8 quick questions on your phone → show your neighbour → put it on the big screen</p>
+          <div className="profile-wall">{(g.profiles || []).slice(-24).map((x, i) => <span key={x.name + i} className="pchip"><b>{(PROFILES[x.p] || {}).emoji}</b> {x.name} <em>{(PROFILES[x.p] || {}).name}</em></span>)}</div>
+          <div className="ptally">{Object.keys(PROFILES).filter(k => n[k]).sort((a, b) => n[b] - n[a]).map(k => (
+            <div key={k} className="pbar"><span>{PROFILES[k].emoji} {PROFILES[k].name}</span><div><i style={{ width: n[k] / max * 100 + '%' }} /></div><b>{n[k]}</b></div>))}</div>
+          {controls}
+        </div>
+        <div className="screen-qr"><Qr text={link} size={240} /><p><b>{(g.profiles || []).length}</b> of {g.names.length} in</p></div>
+        <a className="screen-exit" href="#/admin">✕</a>
+      </div>
+    );
+  }
+  if (g.phase === 'end') return (
+    <div className="screen panel">
+      <div className="screen-main"><p className="eyebrow">Day 1 game</p><h1 className="screen-q">🏆 Top guessers</h1>
+        <div className="podium">{(g.top || []).map((t, i) => <div key={t.name} className="pod" style={{ animationDelay: i * 150 + 'ms' }}><b>{['🥇', '🥈', '🥉', '4', '5'][i]}</b><span>{t.name}</span><em>{t.score}</em></div>)}</div>
+        {!(g.top || []).length && <p className="screen-ref">No one scored — everyone’s a mystery!</p>}
+      </div>{controls}<a className="screen-exit" href="#/admin">✕</a>
+    </div>
+  );
+  return (
+    <div className="screen panel">
+      <div className="screen-main">
+        <p className="eyebrow">{g.kind === 'who' ? 'Who wrote this?' : 'This or that'} · round {g.round + 1}</p>
+        <h1 className="screen-q" key={g.round}>{g.kind === 'who' ? `“${g.q}”` : g.q}</h1>
+        {!g.reveal && <p className="screen-ref"><b>{g.answered}</b> of {g.names.length} answered</p>}
+        {g.reveal && g.kind === 'who' && <div className="who-reveal"><span>It was</span><h2>{g.answer.name}</h2><p>{g.right} of {total} guessed right</p></div>}
+        {g.reveal && g.kind === 'poll' && <div className="poll-bars">{g.opts.map((o, i) => <div key={i} className="pbar"><span>{o}</span><div><i style={{ width: (total ? g.counts[i] / total * 100 : 0) + '%' }} /></div><b>{g.counts[i]}</b></div>)}</div>}
+        {!g.reveal && g.kind === 'poll' && <div className="poll-opts">{g.opts.map((o, i) => <span key={i}>{o}</span>)}</div>}
+      </div>
+      {controls}
       <a className="screen-exit" href="#/admin">✕</a>
     </div>
   );

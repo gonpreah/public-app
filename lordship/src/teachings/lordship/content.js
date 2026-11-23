@@ -357,22 +357,56 @@ export const QUIZ = [
 
 /* Live polls for a room or a Zoom call (?poll=<id>): no names, no sign-in — one tap per question, results live on
    #/poll-results/<id>. Option ids must match LIVE_POLL_IDS in netlify/functions/lib/game.js (tests/test-data.mjs checks). */
+const OPTS_NEVER = [
+        ['plans', '📅', 'My plans & timeline'], ['money', '💸', 'Money & what I own'], ['phone', '📱', 'My phone & screen time'],
+        ['marry', '💍', 'Who I’ll marry (and when)'], ['home', '🏠', 'Where I’ll live'], ['family', '👨‍👩‍👧', 'What my family expects'],
+        ['dream', '🎯', 'My dream or career'], ['comfort', '🛋️', 'My comfort'], ['image', '🙂', 'What people think of me'],
+        ['control', '🎛️', 'Being in control'], ['hurt', '🩹', 'An old hurt I’m holding'], ['other', '🤫', 'Something just between me and God']
+      ];
+
 export const LIVE_POLLS = {
   never: {
     title: '“Never, Lord”',
     verse: { ref: 'Matthew 16:22', text: 'Peter took him aside, and began to rebuke him, saying, “Far be it from you, Lord! This will never be done to you.”' },
     intro: 'Peter loved Jesus — and still said “Never, Lord.” Most of our “nevers” aren’t scandals. They’re ordinary, good things we quietly keep for ourselves. No names. Just be honest.',
     qs: [
-      { q: 'Where might you be saying “Never, Lord”?', sub: 'Pick the one that tugs at you most.', opts: [
-        ['plans', '📅', 'My plans & timeline'], ['money', '💸', 'Money & what I own'], ['phone', '📱', 'My phone & screen time'],
-        ['marry', '💍', 'Who I’ll marry (and when)'], ['home', '🏠', 'Where I’ll live'], ['family', '👨‍👩‍👧', 'What my family expects'],
-        ['dream', '🎯', 'My dream or career'], ['comfort', '🛋️', 'My comfort'], ['image', '🙂', 'What people think of me'],
-        ['control', '🎛️', 'Being in control'], ['hurt', '🩹', 'An old hurt I’m holding'], ['other', '🤫', 'Something just between me and God']
-      ] },
+      { q: 'Where might you be saying “Never, Lord”?', sub: 'Pick the one that tugs at you most.', opts: OPTS_NEVER },
       { q: 'If Jesus asked you for it today, you’d honestly say…', sub: 'Peter’s “never” wasn’t the end of his story.', opts: [
         ['never', '🙅', '“Never, Lord”'], ['think', '🤔', '“Let me think about it”'], ['slowly', '😬', '“Yes… slowly”'], ['yes', '🙌', '“Yes, Lord”']
       ] }
     ],
     done: { text: '“Lord, you know everything. You know that I love you.”', ref: 'John 21:17 — the same Peter, later', prayer: 'Jesus, this is the place I’ve been holding on. I’m opening my hand — even a little. Amen.' }
+  },
+  staff: {
+    title: 'Pick it back up',
+    verse: { ref: 'Exodus 4:2–4', text: 'Yahweh said to him, “What is that in your hand?” He said, “A rod.” He said, “Throw it on the ground.” He threw it on the ground, and it became a snake; and Moses ran away from it. Yahweh said to Moses, “Stretch out your hand, and take it by the tail.” He stretched out his hand, and took hold of it, and it became a rod in his hand.' },
+    intro: 'Moses laid his staff down — and then God told him to pick it back up. Same stick. But now it was “God’s rod” (Exodus 4:20). Laying something down isn’t running from it forever. It’s handing it to God so you can pick it back up his way.',
+    from: 'never',
+    qs: [
+      { q: 'What’s in your hand?', sub: 'The thing you laid down. Same thing — now let’s pick it back up.', opts: OPTS_NEVER },
+      { q: 'How will you pick it back up this week?', sub: 'One small way is enough.', pickup: true, opts: [
+        ['ask', '🙏', 'Ask God how he sees it'], ['step', '👣', 'One small change, starting this week'], ['talk', '🤝', 'Talk it through with someone I trust'],
+        ['word', '📖', 'Find what Scripture says about it'], ['thanks', '💛', 'Thank God for it as a gift']
+      ] }
+    ],
+    done: { text: 'Moses took God’s rod in his hand.', ref: 'Exodus 4:20', prayer: 'God, I gave this to you. Now I take it back as yours — show me how to carry it well. Amen.' }
   }
 };
+
+/* Moses' staff: each "Never, Lord" area picked back up God's way — not something to be ashamed of or run from,
+   but the same thing, redeemed. Our own words; the verses are the WEB. */
+export const PICK_UP = {
+  plans: { up: 'Plan — with open hands', how: 'Planning isn’t the problem; gripping the plan is. Keep dreaming and writing it down, then hold it loosely and let God edit.', ask: 'God, what would you add, change or cross out?', step: 'Write your next 12 months on one page — then pray over it with an open hand.', ref: 'Proverbs 16:3', text: 'Commit your deeds to Yahweh, and your plans shall succeed.' },
+  money: { up: 'Make and manage money with God', how: 'Money isn’t evil to run from. God gives the power to earn it. Pick it back up as a steward: earn honestly, give first, save some, enjoy some, owe no one.', ask: 'God, how do you want me to earn, give, save and spend?', step: 'Make a simple budget this week, and decide what you’ll give first.', ref: 'Deuteronomy 8:18', text: 'But you shall remember Yahweh your God, for it is he who gives you power to get wealth…' },
+  phone: { up: 'Make your phone serve you', how: 'Your phone can scatter you or connect you. Pick it back up on purpose: for people, for learning, for worship — not as the first and last thing in your day.', ask: 'God, what would a faithful use of my phone look like?', step: 'Pick one rule: no phone for the first 20 minutes of the day, or put it away at meals.', ref: 'Ephesians 5:15–16', text: 'Therefore watch carefully how you walk, not as unwise, but as wise; redeeming the time…' },
+  marry: { up: 'Desire marriage, trust the timing', how: 'Wanting a spouse is a good desire God put there. Pick it back up by becoming someone worth marrying, and trusting God with the who and the when.', ask: 'God, who are you shaping me to be while I wait?', step: 'Name one way to grow in character this month — and one friendship to invest in.', ref: 'Psalm 37:4', text: 'Also delight yourself in Yahweh, and he will give you the desires of your heart.' },
+  home: { up: 'Seek the good of wherever you are', how: 'Where you live matters to God — not as a cage or a trophy, but a place to bless. Pick it back up: plant roots where you are and stay open to where he sends.', ask: 'God, how can I bless the place I’m in right now?', step: 'Pray for your street or city this week, and do one kind thing for a neighbour.', ref: 'Jeremiah 29:7', text: 'Seek the peace of the city where I have caused you to be carried away captive, and pray to Yahweh for it; for in its peace you will have peace.' },
+  family: { up: 'Honour your family — and be yourself', how: 'You don’t have to obey every expectation or run from your family. Pick it back up with honour and love: secure in God’s love, close to them, and still able to say a kind, clear “this is my calling.”', ask: 'God, how do I honour them and still follow you?', step: 'Call or message a parent this week just to say thank you — no agenda.', ref: 'Exodus 20:12 · Ephesians 4:15', text: '“Honor your father and your mother…” … speaking truth in love, we may grow up in all things into him.' },
+  dream: { up: 'Work hard — for him', how: 'Your gifts and dreams aren’t selfish; God gave them. Pick them back up as worship: do the work with all your heart, for his name, not yours.', ask: 'God, how could my dream serve you and people?', step: 'Take one real step toward it this month: a class, an email, a conversation.', ref: 'Colossians 3:23', text: 'And whatever you do, work heartily, as for the Lord, and not for men.' },
+  comfort: { up: 'Rest well, then go', how: 'Jesus told his friends to rest. Comfort as a god keeps you small; rest as a gift makes you strong. Pick it back up: real rest, so you can do hard and holy things.', ask: 'God, where do I need real rest — and where am I just hiding?', step: 'Plan one real Sabbath this week — and one hard, holy thing.', ref: 'Mark 6:31', text: 'He said to them, “You come apart into a deserted place, and rest awhile.”' },
+  image: { up: 'Let your light shine — for his glory', how: 'Being seen isn’t wrong. Pick it back up: live so people see good things and thank God — not so they clap for you.', ask: 'God, what do you say about me, before anyone else does?', step: 'Do one good thing this week that no one will ever know about.', ref: 'Matthew 5:16', text: 'Even so, let your light shine before men; that they may see your good works, and glorify your Father who is in heaven.' },
+  control: { up: 'From control to faithful stewardship', how: 'Your drive to lead and organise is a gift. Pick it back up as stewardship: be faithful with what’s yours, and let God hold what isn’t.', ask: 'God, what’s mine to steward, and what’s yours to hold?', step: 'Write two lists: “mine to do” and “God’s to hold.” Pray over the second.', ref: 'Matthew 25:21', text: '“Well done, good and faithful servant. You have been faithful over a few things, I will set you over many things.”' },
+  hurt: { up: 'Let God redeem the story', how: 'You don’t have to pretend it didn’t happen or keep carrying it alone. Pick it back up with God: what was meant for harm, he can turn for good — including helping others.', ask: 'God, what do you want to heal here, and who could I forgive?', step: 'Tell one safe person the story, or pray a first small “I choose to forgive.”', ref: 'Genesis 50:20', text: 'As for you, you meant evil against me, but God meant it for good…' },
+  other: { up: 'Bring it into the light, with God', how: 'You don’t have to name it here. Just don’t run from it. God isn’t ashamed of you; he wants to lead you in the way that’s life.', ask: 'God, search me — what do you want me to pick up here?', step: 'Tell God honestly, then consider one trusted person to tell.', ref: 'Psalm 139:23–24', text: 'Search me, God, and know my heart. … lead me in the everlasting way.' }
+};
+

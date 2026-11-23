@@ -48,6 +48,7 @@ export default function Admin() {
       <Classes pw={pw} classes={d.classes} cls={cls} setCls={setCls} onChange={(classes) => setD(Object.assign({}, d, { classes }))} />
       <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
       <a className="btn soft big" href="#/poll-results/never" style={{ marginBottom: 8 }}>🙅 “Never, Lord” live poll (share your screen)</a>
+      <a className="btn soft big" href="#/poll-results/staff" style={{ marginBottom: 8 }}>🪄 “Pick it back up” live poll (share your screen)</a>
       <a className="btn soft big" href="#/quiz-results" style={{ marginBottom: 8 }}>😂 Base-wide profile quiz: live results (projector)</a>
       <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
         <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}</div>

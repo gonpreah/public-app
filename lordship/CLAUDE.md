@@ -99,6 +99,10 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   data test checks they match). Keys `lp:<poll>:<phone id>:<time>:<answers…>` — a retake replaces, nothing else is kept.
   First poll `never` ("Never, Lord", Matthew 16:22): twelve ordinary areas (plans, money, phone, marriage … "something just
   between me and God") — no sins listed, on purpose — then "if Jesus asked today you'd say…"; it ends with John 21:17.
+  Second poll `staff` ("Pick it back up", Moses' staff, Exodus 4:2–4, 4:20; Uriah: "picking up that exact same thing, but in
+  a redeeming way"): what's in your hand (the same twelve areas; their "Never, Lord" pick is marked, `from: 'never'`), then
+  that area picked back up God's way (`PICK_UP`: a title, how, a WEB verse, a question to ask God, one small step), then how
+  they'll pick it up this week. The shared screen adds "Most in our hands: … → picked back up: …".
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

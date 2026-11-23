@@ -548,3 +548,9 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 .lpbar .qbar-track { height: clamp(14px, 2.4vh, 26px); }
 .lp-qr { align-self: center; } .lp-qr svg { width: min(18vw, 30vh); }
 @media (max-width: 900px) { .lp-cols { grid-template-columns: 1fr; } }
+
+.pickup { border-left: 5px solid var(--marigold); }
+.pickup h2 { margin: 4px 0 8px; }
+.opt-btn.mine { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; flex-wrap: wrap; }
+.lp-earlier { display: block; width: 100%; font-size: .75rem; color: var(--accent); font-weight: 700; margin-left: calc(1.5em + 10px); }
+.lp-top { color: var(--paper-2); font-size: clamp(1rem, 1.7vw, 1.5rem); margin: 2vh 0 0; } .lp-top b { color: var(--paper); } .lp-top em { font-style: normal; color: var(--marigold); font-weight: 800; }

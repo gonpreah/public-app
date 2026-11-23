@@ -84,6 +84,14 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   profile, live every 3 s, All / DTS / DBS / Staff tabs, the latest first names (Hide names), Reset behind the admin password
   (`pubQuizReset`). Everything is in the blob key (`pq:<phone id>:<time>:<group>:<profile>:<name>`), so the results are one
   list call and a retake replaces; never in the class list. Each profile has a cartoon (tools/Avatars.jsx, SVG).
+- **More than one class** (Nov 2026, Uriah: both classes joined under LORDSHIP — "move to a DTS class that I can view, just
+  them"): the main class (`cfg`) plus more in `classes` ({CODE: {name, weekStart}}); every class's data is under its code.
+  Admin: a class picker at the top (class list, totals and the Day 1 game follow it, `cls`; sessionStorage `ls-admin-cls`),
+  "+ New class" (`adminClassAdd`, its link + QR), select students → Move (`adminMove`). Students: Me → Move to another class
+  with its code (`moveClass`); opening the new class link while signed in offers "Move me to …"; "I've joined before" with the
+  new link and their name + PIN moves them (`signIn`). `moveStudent` moves the account, name, keys and quiz result (answers
+  are keyed by student) and leaves `mv:`/`mvn:` pointers, so a phone or Home Screen app on the old class follows them
+  (`classCheck` → `moved`, `student()` follows the pointer).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

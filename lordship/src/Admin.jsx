@@ -12,6 +12,7 @@ const STATUS = [
   { id: 'answered', name: 'Answered' }, { id: 'hidden', name: 'Hide' }
 ];
 const ss = { get: () => { try { return sessionStorage.getItem('ls-admin') || ''; } catch (e) { return ''; } }, set: (v) => { try { sessionStorage.setItem('ls-admin', v); } catch (e) { /* */ } } };
+const sc = { get: () => { try { return sessionStorage.getItem('ls-admin-cls') || ''; } catch (e) { return ''; } }, set: (v) => { try { sessionStorage.setItem('ls-admin-cls', v); } catch (e) { /* */ } } };
 const b64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = rej; r.readAsDataURL(blob); });
 const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
 
@@ -20,9 +21,11 @@ export default function Admin() {
   const [d, setD] = useState(null);
   const [err, setErr] = useState('');
   const [tab, setTab] = useState('questions');
+  const [cls, setCls0] = useState(sc.get());
+  const setCls = (c) => { sc.set(c); setCls0(c); };
   async function login(p) {
     setErr('');
-    try { const r = await api('adminLogin', { pw: p }); setD(r); ss.set(p); }
+    try { const r = await api('adminLogin', { pw: p }); setD(r); ss.set(p); if (!r.classes.some(c => c.code === sc.get())) setCls((r.classes[0] || {}).code || ''); }
     catch (e) { setErr(errText(e)); setD(null); }
   }
   useEffect(() => { if (pw) login(pw); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -42,6 +45,7 @@ export default function Admin() {
     <>
       <h1>Admin</h1>
       {!d.hasKey && <p className="note small">No <code>ANTHROPIC_API_KEY</code> on the server yet — the coach won’t answer until it’s set in Netlify.</p>}
+      <Classes pw={pw} classes={d.classes} cls={cls} setCls={setCls} onChange={(classes) => setD(Object.assign({}, d, { classes }))} />
       <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
       <a className="btn soft big" href="#/quiz-results" style={{ marginBottom: 8 }}>😂 Base-wide profile quiz: live results (projector)</a>
       <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
@@ -49,10 +53,56 @@ export default function Admin() {
       {tab === 'class' && <ClassSettings pw={pw} cfg={d.cfg} onSaved={(cfg) => setD(Object.assign({}, d, { cfg }))} />}
       {tab === 'slides' && <SlidesAdmin pw={pw} slides={d.slides} onChange={(slides) => setD(Object.assign({}, d, { slides }))} />}
       {tab === 'questions' && <QuestionsAdmin pw={pw} />}
-      {tab === 'totals' && <Totals pw={pw} />}
-      {tab === 'roster' && <Roster pw={pw} />}
+      {tab === 'totals' && <Totals pw={pw} cls={cls} key={'t' + cls} />}
+      {tab === 'roster' && <Roster pw={pw} cls={cls} classes={d.classes} key={'r' + cls} onMoved={() => api('adminClasses', { pw }).then(r => setD(Object.assign({}, d, { classes: r.classes }))).catch(() => {})} />}
       <button className="linkish" onClick={() => { ss.set(''); setPw(''); setD(null); }}>Sign out</button>
     </>
+  );
+}
+
+/* Which class the admin page is about, and more classes (Nov 2026: two classes joined under one code). */
+function Classes({ pw, classes, cls, setCls, onChange }) {
+  const [add, setAdd] = useState(false);
+  const [v, setV] = useState({ name: '', code: '' });
+  const [err, setErr] = useState('');
+  const cur = classes.find(c => c.code === cls) || classes[0];
+  const link = cur ? location.origin + '/?class=' + encodeURIComponent(cur.code) : '';
+  useEffect(() => { api('adminClasses', { pw }).then(r => onChange(r.classes)).catch(() => {}); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  async function create() {
+    setErr('');
+    try { const r = await api('adminClassAdd', Object.assign({ pw }, v)); onChange(r.classes); setCls(v.code.toUpperCase().replace(/[^A-Z0-9]/g, '')); setAdd(false); setV({ name: '', code: '' }); toast('Class made'); }
+    catch (e) { setErr(e.code === 'BAD_CODE' ? 'The code needs 4–12 letters or numbers.' : e.code === 'CODE_TAKEN' ? 'That code is already a class.' : errText(e)); }
+  }
+  async function drop() {
+    if (!confirm(`Delete the class “${cur.name}”?`)) return;
+    try { const r = await api('adminClassDrop', { pw, code: cur.code }); onChange(r.classes); setCls(r.classes[0].code); }
+    catch (e) { toast(e.code === 'NOT_EMPTY' ? 'Move everyone out first.' : errText(e)); }
+  }
+  return (
+    <div className="card classes">
+      <p className="lab">Class</p>
+      <div className="chips">{classes.map(c => <button key={c.code} className={'chip' + (cur && c.code === cur.code ? ' on' : '')} onClick={() => setCls(c.code)}>{c.name} <small>· {c.code}{c.n != null ? ' · ' + c.n : ''}</small></button>)}
+        <button className="chip" onClick={() => setAdd(!add)}>+ New class</button></div>
+      {add && (
+        <div className="newclass">
+          <label className="lab" htmlFor="ncname">Name</label>
+          <input id="ncname" value={v.name} maxLength={80} placeholder="e.g. DTS Winter 2026" onChange={e => setV(Object.assign({}, v, { name: e.target.value }))} />
+          <label className="lab" htmlFor="nccode">Code (4–12 letters or numbers)</label>
+          <input id="nccode" value={v.code} maxLength={12} placeholder="e.g. DTS" onChange={e => setV(Object.assign({}, v, { code: e.target.value.toUpperCase() }))} />
+          {err && <p className="err">{err}</p>}
+          <button className="btn primary small" style={{ marginTop: 10 }} disabled={!v.code.trim()} onClick={create}>Make the class</button>
+        </div>
+      )}
+      {cur && !cur.main && (
+        <div className="row wrap" style={{ marginTop: 10, alignItems: 'center' }}>
+          <code className="small">{link.replace(/^https?:\/\//, '')}</code>
+          <button className="btn soft small" onClick={() => copyText(link)}>Copy link</button>
+          <button className="btn soft small" onClick={() => downloadQrPng(link, link.replace(/^https?:\/\//, ''), 'lordship-' + cur.code.toLowerCase() + '-qr.png')}>QR</button>
+          {cur.n === 0 && <button className="linkish" onClick={drop}>Delete class</button>}
+        </div>
+      )}
+      <p className="tiny muted">The class list, class totals and the Day 1 game show the class picked here.{classes.length > 1 ? ' Students can move themselves on Me → Move to another class with its code, or you can move them from the class list.' : ''}</p>
+    </div>
   );
 }
 
@@ -69,7 +119,7 @@ function ClassSettings({ pw, cfg, onSaved }) {
   return (
     <>
       <div className="card">
-        <h3>This week’s class</h3>
+        <h3>Main class</h3>
         <label className="lab">Class name</label>
         <input value={v.name} onChange={e => setV(Object.assign({}, v, { name: e.target.value }))} maxLength={80} />
         <label className="lab">Class code (4–12 letters/numbers; changing it locks out last week’s class)</label>
@@ -203,10 +253,10 @@ function QuestionsAdmin({ pw }) {
 }
 
 /* Anonymous class totals: averages from students who switched sharing on. */
-function Totals({ pw }) {
+function Totals({ pw, cls }) {
   const [t, setT] = useState(null);
   const [err, setErr] = useState('');
-  const load = async () => { try { setT(await api('adminTotals', { pw })); } catch (e) { setErr(errText(e)); } };
+  const load = async () => { try { setT(await api('adminTotals', { pw, cls })); } catch (e) { setErr(errText(e)); } };
   useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   if (err) return <p className="err">{err}</p>;
   if (!t) return <p className="muted">Loading…</p>;
@@ -267,10 +317,13 @@ export function Panel() {
 }
 
 /* Who has joined (names only), with a PIN reset for anyone who forgets. */
-function Roster({ pw }) {
+function Roster({ pw, cls, classes, onMoved }) {
   const [st, setSt] = useState(null);
+  const [sel, setSel] = useState({});
+  const others = classes.filter(c => c.code !== cls);
+  const [to, setTo] = useState('');
   const [err, setErr] = useState('');
-  const load = async () => { try { setSt((await api('adminRoster', { pw })).students); } catch (e) { setErr(errText(e)); } };
+  const load = async () => { try { setSt((await api('adminRoster', { pw, cls })).students); setSel({}); } catch (e) { setErr(errText(e)); } };
   useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   if (err) return <p className="err">{err}</p>;
   if (!st) return <p className="muted">Loading…</p>;
@@ -278,19 +331,38 @@ function Roster({ pw }) {
   async function reset(s) {
     const pin = prompt(`New 4-number PIN for ${s.name}:`, String(Math.floor(1000 + Math.random() * 9000)));
     if (!pin) return;
-    try { await api('adminStudent', { pw, sid: s.id, pin }); toast(`${s.name}'s PIN is now ${pin}`); } catch (e) { setErr(e.code === 'BAD_PIN' ? 'A PIN is 4 numbers.' : errText(e)); }
+    try { await api('adminStudent', { pw, cls, sid: s.id, pin }); toast(`${s.name}'s PIN is now ${pin}`); } catch (e) { setErr(e.code === 'BAD_PIN' ? 'A PIN is 4 numbers.' : errText(e)); }
   }
   async function remove(s) {
     if (!confirm(`Remove ${s.name} from the class? Their saved answers are deleted too.`)) return;
-    try { await api('adminStudent', { pw, sid: s.id, remove: true }); load(); } catch (e) { setErr(errText(e)); }
+    try { await api('adminStudent', { pw, cls, sid: s.id, remove: true }); load(); } catch (e) { setErr(errText(e)); }
+  }
+  const picked = st.filter(s => sel[s.id]);
+  async function move() {
+    const dest = classes.find(c => c.code === (to || (others[0] || {}).code));
+    if (!dest || !picked.length || !confirm(`Move ${picked.length} to “${dest.name}”? Their answers go with them.`)) return;
+    const bad = [];
+    for (const s of picked) { try { await api('adminMove', { pw, cls, sid: s.id, to: dest.code }); } catch (e) { bad.push(s.name + (e.code === 'NAME_TAKEN' ? ' (name already there)' : '')); } }
+    toast(bad.length ? 'Not moved: ' + bad.join(', ') : `Moved ${picked.length} to ${dest.name}`);
+    load(); onMoved && onMoved();
   }
   return (
     <>
+      {others.length > 0 && st.length > 0 && (
+        <div className="card moveto">
+          <div className="row wrap" style={{ alignItems: 'center' }}>
+            <button className="linkish" onClick={() => setSel(picked.length === st.length ? {} : Object.fromEntries(st.map(s => [s.id, true])))}>{picked.length === st.length ? 'Select none' : 'Select all'}</button>
+            <span className="small"><b>{picked.length}</b> selected → </span>
+            <select aria-label="Move to class" value={to || (others[0] || {}).code} onChange={e => setTo(e.target.value)}>{others.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select>
+            <button className="btn primary small" disabled={!picked.length} onClick={move}>Move</button>
+          </div>
+        </div>
+      )}
       <div className="stats"><div><b>{st.length}</b><span>joined</span></div><div><b>{st.filter(s => s.fact).length}</b><span>fun facts</span></div><div><b>{st.filter(s => s.saved).length}</b><span>saving</span></div></div>
       <p className="muted small">Names only — you never see their answers. <button className="linkish" onClick={load}>Refresh</button></p>
       <div className="card">{!st.length && <p className="muted">No one yet.</p>}
         {st.map(s => <div className="item row wrap" key={s.id} style={{ justifyContent: 'space-between' }}>
-          <span><b>{s.name}</b>{s.fact ? ' 🤫' : ''}<br /><small className="muted">joined {ago(s.at)} · last seen {ago(s.seen)}</small></span>
+          <span>{others.length > 0 && <input type="checkbox" className="pick" aria-label={'Select ' + s.name} checked={!!sel[s.id]} onChange={e => setSel(Object.assign({}, sel, { [s.id]: e.target.checked }))} />}<b>{s.name}</b>{s.fact ? ' 🤫' : ''}<br /><small className="muted">joined {ago(s.at)} · last seen {ago(s.seen)}</small></span>
           <span><button className="btn soft small" onClick={() => reset(s)}>New PIN</button> <button className="linkish" onClick={() => remove(s)}>Remove</button></span>
         </div>)}
       </div>
@@ -304,13 +376,13 @@ export function GameScreen() {
   const [g, setG] = useState(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  const load = async () => { try { setG(await api('gameScreen', { pw })); setErr(''); } catch (e) { setErr(errText(e)); } };
+  const load = async () => { try { setG(await api('gameScreen', { pw, cls: sc.get() })); setErr(''); } catch (e) { setErr(errText(e)); } };
   useEffect(() => {
     document.body.classList.add('bigScreen');
     load(); const t = setInterval(load, 2500);
     return () => { clearInterval(t); document.body.classList.remove('bigScreen'); };
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
-  async function act(action) { setBusy(true); try { await api('gameAdmin', { pw, action }); await load(); } catch (e) { setErr(errText(e)); } setBusy(false); }
+  async function act(action) { setBusy(true); try { await api('gameAdmin', { pw, action, cls: sc.get() }); await load(); } catch (e) { setErr(errText(e)); } setBusy(false); }
   if (err && !g) return <div className="screen"><p className="err">{err} — <a href="#/admin">sign in to the admin page first</a></p><a className="screen-exit" href="#/admin">✕</a></div>;
   if (!g) return <div className="screen"><p>Loading…</p></div>;
   const link = location.origin + '/?class=' + g.code;

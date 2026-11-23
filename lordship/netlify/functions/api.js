@@ -1,7 +1,8 @@
 /*  Lordship — the backend. One POST endpoint: {fn, args} → HANDLERS[fn](args).
 
     Blobs store "lordship":
-      cfg                     the class: {name, code, weekStart}  (code falls back to LS_CLASS_CODE)
+      cfg                     the main class: {name, code, weekStart}  (code falls back to LS_CLASS_CODE)
+      classes                 more classes: {CODE: {name, weekStart}}; mv:<class>:<sid> / mvn:<class>:<name> → where a student moved
       slide:<day>             a day's slides: {pdf:{name,size,type,parts,v}, pptx:{…}, link}
       sp:<day>:<kind>:<v>:<i> one part of an uploaded file (base64, ≤ 3 MB of file each)
       q:<id>                  an anonymous question: {id, text, topic, day, status} — no name, no device, no IP
@@ -63,11 +64,45 @@ export async function cfg() {
   const c = (await db.get('cfg')) || {};
   return { name: c.name || 'Lordship DTS', code: c.code || normCode(process.env.LS_CLASS_CODE || ''), weekStart: c.weekStart || '' };
 }
-async function classOk(a) {
+/* More classes (Nov 2026, Uriah: both classes joined under one code — "move to a DTS class that I can view, just them"):
+   'classes' = {CODE: {name, weekStart}} beside the main class in 'cfg'. Everything a class keeps is under its code. */
+async function extraClasses() { return (await db.get('classes')) || {}; }
+async function findClass(code) {
+  code = normCode(code);
+  if (!code) return null;
   const c = await cfg();
-  const code = normCode(a.code);
-  if (!c.code || !code || !same(code, c.code)) throw new Fail('NO_CLASS', 403);
+  if (c.code && same(code, c.code)) return c;
+  const x = (await extraClasses())[code];
+  return x ? { name: x.name, code, weekStart: x.weekStart || c.weekStart || '' } : null;
+}
+async function allClassList() {
+  const c = await cfg(), x = await extraClasses();
+  return (c.code ? [Object.assign({ main: true }, c)] : []).concat(Object.entries(x).map(([code, v]) => ({ code, name: v.name, weekStart: v.weekStart || c.weekStart || '' })));
+}
+async function classOk(a) {
+  const c = await findClass(a.code);
+  if (!c) throw new Fail('NO_CLASS', 403);
   return c;
+}
+/* The admin picks which class a call is about (a.cls); the main class by default. */
+async function adminClass(a) {
+  const c = a.cls ? await findClass(a.cls) : await cfg();
+  if (!c || !c.code) throw new Fail('NO_CLASS', 404);
+  return c;
+}
+/* Move a student (their account, name, keys and quiz result) to another class. Their saved answers (sd:<sid>) don't move:
+   they're keyed by the student. A pointer is left behind so a phone still on the old class finds them. */
+async function moveStudent(s, from, to) {
+  const nk = nameKey(s.name);
+  if (await db.get('stn:' + to.code + ':' + nk)) throw new Fail('NAME_TAKEN', 409);
+  await db.set('st:' + to.code + ':' + s.id, s);
+  await db.set('stn:' + to.code + ':' + nk, s.id);
+  const qz = await db.get('qz:' + from.code + ':' + s.id);
+  if (qz) { await db.set('qz:' + to.code + ':' + s.id, qz); await db.del('qz:' + from.code + ':' + s.id); }
+  await db.del('st:' + from.code + ':' + s.id); await db.del('stn:' + from.code + ':' + nk);
+  await db.set('mv:' + from.code + ':' + s.id, to.code); await db.set('mvn:' + from.code + ':' + nk, to.code);
+  await db.del('mv:' + to.code + ':' + s.id); await db.del('mvn:' + to.code + ':' + nk);
+  return { code: to.code, name: to.name, weekStart: to.weekStart };
 }
 /* ---- students: a name and a 4-digit PIN (Uriah: "a basic 4-pin thing") ---- */
 const normName = (n) => clip(n, 40).trim().replace(/\s+/g, ' ');
@@ -78,7 +113,12 @@ async function student(a, c) {
   c = c || await classOk(a);
   const t = String(a.token || '');
   const sid = clip(a.sid, 20);
-  const s = sid && await db.get('st:' + c.code + ':' + sid);
+  let s = sid && await db.get('st:' + c.code + ':' + sid);
+  if (!s && sid) {   // moved to another class: follow the pointer
+    const to = await db.get('mv:' + c.code + ':' + sid);
+    const nc = to && await findClass(to);
+    if (nc) { s = await db.get('st:' + nc.code + ':' + sid); c = nc; }
+  }
   if (!s || !t || !(s.keys || []).includes(sha(t))) throw new Fail('NO_STUDENT', 401);
   return { s, c };
 }
@@ -133,7 +173,22 @@ async function dropFile(d, k, meta) {
 /* ---------------- the handlers ---------------- */
 export const HANDLERS = {
   /* --- the class --- */
-  async classCheck(a) { const c = await classOk(a); return { ok: true, name: c.name, weekStart: c.weekStart }; },
+  async classCheck(a) {
+    const c = await classOk(a);
+    const out = { ok: true, name: c.name, weekStart: c.weekStart };
+    if (a.sid && a.token) {   // a phone still on the class its student was moved out of
+      try { const r = await student(a, c); if (r.c.code !== c.code) out.moved = { code: r.c.code, name: r.c.name, weekStart: r.c.weekStart }; } catch (e) { /* not signed in here */ }
+    }
+    return out;
+  },
+  /* A student moves themselves with the new class's code. */
+  async moveClass(a) {
+    const { s, c } = await student(a);
+    const to = await findClass(a.to);
+    if (!to) throw new Fail('NO_CLASS', 403);
+    if (to.code === c.code) return { code: c.code, name: c.name, weekStart: c.weekStart };
+    return moveStudent(s, c, to);
+  },
   async slides(a) { await classOk(a); return { slides: await allSlides() }; },
   async slideGet(a) {
     await classOk(a);
@@ -163,14 +218,28 @@ export const HANDLERS = {
     return issueKey(s, c);
   },
   async signIn(a) {
-    const c = await classOk(a);
-    const sid = await db.get('stn:' + c.code + ':' + nameKey(a.name));
-    const s = sid && await db.get('st:' + c.code + ':' + sid);
+    let c = await classOk(a);
+    let sid = await db.get('stn:' + c.code + ':' + nameKey(a.name));
+    if (!sid) {   // moved to another class: sign in there and tell the phone
+      const to = await db.get('mvn:' + c.code + ':' + nameKey(a.name));
+      const nc = to && await findClass(to);
+      if (nc) { c = nc; sid = await db.get('stn:' + c.code + ':' + nameKey(a.name)); }
+    }
+    let from = null;
+    if (!sid) {   // still in another class (e.g. joined under the wrong code): the same name and PIN brings them here
+      for (const o of await allClassList()) {
+        if (o.code === c.code) continue;
+        const osid = await db.get('stn:' + o.code + ':' + nameKey(a.name));
+        if (osid) { sid = osid; from = o; break; }
+      }
+    }
+    const s = sid && await db.get('st:' + (from || c).code + ':' + sid);
     if (!s) throw new Fail('NO_NAME', 404);
     const k = 'pinbad:' + s.id + ':' + new Date().toISOString().slice(0, 13);
     if (((await db.get(k)) || 0) >= 8) throw new Fail('LOCKED', 429);
     if (!/^\d{4}$/.test(String(a.pin || '')) || !same(pinHash(a.pin, s.salt), s.pin)) { await bump(k); throw new Fail('BAD_PIN', 403); }
-    return issueKey(s, c);
+    if (from) await moveStudent(s, from, c);
+    return Object.assign(await issueKey(s, c), { cls: { code: c.code, name: c.name, weekStart: c.weekStart } });
   },
   async me(a) { const { s } = await student(a); return { sid: s.id, name: s.name, fact: s.fact || '' }; },
   async setFact(a) {
@@ -359,7 +428,7 @@ export const HANDLERS = {
   },
   async adminTotals(a) {
     await admin(a);
-    const c = await cfg();
+    const c = await adminClass(a);
     const sums = { out: {}, in: {}, hot: {} };
     let n = 0, committed = 0, wheels = 0;
     for (const k of await db.keys('an:' + c.code + ':')) {
@@ -375,11 +444,49 @@ export const HANDLERS = {
   },
 
   /* --- the admin page --- */
-  async adminLogin(a) { await admin(a); return { cfg: await cfg(), slides: await allSlides(), hasKey: !!process.env.ANTHROPIC_API_KEY }; },
+  async adminLogin(a) { await admin(a); return { cfg: await cfg(), classes: await allClassList(), slides: await allSlides(), hasKey: !!process.env.ANTHROPIC_API_KEY }; },
+  async adminClasses(a) {
+    await admin(a);
+    const list = await allClassList();
+    for (const c of list) c.n = (await db.keys('st:' + c.code + ':')).length;
+    return { classes: list };
+  },
+  async adminClassAdd(a) {
+    await admin(a);
+    const code = normCode(a.code);
+    if (code.length < 4 || code.length > 12) throw new Fail('BAD_CODE');
+    if (await findClass(code)) throw new Fail('CODE_TAKEN', 409);
+    const x = await extraClasses();
+    if (Object.keys(x).length >= 20) throw new Fail('LIMIT', 429);
+    const ws = /^\d{4}-\d{2}-\d{2}$/.test(String(a.weekStart || '')) ? a.weekStart : '';
+    x[code] = { name: clip(a.name, 80).trim() || code, weekStart: ws };
+    await db.set('classes', x);
+    return HANDLERS.adminClasses(a);
+  },
+  async adminClassDrop(a) {
+    await admin(a);
+    const code = normCode(a.code), x = await extraClasses();
+    if (!x[code]) throw new Fail('NO_CLASS', 404);
+    if ((await db.keys('st:' + code + ':')).length) throw new Fail('NOT_EMPTY', 409);
+    delete x[code];
+    await db.set('classes', x);
+    return HANDLERS.adminClasses(a);
+  },
+  async adminMove(a) {
+    await admin(a);
+    const from = await adminClass(a), to = await findClass(a.to);
+    if (!to) throw new Fail('NO_CLASS', 404);
+    const s = await db.get('st:' + from.code + ':' + clip(a.sid, 20));
+    if (!s) throw new Fail('NO_STUDENT', 404);
+    if (to.code === from.code) return { ok: true };
+    await moveStudent(s, from, to);
+    return { ok: true };
+  },
   async adminSet(a) {
     await admin(a);
     const code = normCode(a.code);
     if (code && (code.length < 4 || code.length > 12)) throw new Fail('BAD_CODE');
+    if (code && (await extraClasses())[code]) throw new Fail('CODE_TAKEN', 409);
     const ws = /^\d{4}-\d{2}-\d{2}$/.test(String(a.weekStart || '')) ? a.weekStart : '';
     await db.set('cfg', { name: clip(a.name, 80).trim() || 'Lordship DTS', code, weekStart: ws });
     return { cfg: await cfg() };
@@ -387,14 +494,14 @@ export const HANDLERS = {
   /* --- the class roster and the game (projector) --- */
   async adminRoster(a) {
     await admin(a);
-    const c = await cfg();
+    const c = await adminClass(a);
     if (!c.code) return { students: [] };
     const st = await allStudents(c);
     return { students: await Promise.all(st.map(async x => ({ id: x.id, name: x.name, at: x.at, seen: x.seen || 0, fact: !!x.fact, saved: ((await db.get('sd:' + x.id)) || {}).at || 0 }))) };
   },
   async adminStudent(a) {
     await admin(a);
-    const c = await cfg();
+    const c = await adminClass(a);
     const s = await db.get('st:' + c.code + ':' + clip(a.sid, 20));
     if (!s) throw new Fail('NO_STUDENT', 404);
     if (a.remove) {
@@ -408,7 +515,7 @@ export const HANDLERS = {
   },
   async gameScreen(a) {
     await admin(a);
-    const c = await cfg();
+    const c = await adminClass(a);
     if (!c.code) throw new Fail('NO_CLASS', 403);
     const g = (await db.get('game:' + c.code)) || { phase: 'off' };
     const st = await allStudents(c);
@@ -431,7 +538,7 @@ export const HANDLERS = {
   },
   async gameAdmin(a) {
     await admin(a);
-    const c = await cfg();
+    const c = await adminClass(a);
     if (!c.code) throw new Fail('NO_CLASS', 403);
     const k = 'game:' + c.code;
     let g = (await db.get(k)) || { phase: 'off' };

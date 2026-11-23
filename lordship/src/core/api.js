@@ -34,6 +34,9 @@ export async function coach({ code, tool, messages, context, distill, onPartial 
 export const ERR = {
   OFFLINE: 'You look offline. Check your connection and try again.',
   NO_CLASS: 'That class code didn’t work. Check it with Uriah or Naomi.',
+  NAME_TAKEN: 'Someone in that class already has that name.',
+  CODE_TAKEN: 'That code is already a class.',
+  NOT_EMPTY: 'Move everyone out of that class first.',
   NO_KEY: 'The coach isn’t switched on yet (no Claude key on the server).',
   LIMIT: 'The coach has had a very busy day. Try again tomorrow.',
   BUSY: 'The coach is busy right now. Try again in a minute.',

@@ -233,6 +233,38 @@ ok('church tools are wheel, laydown, notso', Object.keys(P.TOOLS).filter(k => P.
 ok('base prompt has Uriah\'s words', P.BASE.includes('warm, honest discipleship coach') && P.BASE.includes('Point serious struggles to a trusted leader or counsellor'));
 ok('schemas are strict', Object.values(P.TOOLS).filter(t => t.distill).every(t => t.distill.additionalProperties === false && t.distill.required.length === Object.keys(t.distill.properties).length));
 
+/* --- more classes, and moving students between them --- */
+ok('a new class needs a 4–12 code', (await call('adminClassAdd', { pw: 'pw', name: 'X', code: 'ab' })).error === 'BAD_CODE');
+ok('a new class can’t reuse the main code', (await call('adminClassAdd', { pw: 'pw', name: 'X', code: 'dts26' })).error === 'CODE_TAKEN');
+const mk = await call('adminClassAdd', { pw: 'pw', name: 'DTS Winter', code: 'dtsw' });
+ok('admin makes a second class', mk.classes.length === 2 && mk.classes[1].code === 'DTSW' && mk.classes[1].n === 0);
+ok('the main code can’t take a class’s code', (await call('adminSet', { pw: 'pw', name: 'Lordship DTS', code: 'DTSW', weekStart: '2026-11-23' })).error === 'CODE_TAKEN');
+ok('the new class code works', (await call('classCheck', { code: 'dtsw' })).name === 'DTS Winter');
+const mo = await call('join', { code: 'DTS26', name: 'Mo Moved', pin: '4321' });
+const lu = await call('join', { code: 'DTS26', name: 'Lu Self', pin: '1357' });
+const ki = await call('join', { code: 'DTS26', name: 'Ki Wrong', pin: '2468' });
+await call('syncSave', { code: 'DTS26', sid: mo.sid, token: mo.token, data: { 'lordship.wheel': { out: { faith: 3 } } }, at: 5 });
+ok('admin roster is per class', (await call('adminRoster', { pw: 'pw', cls: 'DTSW' })).students.length === 0);
+ok('admin moves a student', (await call('adminMove', { pw: 'pw', sid: mo.sid, to: 'DTSW' })).ok);
+ok('moved: off the old list, on the new one', !(await call('adminRoster', { pw: 'pw' })).students.some(x => x.id === mo.sid) && (await call('adminRoster', { pw: 'pw', cls: 'DTSW' })).students[0].name === 'Mo Moved');
+const mcc = await call('classCheck', { code: 'DTS26', sid: mo.sid, token: mo.token });
+ok('the phone on the old class hears where they went', mcc.moved && mcc.moved.code === 'DTSW');
+ok('their key still works, even with the old code', (await call('syncLoad', { code: 'DTS26', sid: mo.sid, token: mo.token })).data['lordship.wheel'].out.faith === 3);
+const si = await call('signIn', { code: 'DTS26', name: 'mo moved', pin: '4321' });
+ok('signing in on the old class lands in the new one', si.cls && si.cls.code === 'DTSW');
+const mv = await call('moveClass', { code: 'DTS26', sid: lu.sid, token: lu.token, to: 'dtsw' });
+ok('a student moves themselves with the new code', mv.code === 'DTSW' && (await call('adminRoster', { pw: 'pw', cls: 'DTSW' })).students.length === 2);
+ok('moving needs a real class', (await call('moveClass', { code: 'DTSW', sid: lu.sid, token: lu.token, to: 'nope' })).error === 'NO_CLASS');
+ok('moving needs the student’s key', (await call('moveClass', { code: 'DTS26', sid: ki.sid, token: 'x', to: 'DTSW' })).error === 'NO_STUDENT');
+const kis = await call('signIn', { code: 'DTSW', name: 'Ki Wrong', pin: '2468' });
+ok('“I’ve joined before” with the new link brings them over', kis.cls.code === 'DTSW' && (await call('adminRoster', { pw: 'pw', cls: 'DTSW' })).students.length === 3);
+await call('join', { code: 'DTS26', name: 'Po Pin', pin: '9753' }); const anaBad = await call('signIn', { code: 'DTSW', name: 'Po Pin', pin: '0000' }); ok('…but only with their PIN', anaBad.error === 'BAD_PIN', anaBad);
+await call('join', { code: 'DTS26', name: 'Mo Moved', pin: '1111' });
+const mo2 = (await call('adminRoster', { pw: 'pw' })).students.find(x => x.name === 'Mo Moved');
+ok('a name already in the other class isn’t moved over it', (await call('adminMove', { pw: 'pw', sid: mo2.id, to: 'DTSW' })).error === 'NAME_TAKEN');
+ok('a class with people can’t be deleted', (await call('adminClassDrop', { pw: 'pw', code: 'DTSW' })).error === 'NOT_EMPTY');
+ok('class totals and the game follow the class picked', (await call('gameScreen', { pw: 'pw', cls: 'DTSW' })).code === 'DTSW' && (await call('adminTotals', { pw: 'pw', cls: 'DTSW' })).n === 0);
+
 /* --- the base-wide profile quiz: no class, no account --- */
 const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';
 ok('public quiz needs a phone id', (await call('pubQuiz', { rid: 'x', name: 'Sokha', group: 'dts', profile: 'netflix' })).error === 'BAD_ID');

@@ -1,7 +1,7 @@
 /* Joining the class: a name and a 4-digit PIN. New, or back on another phone — then one fun fact for the
    Day 1 game ("Who wrote this?"). Kept as short as possible. */
 import { useRef, useState } from 'react';
-import { join, signIn, saveFact } from './account.js';
+import { join, signIn, saveFact, getMe, moveClass } from './account.js';
 import { errText } from './api.js';
 import { Spark } from './ui.jsx';
 
@@ -49,6 +49,12 @@ export default function Join({ cls, onDone, onStart }) {
     } catch (x) { setErr(MSG[x.code] || errText(x)); }
     setBusy(false);
   }
+  const other = getMe();
+  async function moveHere() {
+    setBusy(true); setErr('');
+    try { await moveClass(cls.code); onDone(); } catch (x) { setErr(x.code === 'NAME_TAKEN' ? 'Someone in this class already has your name. Ask Uriah to move you.' : x.code === 'NO_STUDENT' ? 'Sign in below instead.' : errText(x)); }
+    setBusy(false);
+  }
   async function finish(skip) {
     if (!skip && fact.trim()) { setBusy(true); try { await saveFact(fact.trim()); } catch (x) { /* keep going */ } setBusy(false); }
     onDone();
@@ -70,6 +76,13 @@ export default function Join({ cls, onDone, onStart }) {
     <form className="joinpage" onSubmit={go}>
       <p className="eyebrow"><Spark size={14} color="var(--accent)" /> {cls.name}</p>
       <h1>{mode === 'new' ? 'Join the class' : 'Welcome back'}</h1>
+      {other && other.code !== cls.code && (
+        <div className="card moveclass">
+          <p><b>You’re signed in as {other.name}</b> in another class.</p>
+          <button type="button" className="btn primary big" disabled={busy} onClick={moveHere}>Move me to {cls.name}</button>
+          <p className="tiny muted">Your answers come with you. Or sign in below.</p>
+        </div>
+      )}
       <div className="seg" role="tablist">
         <button type="button" className={mode === 'new' ? 'on' : ''} onClick={() => { setMode('new'); setErr(''); }}>I’m new</button>
         <button type="button" className={mode === 'back' ? 'on' : ''} onClick={() => { setMode('back'); setErr(''); }}>I’ve joined before</button>

@@ -40,7 +40,22 @@ async function settle(m) {
   } catch (e) { /* keep going offline */ }
 }
 export async function join(code, name, pin) { const r = await api('join', { code, name, pin }); const m = { code, sid: r.sid, token: r.token, name: r.name, fact: r.fact }; setMe(m); await settle(m); return m; }
-export async function signIn(code, name, pin) { const r = await api('signIn', { code, name, pin }); const m = { code, sid: r.sid, token: r.token, name: r.name, fact: r.fact }; setMe(m); await settle(m); return m; }
+export async function signIn(code, name, pin) {
+  const r = await api('signIn', { code, name, pin });
+  if (r.cls && r.cls.code !== code) { setClass(r.cls); code = r.cls.code; }   // they were moved to another class
+  const m = { code, sid: r.sid, token: r.token, name: r.name, fact: r.fact }; setMe(m); await settle(m); return m;
+}
+/* The class this phone is on (App keeps it as 'gp.lordship.class'); moving tells App. */
+export function setClass(c) {
+  try { localStorage.setItem('gp.lordship.class', JSON.stringify({ code: c.code, name: c.name, weekStart: c.weekStart || '' })); } catch (e) { /* */ }
+  window.dispatchEvent(new CustomEvent('gp-class'));
+}
+export async function moveClass(to) {
+  const m = getMe(); if (!m) return null;
+  const c = await api('moveClass', Object.assign(auth(m), { to }));
+  setClass(c); setMe(Object.assign({}, m, { code: c.code }));
+  return c;
+}
 export async function saveFact(fact) { const m = getMe(); if (!m) return; await api('setFact', Object.assign(auth(m), { fact })); setMe(Object.assign({}, m, { fact })); }
 export function signOut() { pushNow(); setMe(null); }
 export function authArgs() { const m = getMe(); return m ? auth(m) : {}; }

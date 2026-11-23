@@ -12,7 +12,7 @@ import { ClassHome, ChurchHome } from './teachings/lordship/Home.jsx';
 import { todayDayId } from './teachings/lordship/tools/Day.jsx';
 import Admin, { Panel, GameScreen } from './Admin.jsx';
 import Join from './core/Join.jsx';
-import { getMe } from './core/account.js';
+import { getMe, setMe } from './core/account.js';
 import { ThemeToggle } from './core/theme.jsx';
 import Install from './core/Install.jsx';
 import PubQuiz, { QuizResults } from './teachings/lordship/tools/PubQuiz.jsx';
@@ -35,7 +35,10 @@ function Landing({ onJoin, initial }) {
   async function join(e) {
     e && e.preventDefault();
     setBusy(true); setErr('');
-    try { const r = await api('classCheck', { code }); onJoin({ code: code.trim().toUpperCase(), name: r.name, weekStart: r.weekStart }); }
+    try {   // a Home Screen app still opens the class it was installed from: follow a student who has moved since
+      const m = getMe(), r = await api('classCheck', Object.assign({ code }, m ? { sid: m.sid, token: m.token } : {}));
+      onJoin(r.moved || { code: code.trim().toUpperCase(), name: r.name, weekStart: r.weekStart });
+    }
     catch (er) { setErr(errText(er)); }
     setBusy(false);
   }
@@ -66,10 +69,15 @@ export default function App() {
   const [me, setMeS] = useState(getMe);
   const [joining, setJoining] = useState(false);   // keep the join screen up for its fun-fact step
   useEffect(() => { const on = () => setMeS(getMe()); window.addEventListener('gp-me', on); return () => window.removeEventListener('gp-me', on); }, []);
-  const [pending] = useState(PENDING);
+  useEffect(() => { const on = () => { setPending(''); setCls(read(CLS, null)); }; window.addEventListener('gp-class', on); return () => window.removeEventListener('gp-class', on); }, []);
+  const [pending, setPending] = useState(PENDING);
   useEffect(() => {   // refresh the class (a new week may have a new code or start date)
     if (!cls) return;
-    api('classCheck', { code: cls.code }).then(x => { const n = Object.assign({}, cls, { name: x.name, weekStart: x.weekStart }); write(CLS, n); setCls(n); })
+    const m = getMe(), mine = m && m.code === cls.code ? { sid: m.sid, token: m.token } : {};
+    api('classCheck', Object.assign({ code: cls.code }, mine)).then(x => {
+      if (x.moved) { write(CLS, x.moved); setPending(''); setCls(x.moved); setMe(Object.assign({}, m, { code: x.moved.code })); return; }   // Uriah moved them to another class
+      const n = Object.assign({}, cls, { name: x.name, weekStart: x.weekStart }); write(CLS, n); setCls(n);
+    })
       .catch(e => { if (e.code === 'NO_CLASS') { write(CLS, null); setCls(null); } });
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -85,7 +93,7 @@ export default function App() {
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];
-  const join = (c) => { write(CLS, c); setCls(c); go('class'); };
+  const join = (c) => { write(CLS, c); setPending(''); setCls(c); go('class'); };
 
   let page;
   if (admin) page = <Admin />;

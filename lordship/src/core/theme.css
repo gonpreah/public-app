@@ -522,3 +522,10 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 .qrecent .pchip .avatar { border-radius: 50%; } .qrecent .pchip em { font-style: normal; opacity: .6; font-size: .8em; }
 .qr-tools { margin-top: auto; padding-top: 1.5vh; display: flex; gap: 18px; } .qr-tools .linkish { color: var(--ink-5); }
 .qr-total { font: 800 clamp(1.2rem, 2.2vw, 2rem) var(--display); } .qr-total b { color: var(--marigold); }
+
+/* classes: picker, moving */
+.classes .chip small { opacity: .7; font-weight: 500; }
+.newclass { margin-top: 10px; }
+.moveclass { border: 2px solid var(--accent); }
+.moveto select { font: inherit; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line, #ccc); background: var(--card); color: inherit; }
+.item input.pick { width: 20px; height: 20px; margin: 0 10px 0 0; vertical-align: middle; accent-color: var(--accent); }

@@ -13,4 +13,7 @@ for (const g of C.PEOPLE_GROUPS) {
 }
 ok('every day has scripture, questions and a response', C.DAYS.every(d => d.scripture.length && d.questions.length >= 3 && d.respond.length));
 ok('every plan area has a verse and prompts for both plans', C.LIFE_AREAS.every(a => a.verse && a.mine.length && a.gods.length));
+const G = await import('../netlify/functions/lib/game.js');
+ok('every live poll’s options match the server’s', Object.keys(C.LIVE_POLLS).every(id => G.LIVE_POLL_IDS[id] && C.LIVE_POLLS[id].qs.every((q, i) => q.opts.map(o => o[0]).join() === G.LIVE_POLL_IDS[id][i].join())) && Object.keys(G.LIVE_POLL_IDS).length === Object.keys(C.LIVE_POLLS).length);
+ok('every area can be picked back up', C.LIVE_POLLS.staff.qs[0].opts.every(o => { const u = C.PICK_UP[o[0]]; return u && u.up && u.how && u.ask && u.step && u.ref && u.text; }));
 ok.done();

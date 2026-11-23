@@ -530,6 +530,34 @@ try {
   await pr.waitForTimeout(3500);
   ok('a retake replaces, not adds', (await pr.locator('.qr-total b').innerText()) === '1');
 
+  /* a live poll for a Zoom call: no names */
+  const lp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await lp.goto(U + '/?poll=never'); await lp.waitForSelector('text=Start');
+  ok('?poll=never opens with no sign-in, Peter’s verse first', (await lp.locator('.scripture').innerText()).includes('Far be it from you, Lord') && (await lp.locator('.pinbox').count()) === 0);
+  await lp.click('text=Start');
+  await lp.click('.opt-btn:has-text("My comfort")');
+  await lp.click('.opt-btn:has-text("Yes… slowly")');
+  await lp.waitForSelector('text=Thank you for being honest');
+  ok('done: what I picked, John 21 and a prayer', (await lp.locator('.lp-mine').innerText()).includes('My comfort') && (await lp.locator('main').innerText()).includes('You know that I love you'));
+  const lps = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await lps.goto(U + '/#/poll-results/never'); await lps.waitForSelector('.lpbar');
+  await lps.waitForFunction(() => document.querySelector('.qr-total b').textContent === '1');
+  ok('the shared screen: the link, both questions, live', (await lps.locator('.lp-link b').innerText()).includes('?poll=never') && (await lps.locator('.lp-col').count()) === 2 && (await lps.locator('.lpbar:not(.zero)').count()) === 2);
+  await lp.goto(U + '/?poll=staff'); await lp.waitForSelector('text=Start');
+  ok('?poll=staff opens with Moses’ staff', (await lp.locator('.scripture').innerText()).includes('What is that in your hand?'));
+  await lp.click('text=Start');
+  ok('it remembers what they laid down', (await lp.locator('.opt-btn.mine').innerText()).includes('My comfort'));
+  await lp.click('.opt-btn.mine');
+  ok('then shows it picked back up, God’s way', (await lp.locator('.pickup h2').innerText()).includes('Rest well') && (await lp.locator('.pickup').innerText()).includes('Mark 6:31'));
+  await lp.click('.opt-btn:has-text("One small change")');
+  await lp.waitForSelector('text=Thank you for being honest');
+  ok('done keeps the picked-up card', (await lp.locator('.pickup h2').count()) === 1);
+  await lps.goto(U + '/#/poll-results/staff'); await lps.waitForSelector('.lp-top');
+  ok('the shared screen names the top area picked back up', (await lps.locator('.lp-top').innerText()).includes('Rest well'));
+  await lp.goto(U + '/?poll=never'); await lp.waitForSelector('text=Change my answer');
+  await lp.click('text=Change my answer'); await lp.waitForSelector('.lp-opts.grid');
+  ok('no sideways scroll: poll phone', await lp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {
   ok('ran without throwing: ' + e.message, false);

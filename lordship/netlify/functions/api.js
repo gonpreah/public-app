@@ -24,7 +24,7 @@
 import { getStore } from '@netlify/blobs';
 import crypto from 'node:crypto';
 import { TOOLS, LIFE_AREA_IDS } from './lib/prompts.js';
-import { POLLS, nextRound, PROFILE_IDS } from './lib/game.js';
+import { POLLS, nextRound, PROFILE_IDS, LIVE_POLL_IDS } from './lib/game.js';
 
 /* ---------------- storage ---------------- */
 function store() { return globalThis.__lsStore || getStore({ name: 'lordship', consistency: 'strong' }); }
@@ -338,6 +338,42 @@ export const HANDLERS = {
   async pubQuizReset(a) {
     await admin(a);
     for (const k of await db.keys('pq:')) await db.del(k);
+    return { ok: true };
+  },
+
+  /* --- live polls (?poll=<id>, Zoom or a room): no name at all — a random phone id so a retake replaces, and the answers.
+     Everything is in the key (lp:<poll>:<phone id>:<time>:<answer>:<answer>…), so the results are one list call. --- */
+  async livePoll(a) {
+    const ids = Object.prototype.hasOwnProperty.call(LIVE_POLL_IDS, a.poll) && LIVE_POLL_IDS[a.poll];
+    if (!ids) throw new Fail('NO_POLL', 404);
+    const rid = String(a.rid || '');
+    if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    const ans = Array.isArray(a.answers) ? a.answers : [];
+    if (ans.length !== ids.length || ans.some((x, i) => !ids[i].includes(x))) throw new Fail('BAD_ANSWER');
+    const k = 'lpn:' + today();
+    const n = (await db.get(k)) || 0;
+    if (n > 5000) throw new Fail('BUSY', 429);
+    await db.set(k, n + 1);
+    for (const old of await db.keys('lp:' + a.poll + ':' + rid + ':')) await db.del(old);
+    await db.set(['lp', a.poll, rid, Date.now().toString(36)].concat(ans).join(':'), 1);
+    return { ok: true };
+  },
+  async livePollResults(a) {
+    const ids = Object.prototype.hasOwnProperty.call(LIVE_POLL_IDS, a.poll) && LIVE_POLL_IDS[a.poll];
+    if (!ids) throw new Fail('NO_POLL', 404);
+    const counts = ids.map(opts => Object.fromEntries(opts.map(o => [o, 0])));
+    let total = 0;
+    for (const k of await db.keys('lp:' + a.poll + ':')) {
+      const ans = k.split(':').slice(4);
+      if (ans.length !== ids.length || ans.some((x, i) => !ids[i].includes(x))) continue;
+      total++; ans.forEach((x, i) => { counts[i][x]++; });
+    }
+    return { total, counts };
+  },
+  async livePollReset(a) {
+    await admin(a);
+    if (!Object.prototype.hasOwnProperty.call(LIVE_POLL_IDS, a.poll)) throw new Fail('NO_POLL', 404);
+    for (const k of await db.keys('lp:' + a.poll + ':')) await db.del(k);
     return { ok: true };
   },
 

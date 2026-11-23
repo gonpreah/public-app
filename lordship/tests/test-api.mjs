@@ -265,6 +265,21 @@ ok('a name already in the other class isn’t moved over it', (await call('admin
 ok('a class with people can’t be deleted', (await call('adminClassDrop', { pw: 'pw', code: 'DTSW' })).error === 'NOT_EMPTY');
 ok('class totals and the game follow the class picked', (await call('gameScreen', { pw: 'pw', cls: 'DTSW' })).code === 'DTSW' && (await call('adminTotals', { pw: 'pw', cls: 'DTSW' })).n === 0);
 
+/* --- live polls: no names at all --- */
+const LP1 = 'aaaabbbbccccdddd', LP2 = 'aaaabbbbccccddde';
+ok('an unknown poll is refused', (await call('livePoll', { poll: 'nope', rid: LP1, answers: ['plans', 'yes'] })).error === 'NO_POLL');
+ok('answers must be the poll’s options', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['porn', 'yes'] })).error === 'BAD_ANSWER');
+ok('every question answered', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['plans'] })).error === 'BAD_ANSWER');
+await call('livePoll', { poll: 'never', rid: LP1, answers: ['plans', 'never'] });
+await call('livePoll', { poll: 'never', rid: LP2, answers: ['money', 'yes'] });
+await call('livePoll', { poll: 'never', rid: LP1, answers: ['phone', 'slowly'] });
+const lr = await call('livePollResults', { poll: 'never' });
+ok('live results count each phone once', lr.total === 2 && lr.counts[0].plans === 0 && lr.counts[0].phone === 1 && lr.counts[1].yes === 1 && lr.counts[1].slowly === 1);
+ok('live results carry no ids', !JSON.stringify(lr).includes(LP1));
+ok('reset a poll needs the admin', (await call('livePollReset', { poll: 'never', pw: 'x' })).error === 'BAD_PASSWORD');
+await call('livePollReset', { poll: 'never', pw: 'pw' });
+ok('reset clears the poll', (await call('livePollResults', { poll: 'never' })).total === 0);
+
 /* --- the base-wide profile quiz: no class, no account --- */
 const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';
 ok('public quiz needs a phone id', (await call('pubQuiz', { rid: 'x', name: 'Sokha', group: 'dts', profile: 'netflix' })).error === 'BAD_ID');

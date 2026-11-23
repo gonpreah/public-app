@@ -29,3 +29,9 @@ export function nextRound(g, facts) {
 
 /* The Lordship profile quiz: the profile ids a phone may post (texts live in the app's content.js). */
 export const PROFILE_IDS = ['netflix', 'bentley', 'ring', 'sahara', 'gym', 'wifi', 'planner', 'pleaser'];
+
+/* Live polls (?poll=<id>): the option ids each question accepts (the words are in src/…/content.js LIVE_POLLS). */
+export const LIVE_POLL_IDS = {
+  never: [['plans', 'money', 'phone', 'marry', 'home', 'family', 'dream', 'comfort', 'image', 'control', 'hurt', 'other'], ['never', 'think', 'slowly', 'yes']],
+  staff: [['plans', 'money', 'phone', 'marry', 'home', 'family', 'dream', 'comfort', 'image', 'control', 'hurt', 'other'], ['ask', 'step', 'talk', 'word', 'thanks']]
+};

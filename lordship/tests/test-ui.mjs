@@ -428,6 +428,34 @@ try {
   await pj.goto(U + '/#/admin'); await pj.waitForSelector('text=How do I know who to marry?');
   ok('question arrives, anonymous', true);
 
+  /* a second class: the admin makes it, moves Dara; Sokha moves herself */
+  await pj.click('.chip:has-text("+ New class")');
+  await pj.fill('#ncname', 'DTS Winter'); await pj.fill('#nccode', 'dtsw');
+  await pj.click('text=Make the class');
+  await pj.waitForSelector('.classes .chip.on:has-text("DTS Winter")');
+  ok('admin makes a class and gets its link', (await pj.locator('.classes code').innerText()).includes('?class=DTSW'));
+  await pj.click('.classes .chip:has-text("TEST1")');
+  await pj.click('.chip:has-text("Class list")');
+  await pj.waitForSelector('input[aria-label="Select Dara"]');
+  await pj.check('input[aria-label="Select Dara"]');
+  pj.once('dialog', d => d.accept());
+  await pj.click('.moveto button:has-text("Move")');
+  await pj.waitForFunction(() => !document.querySelector('input[aria-label="Select Dara"]'));
+  ok('admin moves Dara to the new class', (await pj.locator('.classes .chip:has-text("DTS Winter")').innerText()).includes('1'));
+  await pk.goto(U + '/#/class'); await pk.reload();
+  await pk.waitForFunction(() => (JSON.parse(localStorage.getItem('gp.lordship.class') || '{}').code === 'DTSW'));
+  ok('Dara’s phone follows her to the new class', (await pk.locator('.hero .eyebrow').textContent()).includes('DTS Winter'));
+  await p3.goto(U + '/#/t/me');
+  await p3.fill('input[aria-label="New class code"]', 'dtsw');
+  await p3.click('form button:has-text("Move")');
+  await p3.waitForSelector('.hero');
+  ok('Sokha moves herself with the code', (await p3.locator('.hero .eyebrow').textContent()).includes('DTS Winter') && (await p3.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.me')).code)) === 'DTSW');
+  await pj.click('.classes .chip:has-text("DTS Winter")');
+  await pj.waitForSelector('.item:has-text("Sokha")');
+  await pk.goto(U + '/?class=TEST1'); await pk.waitForSelector('.hero');
+  ok('the old Home Screen link still lands in the new class', (await pk.locator('.hero .eyebrow').textContent()).includes('DTS Winter') && (await pk.locator('.joinpage').count()) === 0);
+  ok('the new class’s list has just them', (await pj.locator('.item b').allInnerTexts()).sort().join() === 'Dara,Sokha');
+
   /* church mode, on a fresh phone */
   const p2 = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   p2.on('pageerror', e => errors.push(String(e)));

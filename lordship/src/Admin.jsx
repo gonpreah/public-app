@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, errText } from './core/api.js';
 import { DAYS, TOPICS, WHEEL_OUT, WHEEL_IN, GROUPS } from './teachings/lordship/content.js';
 import { toast, copyText } from './core/ui.jsx';
-import Qr from './core/Qr.jsx';
+import Qr, { downloadQrPng } from './core/Qr.jsx';
 
 const STATUS = [
   { id: 'new', name: 'New' }, { id: 'class', name: 'Answer in class' }, { id: 'panel', name: 'Thursday panel' },
@@ -80,7 +80,10 @@ function ClassSettings({ pw, cfg, onSaved }) {
           <h3>Class link</h3>
           <Qr text={classLink} />
           <p><code>{classLink}</code></p>
-          <button className="btn soft small" onClick={() => copyText(classLink)}>Copy</button>
+          <div className="row wrap" style={{ justifyContent: 'center' }}>
+            <button className="btn soft small" onClick={() => copyText(classLink)}>Copy</button>
+            <button className="btn soft small" onClick={() => downloadQrPng(classLink, classLink.replace(/^https?:\/\//, ''), 'lordship-class-qr.png')}>Download QR for slides</button>
+          </div>
         </div>
       )}
       <div className="card" style={{ textAlign: 'center' }}>
@@ -89,6 +92,7 @@ function ClassSettings({ pw, cfg, onSaved }) {
         <p><code>{churchLink}</code></p>
         <div className="row wrap" style={{ justifyContent: 'center' }}>
           <button className="btn soft small" onClick={() => copyText(churchLink)}>Copy</button>
+          <button className="btn soft small" onClick={() => downloadQrPng(churchLink, churchLink.replace(/^https?:\/\//, ''), 'lordship-church-qr.png')}>Download QR</button>
           <a className="btn primary small" href="#/church/screen">▶ Sunday screen</a>
         </div>
       </div>

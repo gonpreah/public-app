@@ -45,6 +45,12 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   CC BY / CC BY-SA from Flickr via Openverse, credited on the card (`photo` in `PEOPLE_GROUPS`: caption, by, licence, link).
   Some show where a group lives, not its people (Kuy, Tai Dam, Brao…) — the caption says what's shown. tests/test-data.mjs
   checks every group has one. A better photo (one Uriah took, with permission) can replace any file.
+- **Install** (Nov 2026, Uriah: "really easy to add to their homepage"): an install card on Home (`core/Install.jsx`):
+  one tap where the browser allows (`beforeinstallprompt`, caught early in main.jsx), the three iPhone taps with an arrow
+  to Share, and "copy the link, open Safari/Chrome" in Instagram/Facebook in-app browsers. The manifest is made per link
+  (`netlify/functions/manifest.js` at `/app.webmanifest?class=CODE` / `?church=1`) so the Home Screen app opens straight
+  into the class — an iPhone's Home Screen app doesn't share Safari's storage. PNG icons in `public/`. Admin → Class & links
+  → "Download QR for slides". The live class code is **LORDSHIP** (set Nov 2026; change it on the admin page each new class).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

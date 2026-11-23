@@ -7,6 +7,7 @@ import { Spark, Tile } from '../../core/ui.jsx';
 import { todayDayId, DayTabs } from './tools/Day.jsx';
 import { dueCheckin } from './tools/Commit.jsx';
 import PeopleGroup from './tools/PeopleGroup.jsx';
+import Install from '../../core/Install.jsx';
 import { planAreas, Venn } from './tools/LayDown.jsx';
 import { ALIGN } from './content.js';
 
@@ -70,6 +71,7 @@ export function ClassHome({ cls }) {
           <span><b>{nDone}/5</b><small>days</small></span>
         </div>
       </section>
+      <Install where="class" />
       <Welcome />
       {due && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/commit">🚩 <b>Time for your {due === 'd30' ? '30' : '90'}-day check-in</b> on “{c.text}”</a>}
       {d ? (
@@ -101,6 +103,7 @@ export function ChurchHome() {
         <p className="tagline">My plan, or God’s plan?</p>
         <p>Jesus is Lord — not just on Sunday, and not just of the easy parts. Laying our plans next to his is good news: it leads to freedom and joy.</p>
       </section>
+      <Install where="church" />
       <p className="lead">{CHURCH.affirm}</p>
       <Welcome church />
       <PlansGlance base="#/church/laydown" />

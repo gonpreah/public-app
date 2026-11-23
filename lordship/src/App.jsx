@@ -11,6 +11,7 @@ import { ClassHome, ChurchHome } from './teachings/lordship/Home.jsx';
 import { todayDayId } from './teachings/lordship/tools/Day.jsx';
 import Admin, { Panel } from './Admin.jsx';
 import { ThemeToggle } from './core/theme.jsx';
+import Install from './core/Install.jsx';
 
 const CLS = 'lordship.class';
 
@@ -65,6 +66,10 @@ export default function App() {
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const church = r[0] === 'church';
+  useEffect(() => {   // "Add to Home Screen" should open straight into this class (or church mode)
+    const m = document.getElementById('manifest');
+    if (m) m.setAttribute('href', '/app.webmanifest' + (church ? '?church=1' : cls ? '?class=' + encodeURIComponent(cls.code) : ''));
+  }, [church, cls && cls.code]);   // eslint-disable-line react-hooks/exhaustive-deps
   const admin = r[0] === 'admin';
   if (r[0] === 'panel') return <><Panel /><Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);

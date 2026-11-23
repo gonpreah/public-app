@@ -62,6 +62,8 @@ try {
   await page.click('text=Save and start');
   await page.waitForSelector('nav.bottom');
   ok('header shows who is signed in', (await page.locator('.mechip').innerText()).includes('Sokha'));
+  await page.waitForSelector('.hero', { timeout: 10000 }).catch(() => {});
+  await page.waitForSelector('h4:text-is("Tools")', { timeout: 10000 }).catch(() => {});
   ok('class link opens the class home', (await text()).includes('Tools') && (await text()).includes('Lordship DTS'));
   ok('code removed from the address', !page.url().includes('class='));
   const mhref = await page.locator('#manifest').getAttribute('href');
@@ -357,7 +359,7 @@ try {
   await pj.waitForFunction(() => document.querySelectorAll('.name-chip').length === 2);
   ok('new names pop onto the wall', true);
   await pj.click('text=Start the game');
-  await pj.waitForSelector('.screen-q');
+  await pj.waitForSelector('.screen-q:has-text("born on a boat")', { timeout: 10000 }).catch(() => {});
   ok('round 1 on the projector: who wrote this?', (await pj.locator('.screen-q').innerText()).includes('born on a boat'));
   await pk.click('.gamebanner');
   await pk.waitForSelector('.opt-btn');

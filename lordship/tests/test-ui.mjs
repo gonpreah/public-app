@@ -530,6 +530,22 @@ try {
   await pr.waitForTimeout(3500);
   ok('a retake replaces, not adds', (await pr.locator('.qr-total b').innerText()) === '1');
 
+  /* a live poll for a Zoom call: no names */
+  const lp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await lp.goto(U + '/?poll=never'); await lp.waitForSelector('text=Start');
+  ok('?poll=never opens with no sign-in, Peter’s verse first', (await lp.locator('.scripture').innerText()).includes('Far be it from you, Lord') && (await lp.locator('.pinbox').count()) === 0);
+  await lp.click('text=Start');
+  await lp.click('.opt-btn:has-text("My comfort")');
+  await lp.click('.opt-btn:has-text("Yes… slowly")');
+  await lp.waitForSelector('text=Thank you for being honest');
+  ok('done: what I picked, John 21 and a prayer', (await lp.locator('.lp-mine').innerText()).includes('My comfort') && (await lp.locator('main').innerText()).includes('You know that I love you'));
+  const lps = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await lps.goto(U + '/#/poll-results/never'); await lps.waitForSelector('.lpbar');
+  await lps.waitForFunction(() => document.querySelector('.qr-total b').textContent === '1');
+  ok('the shared screen: the link, both questions, live', (await lps.locator('.lp-link b').innerText()).includes('?poll=never') && (await lps.locator('.lp-col').count()) === 2 && (await lps.locator('.lpbar:not(.zero)').count()) === 2);
+  await lp.click('text=Change my answer'); await lp.waitForSelector('.lp-opts.grid');
+  ok('no sideways scroll: poll phone', await lp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {
   ok('ran without throwing: ' + e.message, false);

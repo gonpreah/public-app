@@ -16,6 +16,7 @@ import { getMe, setMe } from './core/account.js';
 import { ThemeToggle } from './core/theme.jsx';
 import Install from './core/Install.jsx';
 import PubQuiz, { QuizResults } from './teachings/lordship/tools/PubQuiz.jsx';
+import LivePoll, { LivePollResults } from './teachings/lordship/tools/LivePoll.jsx';
 
 const CLS = 'lordship.class';
 
@@ -23,7 +24,8 @@ const CLS = 'lordship.class';
 const PENDING = (() => {
   const p = new URLSearchParams(location.search);
   const c = p.get('class');
-  if (p.has('quiz')) history.replaceState(null, '', location.pathname + '#/quiz');
+  if (p.get('poll')) history.replaceState(null, '', location.pathname + '#/poll/' + encodeURIComponent(p.get('poll').toLowerCase()));
+  else if (p.has('quiz')) history.replaceState(null, '', location.pathname + '#/quiz');
   else if (p.has('church') || c) history.replaceState(null, '', location.pathname + (p.has('church') ? '#/church' : '#/'));
   return c || '';
 })();
@@ -90,6 +92,7 @@ export default function App() {
   if (r[0] === 'panel') return <><Panel /><Toast /></>;
   if (r[0] === 'game') return <><GameScreen /><Toast /></>;
   if (r[0] === 'quiz-results') return <><QuizResults /><Toast /></>;
+  if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} key={r[1]} /><Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];
@@ -98,6 +101,7 @@ export default function App() {
   let page;
   if (admin) page = <Admin />;
   else if (r[0] === 'quiz') page = <PubQuiz />;
+  else if (r[0] === 'poll') page = <LivePoll id={r[1]} key={r[1]} />;
   else if (church) {
     const t = r[1] && L.TOOLS.find(x => x.id === r[1] && x.church);
     page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/church">‹ Home</a>}<t.C church code="" sub={r[2]} /></div> : <ChurchHome />;
@@ -125,7 +129,7 @@ export default function App() {
       <header className="top">
         <a className="brandmark" href={church ? '#/church' : '#/class'}><Spark size={20} color="var(--accent)" /> Lordship</a>
         <span className="top-r">{!admin && !church && cls && me ? <a className="mechip" href="#/t/me" aria-label={'Me: ' + me.name}><span>{me.name.slice(0, 1).toUpperCase()}</span>{me.name.split(' ')[0]}</a>
-          : <span className="mode">{admin ? 'Admin' : r[0] === 'quiz' ? 'Just for fun' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
+          : <span className="mode">{admin ? 'Admin' : r[0] === 'quiz' ? 'Just for fun' : r[0] === 'poll' ? 'No names' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
       </header>
       <main>{page}</main>
       {nav && <nav className="bottom">{nav.map(([p, e, l]) => <a key={p} href={'#/' + p} className={on(p) ? 'on' : ''}><span aria-hidden="true">{e}</span>{l}</a>)}</nav>}

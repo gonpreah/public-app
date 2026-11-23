@@ -92,6 +92,13 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   new link and their name + PIN moves them (`signIn`). `moveStudent` moves the account, name, keys and quiz result (answers
   are keyed by student) and leaves `mv:`/`mvn:` pointers, so a phone or Home Screen app on the old class follows them
   (`classCheck` → `moved`, `student()` follows the pointer).
+- **Live polls** (Nov 2026, Uriah: a Zoom call with "mostly strangers" — "no sign-in … live results"; surrender "but not have
+  it be shameful"): `/?poll=<id>` → `#/poll/<id>` (tools/LivePoll.jsx), no name or account, one tap a question; the shared
+  screen is `#/poll-results/<id>` (the link big with "Copy link for the chat", both questions as bars in %, live every 3 s,
+  Reset behind the admin password). Words in `LIVE_POLLS` (content.js), option ids in `LIVE_POLL_IDS` (lib/game.js; the
+  data test checks they match). Keys `lp:<poll>:<phone id>:<time>:<answers…>` — a retake replaces, nothing else is kept.
+  First poll `never` ("Never, Lord", Matthew 16:22): twelve ordinary areas (plans, money, phone, marriage … "something just
+  between me and God") — no sins listed, on purpose — then "if Jesus asked today you'd say…"; it ends with John 21:17.
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

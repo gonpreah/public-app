@@ -354,3 +354,25 @@ export const QUIZ = [
   { q: 'Fasting week! Your survival plan:', opts: [['I’ll fast… from the gym', 'gym'], ['Fast from social media (sobbing)', 'wifi'], ['Already on day 40', 'sahara'], ['Only if my small group is', 'pleaser']] },
   { q: 'Your prayer request, honestly:', opts: [['A husband/wife by spring', 'ring'], ['Financial breakthrough (a Bentley)', 'bentley'], ['That God approves my plan', 'planner'], ['More hours in the day for shows', 'netflix']] }
 ];
+
+/* Live polls for a room or a Zoom call (?poll=<id>): no names, no sign-in — one tap per question, results live on
+   #/poll-results/<id>. Option ids must match LIVE_POLL_IDS in netlify/functions/lib/game.js (tests/test-data.mjs checks). */
+export const LIVE_POLLS = {
+  never: {
+    title: '“Never, Lord”',
+    verse: { ref: 'Matthew 16:22', text: 'Peter took him aside, and began to rebuke him, saying, “Far be it from you, Lord! This will never be done to you.”' },
+    intro: 'Peter loved Jesus — and still said “Never, Lord.” Most of our “nevers” aren’t scandals. They’re ordinary, good things we quietly keep for ourselves. No names. Just be honest.',
+    qs: [
+      { q: 'Where might you be saying “Never, Lord”?', sub: 'Pick the one that tugs at you most.', opts: [
+        ['plans', '📅', 'My plans & timeline'], ['money', '💸', 'Money & what I own'], ['phone', '📱', 'My phone & screen time'],
+        ['marry', '💍', 'Who I’ll marry (and when)'], ['home', '🏠', 'Where I’ll live'], ['family', '👨‍👩‍👧', 'What my family expects'],
+        ['dream', '🎯', 'My dream or career'], ['comfort', '🛋️', 'My comfort'], ['image', '🙂', 'What people think of me'],
+        ['control', '🎛️', 'Being in control'], ['hurt', '🩹', 'An old hurt I’m holding'], ['other', '🤫', 'Something just between me and God']
+      ] },
+      { q: 'If Jesus asked you for it today, you’d honestly say…', sub: 'Peter’s “never” wasn’t the end of his story.', opts: [
+        ['never', '🙅', '“Never, Lord”'], ['think', '🤔', '“Let me think about it”'], ['slowly', '😬', '“Yes… slowly”'], ['yes', '🙌', '“Yes, Lord”']
+      ] }
+    ],
+    done: { text: '“Lord, you know everything. You know that I love you.”', ref: 'John 21:17 — the same Peter, later', prayer: 'Jesus, this is the place I’ve been holding on. I’m opening my hand — even a little. Amen.' }
+  }
+};

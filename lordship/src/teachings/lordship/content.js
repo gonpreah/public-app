@@ -10,99 +10,130 @@ export const TEACHING = {
   translation: 'World English Bible (public domain)'
 };
 
+/* The week lives in James: one chapter a day (Uriah's Lordship Week slides, Nov 23–27 2026). */
+export const WEEK = {
+  memory: { ref: 'James 1:22', text: 'But be doers of the word, and not only hearers, deluding your own selves.' },
+  anchor: 'This week we live in James. One chapter a day. Five minutes. Underline one thing to do.',
+  checkin: 'What did you lay down or take up since yesterday?',
+  study: [['Say', 'What does it say? Who, what, where. Just the facts.'], ['Mean', 'What did it mean to them? What does it show us about God?'], ['Do', 'What do I do with this today? One honest answer.']]
+};
+
 export const DAYS = [
   {
-    id: 'mon', dow: 1, name: 'Monday', title: "Lordship Doesn't Go Away",
-    bigIdea: 'Jesus is Lord on the good days and the manna days. Complaining is what it sounds like when part of me is still trying to be in charge.',
+    id: 'mon', dow: 1, name: 'Monday', title: 'Lordship as a Lifestyle', james: 1,
+    sticky: 'Lordship doesn’t go away.',
+    bigIdea: 'Is Jesus your Lord, or just your Savior? Most of us come to get; his love is so good we end up wanting to give everything back. And what we grumble about shows us what we haven’t surrendered.',
     scripture: [
-      { ref: 'Numbers 11:1, 4–6', text: 'The people were complaining in the ears of Yahweh. When Yahweh heard it, his anger burned; and Yahweh’s fire burned among them, and consumed some of the outskirts of the camp. … The mixed multitude that was among them lusted exceedingly: and the children of Israel also wept again, and said, “Who will give us meat to eat? We remember the fish, which we ate in Egypt for nothing; the cucumbers, and the melons, and the leeks, and the onions, and the garlic; but now we have lost our appetite. There is nothing at all except this manna to look at.”' },
-      { ref: 'Philippians 2:14–15', text: 'Do all things without murmurings and disputes, that you may become blameless and harmless, children of God without defect in the middle of a crooked and perverse generation, among whom you are seen as lights in the world.' }
+      { ref: 'James 1:22', text: 'But be doers of the word, and not only hearers, deluding your own selves.' },
+      { ref: 'Matthew 7:21', text: 'Not everyone who says to me, ‘Lord, Lord,’ will enter into the Kingdom of Heaven; but he who does the will of my Father who is in heaven.' },
+      { ref: 'Ephesians 2:8–9 · James 2:17', text: 'For by grace you have been saved through faith, and that not of yourselves; it is the gift of God, not of works, that no one would boast. … Even so faith, if it has no works, is dead in itself.' },
+      { ref: 'Acts 1:8', text: 'But you will receive power when the Holy Spirit has come upon you. You will be witnesses to me in Jerusalem, in all Judea and Samaria, and to the uttermost parts of the earth.' }
     ],
-    respond: [
-      { tool: 'quiz', why: 'Warm up: what’s your Lordship profile? (Netflix Martyr? Sahara Saint?)' },
-      { tool: 'wheel', why: 'Take an honest look at your whole life — heart, soul, mind and strength.' },
-      { tool: 'habits', why: 'Swap one complaint for one thank-you, every day this week.' }
-    ],
+    study: null,
     questions: [
-      'What is your "manna" right now — the thing God is providing that you’re tired of?',
-      'What do you catch yourself complaining about most this week? What might it say about who’s in charge?',
-      'Israel remembered Egypt as better than it was. What "Egypt" do you look back on with rose-tinted glasses?',
-      'What would it look like to say thank you for the manna, honestly, out loud, this week?'
+      'Why did you really come — to get, or to give? (Starting at “get” is OK. The disciples did too.)',
+      'What’s one thing you’d never want God to ask you to give up?',
+      'Where is Jesus already making ripples in your life — me, my community, my nation, the world?',
+      'What do you catch yourself grumbling about? What might it show you haven’t surrendered?'
+    ],
+    listen: 'Jesus, where am I calling you Lord, but not letting you lead?',
+    response: 'They weren’t pushed into Lordship; they were loved into it. Let your life line up with what you believe — not works-based, no judging, just your yes.',
+    respond: [
+      { tool: 'quiz', why: 'Warm up: what’s your Lordship profile? Show your neighbour.' },
+      { tool: 'laydown', why: 'Where are my plan and God’s plan rubbing? (Grumbling is the clue.)' }
     ]
   },
   {
-    id: 'tue', dow: 2, name: 'Tuesday', title: 'Lazy Lordship',
-    bigIdea: 'Saying "yes, Lord" costs nothing; doing it costs something. Jesus loves the son who said no and then went more than the son who said yes and stayed home.',
+    id: 'tue', dow: 2, name: 'Tuesday', title: 'Lazy Lordship', james: 2,
+    sticky: 'Plod, don’t sprint.',
+    bigIdea: 'Saying yes isn’t the same as going. Lordship is a thousand small yeses on ordinary days — a pace you can keep for 40 years beats an intensity you can keep for 4 weeks.',
     scripture: [
       { ref: 'Matthew 21:28–31', text: '“But what do you think? A man had two sons, and he came to the first, and said, ‘Son, go work today in my vineyard.’ He answered, ‘I will not,’ but afterward he changed his mind, and went. He came to the second, and said the same thing. He answered, ‘I’m going, sir,’ but he didn’t go. Which of the two did the will of his father?” They said to him, “The first.”' },
-      { ref: 'Luke 14:28', text: '“For which of you, desiring to build a tower, doesn’t first sit down and count the cost, to see if he has enough to complete it?”' }
+      { ref: 'Luke 14:28–30', text: '“For which of you, desiring to build a tower, doesn’t first sit down and count the cost, to see if he has enough to complete it? Or perhaps, when he has laid a foundation, and is not able to finish, everyone who sees begins to mock him, saying, ‘This man began to build, and wasn’t able to finish.’”' },
+      { ref: 'James 1:2–4', text: 'Count it all joy, my brothers, when you fall into various temptations, knowing that the testing of your faith produces endurance. Let endurance have its perfect work, that you may be perfect and complete, lacking in nothing.' }
     ],
-    respond: [
-      { tool: 'commit', why: 'Count the cost, then draft one thing you will actually do (you’ll declare it Friday).' },
-      { tool: 'godthing', why: 'Weigh something you’ve said yes to but haven’t done.' }
-    ],
+    study: 'Matthew 21:28–31 · Luke 14:28–30',
     questions: [
-      'Which son are you more like right now? Where have you said "I’m going, sir" and not gone?',
-      'What’s one thing God has asked of you that you keep putting off?',
-      'Count the cost: what would following through actually cost you — time, comfort, reputation, money?',
-      'Who could you ask to check in with you on it this week?'
+      'Which son are you more like? Why?',
+      'Where have you started something with God and not finished?',
+      'What pace could you actually keep for the next 10 years?'
+    ],
+    listen: 'Holy Spirit, what’s one small step you’re asking of me?',
+    response: 'Pick one daily act of obedience — small enough to do tomorrow and the next day — and track it in your habits. Tell your triad what you picked.',
+    respond: [
+      { tool: 'habits', why: 'Pick one daily act of obedience: 10 minutes in the Word, pray for a people group, encourage someone, say sorry first.' },
+      { tool: 'people', why: 'Who will plod for the unreached? Pray for today’s people group.' }
     ]
   },
   {
-    id: 'wed', dow: 3, name: 'Wednesday', title: 'Laying Down',
-    bigIdea: 'My plan or God’s plan? Every follower of Jesus has an Isaac — a good gift we grip so tightly it becomes our god. Laying it down isn’t losing it; it’s trusting the Provider more than the provision.',
+    id: 'wed', dow: 3, name: 'Wednesday', title: 'Laying Down', james: 3,
+    sticky: 'You can’t hold what he asks you to lay down.',
+    bigIdea: 'A right is anything I believe I’m owed. Laying it down isn’t losing it — it’s handing it to someone I trust more than myself. Open hands can receive; closed hands can only hold on.',
     scripture: [
+      { ref: 'Genesis 22:2, 14', text: '“Now take your son, your only son, whom you love, even Isaac, and go into the land of Moriah. Offer him there as a burnt offering on one of the mountains which I will tell you of.” … Abraham called the name of that place Yahweh Will Provide.' },
       { ref: 'Luke 9:23', text: 'He said to all, “If anyone desires to come after me, let him deny himself, take up his cross, and follow me.”' },
-      { ref: 'Genesis 22:1–2, 14', text: 'After these things, God tested Abraham, and said to him, “Abraham!” He said, “Here I am.” He said, “Now take your son, your only son, whom you love, even Isaac, and go into the land of Moriah. Offer him there as a burnt offering on one of the mountains which I will tell you of.” … Abraham called the name of that place Yahweh Will Provide. As it is said to this day, “On Yahweh’s mountain, it will be provided.”' },
-      { ref: 'Philippians 2:5–11', text: 'Have this in your mind, which was also in Christ Jesus, who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men. And being found in human form, he humbled himself, becoming obedient to death, yes, the death of the cross. Therefore God also highly exalted him, and gave to him the name which is above every name; that at the name of Jesus every knee should bow, of those in heaven, those on earth, and those under the earth, and that every tongue should confess that Jesus Christ is Lord, to the glory of God the Father.' }
+      { ref: 'Philippians 2:6–7', text: 'who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men.' },
+      { ref: 'James 4:7, 10', text: 'Be subject therefore to God. Resist the devil, and he will flee from you. … Humble yourselves in the sight of the Lord, and he will exalt you.' }
     ],
-    respond: [
-      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live — and name your Isaac.' }
-    ],
+    study: 'Genesis 22:1–14 · Philippians 2:5–11',
     questions: [
-      'What is your Isaac — the good thing you’d find hardest to hand back to God?',
-      'Where do you say "Lord" but also "not so" (Acts 10:14)? Money, romance, where you live, your role, your plans?',
-      'Jesus "emptied himself." What would emptying your hands look like this week, practically?',
-      'What do you need to believe about God to be able to lay it down with joy?'
+      'Which right would be hardest for you to lay down?',
+      'What’s your “never, Lord”?',
+      'Have you ever laid something down and received more back?'
+    ],
+    listen: 'Holy Spirit, what are you asking me to put in your hands?',
+    response: 'Write one right down. Bring it forward when you’re ready, and pray: “Jesus, this is yours.”',
+    respond: [
+      { tool: 'rights', why: 'Pick the right you’re laying down, and give it to Jesus.' },
+      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live.' }
     ]
   },
   {
-    id: 'thu', dow: 4, name: 'Thursday', title: 'Stay HOT: Humble, Open, Transparent',
-    bigIdea: 'Sin grows in the dark and loses its power in the light. Staying humble, open and transparent with a few safe people is how lordship stays real.',
+    id: 'thu', dow: 4, name: 'Thursday', title: 'Stay HOT', james: 4,
+    sticky: 'His power is amplified when my weakness is magnified.',
+    bigIdea: 'Humble, Open, Transparent. If it’s “none of your business”, it’s probably a Lordship area. Hiding weakness doesn’t make us strong; it makes us alone. The goal: secure and teachable.',
     scripture: [
-      { ref: '1 John 1:7', text: 'But if we walk in the light, as he is in the light, we have fellowship with one another, and the blood of Jesus Christ, his Son, cleanses us from all sin.' },
-      { ref: '2 Corinthians 12:9–10', text: 'He has said to me, “My grace is sufficient for you, for my power is made perfect in weakness.” Most gladly therefore I will rather glory in my weaknesses, that the power of Christ may rest on me. Therefore I take pleasure in weaknesses, in injuries, in necessities, in persecutions, in distresses, for Christ’s sake. For when I am weak, then am I strong.' }
+      { ref: '1 John 1:7, 9', text: 'But if we walk in the light, as he is in the light, we have fellowship with one another, and the blood of Jesus Christ, his Son, cleanses us from all sin. … If we confess our sins, he is faithful and righteous to forgive us the sins, and to cleanse us from all unrighteousness.' },
+      { ref: '2 Corinthians 12:9', text: 'He has said to me, “My grace is sufficient for you, for my power is made perfect in weakness.” Most gladly therefore I will rather glory in my weaknesses, that the power of Christ may rest on me.' },
+      { ref: 'James 5:16', text: 'Confess your offenses to one another, and pray for one another, that you may be healed. The insistent prayer of a righteous person is powerfully effective.' },
+      { ref: '1 Timothy 1:15', text: 'The saying is faithful and worthy of all acceptance, that Christ Jesus came into the world to save sinners; of whom I am chief.' }
     ],
-    respond: [
-      { tool: 'hot', why: 'The honesty check, then map who speaks into your life — and the gaps.' },
-      { tool: 'questions', why: 'Ask the question you wouldn’t ask out loud. It’s anonymous.' }
-    ],
+    study: '1 John 1:5–9 · 2 Corinthians 12:9–10',
     questions: [
-      'Which is hardest for you: humble, open or transparent? Why?',
-      'Who are the two or three people who know the real you — struggles included? If no one, who could?',
-      'What would it take for you to bring one hidden thing into the light this week?',
-      'Paul boasted in weakness. What weakness could God use if you stopped hiding it?'
+      'What area would you least want someone to ask about? (You don’t have to name it — just notice it.)',
+      'Who knows your real struggles?',
+      'How do you react to feedback, and where did you learn that?'
+    ],
+    listen: 'Holy Spirit, who are you inviting me to let in?',
+    response: 'Draw your mentor map: a Paul ahead of you, a Barnabas beside you, a Timothy you pour into. Circle one name to invite in this month.',
+    respond: [
+      { tool: 'hot', why: 'The honesty check, then your mentor map: Paul, Barnabas, Timothy.' },
+      { tool: 'questions', why: 'A question you’d rather ask privately? It’s anonymous.' }
     ]
   },
   {
-    id: 'fri', dow: 5, name: 'Friday', title: 'Taking Up',
-    bigIdea: 'We don’t just lay down — we take up. A living sacrifice gets up off the altar every morning and does what it sees the Father doing.',
+    id: 'fri', dow: 5, name: 'Friday', title: 'Taking Up', james: 5,
+    sticky: 'Easy to die for Jesus. Hard to live for him.',
+    bigIdea: 'All week we’ve laid things down; today we pick up what God hands us — habits, responsibility, a plan, and the nations. A living sacrifice gets up off the altar every day.',
     scripture: [
       { ref: 'Romans 12:1', text: 'Therefore I urge you, brothers, by the mercies of God, to present your bodies a living sacrifice, holy, acceptable to God, which is your spiritual service.' },
       { ref: '2 Timothy 2:3–6', text: 'You therefore must endure hardship, as a good soldier of Christ Jesus. No soldier on duty entangles himself in the affairs of life, that he may please him who enrolled him as a soldier. Also, if anyone competes in athletics, he isn’t crowned unless he has competed by the rules. The farmer who labors must be the first to get a share of the crops.' },
-      { ref: 'Luke 4:18–19', text: '“The Spirit of the Lord is on me, because he has anointed me to preach good news to the poor. He has sent me to heal the broken hearted, to proclaim release to the captives, recovering of sight to the blind, to deliver those who are crushed, and to proclaim the acceptable year of the Lord.”' },
-      { ref: 'John 5:19', text: 'Jesus therefore answered them, “Most certainly, I tell you, the Son can do nothing of himself, but what he sees the Father doing. For whatever things he does, these the Son also does likewise.”' }
+      { ref: 'Luke 4:18 · John 5:19', text: '“The Spirit of the Lord is on me, because he has anointed me to preach good news to the poor.” … “The Son can do nothing of himself, but what he sees the Father doing.”' },
+      { ref: 'James 1:27', text: 'Pure religion and undefiled before our God and Father is this: to visit the fatherless and widows in their affliction, and to keep oneself unstained by the world.' }
     ],
-    respond: [
-      { tool: 'scroll', why: 'Write what you sense is on your scroll.' },
-      { tool: 'godthing', why: 'Test an opportunity: God thing or good thing?' },
-      { tool: 'commit', why: 'Throw down your commitment and declare it.' }
-    ],
+    study: 'Romans 12:1–2 · 2 Timothy 2:3–6',
     questions: [
-      'Soldier, athlete, farmer: which picture speaks to you most about the next season?',
-      'Jesus knew what was written on his scroll. What do you sense is on yours?',
-      'What is the Father doing around you that you could join this month?',
-      'What is one specific thing you will take up — and who will you tell?'
+      'What is God asking you to pick up, not just lay down?',
+      'Which part of your wheel is most out of line?',
+      'What habit would change your next two years?'
+    ],
+    listen: 'Holy Spirit, what are you handing me to carry?',
+    response: 'The throw-down: come forward, throw something down, and say out loud what you’re picking up — including what you’ll do for the nations.',
+    respond: [
+      { tool: 'commit', why: 'Your throw-down: what you’re picking up. Declare it.' },
+      { tool: 'wheel', why: 'Heart, soul, mind, strength — which part is most out of line?' },
+      { tool: 'growth', why: '2, 5, 10 years: firm foundations, force for change, frontier missions.' },
+      { tool: 'scroll', why: 'God things vs good things: what’s on your scroll?' }
     ]
   }
 ];
@@ -116,7 +147,7 @@ export const GROUPS = [
 ];
 export const WHEEL_OUT = [
   { id: 'faith', name: 'Faith', g: 'soul', q: 'How alive is my walk with God day to day?' },
-  { id: 'rest', name: 'Rest', g: 'soul', q: 'Do I rest, sabbath and have fun without guilt?' },
+  { id: 'rest', name: 'Rest', g: 'strength', q: 'Do I rest, sabbath and have fun without guilt?' },
   { id: 'family', name: 'Family', g: 'heart', q: 'How healthy are things with my family?' },
   { id: 'romance', name: 'Marriage / romance', g: 'heart', q: 'How at peace am I in this area (single, dating or married)?' },
   { id: 'friends', name: 'Friendships', g: 'heart', q: 'Do I have friends who really know me?' },
@@ -187,6 +218,14 @@ export const HOT = [
   { l: 'O', name: 'Open', items: ['I invite people to speak into my life, even when it stings.', 'I’m teachable when I’m corrected.', 'I listen to understand, not just to reply.'] },
   { l: 'T', name: 'Transparent', items: ['At least one person knows my real struggles right now.', 'I don’t hide things I would be embarrassed to have found out.', 'What people see of me matches who I am in private.'] }
 ];
+export const MENTOR_ROLES = [['paul', 'Paul', 'ahead of me, speaks into my life'], ['barnabas', 'Barnabas', 'beside me, knows my real stuff'], ['timothy', 'Timothy', 'I’m pouring into them']];
+export const RIGHTS = [
+  { id: 'future', name: 'Future & plans', ref: 'Mark 1:16–20' }, { id: 'reputation', name: 'Reputation', ref: 'Mark 1:40–42' },
+  { id: 'money', name: 'Money & status', ref: 'Mark 2:13–14' }, { id: 'family', name: 'Family', ref: 'Mark 3:31–34' },
+  { id: 'marriage', name: 'Marriage', ref: 'Who and when' }, { id: 'comfort', name: 'Comfort', ref: 'Where I live' },
+  { id: 'control', name: 'Control', ref: 'Knowing the plan' }, { id: 'dream', name: 'My dream', ref: 'The role I want' }
+];
+export const DAILY_OBEDIENCE = ['10 minutes in the Word', 'Pray for one people group', 'Encourage one person', 'Say sorry first', 'Read today’s chapter of James'];
 export const MENTOR_AREAS = ['Faith', 'Finances', 'Romance', 'Struggles', 'Leadership', 'Calling / career', 'Health'];
 
 /* Self-development plan. */
@@ -196,7 +235,11 @@ export const GROWTH_AREAS = [
   { id: 'education', name: 'Education', ideas: ['LPU partnership degree', 'A local university', 'Online courses (Coursera, edX)', 'A YWAM secondary school'] },
   { id: 'health', name: 'Health', ideas: ['Run a 5 km', 'Sleep 7+ hours', 'Weekly sabbath', 'Counselling check-in each year'] }
 ];
-export const HORIZONS = [{ id: 'y2', name: '2 years' }, { id: 'y5', name: '5 years' }, { id: 'y10', name: '10 years' }];
+export const HORIZONS = [
+  { id: 'y2', name: '2 years', title: 'Firm foundations', hint: 'Finish school. DTS plus one skill area.', ideas: ['Finish school', 'DTS', 'One skill area', 'Staff a school', 'Read 12 books'] },
+  { id: 'y5', name: '5 years', title: 'Force for change', hint: 'A degree and one language. Further schools. Leadership.', ideas: ['A degree (LPU)', 'One language', 'DBS / SBS', 'SOMD', 'BCC', 'Udemy courses', 'Lead a team'] },
+  { id: 'y10', name: '10 years', title: 'Frontier missions', hint: 'Pioneer a ministry or a base.', ideas: ['Pioneer a ministry', 'Start a base', 'Live among an unreached people', 'Raise up leaders'] }
+];
 
 /* Question box topics. */
 export const TOPICS = [

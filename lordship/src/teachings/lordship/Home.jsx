@@ -4,7 +4,7 @@ import { TOOLS } from './index.jsx';
 import { useLocal, todayStr } from '../../core/store.js';
 import { K } from './state.js';
 import { Spark, Tile } from '../../core/ui.jsx';
-import { todayDayId, DayTabs } from './tools/Day.jsx';
+import { todayDayId, DayTabs, JamesCard } from './tools/Day.jsx';
 import { dueCheckin } from './tools/Commit.jsx';
 import PeopleGroup from './tools/PeopleGroup.jsx';
 import Install from '../../core/Install.jsx';
@@ -39,7 +39,8 @@ function Welcome({ church }) {
         </> : <>
           <li>Each day: read the session, then do <b>today’s response</b> at the bottom.</li>
           <li>At the heart of the week: <b>my plan vs God’s plan</b>, area by area.</li>
-          <li>Friday: write your scroll and <b>throw down your commitment</b>.</li>
+          <li>We live in <b>James</b>: one chapter a day, five minutes, one thing to do.</li>
+          <li>Friday: <b>throw down</b> — say what you’re picking up.</li>
         </>}
       </ol>
       <p className="tiny muted">Everything you write stays on this phone. Use “Save my work” to keep a copy.</p>
@@ -88,11 +89,13 @@ export function ClassHome({ cls }) {
         <a className="card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href={'#/day/' + d.id}>
           <p className="eyebrow">Today · {d.name}</p>
           <h2>{d.title}</h2>
+          {d.sticky && <p className="sticky">{d.sticky}</p>}
           <p className="muted">{d.bigIdea}</p>
           <span className="btn primary small">Open today’s session</span>
         </a>
       ) : <h4>The week</h4>}
       <DayTabs cur={null} today={tid} />
+      {d && <JamesCard d={d} link />}
       <PlansGlance base="#/t/laydown" />
       <h4>Tools</h4>
       <div className="tiles">{tools.map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>

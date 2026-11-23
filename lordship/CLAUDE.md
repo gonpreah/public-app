@@ -68,9 +68,16 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   big screen" (`quizSave`, `qz:<class>:<sid>`) → the game screen's quiz phase (`gameAdmin` 'quiz'): names + profiles pop up
   with a tally. Phones in the game get the quiz automatically.
 - **Simpler (Nov 2026, Uriah: "so many functions … a lot of typing"):** Home shows six tools (quiz, game, my plan vs God's
-  plan, wheel, commitment, ask); the rest sit under "More tools" (`more: true`). Gone from class: the Self-Development Plan,
-  the standalone "Not so, Lord" (it's a field in My plan vs God's plan; church keeps it), Save my work (accounts sync; it's
+  plan, wheel, commitment, ask); the rest sit under "More tools" (`more: true`). Gone from class: the standalone "Not so, Lord" (it's a field in My plan vs God's plan; church keeps it), Save my work (accounts sync; it's
   under Me). Bottom bar: Home · Sessions · My plan · Ask.
+- **The teaching as taught** (Nov 23 2026, from Uriah's Lordship Week slides): the week lives in James — one chapter a day
+  (`d.james`, Mon 1 … Fri 5; the James card on Home and each day, "I read it" in `lordship.james`), memory verse James 1:22,
+  Tue–Fri check-in "What did you lay down or take up since yesterday?", a Say · Mean · Do study card (`WEEK` in content.js).
+  Each day has the slides' title, sticky line (`d.sticky`, the yellow note), scripture, breakout questions, a listening prayer
+  (`d.listen`) and the response. Wednesday: **Lay down a right** (`rights`, `RIGHTS`, saved to the list). Thursday: the mentor
+  map is Paul / Barnabas / Timothy (`MENTOR_ROLES`, `m.kind`) with one name circled to invite this month. Tuesday: daily acts
+  of obedience as habit chips (`DAILY_OBEDIENCE`). Friday: **My 2 · 5 · 10** is back (`growth`): firm foundations, force for
+  change, frontier missions (`HORIZONS`). The wheel's rest is in Strength (body, rest & finances).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

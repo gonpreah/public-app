@@ -1,6 +1,6 @@
 /* 4. Stay HOT: a short honesty check (humble, open, transparent), then a mentor map —
-   who speaks into which areas — with the gaps shown. */
-import { HOT, MENTOR_AREAS } from '../content.js';
+   a Paul ahead of me, a Barnabas beside me, a Timothy I pour into — and one name to invite this month. */
+import { HOT, MENTOR_ROLES } from '../content.js';
 import { useLocal, uid } from '../../../core/store.js';
 import { K, syncTotals } from '../state.js';
 
@@ -18,8 +18,7 @@ export default function Hot({ code }) {
     const vals = h.items.map((_, i) => hot[h.l + i]).filter(Boolean);
     return { h, n: vals.length, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
   });
-  const covered = (a) => ms.filter(m => (m.areas || []).includes(a));
-  const gaps = MENTOR_AREAS.filter(a => !covered(a).length);
+  const inv = ms.find(m => m.invite);
   const upd = (id, p) => setMs(ms.map(m => m.id === id ? Object.assign({}, m, p) : m));
 
   return (
@@ -27,6 +26,7 @@ export default function Hot({ code }) {
       <p className="eyebrow">1 John 1:7</p>
       <h1>Stay HOT</h1>
       <p className="lead">Humble, Open, Transparent. “If we walk in the light … we have fellowship with one another.”</p>
+      <p className="hand">His power is amplified when my weakness is magnified.</p>
       <div className="card">
         <h3>The honesty check</h3>
         <p className="muted small">1 = not me yet · 5 = very me. Only you see this.</p>
@@ -57,34 +57,29 @@ export default function Hot({ code }) {
       )}
 
       <h2>My mentor map</h2>
-      <p className="muted">Who speaks into your life — and about what? First names or nicknames are fine.</p>
-      {ms.map(m => (
-        <div className="card" key={m.id}>
-          <div className="row"><input value={m.name} placeholder="Name" aria-label="Name" onChange={e => upd(m.id, { name: e.target.value })} />
-            <button className="linkish" onClick={() => setMs(ms.filter(x => x.id !== m.id))}>Remove</button></div>
-          <input value={m.role || ''} placeholder="Who they are (e.g. DTS leader, mum, pastor)" aria-label="Who they are" onChange={e => upd(m.id, { role: e.target.value })} />
-          <div className="chips">{MENTOR_AREAS.map(a => {
-            const on = (m.areas || []).includes(a);
-            return <button key={a} className={'chip' + (on ? ' on' : '')} onClick={() => upd(m.id, { areas: on ? m.areas.filter(x => x !== a) : (m.areas || []).concat([a]) })}>{a}</button>;
-          })}</div>
-        </div>
-      ))}
-      <button className="btn soft" onClick={() => setMs(ms.concat([{ id: uid(), name: '', role: '', areas: [] }]))}>+ Add a person</button>
-      {ms.length > 0 && (
-        <div className="card grid">
-          <h3>The map</h3>
-          <table>
-            <thead><tr><th>Area</th><th>Who</th></tr></thead>
-            <tbody>{MENTOR_AREAS.map(a => {
-              const c = covered(a);
-              return <tr key={a}><td>{a}</td><td className={c.length ? '' : 'gap'}>{c.length ? c.map(m => m.name || '?').join(', ') : 'No one yet'}</td></tr>;
-            })}</tbody>
-          </table>
-          {gaps.length > 0
-            ? <p className="note small"><b>Gaps:</b> {gaps.join(', ')}. Who could you ask? It’s okay to ask someone, “Could I check in with you about this now and then?”</p>
-            : <p className="ok">Every area has someone. That’s a gift — keep them in the loop.</p>}
-        </div>
-      )}
+      <p className="muted">Everyone needs a Paul, a Barnabas and a Timothy. First names or nicknames are fine.</p>
+      {MENTOR_ROLES.map(([k, n, sub]) => {
+        const list = ms.filter(m => (m.kind || 'barnabas') === k);
+        return (
+          <div className="card mentor-role" key={k}>
+            <h3>{n} <small className="muted">· {sub}</small></h3>
+            {list.map(m => (
+              <div className="row" key={m.id}>
+                <button className={'chip' + (m.invite ? ' on' : '')} aria-pressed={!!m.invite} aria-label={'Invite ' + (m.name || 'them') + ' this month'}
+                  onClick={() => setMs(ms.map(x => Object.assign({}, x, { invite: x.id === m.id ? !m.invite : false })))}>{m.invite ? '◉' : '○'}</button>
+                <input value={m.name} placeholder="Name" aria-label={n + ' name'} onChange={e => upd(m.id, { name: e.target.value })} />
+                <button className="linkish" aria-label={'Remove ' + (m.name || 'person')} onClick={() => setMs(ms.filter(x => x.id !== m.id))}>✕</button>
+              </div>
+            ))}
+            {!list.length && <p className="muted small">{k === 'paul' ? 'Who is ahead of you, and could speak into your life?' : k === 'barnabas' ? 'Who walks beside you and knows your real stuff?' : 'Who are you pouring into, or could you?'}</p>}
+            <button className="btn soft small" onClick={() => setMs(ms.concat([{ id: uid(), name: '', kind: k }]))}>+ Add a {n}</button>
+          </div>
+        );
+      })}
+      {inv
+        ? <p className="ok">◉ This month I’ll invite <b>{inv.name || 'them'}</b> in. “Could I check in with you now and then?”</p>
+        : ms.length > 0 && <p className="note small">Circle (○) one name to invite in this month.</p>}
+      {ms.length > 0 && !ms.some(m => (m.kind || 'barnabas') === 'barnabas' && m.name) && <p className="note small"><b>No Barnabas yet.</b> Hiding weakness doesn’t make us strong; it makes us alone. Who could you tell one true thing?</p>}
     </>
   );
 }

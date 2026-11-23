@@ -22,6 +22,8 @@ import Week from './tools/Week.jsx';
 import Game from './tools/Game.jsx';
 import Quiz from './tools/Quiz.jsx';
 import Me from './tools/Me.jsx';
+import Rights from './tools/Rights.jsx';
+import Growth from './tools/Growth.jsx';
 
 const People = () => (<><h1>Pray for the unreached</h1><p className="muted">A new people group every day — most in Cambodia, Laos and South-East Asia.</p><PeopleGroup big /></>);
 
@@ -34,6 +36,8 @@ export const TOOLS = [
   { id: 'scroll', emoji: '📜', title: 'My Scroll', sub: 'What God is calling you to', C: Scroll, cls: true, more: true },
   { id: 'godthing', emoji: '🧪', title: 'God thing or good thing?', sub: 'Weigh a decision', C: GodThing, cls: true, more: true },
   { id: 'habits', emoji: '✅', title: 'Daily habits', sub: 'Take-ups, every day', C: Habits, cls: true, more: true },
+  { id: 'rights', emoji: '🤲', title: 'Lay down a right', sub: 'Wednesday', C: Rights, cls: true, more: true },
+  { id: 'growth', emoji: '🌱', title: 'My 2 · 5 · 10', sub: 'Friday: foundations, change, frontiers', C: Growth, cls: true, more: true },
   { id: 'commit', emoji: '🚩', title: 'Throw-down commitment', sub: 'Friday', C: Commit, cls: true },
   { id: 'questions', emoji: '❓', title: 'Anonymous question box', sub: 'Ask anything', C: Questions, cls: true },
   { id: 'list', emoji: '📝', title: 'My list', sub: 'Lay down / take up', C: List, church: true, cls: true, hidden: true },

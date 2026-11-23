@@ -1,7 +1,7 @@
 /* 1. A day's session: title, big idea, scripture with the text, breakout questions, the slides
    (viewed in the app, PDF download, PPTX if uploaded), my notes, and today's people group. */
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { DAYS, TEACHING } from '../content.js';
+import { DAYS, TEACHING, WEEK } from '../content.js';
 import { useLocal, todayStr } from '../../../core/store.js';
 import { K } from '../state.js';
 import { getSlides, getFile, saveBlob } from '../../../core/slides.js';
@@ -35,7 +35,8 @@ export function DayTabs({ cur, today }) {
 }
 
 const TOOL_NAMES = { wheel: ['🎯', 'The wheel'], habits: ['✅', 'Daily habits'], commit: ['🚩', 'My commitment'], godthing: ['🧪', 'God thing or good thing?'],
-  laydown: ['⚖️', 'My plan vs God’s plan'], notso: ['✋', '“Not so, Lord”'], hot: ['🔥', 'Stay HOT'], questions: ['❓', 'Question box'], scroll: ['📜', 'My Scroll'], quiz: ['😂', 'Lordship profile quiz'] };
+  laydown: ['⚖️', 'My plan vs God’s plan'], notso: ['✋', '“Not so, Lord”'], hot: ['🔥', 'Stay HOT'], questions: ['❓', 'Question box'], scroll: ['📜', 'My Scroll'], quiz: ['😂', 'Lordship profile quiz'],
+  rights: ['🤲', 'Lay down a right'], growth: ['🌱', 'My 2 · 5 · 10'], people: ['🌏', 'People group of the day'] };
 
 function Respond({ d }) {
   const [done, setDone] = useLocal('lordship.daysDone', {});
@@ -54,6 +55,32 @@ function Respond({ d }) {
         ? <p className="ok">✓ You responded on {done[d.id]}. <button className="linkish" onClick={() => { const n = Object.assign({}, done); delete n[d.id]; setDone(n); }}>Undo</button></p>
         : <button className="btn primary big" onClick={(e) => { setDone(Object.assign({}, done, { [d.id]: todayStr() })); burst(e.currentTarget); }}>I’ve responded today</button>}
     </section>
+  );
+}
+
+export function JamesCard({ d, link }) {
+  const [read, setRead] = useLocal('lordship.james', {});
+  const ch = d.james;
+  return (
+    <div className="james">
+      <p className="eyebrow">This week we live in James</p>
+      <h3>{link ? <a href={'#/day/' + d.id}>James {ch}</a> : <>James {ch}</>} <small className="muted">· one chapter, five minutes</small></h3>
+      <p className="small">Underline one thing to <b>do</b>. Memory verse: “{WEEK.memory.text}” <i>— {WEEK.memory.ref}</i></p>
+      <div className="row wrap">
+        <a className="btn soft small" href={'https://www.bible.com/bible/206/JAS.' + ch + '.WEBUS'} target="_blank" rel="noopener noreferrer">Read James {ch}</a>
+        <button className={'btn small ' + (read[ch] ? 'ghost' : 'primary')} aria-pressed={!!read[ch]} onClick={(e) => { const n = Object.assign({}, read); if (n[ch]) delete n[ch]; else { n[ch] = todayStr(); burst(e.currentTarget, 10); } setRead(n); }}>{read[ch] ? '✓ Read' : 'I read it'}</button>
+      </div>
+    </div>
+  );
+}
+
+function StudyCard({ passage }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card study">
+      <button className="linkish" aria-expanded={open} onClick={() => setOpen(!open)}><b>Bible study: Say · Mean · Do</b> — {passage} {open ? '▴' : '▾'}</button>
+      {open && <div className="kv">{WEEK.study.map(([k, v]) => [<b key={k + 'k'}>{k}</b>, <span key={k}>{v}</span>])}</div>}
+    </div>
   );
 }
 
@@ -99,13 +126,19 @@ export default function Day({ code, id, weekStart }) {
       <header className="dayhead" key={d.id}>
         <p className="eyebrow">Day {DAYS.indexOf(d) + 1} · {d.name}</p>
         <h1>{d.title}</h1>
+        {d.sticky && <p className="sticky">{d.sticky}</p>}
         <p className="bigidea">{d.bigIdea}</p>
       </header>
+      {d.dow > 1 && <div className="checkin-q"><b>Check-in</b> {WEEK.checkin}</div>}
       <h4>Scripture</h4>
       {d.scripture.map(s => <div className="scripture" key={s.ref}><b>{s.ref}</b><p>{s.text}</p></div>)}
       <p className="tiny muted">{TEACHING.translation}</p>
+      <JamesCard d={d} />
+      {d.study && <StudyCard passage={d.study} />}
       <h4>Breakout questions</h4>
       <ol className="qs">{d.questions.map((q, i) => <li key={i}>{q}</li>)}</ol>
+      {d.listen && <div className="listen"><p className="eyebrow">Listen</p><p>“{d.listen}”</p><p className="tiny muted">Be still for two minutes. Write down what comes.</p></div>}
+      {d.response && <p className="lead">{d.response}</p>}
       <h4>Slides</h4>
       <Slides code={code} day={d.id} />
       <h4>My notes</h4>

@@ -20,6 +20,8 @@ import Help from './tools/Help.jsx';
 import MyData from './tools/MyData.jsx';
 import Sunday from './tools/Sunday.jsx';
 import Week from './tools/Week.jsx';
+import Game from './tools/Game.jsx';
+import Me from './tools/Me.jsx';
 
 const People = () => (<><h1>Pray for the unreached</h1><p className="muted">A new people group every day — most in Cambodia, Laos and South-East Asia.</p><PeopleGroup big /></>);
 
@@ -38,6 +40,8 @@ export const TOOLS = [
   { id: 'list', emoji: '📝', title: 'My list', sub: 'Lay down / take up', C: List, church: true, cls: true },
   { id: 'people', emoji: '🌏', title: 'People group of the day', sub: 'Pray for the unreached', C: People, church: true, cls: true },
   { id: 'connect', emoji: '🤝', title: 'Connect', sub: 'Stay in touch', C: Connect, church: true },
+  { id: 'game', emoji: '🎲', title: 'Day 1 game', sub: 'Who wrote this? + this or that', C: Game, cls: true },
+  { id: 'me', emoji: '🙂', title: 'Me', sub: 'My account', C: Me, cls: true, hidden: true },
   { id: 'week', emoji: '📖', title: 'My Lordship week', sub: 'All I wrote, to share or print', C: Week, cls: true },
   { id: 'data', emoji: '💾', title: 'Save my work', sub: 'Back up with a code', C: MyData, church: true, cls: true },
   { id: 'help', emoji: '💛', title: 'Need to talk to someone?', sub: 'Help, now', C: Help, church: true, cls: true, hidden: true },

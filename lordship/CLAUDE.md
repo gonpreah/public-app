@@ -17,7 +17,8 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   `coach-background.js`; the page polls `api.js coachJob`; the job is deleted once read.
 - **Access**: the class code (admin page, or `LS_CLASS_CODE`) for everything; church mode (no code) only
   for tools marked `church` (wheel, laydown, notso) on the server and in `index.jsx`.
-- **Privacy**: student data only in localStorage (`gp.lordship.*`); questions keep text, topic, day, status.
+- **Privacy**: student data in localStorage (`gp.lordship.*`), and — once they join — synced to their own account (`sd:<sid>`,
+  loaded only with their key). Uriah sees names, never answers. Questions keep text, topic, day, status (never the account).
 - Scripture is the World English Bible (public domain) — keep it that way unless a licence is in hand.
 - **Nov 2026, second round** (Uriah: "do them all … more dynamic … light, dark"):
   - each day ends with **Respond** (`respond` in content.js → tools) and "I've responded today" (`lordship.daysDone`, the ring on Home);
@@ -51,6 +52,15 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   (`netlify/functions/manifest.js` at `/app.webmanifest?class=CODE` / `?church=1`) so the Home Screen app opens straight
   into the class — an iPhone's Home Screen app doesn't share Safari's storage. PNG icons in `public/`. Admin → Class & links
   → "Download QR for slides". The live class code is **LORDSHIP** (set Nov 2026; change it on the admin page each new class).
+- **Accounts + Day 1 game** (Nov 2026, Uriah: "a day one fun game … an icebreaker … their name and a basic 4-pin thing"):
+  - **Join the class** (`core/Join.jsx`, required in class mode): name + 4-digit PIN (`join`/`signIn`; PIN as salted scrypt,
+    one name per class, 8 wrong tries locks the name for the hour; the admin sets a new PIN from Admin → Class list).
+    `core/account.js` saves every change to the account 2.5 s later (`syncSave`/`syncLoad`; the newer copy wins on sign-in),
+    so a new phone or the iPhone Home Screen app gets their answers. Then one fun fact (`setFact`).
+  - **Day 1 game** (`lib/game.js`): Admin → "Day 1 game & join wall" (`#/game`, projector): names pop up as they join, then
+    rounds alternate "Who wrote this?" (a fun fact; tap a name; a right guess scores) and this-or-that polls (`POLLS`, counts
+    only); Reveal, Next, a leaderboard. Phones: the `game` tool (polls `gameState` every 2.5 s) and a banner on Home while
+    it's on. The lobby has "Ask Uriah anything for the week" (the anonymous box).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

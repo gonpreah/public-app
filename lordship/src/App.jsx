@@ -9,7 +9,9 @@ import { Spark, Toast } from './core/ui.jsx';
 import L from './teachings/lordship/index.jsx';
 import { ClassHome, ChurchHome } from './teachings/lordship/Home.jsx';
 import { todayDayId } from './teachings/lordship/tools/Day.jsx';
-import Admin, { Panel } from './Admin.jsx';
+import Admin, { Panel, GameScreen } from './Admin.jsx';
+import Join from './core/Join.jsx';
+import { getMe } from './core/account.js';
 import { ThemeToggle } from './core/theme.jsx';
 import Install from './core/Install.jsx';
 
@@ -58,6 +60,9 @@ function Landing({ onJoin, initial }) {
 export default function App() {
   const r = useRoute();
   const [cls, setCls] = useState(() => read(CLS, null));
+  const [me, setMeS] = useState(getMe);
+  const [joining, setJoining] = useState(false);   // keep the join screen up for its fun-fact step
+  useEffect(() => { const on = () => setMeS(getMe()); window.addEventListener('gp-me', on); return () => window.removeEventListener('gp-me', on); }, []);
   const [pending] = useState(PENDING);
   useEffect(() => {   // refresh the class (a new week may have a new code or start date)
     if (!cls) return;
@@ -72,6 +77,7 @@ export default function App() {
   }, [church, cls && cls.code]);   // eslint-disable-line react-hooks/exhaustive-deps
   const admin = r[0] === 'admin';
   if (r[0] === 'panel') return <><Panel /><Toast /></>;
+  if (r[0] === 'game') return <><GameScreen /><Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];
@@ -84,6 +90,8 @@ export default function App() {
     page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/church">‹ Home</a>}<t.C church code="" sub={r[2]} /></div> : <ChurchHome />;
   } else if (!cls || pending && pending.toUpperCase() !== (cls && cls.code)) {
     page = <Landing onJoin={join} initial={pending} />;
+  } else if (!me || me.code !== cls.code || joining) {
+    page = <Join cls={cls} onStart={() => setJoining(true)} onDone={() => { setJoining(false); setMeS(getMe()); go('class'); }} />;
   } else if (r[0] === 'day') {
     page = <L.Day code={cls.code} id={r[1]} weekStart={cls.weekStart} />;
   } else if (r[0] === 't') {
@@ -94,7 +102,7 @@ export default function App() {
   const tid = cls && todayDayId(cls.weekStart);
   const nav = church
     ? [['church', '🏠', 'Home'], ['church/wheel', '🎯', 'Wheel'], ['church/laydown', '⚖️', 'My plan'], ['church/people', '🌏', 'Pray'], ['church/connect', '🤝', 'Connect']]
-    : cls && needsClass ? [['class', '🏠', 'Home'], ['day/' + (tid || 'mon'), '📖', 'Sessions'], ['t/wheel', '🎯', 'Wheel'], ['t/habits', '✅', 'Habits'], ['t/questions', '❓', 'Ask']]
+    : cls && me && needsClass ? [['class', '🏠', 'Home'], ['day/' + (tid || 'mon'), '📖', 'Sessions'], ['t/wheel', '🎯', 'Wheel'], ['t/habits', '✅', 'Habits'], ['t/questions', '❓', 'Ask']]
       : null;
   const here = r.join('/') || 'class';
   const on = (p) => here === p || (r.length > 2 && here.startsWith(p + '/')) || (p.startsWith('day/') && r[0] === 'day');
@@ -103,7 +111,8 @@ export default function App() {
     <>
       <header className="top">
         <a className="brandmark" href={church ? '#/church' : '#/class'}><Spark size={20} color="var(--accent)" /> Lordship</a>
-        <span className="top-r"><span className="mode">{admin ? 'Admin' : church ? 'Public' : cls ? cls.name : ''}</span><ThemeToggle /></span>
+        <span className="top-r">{!admin && !church && cls && me ? <a className="mechip" href="#/t/me" aria-label={'Me: ' + me.name}><span>{me.name.slice(0, 1).toUpperCase()}</span>{me.name.split(' ')[0]}</a>
+          : <span className="mode">{admin ? 'Admin' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
       </header>
       <main>{page}</main>
       {nav && <nav className="bottom">{nav.map(([p, e, l]) => <a key={p} href={'#/' + p} className={on(p) ? 'on' : ''}><span aria-hidden="true">{e}</span>{l}</a>)}</nav>}

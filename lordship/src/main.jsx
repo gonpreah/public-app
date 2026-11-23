@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import './core/theme.css';
 import { applyTheme, getTheme } from './core/theme.jsx';
 import App from './App.jsx';
+import './core/account.js';
 
 applyTheme(getTheme());
 /* Catch the browser's install prompt early (it can fire before React draws) so "Install" is one tap. */

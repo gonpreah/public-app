@@ -7,7 +7,7 @@ export function collect() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(PREFIX) && k !== PREFIX + 'class' && k !== PREFIX + 'anon') out[k.slice(3)] = JSON.parse(localStorage.getItem(k));
+      if (k && k.startsWith(PREFIX) && !/^gp\.lordship\.(class|anon|me|__at|backupCode)$/.test(k)) out[k.slice(3)] = JSON.parse(localStorage.getItem(k));
     }
   } catch (e) { /* storage blocked */ }
   return out;
@@ -15,7 +15,7 @@ export function collect() {
 export function restore(data) {
   let n = 0;
   for (const [k, v] of Object.entries(data || {})) {
-    if (!/^lordship\.[a-zA-Z0-9.\-_]+$/.test(k) || k === 'lordship.class' || k === 'lordship.anon') continue;
+    if (!/^lordship\.[a-zA-Z0-9.\-_]+$/.test(k) || /^lordship\.(class|anon|me|__at|backupCode)$/.test(k)) continue;
     try { localStorage.setItem('gp.' + k, JSON.stringify(v)); n++; } catch (e) { /* */ }
   }
   window.dispatchEvent(new CustomEvent('gp-store', { detail: null }));

@@ -49,8 +49,20 @@ try {
 
   /* the class link */
   await page.goto(U + '/?class=test1');
+  await page.waitForSelector('.joinpage');
+  ok('class link asks for name + PIN', (await text()).includes('Join the class') && (await page.locator('.pinbox').count()) === 8);
+  await noScroll('join');
+  await page.fill('#jname', 'Sokha');
+  await page.locator('.pinbox').nth(0).pressSequentially('2468');
+  await page.locator('.pinbox').nth(4).pressSequentially('2468');
+  ok('PIN boxes move along as you type', (await page.locator('.pinbox').nth(3).inputValue()) === '8');
+  await page.click('button:text-is("Join")');
+  await page.waitForSelector('text=One fun fact');
+  await page.fill('textarea[aria-label="Fun fact"]', 'I was born on a boat');
+  await page.click('text=Save and start');
   await page.waitForSelector('nav.bottom');
-  ok('class link opens the class home', (await text()).includes('Tools') && (await page.locator('.top .mode').innerText()).includes('Lordship DTS'));
+  ok('header shows who is signed in', (await page.locator('.mechip').innerText()).includes('Sokha'));
+  ok('class link opens the class home', (await text()).includes('Tools') && (await text()).includes('Lordship DTS'));
   ok('code removed from the address', !page.url().includes('class='));
   const mhref = await page.locator('#manifest').getAttribute('href');
   const man = await (await page.request.get(U + mhref)).json();
@@ -306,6 +318,74 @@ try {
   ok('theme remembered', (await page.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark');
   await noScroll('dark home');
   await page.click('.themebtn');   // back to auto
+
+  /* a second phone: same name + PIN brings the answers */
+  await page.goto(U + '/#/class'); await page.waitForTimeout(3500);   // let the last change save
+  const p3 = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  p3.on('pageerror', e => errors.push(String(e)));
+  await p3.goto(U + '/?class=TEST1'); await p3.waitForSelector('.joinpage');
+  await p3.click('text=I’ve joined before');
+  await p3.fill('#jname', 'sokha');
+  await p3.locator('.pinbox').nth(0).pressSequentially('1111');
+  await p3.click('button:has-text("Sign in")');
+  await p3.waitForSelector('.err');
+  ok('wrong PIN says so', (await p3.locator('.err').innerText()).includes('doesn’t match'));
+  await p3.locator('.pinbox').nth(0).click(); for (let i = 0; i < 4; i++) await p3.keyboard.press('Backspace');
+  await p3.locator('.pinbox').nth(0).fill('2468');
+  await p3.click('button:has-text("Sign in")');
+  await p3.waitForSelector('nav.bottom');
+  ok('new phone gets my answers', (await p3.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.scroll') || '{}').statement || '')).includes('Test scroll'));
+
+  /* Day 1 game: the projector and two phones */
+  const pj = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  pj.on('pageerror', e => errors.push(String(e)));
+  await pj.goto(U + '/#/admin'); await pj.fill('#pw', 'admin'); await pj.click('button:has-text("Sign in")');
+  await pj.waitForSelector('text=Day 1 game');
+  await pj.click('.chip:has-text("Class list")');
+  await pj.waitForSelector('text=Sokha');
+  ok('admin class list: names, not answers', (await pj.locator('main').textContent()).includes('Sokha') && !(await pj.locator('main').textContent()).includes('Test scroll'));
+  await pj.click('text=Day 1 game & join wall');
+  await pj.click('text=Open the join wall');
+  await pj.waitForSelector('.name-chip');
+  ok('join wall shows names and the QR', (await pj.locator('.name-chip').allInnerTexts()).includes('Sokha') && (await pj.locator('.screen-qr svg').count()) === 1);
+  const pk = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await pk.goto(U + '/?class=TEST1'); await pk.waitForSelector('.joinpage');
+  await pk.fill('#jname', 'Dara'); await pk.locator('.pinbox').nth(0).pressSequentially('1357'); await pk.locator('.pinbox').nth(4).pressSequentially('1357');
+  await pk.click('button:text-is("Join")'); await pk.waitForSelector('text=One fun fact'); await pk.click('text=Skip for now');
+  await pk.waitForSelector('.gamebanner');
+  ok('home says the game is on', (await pk.locator('.gamebanner').innerText()).includes('join in'));
+  await pj.waitForFunction(() => document.querySelectorAll('.name-chip').length === 2);
+  ok('new names pop onto the wall', true);
+  await pj.click('text=Start the game');
+  await pj.waitForSelector('.screen-q');
+  ok('round 1 on the projector: who wrote this?', (await pj.locator('.screen-q').innerText()).includes('born on a boat'));
+  await pk.click('.gamebanner');
+  await pk.waitForSelector('.opt-btn');
+  await pk.click('.opt-btn:has-text("Sokha")');
+  await pk.waitForSelector('text=Locked in');
+  ok('phone: tap a name, locked in', true);
+  await pj.waitForSelector('text=1 of 2 answered');
+  await pj.click('text=Reveal');
+  await pj.waitForSelector('.who-reveal');
+  ok('projector reveals who', (await pj.locator('.who-reveal h2').innerText()) === 'Sokha');
+  await pk.waitForSelector('text=You got it', { timeout: 8000 });
+  ok('phone says you got it', true);
+  await pj.click('text=Next');
+  await pj.waitForSelector('.poll-opts');
+  ok('then a this-or-that poll', (await pj.locator('.poll-opts span').count()) >= 2);
+  await pk.waitForSelector('.opt-btn >> nth=1');
+  await pk.locator('.opt-btn').first().click();
+  await pj.click('text=Reveal'); await pj.waitForSelector('.pbar');
+  ok('poll results as bars', (await pj.locator('.pbar').count()) >= 2);
+  await pj.click('button:has-text("End")');
+  await pj.waitForSelector('.pod');
+  ok('leaderboard', (await pj.locator('.pod').first().innerText()).includes('Dara'));
+  await pk.goto(U + '/#/t/game'); await pk.waitForSelector('text=That’s a wrap');
+  await pk.fill('textarea[aria-label="Your question"]', 'How do I know who to marry?');
+  await pk.click('text=Send anonymously'); await pk.waitForSelector('text=1 sent');
+  ok('ask Uriah from the game screen', true);
+  await pj.goto(U + '/#/admin'); await pj.waitForSelector('text=How do I know who to marry?');
+  ok('question arrives, anonymous', true);
 
   /* church mode, on a fresh phone */
   const p2 = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();

@@ -24,7 +24,7 @@ const CLS = 'lordship.class';
 const PENDING = (() => {
   const p = new URLSearchParams(location.search);
   const c = p.get('class');
-  if (p.get('poll')) history.replaceState(null, '', location.pathname + '#/poll/' + encodeURIComponent(p.get('poll').toLowerCase()));
+  if (p.get('poll')) history.replaceState(null, '', location.pathname + '#/poll/' + encodeURIComponent(p.get('poll').toLowerCase()) + (p.get('room') ? '/' + encodeURIComponent(p.get('room').toUpperCase()) : ''));
   else if (p.has('quiz')) history.replaceState(null, '', location.pathname + '#/quiz');
   else if (p.has('church') || c) history.replaceState(null, '', location.pathname + (p.has('church') ? '#/church' : '#/'));
   return c || '';
@@ -92,7 +92,7 @@ export default function App() {
   if (r[0] === 'panel') return <><Panel /><Toast /></>;
   if (r[0] === 'game') return <><GameScreen /><Toast /></>;
   if (r[0] === 'quiz-results') return <><QuizResults /><Toast /></>;
-  if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} key={r[1]} /><Toast /></>;
+  if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} room={r[2] || ''} key={r.join('/')} /><Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];
@@ -101,7 +101,7 @@ export default function App() {
   let page;
   if (admin) page = <Admin />;
   else if (r[0] === 'quiz') page = <PubQuiz />;
-  else if (r[0] === 'poll') page = <LivePoll id={r[1]} key={r[1]} />;
+  else if (r[0] === 'poll') page = <LivePoll id={r[1]} room={r[2] || ''} key={r.join('/')} />;
   else if (church) {
     const t = r[1] && L.TOOLS.find(x => x.id === r[1] && x.church);
     page = t ? <div className="toolpage" key={t.id}>{!r[2] && <a className="back" href="#/church">‹ Home</a>}<t.C church code="" sub={r[2]} /></div> : <ChurchHome />;

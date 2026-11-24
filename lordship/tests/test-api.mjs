@@ -279,6 +279,12 @@ ok('live results carry no ids', !JSON.stringify(lr).includes(LP1));
 ok('reset a poll needs the admin', (await call('livePollReset', { poll: 'never', pw: 'x' })).error === 'BAD_PASSWORD');
 await call('livePollReset', { poll: 'never', pw: 'pw' });
 ok('reset clears the poll', (await call('livePollResults', { poll: 'never' })).total === 0);
+await call('livePoll', { poll: 'never', rid: LP1, answers: ['money', 'yes'], room: 'dts26' });
+await call('livePoll', { poll: 'never', rid: LP2, answers: ['home', 'think'] });
+ok('a class run is its own results', (await call('livePollResults', { poll: 'never', room: 'DTS26' })).counts[0].money === 1 && (await call('livePollResults', { poll: 'never', room: 'DTS26' })).total === 1 && (await call('livePollResults', { poll: 'never' })).total === 1);
+ok('a class run needs a real class', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['money', 'yes'], room: 'nope' })).error === 'NO_CLASS');
+await call('livePollReset', { poll: 'never', pw: 'pw', room: 'DTS26' });
+ok('resetting a class leaves the Zoom poll', (await call('livePollResults', { poll: 'never', room: 'DTS26' })).total === 0 && (await call('livePollResults', { poll: 'never' })).total === 1);
 
 /* --- the base-wide profile quiz: no class, no account --- */
 const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';

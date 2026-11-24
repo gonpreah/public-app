@@ -50,6 +50,7 @@ try {
   /* the class link */
   await page.goto(U + '/?class=test1');
   await page.waitForSelector('.joinpage');
+  ok('new students are told how to come back from another class', (await text()).includes('even in another class'));
   ok('class link asks for name + PIN', (await text()).includes('Join the class') && (await page.locator('.pinbox').count()) === 8);
   await noScroll('join');
   await page.fill('#jname', 'Sokha');

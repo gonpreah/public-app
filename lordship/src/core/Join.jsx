@@ -87,6 +87,7 @@ export default function Join({ cls, onDone, onStart }) {
         <button type="button" className={mode === 'new' ? 'on' : ''} onClick={() => { setMode('new'); setErr(''); }}>I’m new</button>
         <button type="button" className={mode === 'back' ? 'on' : ''} onClick={() => { setMode('back'); setErr(''); }}>I’ve joined before</button>
       </div>
+      {mode === 'new' && !(other && other.code !== cls.code) && <p className="note small">Already joined Lordship — even in another class? Tap <button type="button" className="linkish" onClick={() => { setMode('back'); setErr(''); }}><b>I’ve joined before</b></button>: your name and PIN bring you and your answers here.</p>}
       <label className="lab" htmlFor="jname">Your name</label>
       <input id="jname" value={name} onChange={e => setName(e.target.value)} autoComplete="given-name" autoCapitalize="words" maxLength={40} placeholder="First name (and last initial)" />
       <label className="lab">{mode === 'new' ? 'Choose a 4-number PIN' : 'Your 4-number PIN'}</label>

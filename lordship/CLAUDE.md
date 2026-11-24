@@ -103,6 +103,10 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   a redeeming way"): what's in your hand (the same twelve areas; their "Never, Lord" pick is marked, `from: 'never'`), then
   that area picked back up God's way (`PICK_UP`: a title, how, a WEB verse, a question to ask God, one small step), then how
   they'll pick it up this week. The shared screen adds "Most in our hands: … → picked back up: …".
+  **In class** (Nov 24, Uriah: "put them in the app so I can easily do them again today as a class"): Home → "Live class polls"
+  (tools `never`, `staff`; `poll: true`) runs them with `room` = the class code — results only that class's (`lp:<poll>@<class>:…`,
+  `pollKey`), apart from the Zoom run. Admin: buttons for the picked class's results (`#/poll-results/<id>/<class>`); the
+  room link is `/?poll=<id>&room=<class>`.
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

@@ -79,6 +79,13 @@ async function allClassList() {
   const c = await cfg(), x = await extraClasses();
   return (c.code ? [Object.assign({ main: true }, c)] : []).concat(Object.entries(x).map(([code, v]) => ({ code, name: v.name, weekStart: v.weekStart || c.weekStart || '' })));
 }
+/* A live poll on its own (Zoom) or one class's run of it (a.room = the class code): lp:<poll>[@<class>]:… */
+async function pollKey(a) {
+  if (!a.room) return a.poll;
+  const c = await findClass(a.room);
+  if (!c) throw new Fail('NO_CLASS', 403);
+  return a.poll + '@' + c.code;
+}
 async function classOk(a) {
   const c = await findClass(a.code);
   if (!c) throw new Fail('NO_CLASS', 403);
@@ -348,14 +355,15 @@ export const HANDLERS = {
     if (!ids) throw new Fail('NO_POLL', 404);
     const rid = String(a.rid || '');
     if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    const pk = await pollKey(a);
     const ans = Array.isArray(a.answers) ? a.answers : [];
     if (ans.length !== ids.length || ans.some((x, i) => !ids[i].includes(x))) throw new Fail('BAD_ANSWER');
     const k = 'lpn:' + today();
     const n = (await db.get(k)) || 0;
     if (n > 5000) throw new Fail('BUSY', 429);
     await db.set(k, n + 1);
-    for (const old of await db.keys('lp:' + a.poll + ':' + rid + ':')) await db.del(old);
-    await db.set(['lp', a.poll, rid, Date.now().toString(36)].concat(ans).join(':'), 1);
+    for (const old of await db.keys('lp:' + pk + ':' + rid + ':')) await db.del(old);
+    await db.set(['lp', pk, rid, Date.now().toString(36)].concat(ans).join(':'), 1);
     return { ok: true };
   },
   async livePollResults(a) {
@@ -363,7 +371,7 @@ export const HANDLERS = {
     if (!ids) throw new Fail('NO_POLL', 404);
     const counts = ids.map(opts => Object.fromEntries(opts.map(o => [o, 0])));
     let total = 0;
-    for (const k of await db.keys('lp:' + a.poll + ':')) {
+    for (const k of await db.keys('lp:' + await pollKey(a) + ':')) {
       const ans = k.split(':').slice(4);
       if (ans.length !== ids.length || ans.some((x, i) => !ids[i].includes(x))) continue;
       total++; ans.forEach((x, i) => { counts[i][x]++; });
@@ -373,7 +381,7 @@ export const HANDLERS = {
   async livePollReset(a) {
     await admin(a);
     if (!Object.prototype.hasOwnProperty.call(LIVE_POLL_IDS, a.poll)) throw new Fail('NO_POLL', 404);
-    for (const k of await db.keys('lp:' + a.poll + ':')) await db.del(k);
+    for (const k of await db.keys('lp:' + await pollKey(a) + ':')) await db.del(k);
     return { ok: true };
   },
 

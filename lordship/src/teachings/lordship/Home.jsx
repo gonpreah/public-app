@@ -94,6 +94,8 @@ export function ClassHome({ cls }) {
           <span className="btn primary small">Open today’s session</span>
         </a>
       ) : <h4>The week</h4>}
+      <h4>Live class polls</h4>
+      <div className="tiles">{TOOLS.filter(x => x.poll).map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>
       <DayTabs cur={null} today={tid} />
       {d && <JamesCard d={d} link />}
       <PlansGlance base="#/t/laydown" />

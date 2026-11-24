@@ -50,6 +50,7 @@ try {
   /* the class link */
   await page.goto(U + '/?class=test1');
   await page.waitForSelector('.joinpage');
+  ok('new students are told how to come back from another class', (await text()).includes('even in another class'));
   ok('class link asks for name + PIN', (await text()).includes('Join the class') && (await page.locator('.pinbox').count()) === 8);
   await noScroll('join');
   await page.fill('#jname', 'Sokha');
@@ -268,7 +269,7 @@ try {
 
   /* commitment */
   await page.goto(U + '/#/class');
-  ok('home: six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 6 && (await page.locator('details.more .tile').count()) >= 5);
+  ok('home: two live polls + six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 8 && (await page.locator('main > .tiles .tile:has-text("Never, Lord")').count()) === 1 && (await page.locator('details.more .tile').count()) >= 5);
   ok('home: plans at a glance', (await page.locator('.glance').innerText()).includes('laid side by side'));
   ok('home: welcome card', (await page.locator('.welcome').count()) === 1);
   await page.click('.welcome button');
@@ -557,6 +558,15 @@ try {
   await lp.goto(U + '/?poll=never'); await lp.waitForSelector('text=Change my answer');
   await lp.click('text=Change my answer'); await lp.waitForSelector('.lp-opts.grid');
   ok('no sideways scroll: poll phone', await lp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+
+  /* the polls in the class app: Home → Live class polls, results for just this class */
+  await page.goto(U + '/#/class'); await page.waitForSelector('text=Live class polls');
+  await page.click('.tile:has-text("Never, Lord")'); await page.click('text=Start');
+  await page.click('.opt-btn:has-text("Where I’ll live")'); await page.click('.opt-btn:has-text("Yes, Lord")');
+  await page.waitForSelector('text=Thank you for being honest');
+  const cr = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await cr.goto(U + '/#/poll-results/never/TEST1'); await cr.waitForFunction(() => document.querySelector('.qr-total b') && document.querySelector('.qr-total b').textContent === '1');
+  ok('class results: just this class, with its own link', (await cr.locator('.lpbar:not(.zero)').first().innerText()).includes('Where I’ll live') && (await cr.locator('.lp-link b').innerText()).includes('room=TEST1'));
 
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {

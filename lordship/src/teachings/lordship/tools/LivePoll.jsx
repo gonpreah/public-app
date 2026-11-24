@@ -8,7 +8,7 @@ import { burst, copyText, toast } from '../../../core/ui.jsx';
 import Qr from '../../../core/Qr.jsx';
 
 const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
-export const pollLink = (id) => location.origin + '/?poll=' + id;
+export const pollLink = (id, room) => location.origin + '/?poll=' + id + (room ? '&room=' + room : '');
 
 /* Moses' staff: the thing laid down, picked back up God's way. */
 export function PickUp({ area, opts }) {
@@ -26,14 +26,16 @@ export function PickUp({ area, opts }) {
   );
 }
 
-export default function LivePoll({ id }) {
+export default function LivePoll({ id, room = '', code }) {
+  room = room || code || '';
+  const sfx = room ? '.' + room : '';
   const p = LIVE_POLLS[id];
   const [rid] = useState(() => { try { const k = 'gp.lordship.pollId'; let v = localStorage.getItem(k); if (!/^[a-z0-9]{16}$/.test(v || '')) { v = newId(); localStorage.setItem(k, v); } return v; } catch (e) { return newId(); } });
-  const [saved, setSaved] = useLocal('lordship.poll.' + id, null);
+  const [saved, setSaved] = useLocal('lordship.poll.' + id + sfx, null);
   const [ans, setAns] = useState([]);
   const [started, setStarted] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [before] = useLocal('lordship.poll.' + ((p && p.from) || '-'), null);   // what they picked in the poll this one follows
+  const [before] = useLocal('lordship.poll.' + ((p && p.from) || '-') + sfx, null);   // what they picked in the poll this one follows
   if (!p) return <p className="muted">That poll isn’t here. Check the link.</p>;
 
   async function pick(o, e) {
@@ -41,7 +43,7 @@ export default function LivePoll({ id }) {
     burst(e.currentTarget, 8);
     if (next.length < p.qs.length) { setAns(next); return; }
     setBusy(true);
-    try { await api('livePoll', { poll: id, rid, answers: next }); setSaved(next); setAns([]); setStarted(false); }
+    try { await api('livePoll', { poll: id, rid, answers: next, room }); setSaved(next); setAns([]); setStarted(false); }
     catch (x) { toast(errText(x)); }
     setBusy(false);
   }
@@ -89,33 +91,33 @@ export default function LivePoll({ id }) {
 }
 
 /* The shared screen. */
-export function LivePollResults({ id }) {
+export function LivePollResults({ id, room = '' }) {
   const p = LIVE_POLLS[id];
   const [d, setD] = useState(null);
   const [err, setErr] = useState('');
   const timer = useRef(null);
-  const link = pollLink(id);
+  const link = pollLink(id, room);
   useEffect(() => {
     if (!p) return undefined;
     let live = true;
-    const tick = () => api('livePollResults', { poll: id }).then(x => { if (live) { setD(x); setErr(''); } }).catch(e => live && setErr(errText(e)))
+    const tick = () => api('livePollResults', { poll: id, room }).then(x => { if (live) { setD(x); setErr(''); } }).catch(e => live && setErr(errText(e)))
       .finally(() => { if (live) timer.current = setTimeout(tick, document.hidden ? 10000 : 3000); });
     tick();
     return () => { live = false; clearTimeout(timer.current); };
-  }, [id]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, room]);   // eslint-disable-line react-hooks/exhaustive-deps
   if (!p) return <p className="muted">No poll called “{id}”.</p>;
   async function reset() {
     let pw = ''; try { pw = sessionStorage.getItem('ls-admin') || ''; } catch (e) { /* */ }
     if (!pw) pw = prompt('Admin password to clear the results') || '';
     if (!pw || !confirm('Clear every answer and start again?')) return;
-    try { await api('livePollReset', { poll: id, pw }); try { sessionStorage.setItem('ls-admin', pw); } catch (e) { /* */ } toast('Cleared'); setD(await api('livePollResults', { poll: id })); }
+    try { await api('livePollReset', { poll: id, pw, room }); try { sessionStorage.setItem('ls-admin', pw); } catch (e) { /* */ } toast('Cleared'); setD(await api('livePollResults', { poll: id, room })); }
     catch (e) { toast(errText(e)); }
   }
   const total = d ? d.total : 0;
   return (
     <div className="screen lpresults">
       <div className="screen-main">
-        <p className="eyebrow">{p.title} · live · no names</p>
+        <p className="eyebrow">{p.title} · live · no names{room ? ' · class ' + room : ''}</p>
         <div className="lp-link"><span>Open on your phone or laptop:</span><b>{link.replace(/^https?:\/\//, '')}</b>
           <button className="btn soft small" onClick={() => copyText(link)}>Copy link for the chat</button></div>
         {err && <p className="err">{err}</p>}

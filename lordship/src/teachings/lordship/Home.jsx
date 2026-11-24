@@ -86,13 +86,17 @@ export function ClassHome({ cls }) {
       <Welcome />
       {due && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/commit">🚩 <b>Time for your {due === 'd30' ? '30' : '90'}-day check-in</b> on “{c.text}”</a>}
       {d ? (
-        <a className="card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href={'#/day/' + d.id}>
-          <p className="eyebrow">Today · {d.name}</p>
-          <h2>{d.title}</h2>
-          {d.sticky && <p className="sticky">{d.sticky}</p>}
-          <p className="muted">{d.bigIdea}</p>
-          <span className="btn primary small">Open today’s session</span>
-        </a>
+        <div className="card today">
+          <a className="today-link" href={'#/day/' + d.id}>
+            <p className="eyebrow">Today · {d.name}</p>
+            <h2>{d.title}</h2>
+            {d.sticky && <p className="sticky">{d.sticky}</p>}
+            <p className="muted">{d.bigIdea}</p>
+          </a>
+          <p className="lab">Today’s response {done[d.id] ? '· ✓ done' : ''}</p>
+          <div className="chips">{d.respond.map(x => { const t = TOOLS.find(y => y.id === x.tool); return t ? <a key={x.tool} className="chip" href={'#/t/' + t.id}>{t.emoji} {t.title}</a> : null; })}</div>
+          <a className="btn primary small" href={'#/day/' + d.id}>Open today’s session</a>
+        </div>
       ) : <h4>The week</h4>}
       <h4>Live class polls</h4>
       <div className="tiles">{TOOLS.filter(x => x.poll).map(x => <Tile key={x.id} href={'#/t/' + x.id} emoji={x.emoji} title={x.title} sub={x.sub} />)}</div>

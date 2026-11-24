@@ -20,6 +20,14 @@ import LivePoll, { LivePollResults } from './teachings/lordship/tools/LivePoll.j
 
 const CLS = 'lordship.class';
 
+/* Projector screens: one tap to fill the screen (and back). */
+function FullScreen() {
+  const [on, setOn] = useState(!!document.fullscreenElement);
+  useEffect(() => { const f = () => setOn(!!document.fullscreenElement); document.addEventListener('fullscreenchange', f); return () => document.removeEventListener('fullscreenchange', f); }, []);
+  if (!document.documentElement.requestFullscreen) return null;
+  return <button className="fsbtn" aria-label={on ? 'Exit full screen' : 'Full screen'} onClick={() => (on ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {})}>{on ? '⤡' : '⛶'}</button>;
+}
+
 /* Read ?class= / ?church once, before the router looks at the address, and tidy the address. */
 const PENDING = (() => {
   const p = new URLSearchParams(location.search);
@@ -89,10 +97,11 @@ export default function App() {
     if (m) m.setAttribute('href', '/app.webmanifest' + (church ? '?church=1' : cls ? '?class=' + encodeURIComponent(cls.code) : ''));
   }, [church, cls && cls.code]);   // eslint-disable-line react-hooks/exhaustive-deps
   const admin = r[0] === 'admin';
-  if (r[0] === 'panel') return <><Panel /><Toast /></>;
-  if (r[0] === 'game') return <><GameScreen /><Toast /></>;
-  if (r[0] === 'quiz-results') return <><QuizResults /><Toast /></>;
-  if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} room={r[2] || ''} key={r.join('/')} /><Toast /></>;
+  const FS = <FullScreen />;
+  if (r[0] === 'panel') return <><Panel />{FS}<Toast /></>;
+  if (r[0] === 'game') return <><GameScreen />{FS}<Toast /></>;
+  if (r[0] === 'quiz-results') return <><QuizResults />{FS}<Toast /></>;
+  if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} room={r[2] || ''} key={r.join('/')} />{FS}<Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;
   const needsClass = ['class', 'day', 't'].includes(r[0]) || !r[0];

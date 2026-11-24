@@ -5,6 +5,7 @@ import { LIVE_POLLS, PICK_UP } from '../content.js';
 import { useLocal } from '../../../core/store.js';
 import { api, errText } from '../../../core/api.js';
 import { burst, copyText, toast } from '../../../core/ui.jsx';
+import { addHabit, addToList } from '../state.js';
 import Qr from '../../../core/Qr.jsx';
 
 const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
@@ -23,6 +24,23 @@ export function PickUp({ area, opts }) {
       <p><b>Ask God:</b> “{u.ask}”</p>
       <p><b>One small step:</b> {u.step}</p>
     </div>
+  );
+}
+
+/* In class: keep it — the "never" goes on my lay down list; the step to pick it back up becomes a daily habit. */
+function KeepIt({ p, id, area }) {
+  const [kept, setKept] = useLocal('lordship.pollKept.' + id, '');
+  const o = p.qs[0].opts.find(x => x[0] === area), u = PICK_UP[area];
+  if (!o) return null;
+  if (kept === area) return <p className="ok">✓ {p.qs.some(x => x.pickup) ? 'Added to your daily habits' : 'Added to your lay down list'}</p>;
+  const pickup = p.qs.some(x => x.pickup);
+  if (pickup && !u) return null;
+  return (
+    <button className="btn soft big" onClick={(e) => {
+      if (pickup) addHabit(u.habit);
+      else addToList({ from: '“Never, Lord”', area: o[2], laydown: o[2] });
+      setKept(area); burst(e.currentTarget, 10);
+    }}>{pickup ? `✅ Daily habit: “${u.habit}”` : '🤲 Put it on my lay down list'}</button>
   );
 }
 
@@ -59,6 +77,7 @@ export default function LivePoll({ id, room = '', code }) {
         <p className="muted small">No one can see what you picked — only the totals, on the shared screen.</p>
         <div className="scripture"><b>{p.done.ref}</b><p>{p.done.text}</p></div>
         <div className="card"><p className="eyebrow">A prayer, if you want it</p><p className="lead">{p.done.prayer}</p></div>
+        {room && <KeepIt p={p} id={id} area={saved[0]} />}
         <button className="linkish" onClick={() => { setAns([]); setStarted(true); }}>Change my answer</button>
       </div>
     );

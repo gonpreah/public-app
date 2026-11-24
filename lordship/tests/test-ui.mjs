@@ -564,9 +564,19 @@ try {
   await page.click('.tile:has-text("Never, Lord")'); await page.click('text=Start');
   await page.click('.opt-btn:has-text("Where I’ll live")'); await page.click('.opt-btn:has-text("Yes, Lord")');
   await page.waitForSelector('text=Thank you for being honest');
+  await page.click('text=Put it on my lay down list');
+  ok('class poll: the never goes on my list', (await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.list') || '[]').some(x => x.laydown === 'Where I’ll live'))));
   const cr = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
   await cr.goto(U + '/#/poll-results/never/TEST1'); await cr.waitForFunction(() => document.querySelector('.qr-total b') && document.querySelector('.qr-total b').textContent === '1');
   ok('class results: just this class, with its own link', (await cr.locator('.lpbar:not(.zero)').first().innerText()).includes('Where I’ll live') && (await cr.locator('.lp-link b').innerText()).includes('room=TEST1'));
+  await page.goto(U + '/#/t/staff'); await page.click('text=Start'); await page.click('.opt-btn.mine');
+  await page.click('.opt-btn:has-text("One small change")'); await page.waitForSelector('text=Thank you for being honest');
+  await page.click('button:has-text("Daily habit:")');
+  await page.goto(U + '/#/t/habits');
+  ok('class poll: the small step becomes a daily habit', (await page.locator('.habit', { hasText: 'Pray for my street or city' }).count()) === 1);
+  await page.goto(U + '/#/class'); await page.waitForSelector('.today');
+  ok('home: today’s response, one tap', (await page.locator('.today .chips a.chip').count()) >= 1);
+  ok('projector screens have a full screen button', (await cr.locator('.fsbtn').count()) === 1);
 
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {

@@ -107,6 +107,11 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   (tools `never`, `staff`; `poll: true`) runs them with `room` = the class code — results only that class's (`lp:<poll>@<class>:…`,
   `pollKey`), apart from the Zoom run. Admin: buttons for the picked class's results (`#/poll-results/<id>/<class>`); the
   room link is `/?poll=<id>&room=<class>`.
+  In class the done screen keeps it: "Never, Lord" → "Put it on my lay down list" (`addToList`); Pick it back up → "Daily
+  habit: …" (`PICK_UP[area].habit`, `addHabit`).
+- **Small things (Nov 24):** Home's today card shows today's response tools as one-tap chips; projector screens (game, panel,
+  quiz and poll results) have a ⛶ full-screen button (`FullScreen` in App.jsx); Admin → Class list has "Find a name" and
+  "Select shown" for moving people.
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

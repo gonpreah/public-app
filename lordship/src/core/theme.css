@@ -554,3 +554,11 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 .opt-btn.mine { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; flex-wrap: wrap; }
 .lp-earlier { display: block; width: 100%; font-size: .75rem; color: var(--accent); font-weight: 700; margin-left: calc(1.5em + 10px); }
 .lp-top { color: var(--paper-2); font-size: clamp(1rem, 1.7vw, 1.5rem); margin: 2vh 0 0; } .lp-top b { color: var(--paper); } .lp-top em { font-style: normal; color: var(--marigold); font-weight: 800; }
+
+/* Home's today card, the roster search, full screen */
+.today .today-link { display: block; text-decoration: none; color: inherit; }
+.today .chips { margin: 4px 0 12px; } .today .chips a.chip { text-decoration: none; }
+.rosterq { margin-bottom: 8px; }
+.fsbtn { position: fixed; bottom: 16px; right: 18px; z-index: 80; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.35); color: #fff; font-size: 1.2rem; cursor: pointer; opacity: .55; }
+.fsbtn:hover { opacity: 1; }
+@media print { .fsbtn { display: none; } }

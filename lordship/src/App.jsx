@@ -17,6 +17,7 @@ import { ThemeToggle } from './core/theme.jsx';
 import Install from './core/Install.jsx';
 import PubQuiz, { QuizResults } from './teachings/lordship/tools/PubQuiz.jsx';
 import LivePoll, { LivePollResults } from './teachings/lordship/tools/LivePoll.jsx';
+import { CloudScreen, ThrowdownScreen } from './teachings/lordship/tools/Games.jsx';
 
 const CLS = 'lordship.class';
 
@@ -101,6 +102,8 @@ export default function App() {
   if (r[0] === 'panel') return <><Panel />{FS}<Toast /></>;
   if (r[0] === 'game') return <><GameScreen />{FS}<Toast /></>;
   if (r[0] === 'quiz-results') return <><QuizResults />{FS}<Toast /></>;
+  if (r[0] === 'throwdown') return <><ThrowdownScreen code={r[1] || (cls && cls.code) || ''} />{FS}<Toast /></>;
+  if (r[0] === 'cloud') return <><CloudScreen id={r[1]} room={r[2] || ''} key={r.join('/')} />{FS}<Toast /></>;
   if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} room={r[2] || ''} key={r.join('/')} />{FS}<Toast /></>;
   const bareTool = church && r[1] && L.TOOLS.find(x => x.id === r[1] && x.bare);
   if (bareTool) return <bareTool.C />;

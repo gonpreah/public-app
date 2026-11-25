@@ -6,6 +6,7 @@ import { K } from './state.js';
 import { Spark, Tile } from '../../core/ui.jsx';
 import { todayDayId, DayTabs, JamesCard } from './tools/Day.jsx';
 import { dueCheckin } from './tools/Commit.jsx';
+import { dueStep } from './tools/Growth.jsx';
 import PeopleGroup from './tools/PeopleGroup.jsx';
 import Install from '../../core/Install.jsx';
 import { useGame } from './tools/Game.jsx';
@@ -61,6 +62,8 @@ export function ClassHome({ cls }) {
   const tid = todayDayId(cls.weekStart);
   const d = DAYS.find(x => x.id === tid);
   const due = dueCheckin(c);
+  const [plan10] = useLocal(K.plan10, {});
+  const stepDue = dueStep(plan10);
   const t = todayStr();
   const ORDER = ['quiz', 'game', 'laydown', 'wheel', 'commit', 'questions'];
   const tools = ORDER.map(id => TOOLS.find(x => x.id === id)).filter(Boolean);
@@ -84,6 +87,7 @@ export function ClassHome({ cls }) {
       <GameBanner code={cls.code} />
       <Install where="class" />
       <Welcome />
+      {stepDue && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/growth">🚩 <b>{stepDue.slice(1)}-day check-in:</b> did you take your step? “{plan10.step}”</a>}
       {due && <a className="note" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} href="#/t/commit">🚩 <b>Time for your {due === 'd30' ? '30' : '90'}-day check-in</b> on “{c.text}”</a>}
       {d ? (
         <div className="card today">

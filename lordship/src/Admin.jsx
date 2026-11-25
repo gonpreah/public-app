@@ -12,6 +12,7 @@ const STATUS = [
   { id: 'answered', name: 'Answered' }, { id: 'hidden', name: 'Hide' }
 ];
 const ss = { get: () => { try { return sessionStorage.getItem('ls-admin') || ''; } catch (e) { return ''; } }, set: (v) => { try { sessionStorage.setItem('ls-admin', v); } catch (e) { /* */ } } };
+const LIVE_POLL_LINKS = [['fire', '🔥', 'Fire or fountain (Wed)'], ['hotpoll', '🌡️', 'Which is hardest? (Wed)'], ['bingo', '🎱', 'Excuse bingo (Thu)'], ['spheres', '🧭', 'Sphere sorter (Fri)'], ['recap', '🧠', 'Week recap (Fri)'], ['never', '🙅', '“Never, Lord”'], ['staff', '🪄', 'Pick it back up']];
 const sc = { get: () => { try { return sessionStorage.getItem('ls-admin-cls') || ''; } catch (e) { return ''; } }, set: (v) => { try { sessionStorage.setItem('ls-admin-cls', v); } catch (e) { /* */ } } };
 const b64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = rej; r.readAsDataURL(blob); });
 const mb = (n) => (n / 1048576).toFixed(1) + ' MB';
@@ -47,20 +48,20 @@ export default function Admin() {
       {!d.hasKey && <p className="note small">No <code>ANTHROPIC_API_KEY</code> on the server yet — the coach won’t answer until it’s set in Netlify.</p>}
       <Classes pw={pw} classes={d.classes} cls={cls} setCls={setCls} onChange={(classes) => setD(Object.assign({}, d, { classes }))} />
       <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
-      {cls && <div className="row wrap" style={{ marginBottom: 8 }}>
-        <a className="btn primary" href={'#/poll-results/fire/' + cls}>🔥 Fire or fountain · class results</a>
-        <a className="btn primary" href={'#/poll-results/hotpoll/' + cls}>🌡️ Which is hardest? · class results</a>
-        <a className="btn primary" href={'#/poll-results/never/' + cls}>🙅 “Never, Lord” · class results</a>
-        <a className="btn primary" href={'#/poll-results/staff/' + cls}>🪄 Pick it back up · class results</a>
-      </div>}
+      {cls && <details className="card" open style={{ marginBottom: 8 }}><summary><b>Live games &amp; polls · class {cls}</b> (projector links)</summary>
+        <div className="row wrap" style={{ marginTop: 8 }}>{LIVE_POLL_LINKS.map(([id, em, t]) => <a key={id} className="btn soft small" href={'#/poll-results/' + id + '/' + cls}>{em} {t}</a>)}
+          <a className="btn soft small" href={'#/cloud/excuse/' + cls}>☁️ “My excuse is…” word cloud</a>
+          <a className="btn soft small" href={'#/throwdown/' + cls}>🚩 Throw-down count</a></div>
+      </details>}
       <p className="tiny muted" style={{ marginTop: 0 }}>Class results are just the class picked above (students open them from Home → Live class polls). Zoom / no-class versions: <a href="#/poll-results/never">Never, Lord</a> · <a href="#/poll-results/staff">Pick it back up</a></p>
       <a className="btn soft big" href="#/quiz-results" style={{ marginBottom: 8 }}>😂 Base-wide profile quiz: live results (projector)</a>
-      <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
+      <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['steps', 'Next steps'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
         <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}</div>
       {tab === 'class' && <ClassSettings pw={pw} cfg={d.cfg} onSaved={(cfg) => setD(Object.assign({}, d, { cfg }))} />}
       {tab === 'slides' && <SlidesAdmin pw={pw} slides={d.slides} onChange={(slides) => setD(Object.assign({}, d, { slides }))} />}
       {tab === 'questions' && <QuestionsAdmin pw={pw} />}
       {tab === 'totals' && <Totals pw={pw} cls={cls} key={'t' + cls} />}
+      {tab === 'steps' && <Steps pw={pw} cls={cls} key={'s' + cls} />}
       {tab === 'roster' && <Roster pw={pw} cls={cls} classes={d.classes} key={'r' + cls} onMoved={() => api('adminClasses', { pw }).then(r => setD(Object.assign({}, d, { classes: r.classes }))).catch(() => {})} />}
       <button className="linkish" onClick={() => { ss.set(''); setPw(''); setD(null); }}>Sign out</button>
     </>
@@ -324,6 +325,29 @@ export function Panel() {
 }
 
 /* Who has joined (names only), with a PIN reset for anyone who forgets. */
+/* Friday's next steps: counts for everyone, names and steps only for those who chose to share. */
+function Steps({ pw, cls }) {
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState('');
+  const load = async () => { try { setD(await api('adminSteps', { pw, cls })); } catch (e) { setErr(errText(e)); } };
+  useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+  if (err) return <p className="err">{err}</p>;
+  if (!d) return <p className="muted">Loading…</p>;
+  const A = { yes: '✅', partly: '🌓', not: '⏳' };
+  return (
+    <>
+      <div className="stats"><div><b>{d.planned}</b><span>with a step</span></div><div><b>{d.declared}</b><span>declared</span></div><div><b>{d.shared.length}</b><span>shared</span></div></div>
+      <div className="card"><h3>Check-ins</h3>{['d7', 'd14', 'd30'].map(w => <p key={w} className="small" style={{ margin: '4px 0' }}><b>Day {w.slice(1)}:</b> ✅ {d.checks[w].yes} · 🌓 {d.checks[w].partly} · ⏳ {d.checks[w].not}</p>)}
+        <p className="tiny muted">Everyone’s answers, counted. Notes only for those who shared. <button className="linkish" onClick={load}>Refresh</button> · <a href={'#/throwdown/' + cls}>Throw-down count (projector)</a></p></div>
+      <div className="card">{!d.shared.length && <p className="muted">No one has shared a step yet.</p>}
+        {d.shared.map(x => <div className="item" key={x.name}><b>{x.name}</b>{x.sphere ? <small className="muted"> · {x.sphere}</small> : null}{x.declared ? ' 🚩' : ''}
+          <p className="small" style={{ margin: '2px 0' }}>{x.step}{x.by ? <span className="muted"> · by {x.by}</span> : null}</p>
+          {Object.keys(x.checks).length > 0 && <p className="tiny muted">{['d7', 'd14', 'd30'].filter(w => x.checks[w]).map(w => `Day ${w.slice(1)} ${A[x.checks[w].a]}${x.checks[w].note ? ' “' + x.checks[w].note + '”' : ''}`).join(' · ')}</p>}
+        </div>)}</div>
+    </>
+  );
+}
+
 function Roster({ pw, cls, classes, onMoved }) {
   const [st, setSt] = useState(null);
   const [sel, setSel] = useState({});

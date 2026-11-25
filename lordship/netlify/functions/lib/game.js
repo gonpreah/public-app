@@ -31,8 +31,13 @@ export function nextRound(g, facts) {
 export const PROFILE_IDS = ['netflix', 'bentley', 'ring', 'sahara', 'gym', 'wifi', 'planner', 'pleaser'];
 
 /* Live polls (?poll=<id>): the option ids each question accepts (the words are in src/…/content.js LIVE_POLLS). */
+const SPH = ['family', 'church', 'education', 'government', 'media', 'arts', 'business'];
+const DAYS5 = ['tue', 'fri', 'mon', 'thu', 'wed'];
 export const LIVE_POLL_IDS = {
-  fire: Array.from({ length: 8 }, () => ['fire', 'fount']),
+  bingo: Array.from({ length: 16 }, () => ['y', 'n']),
+  spheres: Array.from({ length: 10 }, () => SPH),
+  recap: Array.from({ length: 5 }, () => DAYS5),
+  fire: Array.from({ length: 12 }, () => ['fire', 'fount', 'skip']),
   hotpoll: [['h', 'o', 't']],
   never: [['plans', 'money', 'phone', 'marry', 'home', 'family', 'dream', 'comfort', 'image', 'control', 'hurt', 'other'], ['never', 'think', 'slowly', 'yes']],
   staff: [['plans', 'money', 'phone', 'marry', 'home', 'family', 'dream', 'comfort', 'image', 'control', 'hurt', 'other'], ['ask', 'step', 'talk', 'word', 'thanks']]

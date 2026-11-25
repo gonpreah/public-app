@@ -267,7 +267,16 @@ ok('class totals and the game follow the class picked', (await call('gameScreen'
 
 /* --- live polls: no names at all --- */
 const LP1 = 'aaaabbbbccccdddd', LP2 = 'aaaabbbbccccddde';
-ok('fire or fountain takes eight answers', (await call('livePoll', { poll: 'fire', rid: 'aaaabbbbccccdddf', answers: ['fire', 'fount', 'fire', 'fount', 'fire', 'fount', 'fire', 'fount'] })).ok && (await call('livePollResults', { poll: 'fire' })).counts[7].fount === 1);
+ok('fire or fountain takes twelve answers, skips allowed', (await call('livePoll', { poll: 'fire', rid: 'aaaabbbbccccdddf', answers: ['fire', 'fount', 'fire', 'fount', 'fire', 'fount', 'fire', 'fount', 'skip', 'fount', 'fire', 'fount'] })).ok && (await call('livePollResults', { poll: 'fire' })).counts[8].skip === 1);
+ok('a word cloud entry: four words at most, three per phone', (await call('cloudAdd', { cloud: 'excuse', rid: 'aaaabbbbccccdddf', text: 'too scared of failing badly' })).words === 'too scared of failing');
+for (const t of ['no money', 'too young', 'Too Scared']) await call('cloudAdd', { cloud: 'excuse', rid: 'aaaabbbbccccdddf', text: t });
+let wc = await call('cloudResults', { cloud: 'excuse' });
+ok('three per phone, the newest kept, case folded', wc.total === 3 && !wc.words.some(w => w.w === 'too scared of failing') && wc.words.some(w => w.w === 'too scared'));
+ok('closing the cloud needs the admin', (await call('cloudAdmin', { cloud: 'excuse', pw: 'x', action: 'close' })).error === 'BAD_PASSWORD');
+await call('cloudAdmin', { cloud: 'excuse', pw: 'pw', action: 'close' });
+ok('a closed cloud takes nothing', (await call('cloudAdd', { cloud: 'excuse', rid: 'aaaabbbbccccdddf', text: 'hi' })).error === 'CLOSED');
+wc = await call('cloudAdmin', { cloud: 'excuse', pw: 'pw', action: 'hide', word: 'no money' });
+ok('the admin hides a phrase', !wc.words.some(w => w.w === 'no money') && wc.open === false);
 ok('an unknown poll is refused', (await call('livePoll', { poll: 'nope', rid: LP1, answers: ['plans', 'yes'] })).error === 'NO_POLL');
 ok('answers must be the poll’s options', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['porn', 'yes'] })).error === 'BAD_ANSWER');
 ok('every question answered', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['plans'] })).error === 'BAD_ANSWER');
@@ -286,6 +295,19 @@ ok('a class run is its own results', (await call('livePollResults', { poll: 'nev
 ok('a class run needs a real class', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['money', 'yes'], room: 'nope' })).error === 'NO_CLASS');
 await call('livePollReset', { poll: 'never', pw: 'pw', room: 'DTS26' });
 ok('resetting a class leaves the Zoom poll', (await call('livePollResults', { poll: 'never', room: 'DTS26' })).total === 0 && (await call('livePollResults', { poll: 'never' })).total === 1);
+
+/* --- Friday: next step, throw-down, check-ins --- */
+const st1 = await call('join', { code: 'DTS26', name: 'Step One', pin: '1212' });
+const st2 = await call('join', { code: 'DTS26', name: 'Step Two', pin: '1313' });
+ok('a next step needs words', (await call('stepSave', { code: 'DTS26', sid: st1.sid, token: st1.token, step: ' ' })).error === 'EMPTY');
+ok('a check-in needs a declared step', (await call('stepCheck', { code: 'DTS26', sid: st1.sid, token: st1.token, at: 'd7', answer: 'yes' })).error === 'NOT_DECLARED');
+await call('stepSave', { code: 'DTS26', sid: st1.sid, token: st1.token, step: 'Email LPU', sphere: 'education', by: '2026-12-25', share: true, declared: true });
+await call('stepSave', { code: 'DTS26', sid: st2.sid, token: st2.token, step: 'A secret step', sphere: 'media', share: false, declared: true });
+await call('stepCheck', { code: 'DTS26', sid: st1.sid, token: st1.token, at: 'd7', answer: 'partly', note: 'Wrote it, not sent' });
+await call('stepCheck', { code: 'DTS26', sid: st2.sid, token: st2.token, at: 'd7', answer: 'yes', note: 'private note' });
+ok('the throw-down count is anonymous', (await call('throwdownCount', { code: 'DTS26' })).declared === 2 && !JSON.stringify(await call('throwdownCount', { code: 'DTS26' })).includes('Step'));
+const ad = await call('adminSteps', { pw: 'pw' });
+ok('staff see counts for all, words only of those who shared', ad.declared === 2 && ad.checks.d7.yes === 1 && ad.checks.d7.partly === 1 && ad.shared.length === 1 && ad.shared[0].name === 'Step One' && ad.shared[0].checks.d7.note === 'Wrote it, not sent' && !JSON.stringify(ad).includes('secret') && !JSON.stringify(ad).includes('private note'));
 
 /* --- the base-wide profile quiz: no class, no account --- */
 const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';

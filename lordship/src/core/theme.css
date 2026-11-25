@@ -580,3 +580,48 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 .ff-bar i { display: flex; align-items: center; justify-content: center; font: 800 clamp(.75rem, 1.2vw, 1.1rem) var(--display); font-style: normal; color: #fff; transition: width .8s var(--ease); }
 .ff-bar i.fire { background: #e0503d; } .ff-bar i.fount { background: #1f44ff; }
 .ff-bar em { margin: auto; color: var(--ink-5); font-style: normal; }
+
+/* Fire or fountain timer + verses; Excuse bingo; word cloud; sphere sorter; recap */
+.swipe-timer { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 10px 0 0; }
+.swipe-timer i { display: block; height: 100%; background: var(--accent); transition: width .1s linear; }
+.ff-tools { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1.2vh; }
+.ff-verses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2vw; margin-top: 1.2vh; }
+.ff-verse { border-radius: 16px; padding: 12px 16px; background: rgba(255,255,255,.07); color: var(--paper); animation: pop .5s var(--ease) both; }
+.ff-verse b { display: block; font-family: var(--display); } .ff-verse p { margin: 4px 0 0; font-size: clamp(.8rem, 1.2vw, 1.1rem); color: var(--paper-2); }
+.ff-verse.fire b { color: #ff8a5c; } .ff-verse.fount b { color: #7fb2ff; } .ff-verse.wise b { color: var(--marigold); }
+.bingo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 14px 0; }
+.bingo-cell { aspect-ratio: 1; padding: 4px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--head); font: 700 clamp(.62rem, 2.9vw, .9rem)/1.15 var(--font); cursor: pointer; transition: transform var(--quick), background .2s; overflow-wrap: anywhere; }
+.bingo-cell.on { background: var(--accent); border-color: var(--accent); color: #fff; transform: rotate(-2deg) scale(.97); }
+.bingo-shout { font: 900 2.2rem var(--display); color: var(--accent); text-align: center; margin: 4px 0 10px; animation: pop .6s var(--ease) both; }
+.cloudin input { flex: 1; }
+.bingo-bars { display: grid; grid-template-columns: 1fr 1fr; gap: .4vh 2vw; }
+.bingo-bars .lpbar { grid-template-columns: auto minmax(90px, 45%) 1fr 34px; }
+.bingo-bars .lpbar.lead3 .lp-label { color: var(--marigold); }
+.bingo-bars > p { grid-column: 1 / -1; }
+.cloud { display: flex; flex-wrap: wrap; gap: .4em 1em; align-items: center; justify-content: center; padding: 3vh 0; flex: 1; align-content: center; }
+.cloud-w { background: none; border: 0; cursor: pointer; font-family: var(--display); font-weight: 800; color: hsl(var(--h) 85% 70%); line-height: 1.05; animation: pop .5s var(--ease) both; }
+.cloudscreen .screen-main { flex: 1; display: flex; flex-direction: column; }
+:root { --sph0: #ef5b2a; --sph1: #7b4bd6; --sph2: #1f9d6b; --sph3: #2f6fd6; --sph4: #e09a12; --sph5: #d63f8a; --sph6: #5a6b7d; }
+.sort-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--paper-2); font-size: clamp(.75rem, 1.1vw, 1rem); margin-bottom: 1vh; }
+.sort-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.sort-rows { display: grid; gap: .8vh; }
+.sort-row { display: grid; grid-template-columns: 34% 1fr; gap: 14px; align-items: center; }
+.sort-row p { margin: 0; color: var(--paper); font: 700 clamp(.8rem, 1.3vw, 1.2rem)/1.2 var(--display); }
+.sort-row p small { color: var(--paper-2); font-weight: 500; }
+.quiz-rows { display: grid; gap: 1.4vh; }
+.quiz-row { display: grid; grid-template-columns: 42% 1fr 90px; gap: 14px; align-items: center; color: var(--paper); }
+.quiz-row p { margin: 0; font-size: clamp(.85rem, 1.3vw, 1.2rem); } .quiz-row p span { color: var(--marigold); }
+.quiz-row b { text-align: right; font-family: var(--display); }
+
+/* Friday plan */
+.plan10 h1 em { font-style: normal; color: var(--accent); }
+.plan10 .pf { margin: 10px 0; }
+.lpu { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--marigold) 18%, var(--card)); }
+.lpu p { margin: 4px 0; }
+.lockin { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; font-weight: 600; }
+.lockin input { width: 20px; height: 20px; flex: none; margin-top: 2px; accent-color: var(--accent); }
+.nextstep { border: 2px solid var(--accent); }
+.stepcheck { border-left: 5px solid var(--marigold); }
+/* throw-down projector */
+.tdscreen .screen-main { text-align: center; }
+.td-big { font: 900 clamp(5rem, 22vw, 16rem)/1 var(--display); color: var(--marigold); margin: 2vh 0; animation: pop .6s var(--ease) both; }

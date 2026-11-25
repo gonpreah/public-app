@@ -13,13 +13,11 @@ const NOTE = {
 export default function Hot({ code }) {
   const [hot, setHot0] = useLocal(K.hot, {});
   const setHot = (v) => { setHot0(v); syncTotals(code); };
-  const [ms, setMs] = useLocal(K.mentors, []);
+
   const scores = HOT.map(h => {
     const vals = h.items.map((_, i) => hot[h.l + i]).filter(Boolean);
     return { h, n: vals.length, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0 };
   });
-  const inv = ms.find(m => m.invite);
-  const upd = (id, p) => setMs(ms.map(m => m.id === id ? Object.assign({}, m, p) : m));
 
   return (
     <>
@@ -56,6 +54,18 @@ export default function Hot({ code }) {
         </div>
       )}
 
+      <MentorMap />
+    </>
+  );
+}
+
+/* Paul ahead of me, Barnabas beside me, Timothy I pour into — and one name to invite this month (also in the Friday plan). */
+export function MentorMap() {
+  const [ms, setMs] = useLocal(K.mentors, []);
+  const inv = ms.find(m => m.invite);
+  const upd = (id, p) => setMs(ms.map(m => m.id === id ? Object.assign({}, m, p) : m));
+  return (
+    <>
       <h2>My mentor map</h2>
       <p className="muted">Everyone needs a Paul, a Barnabas and a Timothy. First names or nicknames are fine.</p>
       {MENTOR_ROLES.map(([k, n, sub]) => {

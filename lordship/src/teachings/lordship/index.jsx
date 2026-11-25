@@ -25,11 +25,15 @@ import Me from './tools/Me.jsx';
 import Rights from './tools/Rights.jsx';
 import Growth from './tools/Growth.jsx';
 import LivePoll from './tools/LivePoll.jsx';
+import Prone from './tools/Prone.jsx';
 
 const NeverPoll = ({ code }) => <LivePoll id="never" code={code} />;
 const StaffPoll = ({ code }) => <LivePoll id="staff" code={code} />;
 const FirePoll = ({ code }) => <LivePoll id="fire" code={code} />;
 const HotPoll = ({ code }) => <LivePoll id="hotpoll" code={code} />;
+const BingoPoll = ({ code }) => <LivePoll id="bingo" code={code} />;
+const SpherePoll = ({ code }) => <LivePoll id="spheres" code={code} />;
+const RecapPoll = ({ code }) => <LivePoll id="recap" code={code} />;
 
 const People = () => (<><h1>Pray for the unreached</h1><p className="muted">A new people group every day — most in Cambodia, Laos and South-East Asia.</p><PeopleGroup big /></>);
 
@@ -42,12 +46,16 @@ export const TOOLS = [
   { id: 'scroll', emoji: '📜', title: 'My Scroll', sub: 'What God is calling you to', C: Scroll, cls: true, more: true },
   { id: 'godthing', emoji: '🧪', title: 'God thing or good thing?', sub: 'Weigh a decision', C: GodThing, cls: true, more: true },
   { id: 'habits', emoji: '✅', title: 'Daily habits', sub: 'Take-ups, every day', C: Habits, cls: true, more: true },
-  { id: 'rights', emoji: '🤲', title: 'Lay down a right', sub: 'Wednesday', C: Rights, cls: true, more: true },
-  { id: 'growth', emoji: '🌱', title: 'My 2 · 5 · 10', sub: 'Friday: foundations, change, frontiers', C: Growth, cls: true, more: true },
+  { id: 'rights', emoji: '🤲', title: 'Lay down a right', sub: 'Leave your jar', C: Rights, cls: true, more: true },
+  { id: 'growth', emoji: '🌱', title: 'My 2 · 5 · 10', sub: 'Stay in YWAM. Keep growing.', C: Growth, cls: true, more: true },
+  { id: 'bingo', emoji: '🎱', title: 'Excuse bingo', sub: 'Thursday game · Exodus 3–4', C: BingoPoll, cls: true, poll: true, day: 'thu' },
+  { id: 'spheres', emoji: '🧭', title: 'Sphere sorter', sub: 'Friday game · 7 spheres', C: SpherePoll, cls: true, poll: true, day: 'fri' },
+  { id: 'recap', emoji: '🧠', title: 'Week recap', sub: 'Friday · match each day to its line', C: RecapPoll, cls: true, poll: true, day: 'fri' },
   { id: 'fire', emoji: '🔥', title: 'Fire or fountain?', sub: 'Wednesday game · James 3', C: FirePoll, cls: true, poll: true, day: 'wed' },
   { id: 'hotpoll', emoji: '🌡️', title: 'Which is hardest?', sub: 'Live poll · humble, open, transparent', C: HotPoll, cls: true, poll: true, day: 'wed' },
   { id: 'never', emoji: '🙅', title: '“Never, Lord”', sub: 'Live class poll · no names', C: NeverPoll, cls: true, poll: true },
   { id: 'staff', emoji: '🪄', title: 'Pick it back up', sub: 'Live class poll · Moses’ staff', C: StaffPoll, cls: true, poll: true },
+  { id: 'prone', emoji: '🪞', title: '“I’m prone to…” + MSP', sub: 'Private: know yourself', C: Prone, cls: true, more: true },
   { id: 'commit', emoji: '🚩', title: 'Throw-down commitment', sub: 'Friday', C: Commit, cls: true },
   { id: 'questions', emoji: '❓', title: 'Anonymous question box', sub: 'Ask anything', C: Questions, cls: true },
   { id: 'list', emoji: '📝', title: 'My list', sub: 'Lay down / take up', C: List, church: true, cls: true, hidden: true },

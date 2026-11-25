@@ -118,6 +118,21 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   **Fire or fountain?** (`fire`, `kind: 'swipe'`: 8 things people say, 🔥 burns / ⛲ builds, a split bar each on the projector)
   and **Which is hardest?** (`hotpoll`: humble, open or transparent) are live polls like the others, in class with `room`;
   today's polls sort first on Home (`day`).
+- **App Sync doc (Nov 25)** — Uriah's Google Doc "Lordship Week – App Sync" (Drive) holds the decks' changes and the app
+  prompts; read it before building and add notes under "Notes from the app". Built from it: Wed **Stay HOT · All In**, Thu sticky
+  "Make plans with open hands.", James read "today in class". **Fire or fountain** now 12 statements, 10 s each (`seconds`; a
+  time-out is `skip`), each tagged `is`, projector "Show the James 3 verses" (3:5–6, 3:9–11, 3:17), then **Which is hardest?**
+  (`next`). **Excuse bingo** (`bingo`, `kind: 'bingo'`, tools/Games.jsx): a 4×4 card of the 16 `EXCUSES` in this phone's own
+  order, every tap sent (16 y/n answers), BINGO on four in a row; projector ranks the most-tapped. **Word cloud** "My excuse
+  is…" (`cloudAdd`/`cloudResults`/`cloudAdmin`, `wc:`; ≤4 words, 3 per phone; close/reopen/hide/reset; `#/cloud/excuse/<class>`).
+  **Sphere sorter** (`spheres`, `kind: 'sort'`, 10 jobs × `SPHERE7`, stacked bars) then **Week recap** (`recap`, `kind: 'quiz'`,
+  match each day to its line, `correct`). **Friday plan** (tools/Growth.jsx, `lordship.plan10`): "Stay in YWAM. Keep growing."
+  — `PLAN10` fields, `LOCK_IN`, sphere, the LPU card, the mentor map (`MentorMap` from Hot.jsx), one required next step in 30
+  days, "share with my staff". **Throw-down**: declare → `stepSave` (`ns:<class>:<sid>`, moves with the student), check-ins at
+  7/14/30 days on Home and the plan (`stepCheck`, Yes/Partly/Not yet + note, .ics reminders), `#/throwdown/<class>` an anonymous
+  live count (`throwdownCount`), Admin → Next steps (`adminSteps`: counts for all; name, step, sphere and notes only if shared).
+  Optional extras: **"I'm prone to…" + MSP check-in** (`prone` tool, private, on the phone only; a new-creation verse beside each).
+  Admin lists every class projector link under "Live games & polls".
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

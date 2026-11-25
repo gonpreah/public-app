@@ -21,7 +21,7 @@ export default function Rights() {
     <>
       <p className="eyebrow">Philippians 2:6–7</p>
       <h1>Lay down a right</h1>
-      <p className="hand">You can’t hold what he asks you to lay down.</p>
+      <p className="hand">Leave your jar. “Here am I. Send me!”</p>
       <p className="lead">A right is anything I believe I’m owed. Laying it down isn’t losing it — it’s handing it to someone I trust more than myself.</p>
       <div className="card">
         <h3>Which right would be hardest to lay down?</h3>

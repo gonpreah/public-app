@@ -53,7 +53,7 @@ export default function Growth({ code }) {
     setP(n);
     if (!code || !me) return n;
     setBusy(true);
-    try { const r = await api('stepSave', Object.assign({ code, step: n.step, sphere: n.sphere, by: n.by || by, share: !!n.share, declared: !!n.declared }, authArgs())); setP(Object.assign({}, read(K.plan10, n), { declared: r.declared || 0 })); if (!quiet) toast('Saved'); }
+    try { const r = await api('stepSave', Object.assign({ code, step: n.step, sphere: n.sphere, by: n.by || by, share: !!n.share, declared: !!n.declared }, authArgs())); const cur = read(K.plan10, n); setP(Object.assign({}, cur, { declared: r.declared || (patch.declared ? 0 : cur.declared || 0) })); if (!quiet) toast('Saved'); }
     catch (e) { toast(errText(e)); }
     setBusy(false);
     return n;

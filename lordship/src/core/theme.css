@@ -562,3 +562,21 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 .fsbtn { position: fixed; bottom: 16px; right: 18px; z-index: 80; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.35); color: #fff; font-size: 1.2rem; cursor: pointer; opacity: .55; }
 .fsbtn:hover { opacity: 1; }
 @media print { .fsbtn { display: none; } }
+
+/* Fire or fountain (swipe polls) */
+.swipe-card { margin: 18px 0; min-height: 200px; display: grid; place-items: center; text-align: center; padding: 28px 20px; border-radius: 24px; background: var(--card); box-shadow: var(--lift); animation: flipin .5s cubic-bezier(.34,1.56,.64,1) both; }
+.swipe-card p { margin: 0; font: 800 clamp(1.5rem, 6vw, 2.1rem)/1.2 var(--display); color: var(--head); }
+.swipe-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.swipe-btn { min-height: 120px; border-radius: 22px; border: 0; font: 800 1.2rem var(--display); color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: transform var(--quick); }
+.swipe-btn span { font-size: 2.6rem; line-height: 1; }
+.swipe-btn:active { transform: scale(.96); }
+.swipe-btn.fire { background: linear-gradient(160deg, #ff8a3d, #e0503d); }
+.swipe-btn.fount { background: linear-gradient(160deg, #3aa8ff, #1f44ff); }
+.ff-rows { display: grid; gap: 1.1vh; margin-top: 1vh; }
+.ff-head { display: flex; justify-content: space-between; font: 800 clamp(.9rem, 1.4vw, 1.3rem) var(--display); color: var(--paper); margin-left: 38%; }
+.ff-row { display: grid; grid-template-columns: 38% 1fr; gap: 16px; align-items: center; }
+.ff-row p { margin: 0; color: var(--paper); font: 700 clamp(.85rem, 1.45vw, 1.3rem)/1.25 var(--display); }
+.ff-bar { display: flex; height: clamp(22px, 4vh, 40px); border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.08); }
+.ff-bar i { display: flex; align-items: center; justify-content: center; font: 800 clamp(.75rem, 1.2vw, 1.1rem) var(--display); font-style: normal; color: #fff; transition: width .8s var(--ease); }
+.ff-bar i.fire { background: #e0503d; } .ff-bar i.fount { background: #1f44ff; }
+.ff-bar em { margin: auto; color: var(--ink-5); font-style: normal; }

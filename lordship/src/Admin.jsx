@@ -48,6 +48,8 @@ export default function Admin() {
       <Classes pw={pw} classes={d.classes} cls={cls} setCls={setCls} onChange={(classes) => setD(Object.assign({}, d, { classes }))} />
       <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
       {cls && <div className="row wrap" style={{ marginBottom: 8 }}>
+        <a className="btn primary" href={'#/poll-results/fire/' + cls}>🔥 Fire or fountain · class results</a>
+        <a className="btn primary" href={'#/poll-results/hotpoll/' + cls}>🌡️ Which is hardest? · class results</a>
         <a className="btn primary" href={'#/poll-results/never/' + cls}>🙅 “Never, Lord” · class results</a>
         <a className="btn primary" href={'#/poll-results/staff/' + cls}>🪄 Pick it back up · class results</a>
       </div>}

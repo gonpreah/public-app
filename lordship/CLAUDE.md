@@ -112,6 +112,12 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
 - **Small things (Nov 24):** Home's today card shows today's response tools as one-tap chips; projector screens (game, panel,
   quiz and poll results) have a ⛶ full-screen button (`FullScreen` in App.jsx); Admin → Class list has "Find a name" and
   "Select shown" for moving people.
+- **Day titles from the updated decks (Nov 25):** Mon Lordship as a Lifestyle · Tue Lazy Lordship · Wed **Stay HOT** (James 3;
+  "My grace is sufficient for you") · Thu **Here Am I, Send Me** (James 4; "Plans with open hands"; excuses, Moses at the bush,
+  the woman's jar, sent) · Fri **Lord of Every Sphere** (James 5; the 2/5/10 plan and the throw-down). Wednesday's morning game
+  **Fire or fountain?** (`fire`, `kind: 'swipe'`: 8 things people say, 🔥 burns / ⛲ builds, a split bar each on the projector)
+  and **Which is hardest?** (`hotpoll`: humble, open or transparent) are live polls like the others, in class with `room`;
+  today's polls sort first on Home (`day`).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

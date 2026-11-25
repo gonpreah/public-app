@@ -66,33 +66,12 @@ export const DAYS = [
     ]
   },
   {
-    id: 'wed', dow: 3, name: 'Wednesday', title: 'Laying Down', james: 3,
-    sticky: 'You can’t hold what he asks you to lay down.',
-    bigIdea: 'A right is anything I believe I’m owed. Laying it down isn’t losing it — it’s handing it to someone I trust more than myself. Open hands can receive; closed hands can only hold on.',
-    scripture: [
-      { ref: 'Genesis 22:2, 14', text: '“Now take your son, your only son, whom you love, even Isaac, and go into the land of Moriah. Offer him there as a burnt offering on one of the mountains which I will tell you of.” … Abraham called the name of that place Yahweh Will Provide.' },
-      { ref: 'Luke 9:23', text: 'He said to all, “If anyone desires to come after me, let him deny himself, take up his cross, and follow me.”' },
-      { ref: 'Philippians 2:6–7', text: 'who, existing in the form of God, didn’t consider equality with God a thing to be grasped, but emptied himself, taking the form of a servant, being made in the likeness of men.' },
-      { ref: 'James 4:7, 10', text: 'Be subject therefore to God. Resist the devil, and he will flee from you. … Humble yourselves in the sight of the Lord, and he will exalt you.' }
-    ],
-    study: 'Genesis 22:1–14 · Philippians 2:5–11',
-    questions: [
-      'Which right would be hardest for you to lay down?',
-      'What’s your “never, Lord”?',
-      'Have you ever laid something down and received more back?'
-    ],
-    listen: 'Holy Spirit, what are you asking me to put in your hands?',
-    response: 'Write one right down. Bring it forward when you’re ready, and pray: “Jesus, this is yours.”',
-    respond: [
-      { tool: 'rights', why: 'Pick the right you’re laying down, and give it to Jesus.' },
-      { tool: 'laydown', why: 'Lay your plans next to his — money, romance, your future, where you live.' }
-    ]
-  },
-  {
-    id: 'thu', dow: 4, name: 'Thursday', title: 'Stay HOT', james: 4,
-    sticky: 'His power is amplified when my weakness is magnified.',
+    id: 'wed', dow: 3, name: 'Wednesday', title: 'Stay HOT', james: 3,
+    sticky: 'My grace is sufficient for you.',
+    game: 'fire',
     bigIdea: 'Humble, Open, Transparent. If it’s “none of your business”, it’s probably a Lordship area. Hiding weakness doesn’t make us strong; it makes us alone. The goal: secure and teachable.',
     scripture: [
+      { ref: 'James 3:2, 10–11', text: 'For in many things we all stumble. … Out of the same mouth comes blessing and cursing. My brothers, these things ought not to be so. Does a spring send out from the same opening fresh and bitter water?' },
       { ref: '1 John 1:7, 9', text: 'But if we walk in the light, as he is in the light, we have fellowship with one another, and the blood of Jesus Christ, his Son, cleanses us from all sin. … If we confess our sins, he is faithful and righteous to forgive us the sins, and to cleanse us from all unrighteousness.' },
       { ref: '2 Corinthians 12:9', text: 'He has said to me, “My grace is sufficient for you, for my power is made perfect in weakness.” Most gladly therefore I will rather glory in my weaknesses, that the power of Christ may rest on me.' },
       { ref: 'James 5:16', text: 'Confess your offenses to one another, and pray for one another, that you may be healed. The insistent prayer of a righteous person is powerfully effective.' },
@@ -107,14 +86,41 @@ export const DAYS = [
     listen: 'Holy Spirit, who are you inviting me to let in?',
     response: 'Draw your mentor map: a Paul ahead of you, a Barnabas beside you, a Timothy you pour into. Circle one name to invite in this month.',
     respond: [
+      { tool: 'fire', why: 'Morning game: do these words burn or build? (James 3)' },
+      { tool: 'hotpoll', why: 'Which is hardest for you: humble, open or transparent? No names.' },
       { tool: 'hot', why: 'The honesty check, then your mentor map: Paul, Barnabas, Timothy.' },
       { tool: 'questions', why: 'A question you’d rather ask privately? It’s anonymous.' }
     ]
   },
   {
-    id: 'fri', dow: 5, name: 'Friday', title: 'Taking Up', james: 5,
+    id: 'thu', dow: 4, name: 'Thursday', title: 'Here Am I, Send Me', james: 4,
+    sticky: 'Plans with open hands.',
+    bigIdea: 'The week turns outward. We all have excuses — so did Moses. God doesn’t answer them with a pep talk but with himself: “I will be with you.” Leave your jar, and go.',
+    scripture: [
+      { ref: 'Isaiah 6:8', text: 'I heard the Lord’s voice, saying, “Whom shall I send, and who will go for us?” Then I said, “Here I am. Send me!”' },
+      { ref: 'Exodus 3:11–12', text: 'Moses said to God, “Who am I, that I should go to Pharaoh…?” He said, “Certainly I will be with you.”' },
+      { ref: 'James 4:13–15', text: 'Come now, you who say, “Today or tomorrow let’s go into this city, and spend a year there, trade, and make a profit.” Whereas you don’t know what your life will be like tomorrow. … For you ought to say, “If the Lord wills, we will both live, and do this or that.”' },
+      { ref: 'John 4:28–29', text: 'So the woman left her water pot, and went away into the city, and said to the people, “Come, see a man who told me everything that I did. Can this be the Christ?”' },
+      { ref: 'John 20:21 · Revelation 7:9', text: '“As the Father has sent me, even so I send you.” … A great multitude, which no man could count, out of every nation and of all tribes, peoples, and languages, standing before the throne and before the Lamb.' }
+    ],
+    study: 'Exodus 3:1–12 · John 4:1–42',
+    questions: [
+      'Which excuse do you reach for most: “Who am I?”, “What will I say?”, “What if they don’t listen?”, “I’m not good with words”, or “Send someone else”?',
+      'What’s your jar — the thing you’d have to leave behind to go and tell people?',
+      'Whose voice gets the final say in your plans: yours, other people’s, or God’s?'
+    ],
+    listen: 'Holy Spirit, where are you sending me — and what do I leave here?',
+    response: 'Leave your jar. Write down what you’re leaving behind, and pray: “Here I am. Send me.”',
+    respond: [
+      { tool: 'rights', why: 'Leave your jar: hand Jesus the thing you’re holding.' },
+      { tool: 'laydown', why: 'Plans with open hands: my plan next to his.' },
+      { tool: 'people', why: 'Every nation, tribe and language: pray for today’s people group.' }
+    ]
+  },
+  {
+    id: 'fri', dow: 5, name: 'Friday', title: 'Lord of Every Sphere', james: 5,
     sticky: 'Easy to die for Jesus. Hard to live for him.',
-    bigIdea: 'All week we’ve laid things down; today we pick up what God hands us — habits, responsibility, a plan, and the nations. A living sacrifice gets up off the altar every day.',
+    bigIdea: 'Jesus is Lord of every sphere — family, church, school, work, government, media, the arts. All week we’ve laid things down; today we pick up what he hands us: a plan for 2, 5 and 10 years, and the throw-down. A living sacrifice gets up off the altar every day.',
     scripture: [
       { ref: 'Romans 12:1', text: 'Therefore I urge you, brothers, by the mercies of God, to present your bodies a living sacrifice, holy, acceptable to God, which is your spiritual service.' },
       { ref: '2 Timothy 2:3–6', text: 'You therefore must endure hardship, as a good soldier of Christ Jesus. No soldier on duty entangles himself in the affairs of life, that he may please him who enrolled him as a soldier. Also, if anyone competes in athletics, he isn’t crowned unless he has competed by the rules. The farmer who labors must be the first to get a share of the crops.' },
@@ -364,7 +370,38 @@ const OPTS_NEVER = [
         ['control', '🎛️', 'Being in control'], ['hurt', '🩹', 'An old hurt I’m holding'], ['other', '🤫', 'Something just between me and God']
       ];
 
+const FF = [['fire', '🔥', 'Fire'], ['fount', '⛲', 'Fountain']];
+
 export const LIVE_POLLS = {
+  fire: {
+    title: 'Fire or fountain?',
+    kind: 'swipe',
+    verse: { ref: 'James 3:6, 10–11', text: 'And the tongue is a fire. … Out of the same mouth comes blessing and cursing. My brothers, these things ought not to be so. Does a spring send out from the same opening fresh and bitter water?' },
+    intro: 'Words pop up. Tap 🔥 if they burn, ⛲ if they build. Go with your gut — no names, just the class’s totals.',
+    qs: [
+      { q: '“You always do this.”', opts: FF },
+      { q: '“I was wrong. I’m sorry.”', opts: FF },
+      { q: '“Did you hear what happened with…?”', opts: FF },
+      { q: '“I saw how you helped today. Thank you.”', opts: FF },
+      { q: '“I’m just being honest…”', opts: FF },
+      { q: '“Can I pray for you right now?”', opts: FF },
+      { q: '“Wow. Great job.” (with an eye roll)', opts: FF },
+      { q: '“I’m struggling with this. Can we talk?”', opts: FF }
+    ],
+    done: { text: 'Does a spring send out from the same opening fresh and bitter water?', ref: 'James 3:11', prayer: 'Lord, make my mouth a fountain. Set a guard over my words today. Amen.' }
+  },
+  hotpoll: {
+    title: 'Stay HOT',
+    verse: { ref: '2 Corinthians 12:9', text: '“My grace is sufficient for you, for my power is made perfect in weakness.”' },
+    intro: 'Humble, open, transparent. Most of us run warm in some and cold in others. No names — be honest.',
+    qs: [
+      { q: 'Which is hardest for you?', opts: [
+        ['h', '🙇', 'Humble — I don’t have it all together'], ['o', '👂', 'Open — I let people speak into my life'], ['t', '🪟', 'Transparent — the people closest to me know my real struggles']
+      ] }
+    ],
+    done: { text: 'If we walk in the light, as he is in the light, we have fellowship with one another.', ref: '1 John 1:7', prayer: 'Jesus, I don’t have to hide. Show me one person to let in. Amen.' }
+  },
+
   never: {
     title: '“Never, Lord”',
     verse: { ref: 'Matthew 16:22', text: 'Peter took him aside, and began to rebuke him, saying, “Far be it from you, Lord! This will never be done to you.”' },

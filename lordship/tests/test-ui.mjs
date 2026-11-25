@@ -237,11 +237,14 @@ try {
   await page.click('.lockin:has-text("Share my next step") input');
   await page.click('button:has-text("Throw it down")');
   await page.waitForSelector('text=Declared. We’ll check in');
+  await page.waitForLoadState('networkidle');
   ok('declared: a calendar for the 7/14/30 check-ins', (await page.locator('button:has-text("Add the check-ins")').count()) === 1);
+  await page.waitForTimeout(3000);
   await page.evaluate(() => { const k = 'gp.lordship.plan10'; const v = JSON.parse(localStorage.getItem(k)); v.declared = Date.now() - 8 * 86400000; localStorage.setItem(k, JSON.stringify(v)); });
-  await page.goto(U + '/#/class'); await page.waitForSelector('text=7-day check-in');
+  await page.goto(U + '/#/class'); await page.reload(); await page.waitForSelector('text=7-day check-in');
   ok('home asks at day 7: did you take your step?', true);
-  await page.goto(U + '/#/t/growth'); await page.fill('textarea[aria-label="Check-in note"]', 'Sent it!'); await page.click('button:has-text("Yes")');
+  await page.click('a.note:has-text("7-day check-in")'); await page.waitForSelector('.stepcheck', { timeout: 10000 });
+  await page.fill('textarea[aria-label="Check-in note"]', 'Sent it!'); await page.click('button:has-text("Yes")');
   await page.waitForFunction(() => !document.querySelector('.stepcheck'));
   ok('check-in answered', true);
 

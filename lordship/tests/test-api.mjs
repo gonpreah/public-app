@@ -267,6 +267,7 @@ ok('class totals and the game follow the class picked', (await call('gameScreen'
 
 /* --- live polls: no names at all --- */
 const LP1 = 'aaaabbbbccccdddd', LP2 = 'aaaabbbbccccddde';
+ok('fire or fountain takes eight answers', (await call('livePoll', { poll: 'fire', rid: 'aaaabbbbccccdddf', answers: ['fire', 'fount', 'fire', 'fount', 'fire', 'fount', 'fire', 'fount'] })).ok && (await call('livePollResults', { poll: 'fire' })).counts[7].fount === 1);
 ok('an unknown poll is refused', (await call('livePoll', { poll: 'nope', rid: LP1, answers: ['plans', 'yes'] })).error === 'NO_POLL');
 ok('answers must be the poll’s options', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['porn', 'yes'] })).error === 'BAD_ANSWER');
 ok('every question answered', (await call('livePoll', { poll: 'never', rid: LP1, answers: ['plans'] })).error === 'BAD_ANSWER');

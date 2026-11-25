@@ -82,10 +82,10 @@ try {
   await page.goto(U + '/#/day/wed');
   await page.waitForSelector('.scripture');
   const wed = await text();
-  ok('day shows title, big idea, scripture text, questions', wed.includes('Laying Down') && wed.includes('take up his cross, and follow me') && wed.includes('never, Lord'));
-  ok('all four Wednesday passages', (await page.locator('.scripture').count()) === 4);
-  ok('the day’s sticky line, James chapter, check-in and listening prayer', (await page.locator('.dayhead .sticky').innerText()).includes('You can’t hold what he asks you to lay down')
-    && (await page.locator('.james h3').innerText()).includes('James 3') && wed.includes('What did you lay down or take up since yesterday?') && wed.includes('what are you asking me to put in your hands?'));
+  ok('day shows title, big idea, scripture text, questions', wed.includes('Stay HOT') && wed.includes('my power is made perfect in weakness') && wed.includes('Who knows your real struggles'));
+  ok('all five Wednesday passages', (await page.locator('.scripture').count()) === 5);
+  ok('the day’s sticky line, James chapter, check-in and listening prayer', (await page.locator('.dayhead .sticky').innerText()).includes('My grace is sufficient for you')
+    && (await page.locator('.james h3').innerText()).includes('James 3') && wed.includes('What did you lay down or take up since yesterday?') && wed.includes('who are you inviting me to let in?'));
   await page.click('.james button:has-text("I read it")');
   ok('ticking James 3 as read', (await page.locator('.james button').innerText()).includes('✓ Read'));
   await page.click('text=Bible study: Say · Mean · Do');
@@ -97,7 +97,7 @@ try {
   await page.evaluate(() => document.querySelector('.pg-photo').scrollIntoView());
   await page.waitForFunction(() => { const i = document.querySelector('.pg-photo img'); return i && i.complete && i.naturalWidth > 200; });
   ok('people group has a photo with a credit and licence', (await page.locator('.pg-photo figcaption').innerText()).includes('Photo:') && /CC BY/.test(await page.locator('.pg-photo figcaption').innerText()));
-  ok('Wednesday responds with lay down a right and My plan vs God’s plan', (await page.locator('.respond .tile').count()) === 2 && (await page.locator('.respond').textContent()).includes('Lay down a right') && (await page.locator('.respond').textContent()).includes('My plan vs God’s plan'));
+  ok('Wednesday responds with Fire or fountain, the HOT poll and Stay HOT', (await page.locator('.respond .tile').count()) === 4 && (await page.locator('.respond').textContent()).includes('Fire or fountain?') && (await page.locator('.respond').textContent()).includes('Stay HOT'));
   await page.click('text=I’ve responded today');
   ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);
   await noScroll('day');
@@ -269,7 +269,7 @@ try {
 
   /* commitment */
   await page.goto(U + '/#/class');
-  ok('home: two live polls + six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 8 && (await page.locator('main > .tiles .tile:has-text("Never, Lord")').count()) === 1 && (await page.locator('details.more .tile').count()) >= 5);
+  ok('home: four live polls + six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 10 && (await page.locator('main > .tiles .tile:has-text("Never, Lord")').count()) === 1 && (await page.locator('details.more .tile').count()) >= 5);
   ok('home: plans at a glance', (await page.locator('.glance').innerText()).includes('laid side by side'));
   ok('home: welcome card', (await page.locator('.welcome').count()) === 1);
   await page.click('.welcome button');
@@ -531,6 +531,18 @@ try {
   await pr.waitForTimeout(3500);
   ok('a retake replaces, not adds', (await pr.locator('.qr-total b').innerText()) === '1');
 
+  /* Wednesday's game: Fire or fountain (James 3), live for the class */
+  await page.goto(U + '/#/t/fire'); await page.click('text=Start');
+  for (let i = 0; i < 8; i++) { await page.locator('.swipe-btn').nth(i % 3 === 0 ? 0 : 1).click(); }
+  await page.waitForSelector('text=Thank you for being honest');
+  ok('fire or fountain: 8 taps, my tally', (await page.locator('.lp-mine').innerText()).includes('🔥 3') && (await page.locator('.lp-mine').innerText()).includes('⛲ 5'));
+  const ff = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await ff.goto(U + '/#/poll-results/fire/TEST1'); await ff.waitForSelector('.ff-bar i.fire');
+  ok('fire or fountain projector: a split bar per statement', (await ff.locator('.ff-row').count()) === 8 && (await ff.locator('.ff-row').first().innerText()).includes('100%'));
+  await page.goto(U + '/#/t/hotpoll'); await page.click('text=Start'); await page.click('.opt-btn:has-text("Transparent")');
+  await page.waitForSelector('text=Thank you for being honest');
+  ok('HOT poll: one tap, no list or habit button', (await page.locator('button:has-text("lay down list")').count()) === 0);
+
   /* a live poll for a Zoom call: no names */
   const lp = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   await lp.goto(U + '/?poll=never'); await lp.waitForSelector('text=Start');
@@ -564,9 +576,19 @@ try {
   await page.click('.tile:has-text("Never, Lord")'); await page.click('text=Start');
   await page.click('.opt-btn:has-text("Where I’ll live")'); await page.click('.opt-btn:has-text("Yes, Lord")');
   await page.waitForSelector('text=Thank you for being honest');
+  await page.click('text=Put it on my lay down list');
+  ok('class poll: the never goes on my list', (await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.list') || '[]').some(x => x.laydown === 'Where I’ll live'))));
   const cr = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
   await cr.goto(U + '/#/poll-results/never/TEST1'); await cr.waitForFunction(() => document.querySelector('.qr-total b') && document.querySelector('.qr-total b').textContent === '1');
   ok('class results: just this class, with its own link', (await cr.locator('.lpbar:not(.zero)').first().innerText()).includes('Where I’ll live') && (await cr.locator('.lp-link b').innerText()).includes('room=TEST1'));
+  await page.goto(U + '/#/t/staff'); await page.click('text=Start'); await page.click('.opt-btn.mine');
+  await page.click('.opt-btn:has-text("One small change")'); await page.waitForSelector('text=Thank you for being honest');
+  await page.click('button:has-text("Daily habit:")');
+  await page.goto(U + '/#/t/habits');
+  ok('class poll: the small step becomes a daily habit', (await page.locator('.habit', { hasText: 'Pray for my street or city' }).count()) === 1);
+  await page.goto(U + '/#/class'); await page.waitForSelector('.today');
+  ok('home: today’s response, one tap', (await page.locator('.today .chips a.chip').count()) >= 1);
+  ok('projector screens have a full screen button', (await cr.locator('.fsbtn').count()) === 1);
 
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {

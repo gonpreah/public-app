@@ -48,6 +48,8 @@ export default function Admin() {
       <Classes pw={pw} classes={d.classes} cls={cls} setCls={setCls} onChange={(classes) => setD(Object.assign({}, d, { classes }))} />
       <a className="btn primary big" href="#/game" style={{ marginBottom: 8 }}>🎲 Day 1 game &amp; join wall (projector)</a>
       {cls && <div className="row wrap" style={{ marginBottom: 8 }}>
+        <a className="btn primary" href={'#/poll-results/fire/' + cls}>🔥 Fire or fountain · class results</a>
+        <a className="btn primary" href={'#/poll-results/hotpoll/' + cls}>🌡️ Which is hardest? · class results</a>
         <a className="btn primary" href={'#/poll-results/never/' + cls}>🙅 “Never, Lord” · class results</a>
         <a className="btn primary" href={'#/poll-results/staff/' + cls}>🪄 Pick it back up · class results</a>
       </div>}
@@ -327,6 +329,7 @@ function Roster({ pw, cls, classes, onMoved }) {
   const [sel, setSel] = useState({});
   const others = classes.filter(c => c.code !== cls);
   const [to, setTo] = useState('');
+  const [q, setQ] = useState('');
   const [err, setErr] = useState('');
   const load = async () => { try { setSt((await api('adminRoster', { pw, cls })).students); setSel({}); } catch (e) { setErr(errText(e)); } };
   useEffect(() => { load(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -343,6 +346,7 @@ function Roster({ pw, cls, classes, onMoved }) {
     try { await api('adminStudent', { pw, cls, sid: s.id, remove: true }); load(); } catch (e) { setErr(errText(e)); }
   }
   const picked = st.filter(s => sel[s.id]);
+  const shown = st.filter(s => !q.trim() || s.name.toLowerCase().includes(q.trim().toLowerCase()));
   async function move() {
     const dest = classes.find(c => c.code === (to || (others[0] || {}).code));
     if (!dest || !picked.length || !confirm(`Move ${picked.length} to “${dest.name}”? Their answers go with them.`)) return;
@@ -356,7 +360,7 @@ function Roster({ pw, cls, classes, onMoved }) {
       {others.length > 0 && st.length > 0 && (
         <div className="card moveto">
           <div className="row wrap" style={{ alignItems: 'center' }}>
-            <button className="linkish" onClick={() => setSel(picked.length === st.length ? {} : Object.fromEntries(st.map(s => [s.id, true])))}>{picked.length === st.length ? 'Select none' : 'Select all'}</button>
+            <button className="linkish" onClick={() => setSel(picked.length ? {} : Object.fromEntries(shown.map(s => [s.id, true])))}>{picked.length ? 'Select none' : q.trim() ? 'Select shown' : 'Select all'}</button>
             <span className="small"><b>{picked.length}</b> selected → </span>
             <select aria-label="Move to class" value={to || (others[0] || {}).code} onChange={e => setTo(e.target.value)}>{others.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}</select>
             <button className="btn primary small" disabled={!picked.length} onClick={move}>Move</button>
@@ -366,7 +370,8 @@ function Roster({ pw, cls, classes, onMoved }) {
       <div className="stats"><div><b>{st.length}</b><span>joined</span></div><div><b>{st.filter(s => s.fact).length}</b><span>fun facts</span></div><div><b>{st.filter(s => s.saved).length}</b><span>saving</span></div></div>
       <p className="muted small">Names only — you never see their answers. <button className="linkish" onClick={load}>Refresh</button></p>
       <div className="card">{!st.length && <p className="muted">No one yet.</p>}
-        {st.map(s => <div className="item row wrap" key={s.id} style={{ justifyContent: 'space-between' }}>
+        {st.length > 8 && <input className="rosterq" value={q} onChange={e => setQ(e.target.value)} placeholder="Find a name" aria-label="Find a name" />}
+        {shown.map(s => <div className="item row wrap" key={s.id} style={{ justifyContent: 'space-between' }}>
           <span>{others.length > 0 && <input type="checkbox" className="pick" aria-label={'Select ' + s.name} checked={!!sel[s.id]} onChange={e => setSel(Object.assign({}, sel, { [s.id]: e.target.checked }))} />}<b>{s.name}</b>{s.fact ? ' 🤫' : ''}<br /><small className="muted">joined {ago(s.at)} · last seen {ago(s.seen)}</small></span>
           <span><button className="btn soft small" onClick={() => reset(s)}>New PIN</button> <button className="linkish" onClick={() => remove(s)}>Remove</button></span>
         </div>)}

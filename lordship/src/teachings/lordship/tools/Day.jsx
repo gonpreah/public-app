@@ -36,6 +36,7 @@ export function DayTabs({ cur, today }) {
 
 const TOOL_NAMES = { wheel: ['🎯', 'The wheel'], habits: ['✅', 'Daily habits'], commit: ['🚩', 'My commitment'], godthing: ['🧪', 'God thing or good thing?'],
   laydown: ['⚖️', 'My plan vs God’s plan'], notso: ['✋', '“Not so, Lord”'], hot: ['🔥', 'Stay HOT'], questions: ['❓', 'Question box'], scroll: ['📜', 'My Scroll'], quiz: ['😂', 'Lordship profile quiz'],
+  fire: ['🔥', 'Fire or fountain?'], hotpoll: ['🌡️', 'Which is hardest?'],
   rights: ['🤲', 'Lay down a right'], growth: ['🌱', 'My 2 · 5 · 10'], people: ['🌏', 'People group of the day'] };
 
 function Respond({ d }) {

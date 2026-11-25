@@ -5,6 +5,7 @@ import { LIVE_POLLS, PICK_UP } from '../content.js';
 import { useLocal } from '../../../core/store.js';
 import { api, errText } from '../../../core/api.js';
 import { burst, copyText, toast } from '../../../core/ui.jsx';
+import { addHabit, addToList } from '../state.js';
 import Qr from '../../../core/Qr.jsx';
 
 const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
@@ -23,6 +24,23 @@ export function PickUp({ area, opts }) {
       <p><b>Ask God:</b> “{u.ask}”</p>
       <p><b>One small step:</b> {u.step}</p>
     </div>
+  );
+}
+
+/* In class: keep it — the "never" goes on my lay down list; the step to pick it back up becomes a daily habit. */
+function KeepIt({ p, id, area }) {
+  const [kept, setKept] = useLocal('lordship.pollKept.' + id, '');
+  const o = p.qs[0].opts.find(x => x[0] === area), u = PICK_UP[area];
+  if (!o || (id !== 'never' && id !== 'staff')) return null;
+  if (kept === area) return <p className="ok">✓ {p.qs.some(x => x.pickup) ? 'Added to your daily habits' : 'Added to your lay down list'}</p>;
+  const pickup = p.qs.some(x => x.pickup);
+  if (pickup && !u) return null;
+  return (
+    <button className="btn soft big" onClick={(e) => {
+      if (pickup) addHabit(u.habit);
+      else addToList({ from: '“Never, Lord”', area: o[2], laydown: o[2] });
+      setKept(area); burst(e.currentTarget, 10);
+    }}>{pickup ? `✅ Daily habit: “${u.habit}”` : '🤲 Put it on my lay down list'}</button>
   );
 }
 
@@ -54,11 +72,13 @@ export default function LivePoll({ id, room = '', code }) {
       <div className="livepoll done">
         <p className="eyebrow">{p.title}</p>
         <h1>Thank you for being honest 🙏</h1>
-        {a && !p.qs.some(x => x.pickup) && <p className="lp-mine"><span>{a[1]}</span> {a[2]}</p>}
+        {p.kind === 'swipe' && <p className="lp-mine">🔥 {saved.filter(x => x === 'fire').length} · ⛲ {saved.filter(x => x === 'fount').length}</p>}
+        {a && p.kind !== 'swipe' && !p.qs.some(x => x.pickup) && <p className="lp-mine"><span>{a[1]}</span> {a[2]}</p>}
         {p.qs.some(x => x.pickup) && <PickUp area={saved[0]} opts={p.qs[0].opts} />}
         <p className="muted small">No one can see what you picked — only the totals, on the shared screen.</p>
         <div className="scripture"><b>{p.done.ref}</b><p>{p.done.text}</p></div>
         <div className="card"><p className="eyebrow">A prayer, if you want it</p><p className="lead">{p.done.prayer}</p></div>
+        {room && <KeepIt p={p} id={id} area={saved[0]} />}
         <button className="linkish" onClick={() => { setAns([]); setStarted(true); }}>Change my answer</button>
       </div>
     );
@@ -69,10 +89,19 @@ export default function LivePoll({ id, room = '', code }) {
       <h1>{p.title}</h1>
       <div className="scripture"><b>{p.verse.ref}</b><p>{p.verse.text}</p></div>
       <p className="lead">{p.intro}</p>
-      <button className="btn primary big" onClick={() => setStarted(true)}>Start · {p.qs.length} taps</button>
+      <button className="btn primary big" onClick={() => setStarted(true)}>Start · {p.qs.length} {p.qs.length === 1 ? 'tap' : 'taps'}</button>
     </div>
   );
   const q = p.qs[ans.length];
+  if (p.kind === 'swipe') return (
+    <div className="livepoll swipe">
+      <p className="eyebrow">{p.title} · {ans.length + 1}/{p.qs.length}</p>
+      <div className="qdots">{p.qs.map((_, k) => <i key={k} className={k < ans.length ? 'on' : k === ans.length ? 'cur' : ''} />)}</div>
+      <div className="swipe-card" key={ans.length}><p>{q.q}</p></div>
+      <div className="swipe-btns">{q.opts.map(([o, em, label]) => <button key={o} className={'swipe-btn ' + o} disabled={busy} onClick={(e) => pick(o, e)}><span>{em}</span>{label}</button>)}</div>
+      {ans.length > 0 && <button className="linkish" onClick={() => setAns(ans.slice(0, -1))}>‹ Back</button>}
+    </div>
+  );
   return (
     <div className="livepoll" key={ans.length}>
       <p className="eyebrow">{p.title} · {ans.length + 1}/{p.qs.length}</p>
@@ -121,7 +150,20 @@ export function LivePollResults({ id, room = '' }) {
         <div className="lp-link"><span>Open on your phone or laptop:</span><b>{link.replace(/^https?:\/\//, '')}</b>
           <button className="btn soft small" onClick={() => copyText(link)}>Copy link for the chat</button></div>
         {err && <p className="err">{err}</p>}
-        <div className="lp-cols">
+        {p.kind === 'swipe' ? (
+          <div className="ff-rows">
+            <div className="ff-head"><span>🔥 Fire · burns</span><span>Fountain · builds ⛲</span></div>
+            {p.qs.map((q, qi) => {
+              const c = d ? d.counts[qi] : {}, f = c.fire || 0, w = c.fount || 0, t = f + w;
+              return (
+                <div key={qi} className="ff-row">
+                  <p>{q.q}</p>
+                  <div className="ff-bar">{t ? <><i className="fire" style={{ width: f / t * 100 + '%' }}>{f / t >= 0.12 ? Math.round(f / t * 100) + '%' : ''}</i><i className="fount" style={{ width: w / t * 100 + '%' }}>{w / t >= 0.12 ? Math.round(w / t * 100) + '%' : ''}</i></> : <em>—</em>}</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : <div className="lp-cols">
           {p.qs.map((q, qi) => {
             const counts = d ? d.counts[qi] : {};
             const order = qi === 0 ? q.opts.slice().sort((x, y) => (counts[y[0]] || 0) - (counts[x[0]] || 0)) : q.opts;
@@ -142,7 +184,7 @@ export function LivePollResults({ id, room = '' }) {
               </div>
             );
           })}
-        </div>
+        </div>}
         {p.qs.some(x => x.pickup) && total > 0 && (() => {
           const c0 = d.counts[0], top = Object.keys(c0).sort((x, y) => c0[y] - c0[x])[0], o = p.qs[0].opts.find(x => x[0] === top), u = PICK_UP[top];
           return u ? <p className="lp-top">Most in our hands: <b>{o[1]} {o[2]}</b> → picked back up: <em>{u.up}</em></p> : null;

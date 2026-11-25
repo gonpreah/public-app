@@ -32,6 +32,8 @@ export const PROFILE_IDS = ['netflix', 'bentley', 'ring', 'sahara', 'gym', 'wifi
 
 /* Live polls (?poll=<id>): the option ids each question accepts (the words are in src/…/content.js LIVE_POLLS). */
 export const LIVE_POLL_IDS = {
+  fire: Array.from({ length: 8 }, () => ['fire', 'fount']),
+  hotpoll: [['h', 'o', 't']],
   never: [['plans', 'money', 'phone', 'marry', 'home', 'family', 'dream', 'comfort', 'image', 'control', 'hurt', 'other'], ['never', 'think', 'slowly', 'yes']],
   staff: [['plans', 'money', 'phone', 'marry', 'home', 'family', 'dream', 'comfort', 'image', 'control', 'hurt', 'other'], ['ask', 'step', 'talk', 'word', 'thanks']]
 };

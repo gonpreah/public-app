@@ -97,7 +97,7 @@ try {
   await page.evaluate(() => document.querySelector('.pg-photo').scrollIntoView());
   await page.waitForFunction(() => { const i = document.querySelector('.pg-photo img'); return i && i.complete && i.naturalWidth > 200; });
   ok('people group has a photo with a credit and licence', (await page.locator('.pg-photo figcaption').innerText()).includes('Photo:') && /CC BY/.test(await page.locator('.pg-photo figcaption').innerText()));
-  ok('Wednesday responds with Fire or fountain, the HOT poll and Stay HOT', (await page.locator('.respond .tile').count()) === 4 && (await page.locator('.respond').textContent()).includes('Fire or fountain?') && (await page.locator('.respond').textContent()).includes('Stay HOT'));
+  ok('Wednesday responds with Fire or fountain, the HOT poll and Stay HOT', (await page.locator('.respond .tile').count()) === 5 && (await page.locator('.respond').textContent()).includes('Fire or fountain?') && (await page.locator('.respond').textContent()).includes('Stay HOT'));
   await page.click('text=I’ve responded today');
   ok('responded marks the day', (await page.locator('.respond').textContent()).includes('You responded') && (await page.locator('.daytabs a.done').count()) === 1);
   await noScroll('day');
@@ -226,9 +226,24 @@ try {
 
   /* Friday: 2 · 5 · 10 */
   await page.goto(U + '/#/t/growth');
-  await page.click('.horizon:has-text("Firm foundations") .chip:has-text("DTS")');
-  await page.fill('textarea[aria-label="10 years: Frontier missions"]', 'Pioneer a base in Laos');
-  ok('2 · 5 · 10 keeps each horizon', (await page.inputValue('textarea[aria-label="2 years: Firm foundations"]')) === 'DTS' && (await text()).includes('Share or copy my plan'));
+  ok('the plan: Stay in YWAM. Keep growing., with the LPU card', (await text()).includes('Keep growing') && (await text()).includes('Life Pacific University'));
+  await page.click('.horizon:has-text("Firm foundations") .pf:has-text("Schools I’ll staff") .chip:has-text("DTS")');
+  await page.fill('#y10launch', 'A base in Laos');
+  await page.click('.lockin:has-text("A solid skill") input');
+  await page.click('.chip:has-text("Media")');
+  ok('2 · 5 · 10 keeps each field', (await page.inputValue('#y2staff')) === 'DTS' && (await page.inputValue('#y10launch')) === 'A base in Laos');
+  ok('the throw-down needs a next step', await page.locator('button:has-text("Throw it down")').isDisabled());
+  await page.fill('input[aria-label="My next step"]', 'Email the LPU office');
+  await page.click('.lockin:has-text("Share my next step") input');
+  await page.click('button:has-text("Throw it down")');
+  await page.waitForSelector('text=Declared. We’ll check in');
+  ok('declared: a calendar for the 7/14/30 check-ins', (await page.locator('button:has-text("Add the check-ins")').count()) === 1);
+  await page.evaluate(() => { const k = 'gp.lordship.plan10'; const v = JSON.parse(localStorage.getItem(k)); v.declared = Date.now() - 8 * 86400000; localStorage.setItem(k, JSON.stringify(v)); });
+  await page.goto(U + '/#/class'); await page.waitForSelector('text=7-day check-in');
+  ok('home asks at day 7: did you take your step?', true);
+  await page.goto(U + '/#/t/growth'); await page.fill('textarea[aria-label="Check-in note"]', 'Sent it!'); await page.click('button:has-text("Yes")');
+  await page.waitForFunction(() => !document.querySelector('.stepcheck'));
+  ok('check-in answered', true);
 
   /* list + habits */
   await page.goto(U + '/#/t/list');
@@ -269,7 +284,7 @@ try {
 
   /* commitment */
   await page.goto(U + '/#/class');
-  ok('home: four live polls + six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 10 && (await page.locator('main > .tiles .tile:has-text("Never, Lord")').count()) === 1 && (await page.locator('details.more .tile').count()) >= 5);
+  ok('home: seven live polls + six main tools, the rest under More', (await page.locator('main > .tiles .tile').count()) === 13 && (await page.locator('main > .tiles .tile:has-text("Never, Lord")').count()) === 1 && (await page.locator('details.more .tile').count()) >= 5);
   ok('home: plans at a glance', (await page.locator('.glance').innerText()).includes('laid side by side'));
   ok('home: welcome card', (await page.locator('.welcome').count()) === 1);
   await page.click('.welcome button');
@@ -533,12 +548,53 @@ try {
 
   /* Wednesday's game: Fire or fountain (James 3), live for the class */
   await page.goto(U + '/#/t/fire'); await page.click('text=Start');
-  for (let i = 0; i < 8; i++) { await page.locator('.swipe-btn').nth(i % 3 === 0 ? 0 : 1).click(); }
-  await page.waitForSelector('text=Thank you for being honest');
-  ok('fire or fountain: 8 taps, my tally', (await page.locator('.lp-mine').innerText()).includes('🔥 3') && (await page.locator('.lp-mine').innerText()).includes('⛲ 5'));
+  ok('fire or fountain: a 10-second timer', (await page.locator('.swipe-timer').count()) === 1);
+  for (let i = 0; i < 11; i++) { await page.locator('.swipe-btn').nth(i % 3 === 0 ? 0 : 1).click(); }
+  await page.waitForSelector('text=Thank you for being honest', { timeout: 15000 });
+  ok('fire or fountain: 11 taps and one timed out', (await page.locator('.lp-mine').innerText()).includes('🔥 4') && (await page.locator('.lp-mine').innerText()).includes('⛲ 7'));
+  ok('then on to the HOT poll', (await page.locator('a:has-text("Next: Stay HOT")').count()) === 1);
   const ff = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
   await ff.goto(U + '/#/poll-results/fire/TEST1'); await ff.waitForSelector('.ff-bar i.fire');
-  ok('fire or fountain projector: a split bar per statement', (await ff.locator('.ff-row').count()) === 8 && (await ff.locator('.ff-row').first().innerText()).includes('100%'));
+  ok('fire or fountain projector: a split bar per statement', (await ff.locator('.ff-row').count()) === 12 && (await ff.locator('.ff-row').first().innerText()).includes('100%'));
+  await ff.click('text=Show the James 3 verses');
+  ok('projector: the James 3 verses (fire, fountain, wisdom)', (await ff.locator('.ff-verse').count()) === 3 && (await ff.locator('.ff-verses').innerText()).includes('James 3:17'));
+
+  /* Thursday: Excuse bingo + the word cloud */
+  await page.goto(U + '/#/t/bingo'); await page.waitForSelector('.bingo-cell');
+  ok('excuse bingo: a 4×4 card of 16', (await page.locator('.bingo-cell').count()) === 16);
+  const cells = page.locator('.bingo-cell');
+  for (const i of [0, 1, 2, 3]) await cells.nth(i).click();
+  ok('four in a row: BINGO', (await page.locator('.bingo-shout').count()) === 1);
+  await page.fill('input[aria-label="My excuse is…"]', 'too scared of failing badly');
+  ok('word cloud: four words at most', await page.locator('.cloudin button:has-text("Add")').isDisabled());
+  await page.fill('input[aria-label="My excuse is…"]', 'Too scared');
+  await page.click('.cloudin button:has-text("Add")'); await page.waitForSelector('text=You added');
+  const gb = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await gb.goto(U + '/#/poll-results/bingo/TEST1'); await gb.waitForFunction(() => document.querySelector('.qr-total b') && document.querySelector('.qr-total b').textContent === '1');
+  await gb.waitForFunction(() => document.querySelectorAll('.bingo-bars .lpbar:not(.zero)').length === 4);
+  ok('bingo projector: the most-tapped excuses', true);
+  await gb.goto(U + '/#/cloud/excuse/TEST1'); await gb.waitForSelector('.cloud-w');
+  ok('word cloud projector', (await gb.locator('.cloud-w').first().innerText()) === 'too scared');
+
+  /* Friday: Sphere sorter + the recap quiz */
+  await page.goto(U + '/#/t/spheres'); await page.click('text=Start');
+  for (let i = 0; i < 10; i++) await page.locator('.opt-btn').nth(i % 7).click();
+  await page.waitForSelector('a:has-text("Next: Week recap")');
+  await page.click('a:has-text("Next: Week recap")'); await page.click('text=Start');
+  for (const t of ['Lordship doesn’t go away', 'Plod, don’t sprint', 'My grace is sufficient', 'Make plans with open hands', 'Easy to die for Jesus']) await page.click('.opt-btn:has-text("' + t + '")');
+  await page.waitForSelector('text=5 of 5 right');
+  ok('recap: match each day to its line, 5 of 5', true);
+  await gb.goto(U + '/#/poll-results/spheres/TEST1'); await gb.waitForSelector('.sort-row');
+  ok('sphere sorter projector: 10 jobs split across spheres', (await gb.locator('.sort-row').count()) === 10);
+  await gb.goto(U + '/#/poll-results/recap/TEST1'); await gb.waitForSelector('.quiz-row');
+  ok('recap projector: % right per day', (await gb.locator('.quiz-row').first().innerText()).includes('100% ✓'));
+  await gb.goto(U + '/#/throwdown/DTSW'); await gb.waitForSelector('.td-big');
+  await gb.waitForFunction(() => document.querySelector('.td-big').textContent === '1');
+  ok('throw-down projector: an anonymous live count', true);
+
+  /* Wednesday, private: I'm prone to… + MSP */
+  await page.goto(U + '/#/t/prone'); await page.click('.chip:has-text("doom-scrolling")');
+  ok('“I’m prone to…” with a new-creation verse beside it', (await page.locator('.prone-row').innerText()).includes('2 Corinthians 5:17'));
   await page.goto(U + '/#/t/hotpoll'); await page.click('text=Start'); await page.click('.opt-btn:has-text("Transparent")');
   await page.waitForSelector('text=Thank you for being honest');
   ok('HOT poll: one tap, no list or habit button', (await page.locator('button:has-text("lay down list")').count()) === 0);

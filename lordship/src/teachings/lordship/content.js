@@ -13,7 +13,7 @@ export const TEACHING = {
 /* The week lives in James: one chapter a day (Uriah's Lordship Week slides, Nov 23–27 2026). */
 export const WEEK = {
   memory: { ref: 'James 1:22', text: 'But be doers of the word, and not only hearers, deluding your own selves.' },
-  anchor: 'This week we live in James. One chapter a day. Five minutes. Underline one thing to do.',
+  anchor: 'This week we live in James: one chapter a day, read together in class. Underline one thing to do.',
   checkin: 'What did you lay down or take up since yesterday?',
   study: [['Say', 'What does it say? Who, what, where. Just the facts.'], ['Mean', 'What did it mean to them? What does it show us about God?'], ['Do', 'What do I do with this today? One honest answer.']]
 };
@@ -66,7 +66,7 @@ export const DAYS = [
     ]
   },
   {
-    id: 'wed', dow: 3, name: 'Wednesday', title: 'Stay HOT', james: 3,
+    id: 'wed', dow: 3, name: 'Wednesday', title: 'Stay HOT · All In', james: 3,
     sticky: 'My grace is sufficient for you.',
     game: 'fire',
     bigIdea: 'Humble, Open, Transparent. If it’s “none of your business”, it’s probably a Lordship area. Hiding weakness doesn’t make us strong; it makes us alone. The goal: secure and teachable.',
@@ -88,13 +88,14 @@ export const DAYS = [
     respond: [
       { tool: 'fire', why: 'Morning game: do these words burn or build? (James 3)' },
       { tool: 'hotpoll', why: 'Which is hardest for you: humble, open or transparent? No names.' },
+      { tool: 'prone', why: 'Private: “I’m prone to…”, the new-creation verse beside it, and your MSP check-in.' },
       { tool: 'hot', why: 'The honesty check, then your mentor map: Paul, Barnabas, Timothy.' },
       { tool: 'questions', why: 'A question you’d rather ask privately? It’s anonymous.' }
     ]
   },
   {
     id: 'thu', dow: 4, name: 'Thursday', title: 'Here Am I, Send Me', james: 4,
-    sticky: 'Plans with open hands.',
+    sticky: 'Make plans with open hands.',
     bigIdea: 'The week turns outward. We all have excuses — so did Moses. God doesn’t answer them with a pep talk but with himself: “I will be with you.” Leave your jar, and go.',
     scripture: [
       { ref: 'Isaiah 6:8', text: 'I heard the Lord’s voice, saying, “Whom shall I send, and who will go for us?” Then I said, “Here I am. Send me!”' },
@@ -112,6 +113,7 @@ export const DAYS = [
     listen: 'Holy Spirit, where are you sending me — and what do I leave here?',
     response: 'Leave your jar. Write down what you’re leaving behind, and pray: “Here I am. Send me.”',
     respond: [
+      { tool: 'bingo', why: 'Morning game: tap every excuse you’ve used. Then “My excuse is…”' },
       { tool: 'rights', why: 'Leave your jar: hand Jesus the thing you’re holding.' },
       { tool: 'laydown', why: 'Plans with open hands: my plan next to his.' },
       { tool: 'people', why: 'Every nation, tribe and language: pray for today’s people group.' }
@@ -136,9 +138,10 @@ export const DAYS = [
     listen: 'Holy Spirit, what are you handing me to carry?',
     response: 'The throw-down: come forward, throw something down, and say out loud what you’re picking up — including what you’ll do for the nations.',
     respond: [
+      { tool: 'spheres', why: 'Morning game: which sphere is each job in? Then the week recap.' },
+      { tool: 'growth', why: 'Stay in YWAM. Keep growing: your 2 · 5 · 10 and one step in 30 days.' },
       { tool: 'commit', why: 'Your throw-down: what you’re picking up. Declare it.' },
       { tool: 'wheel', why: 'Heart, soul, mind, strength — which part is most out of line?' },
-      { tool: 'growth', why: '2, 5, 10 years: firm foundations, force for change, frontier missions.' },
       { tool: 'scroll', why: 'God things vs good things: what’s on your scroll?' }
     ]
   }
@@ -223,6 +226,37 @@ export const HOT = [
   { l: 'H', name: 'Humble', items: ['I can say "I was wrong" without a long explanation.', 'I ask for help before I’m desperate.', 'I’m genuinely glad when others are praised instead of me.'] },
   { l: 'O', name: 'Open', items: ['I invite people to speak into my life, even when it stings.', 'I’m teachable when I’m corrected.', 'I listen to understand, not just to reply.'] },
   { l: 'T', name: 'Transparent', items: ['At least one person knows my real struggles right now.', 'I don’t hide things I would be embarrassed to have found out.', 'What people see of me matches who I am in private.'] }
+];
+/* Friday's plan: "Stay in YWAM. Keep growing." (Uriah's Day 5 deck and the App Sync doc). */
+export const PLAN10 = [
+  { id: 'y2', years: 'Years 1–2', title: 'Firm foundations', hint: 'A two-year commitment, schools to staff, a language to start, a degree begun.', fields: [
+    { id: 'where', label: 'My two-year commitment: where?', ph: 'e.g. YWAM Siem Reap', ideas: ['YWAM Siem Reap', 'My home base', 'Still praying'] },
+    { id: 'staff', label: 'Schools I’ll staff', ph: 'e.g. the next DTS', ideas: ['DTS', 'SBS', 'DBS', 'SOMD'] },
+    { id: 'lang', label: 'A language to start', ph: 'e.g. Khmer', ideas: ['Khmer', 'English', 'Thai', 'Lao'] },
+    { id: 'degree', label: 'A two-year degree or credits', ph: 'e.g. UofN credits toward the LPU pathway', ideas: ['UofN credits', 'LPU pathway'] }
+  ] },
+  { id: 'y5', years: 'Years 3–5', title: 'Skilled up', hint: 'Finish a bachelor’s, get fluent, go deep in one skill.', fields: [
+    { id: 'bachelor', label: 'Finish a bachelor’s', ph: 'e.g. LPU, Ministry & Leadership' },
+    { id: 'fluent', label: 'Fluent in a language', ph: 'e.g. Khmer' },
+    { id: 'skill', label: 'One skill to go deep in', ph: 'e.g. video, teaching, counselling', ideas: ['Media & design', 'Teaching', 'Counselling', 'Leadership', 'Business'] },
+    { id: 'online', label: 'Online courses', ph: 'e.g. Coursera, Udemy', ideas: ['Coursera', 'Udemy', 'Media / design course'] },
+    { id: 'selfdev', label: 'My self-development plan', ph: 'e.g. read 12 books a year, a coach' }
+  ] },
+  { id: 'y10', years: 'Years 6–10', title: 'All in, planted', hint: 'Five years growing, five years planting.', fields: [
+    { id: 'launch', label: 'What will you launch?', ph: 'e.g. a school, a ministry, a base' },
+    { id: 'people', label: 'Which people or nation?', ph: 'e.g. the Kuy of northern Cambodia' },
+    { id: 'work', label: 'A long-term work among the lost', ph: 'e.g. church planting in Laos' }
+  ] }
+];
+export const LOCK_IN = [['bachelor', 'A bachelor’s degree'], ['skill', 'A solid skill'], ['language', 'At least one fluent language'], ['family', 'A healthy marriage and family (if God leads) or a healthy community'], ['support', 'A strong support team'], ['longterm', 'A long-term work in the nations']];
+export const PRONE = ['sleeping in', 'being a bit lazy', 'being judgy', 'getting angry fast', 'getting frustrated', 'spilling the tea', 'games I shouldn’t play', 'R-rated movies', 'doom-scrolling', 'people-pleasing', 'sarcasm', 'overspending', 'exaggerating', 'comparing'];
+export const NEW_CREATION = [
+  { ref: '2 Corinthians 5:17', text: 'If anyone is in Christ, he is a new creation. The old things have passed away. Behold, all things have become new.' },
+  { ref: 'Romans 8:1', text: 'There is therefore now no condemnation to those who are in Christ Jesus.' },
+  { ref: 'Ephesians 2:10', text: 'For we are his workmanship, created in Christ Jesus for good works.' },
+  { ref: 'Romans 6:11', text: 'Consider yourselves also to be dead to sin, but alive to God in Christ Jesus our Lord.' },
+  { ref: 'Galatians 2:20', text: 'I have been crucified with Christ, and it is no longer I that live, but Christ lives in me.' },
+  { ref: 'Galatians 5:24', text: 'Those who belong to Christ have crucified the flesh with its passions and lusts.' }
 ];
 export const MENTOR_ROLES = [['paul', 'Paul', 'ahead of me, speaks into my life'], ['barnabas', 'Barnabas', 'beside me, knows my real stuff'], ['timothy', 'Timothy', 'I’m pouring into them']];
 export const RIGHTS = [
@@ -372,22 +406,81 @@ const OPTS_NEVER = [
 
 const FF = [['fire', '🔥', 'Fire'], ['fount', '⛲', 'Fountain']];
 
+const RECAP = [['tue', '🐢', 'Plod, don’t sprint.'], ['fri', '⚔️', 'Easy to die for Jesus. Hard to live for him.'], ['mon', '♾️', 'Lordship doesn’t go away.'], ['thu', '🖐️', 'Make plans with open hands.'], ['wed', '💪', '“My grace is sufficient for you.”']];
+const YN = [['y', '✓', 'Used it'], ['n', '', 'Not me']];
+export const EXCUSES = [
+  ['who', 'Who am I?', 'moses'], ['say', 'What do I say?', 'moses'], ['believe', 'They won’t believe me', 'moses'], ['speaker', 'I’m not a good speaker', 'moses'], ['else', 'Send someone else', 'moses'],
+  ['young', 'Too young'], ['money', 'No money'], ['english', 'My English isn’t good'], ['parents', 'My parents won’t let me'], ['spiritual', 'Not spiritual enough'],
+  ['ready', 'I’m not ready'], ['better', 'Someone else is better'], ['later', 'I’ll go later'], ['scared', 'Too scared'], ['where', 'I don’t know where'], ['provide', 'I have to provide for my family']
+];
+export const SPHERE7 = [['family', '🏡', 'Family'], ['church', '⛪', 'Church'], ['education', '🎓', 'Education'], ['government', '🏛️', 'Government'], ['media', '📱', 'Media'], ['arts', '🎨', 'Arts & entertainment'], ['business', '💼', 'Business']];
+
 export const LIVE_POLLS = {
+  bingo: {
+    title: 'Excuse bingo',
+    kind: 'bingo',
+    verse: { ref: 'Exodus 3:11–12', text: 'Moses said to God, “Who am I, that I should go to Pharaoh…?” He said, “Certainly I will be with you.”' },
+    intro: 'Moses had five excuses. We have a few more. Tap every excuse you’ve used — get four in a row and shout BINGO. No names.',
+    qs: EXCUSES.map(([id, q]) => ({ id, q, opts: YN })),
+    cloud: { id: 'excuse', q: 'My excuse is…', max: 4 },
+    done: { text: '“Certainly I will be with you.”', ref: 'Exodus 3:12', prayer: 'Here am I. Send me!' }
+  },
+  spheres: {
+    title: 'Sphere sorter',
+    kind: 'sort',
+    verse: { ref: 'Romans 12:1–2', text: 'Present your bodies a living sacrifice… Don’t be conformed to this world, but be transformed by the renewing of your mind.' },
+    intro: 'Ten real jobs. Which sphere of society is each one in? There’s often more than one good answer — go with your gut.',
+    qs: [
+      { q: 'A Khmer worship songwriter', opts: SPHERE7 }, { q: 'A village teacher', opts: SPHERE7 },
+      { q: 'A TikTok creator sharing the gospel', opts: SPHERE7 }, { q: 'An NGO accountant', opts: SPHERE7 },
+      { q: 'A church planter', opts: SPHERE7 }, { q: 'A health worker', opts: SPHERE7 },
+      { q: 'A government official fighting corruption', opts: SPHERE7 }, { q: 'A coffee shop owner hiring at-risk youth', opts: SPHERE7 },
+      { q: 'A Bible translator for a minority language', opts: SPHERE7 }, { q: 'A foster parent', opts: SPHERE7 }
+    ],
+    next: 'recap',
+    done: { text: 'Jesus is Lord of every sphere — and he sends his people into all of them.', ref: 'Romans 12:1–2', prayer: 'Lord, wherever you put me, I’m yours there too. Amen.' }
+  },
+  recap: {
+    title: 'Week recap',
+    kind: 'quiz',
+    verse: { ref: 'James 1:22', text: 'But be doers of the word, and not only hearers, deluding your own selves.' },
+    intro: 'Five days, five lines. Match each day to its line.',
+    qs: [
+      { q: 'Monday · Lordship as a Lifestyle', opts: RECAP, correct: 'mon' },
+      { q: 'Tuesday · Lazy Lordship', opts: RECAP, correct: 'tue' },
+      { q: 'Wednesday · Stay HOT · All In', opts: RECAP, correct: 'wed' },
+      { q: 'Thursday · Here Am I, Send Me', opts: RECAP, correct: 'thu' },
+      { q: 'Friday · Lord of Every Sphere', opts: RECAP, correct: 'fri' }
+    ],
+    done: { text: 'But be doers of the word, and not only hearers.', ref: 'James 1:22', prayer: 'Jesus, all in, full of joy. Amen.' }
+  },
+
   fire: {
     title: 'Fire or fountain?',
     kind: 'swipe',
     verse: { ref: 'James 3:6, 10–11', text: 'And the tongue is a fire. … Out of the same mouth comes blessing and cursing. My brothers, these things ought not to be so. Does a spring send out from the same opening fresh and bitter water?' },
     intro: 'Words pop up. Tap 🔥 if they burn, ⛲ if they build. Go with your gut — no names, just the class’s totals.',
+    seconds: 10,
     qs: [
-      { q: '“You always do this.”', opts: FF },
-      { q: '“I was wrong. I’m sorry.”', opts: FF },
-      { q: '“Did you hear what happened with…?”', opts: FF },
-      { q: '“I saw how you helped today. Thank you.”', opts: FF },
-      { q: '“I’m just being honest…”', opts: FF },
-      { q: '“Can I pray for you right now?”', opts: FF },
-      { q: '“Wow. Great job.” (with an eye roll)', opts: FF },
-      { q: '“I’m struggling with this. Can we talk?”', opts: FF }
+      { q: '“You always mess this up.”', opts: FF, is: 'fire' },
+      { q: '“I was wrong. I’m sorry.”', opts: FF, is: 'fount' },
+      { q: '“Did you hear what she did?”', opts: FF, is: 'fire' },
+      { q: '“I saw God use you today.”', opts: FF, is: 'fount' },
+      { q: '“I’m just being honest…”', opts: FF, is: 'fire' },
+      { q: '“Can I pray for you right now?”', opts: FF, is: 'fount' },
+      { q: '“Wow. Great job.” (with an eye roll)', opts: FF, is: 'fire' },
+      { q: '“I’m struggling with this. Can we talk?”', opts: FF, is: 'fount' },
+      { q: '“Whatever. I don’t care.”', opts: FF, is: 'fire' },
+      { q: '“Thank you for being patient with me.”', opts: FF, is: 'fount' },
+      { q: '“Don’t tell anyone, but…”', opts: FF, is: 'fire' },
+      { q: '“You’re not alone. I’m here.”', opts: FF, is: 'fount' }
     ],
+    verses: [
+      { is: 'fire', ref: 'James 3:5–6', text: 'See how a small fire can spread to a large forest! And the tongue is a fire.' },
+      { is: 'fount', ref: 'James 3:9–11', text: 'Out of the same mouth comes blessing and cursing. My brothers, these things ought not to be so. Does a spring send out from the same opening fresh and bitter water?' },
+      { is: 'wise', ref: 'James 3:17', text: 'But the wisdom that is from above is first pure, then peaceful, gentle, reasonable, full of mercy and good fruits, without partiality, and without hypocrisy.' }
+    ],
+    next: 'hotpoll',
     done: { text: 'Does a spring send out from the same opening fresh and bitter water?', ref: 'James 3:11', prayer: 'Lord, make my mouth a fountain. Set a guard over my words today. Amen.' }
   },
   hotpoll: {

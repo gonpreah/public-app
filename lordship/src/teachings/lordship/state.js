@@ -4,7 +4,7 @@ import { api } from '../../core/api.js';
 
 export const K = {
   wheel: 'lordship.wheel', list: 'lordship.list', hot: 'lordship.hot', mentors: 'lordship.mentors',
-  scroll: 'lordship.scroll', decisions: 'lordship.decisions', growth: 'lordship.growth',
+  scroll: 'lordship.scroll', decisions: 'lordship.decisions', growth: 'lordship.growth', plan10: 'lordship.plan10',
   habits: 'lordship.habits', commit: 'lordship.commit', days: 'lordship.daysDone', wheelHist: 'lordship.wheelHistory',
   share: 'lordship.shareTotals', anon: 'lordship.anon', notes: (d) => 'lordship.notes.' + d,
   chat: (t, x) => 'lordship.chat.' + t + (x ? '.' + x : '')

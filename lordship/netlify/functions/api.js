@@ -44,6 +44,9 @@ export class Fail extends Error { constructor(code, status) { super(code); this.
 
 export const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 export const PUB_GROUPS = ['dts', 'dbs', 'staff', 'visitor'];
+export const CLOUDS = ['excuse'];
+let wcSeq = 0;
+export const SPHERE_IDS = ['family', 'church', 'education', 'government', 'media', 'arts', 'business'];
 export const TOPICS = ['romance', 'sexuality', 'finances', 'struggles', 'faith', 'calling', 'other'];
 export const STATUSES = ['new', 'class', 'panel', 'answered', 'hidden'];
 const KINDS = { pdf: /^application\/pdf$/, pptx: /^application\/(vnd\.openxmlformats-officedocument\.presentationml\.presentation|vnd\.ms-powerpoint|octet-stream)$/ };
@@ -104,6 +107,8 @@ async function moveStudent(s, from, to) {
   if (await db.get('stn:' + to.code + ':' + nk)) throw new Fail('NAME_TAKEN', 409);
   await db.set('st:' + to.code + ':' + s.id, s);
   await db.set('stn:' + to.code + ':' + nk, s.id);
+  const ns = await db.get('ns:' + from.code + ':' + s.id);
+  if (ns) { await db.set('ns:' + to.code + ':' + s.id, ns); await db.del('ns:' + from.code + ':' + s.id); }
   const qz = await db.get('qz:' + from.code + ':' + s.id);
   if (qz) { await db.set('qz:' + to.code + ':' + s.id, qz); await db.del('qz:' + from.code + ':' + s.id); }
   await db.del('st:' + from.code + ':' + s.id); await db.del('stn:' + from.code + ':' + nk);
@@ -383,6 +388,98 @@ export const HANDLERS = {
     if (!Object.prototype.hasOwnProperty.call(LIVE_POLL_IDS, a.poll)) throw new Fail('NO_POLL', 404);
     for (const k of await db.keys('lp:' + await pollKey(a) + ':')) await db.del(k);
     return { ok: true };
+  },
+
+  /* --- a word cloud ("My excuse is ___"): a few words, no names; up to 3 per phone; the admin can close, reopen or hide one.
+     Keys wc:<cloud>[@<class>]:<phone id>:<time>:<words, base64url>; wco:<…> closed; wch:<…> hidden phrases. --- */
+  async cloudAdd(a) {
+    if (!CLOUDS.includes(a.cloud)) throw new Fail('NO_CLOUD', 404);
+    const ck = await pollKey({ poll: a.cloud, room: a.room });
+    if (await db.get('wco:' + ck)) throw new Fail('CLOSED', 409);
+    const rid = String(a.rid || '');
+    if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    const words = clip(a.text, 60).replace(/[\u200B-\u200F\u2028-\u202E\u2066-\u2069]/g, '').trim().split(/\s+/).filter(Boolean).slice(0, 4).join(' ').slice(0, 40);
+    if (!words) throw new Fail('EMPTY');
+    const k = 'lpn:' + today();
+    const n = (await db.get(k)) || 0;
+    if (n > 5000) throw new Fail('BUSY', 429);
+    await db.set(k, n + 1);
+    const mine = (await db.keys('wc:' + ck + ':' + rid + ':')).sort();
+    for (const old of mine.slice(0, Math.max(0, mine.length - 2))) await db.del(old);
+    await db.set(['wc', ck, rid, (Date.now() * 1000 + (++wcSeq % 1000)).toString(36).padStart(11, '0'), Buffer.from(words).toString('base64url')].join(':'), 1);
+    return { ok: true, words };
+  },
+  async cloudResults(a) {
+    if (!CLOUDS.includes(a.cloud)) throw new Fail('NO_CLOUD', 404);
+    const ck = await pollKey({ poll: a.cloud, room: a.room });
+    const hidden = (await db.get('wch:' + ck)) || [];
+    const counts = {};
+    for (const k of await db.keys('wc:' + ck + ':')) {
+      let w = ''; try { w = Buffer.from(k.split(':')[4] || '', 'base64url').toString('utf8'); } catch { w = ''; }
+      const key = w.toLowerCase().replace(/[^\p{L}\p{N}' ]/gu, '').replace(/\s+/g, ' ').trim();
+      if (!key || hidden.includes(key)) continue;
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    const words = Object.entries(counts).map(([w, n]) => ({ w, n })).sort((x, y) => y.n - x.n).slice(0, 60);
+    return { open: !(await db.get('wco:' + ck)), words, total: words.reduce((t, x) => t + x.n, 0) };
+  },
+  async cloudAdmin(a) {
+    await admin(a);
+    if (!CLOUDS.includes(a.cloud)) throw new Fail('NO_CLOUD', 404);
+    const ck = await pollKey({ poll: a.cloud, room: a.room });
+    if (a.action === 'close') await db.set('wco:' + ck, 1);
+    else if (a.action === 'open') await db.del('wco:' + ck);
+    else if (a.action === 'hide') { const h = (await db.get('wch:' + ck)) || []; const w = clip(a.word, 60).toLowerCase(); if (w && !h.includes(w)) h.push(w); await db.set('wch:' + ck, h.slice(-200)); }
+    else if (a.action === 'reset') { for (const k of await db.keys('wc:' + ck + ':')) await db.del(k); await db.del('wch:' + ck); }
+    else throw new Fail('BAD_ACTION');
+    return HANDLERS.cloudResults(a);
+  },
+
+  /* --- Friday: one next step in 30 days, the throw-down, and the 7/14/30-day check-ins (ns:<class>:<sid>). Private by
+     default: the admin sees counts; the step, sphere and notes only of those who chose "share with my staff". --- */
+  async stepSave(a) {
+    const { s, c } = await student(a);
+    const k = 'ns:' + c.code + ':' + s.id;
+    const cur = (await db.get(k)) || { checks: {} };
+    const step = clip(a.step, 200).trim();
+    if (!step) throw new Fail('EMPTY');
+    const sphere = SPHERE_IDS.includes(a.sphere) ? a.sphere : '';
+    const by = /^\d{4}-\d{2}-\d{2}$/.test(String(a.by || '')) ? a.by : '';
+    const n = { step, sphere, by, share: !!a.share, declared: a.declared ? (cur.declared || Date.now()) : 0, checks: cur.checks || {}, at: Date.now() };
+    await db.set(k, n);
+    return { ok: true, declared: n.declared };
+  },
+  async stepCheck(a) {
+    const { s, c } = await student(a);
+    const k = 'ns:' + c.code + ':' + s.id;
+    const cur = await db.get(k);
+    if (!cur || !cur.declared) throw new Fail('NOT_DECLARED', 409);
+    if (!['d7', 'd14', 'd30'].includes(a.at)) throw new Fail('BAD_CHECK');
+    if (!['yes', 'partly', 'not'].includes(a.answer)) throw new Fail('BAD_ANSWER');
+    cur.checks = Object.assign({}, cur.checks, { [a.at]: { a: a.answer, note: clip(a.note, 300).trim(), at: Date.now() } });
+    await db.set(k, cur);
+    return { ok: true };
+  },
+  async throwdownCount(a) {
+    const c = await classOk(a);
+    let declared = 0;
+    for (const k of await db.keys('ns:' + c.code + ':')) { const r = await db.get(k); if (r && r.declared) declared++; }
+    return { declared, students: (await db.keys('st:' + c.code + ':')).length };
+  },
+  async adminSteps(a) {
+    await admin(a);
+    const c = await adminClass(a);
+    const byId = Object.fromEntries((await allStudents(c)).map(x => [x.id, x.name]));
+    const out = { declared: 0, planned: 0, checks: { d7: { yes: 0, partly: 0, not: 0 }, d14: { yes: 0, partly: 0, not: 0 }, d30: { yes: 0, partly: 0, not: 0 } }, shared: [] };
+    for (const k of await db.keys('ns:' + c.code + ':')) {
+      const r = await db.get(k); if (!r) continue;
+      out.planned++; if (r.declared) out.declared++;
+      for (const [w, v] of Object.entries(r.checks || {})) if (out.checks[w] && out.checks[w][v.a] != null) out.checks[w][v.a]++;
+      const sid = k.split(':').pop();
+      if (r.share && byId[sid]) out.shared.push({ name: byId[sid], step: r.step, sphere: r.sphere, by: r.by, declared: r.declared, checks: r.checks || {} });
+    }
+    out.shared.sort((x, y) => x.name.localeCompare(y.name));
+    return out;
   },
 
   /* --- the anonymous question box: only the words and a topic are kept --- */

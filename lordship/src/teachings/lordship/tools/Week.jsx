@@ -4,7 +4,7 @@ import { K } from '../state.js';
 import { WHEEL_OUT, WHEEL_IN, ALIGN } from '../content.js';
 import { planAreas } from './LayDown.jsx';
 import { HORIZONS, MENTOR_ROLES } from '../content.js';
-import { val } from './Growth.jsx';
+import { val, planText } from './Growth.jsx';
 import { shareText } from '../../../core/ui.jsx';
 
 export function weekText() {
@@ -20,7 +20,9 @@ export function weekText() {
   if (dec.length) out.push({ h: 'God thing or good thing?', lines: dec.map(d => `${d.what} — ${d.lean}${d.nextStep ? `; next: ${d.nextStep}` : ''}`) });
   const g = read(K.growth, {}), ms = read(K.mentors, []).filter(m => m.name);
   const gl = HORIZONS.filter(x => val(g[x.id]).trim()).map(x => `${x.name} (${x.title}): ${val(g[x.id]).replace(/\n/g, '; ')}`);
-  if (gl.length) out.push({ h: 'My 2 · 5 · 10', lines: gl });
+  const p10 = planText(read(K.plan10, {}));
+  if (p10) out.push({ h: 'Stay in YWAM. Keep growing.', lines: p10.split('\n\n') });
+  else if (gl.length) out.push({ h: 'My 2 · 5 · 10', lines: gl });
   if (ms.length) out.push({ h: 'My mentor map', lines: MENTOR_ROLES.map(([k, n]) => [n, ms.filter(m => (m.kind || 'barnabas') === k)]).filter(x => x[1].length).map(([n, l]) => `${n}: ${l.map(m => m.name + (m.invite ? ' (inviting this month)' : '')).join(', ')}`) });
   if (hs.length) out.push({ h: 'Daily habits', lines: hs.map(h => h.name) });
   if (c.text) out.push({ h: 'My throw-down commitment', lines: [`“${c.text}” (declared ${c.declaredAt})`] });

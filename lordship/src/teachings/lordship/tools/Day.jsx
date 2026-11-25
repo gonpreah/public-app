@@ -36,8 +36,8 @@ export function DayTabs({ cur, today }) {
 
 const TOOL_NAMES = { wheel: ['🎯', 'The wheel'], habits: ['✅', 'Daily habits'], commit: ['🚩', 'My commitment'], godthing: ['🧪', 'God thing or good thing?'],
   laydown: ['⚖️', 'My plan vs God’s plan'], notso: ['✋', '“Not so, Lord”'], hot: ['🔥', 'Stay HOT'], questions: ['❓', 'Question box'], scroll: ['📜', 'My Scroll'], quiz: ['😂', 'Lordship profile quiz'],
-  fire: ['🔥', 'Fire or fountain?'], hotpoll: ['🌡️', 'Which is hardest?'],
-  rights: ['🤲', 'Lay down a right'], growth: ['🌱', 'My 2 · 5 · 10'], people: ['🌏', 'People group of the day'] };
+  prone: ['🪞', '“I’m prone to…” + MSP check-in'], fire: ['🔥', 'Fire or fountain?'], bingo: ['🎱', 'Excuse bingo'], spheres: ['🧭', 'Sphere sorter'], recap: ['🧠', 'Week recap'], hotpoll: ['🌡️', 'Which is hardest?'],
+  rights: ['🤲', 'Lay down a right'], growth: ['🌱', 'My 2 · 5 · 10 + next step'], people: ['🌏', 'People group of the day'] };
 
 function Respond({ d }) {
   const [done, setDone] = useLocal('lordship.daysDone', {});
@@ -65,8 +65,8 @@ export function JamesCard({ d, link }) {
   return (
     <div className="james">
       <p className="eyebrow">This week we live in James</p>
-      <h3>{link ? <a href={'#/day/' + d.id}>James {ch}</a> : <>James {ch}</>} <small className="muted">· one chapter, five minutes</small></h3>
-      <p className="small">Underline one thing to <b>do</b>. Memory verse: “{WEEK.memory.text}” <i>— {WEEK.memory.ref}</i></p>
+      <h3>{link ? <a href={'#/day/' + d.id}>James {ch}</a> : <>James {ch}</>} <small className="muted">· today in class</small></h3>
+      <p className="small">We read it together in class. Underline one thing to <b>do</b>. Memory verse: “{WEEK.memory.text}” <i>— {WEEK.memory.ref}</i></p>
       <div className="row wrap">
         <a className="btn soft small" href={'https://www.bible.com/bible/206/JAS.' + ch + '.WEBUS'} target="_blank" rel="noopener noreferrer">Read James {ch}</a>
         <button className={'btn small ' + (read[ch] ? 'ghost' : 'primary')} aria-pressed={!!read[ch]} onClick={(e) => { const n = Object.assign({}, read); if (n[ch]) delete n[ch]; else { n[ch] = todayStr(); burst(e.currentTarget, 10); } setRead(n); }}>{read[ch] ? '✓ Read' : 'I read it'}</button>

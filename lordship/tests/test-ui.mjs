@@ -237,6 +237,7 @@ try {
   await page.click('.lockin:has-text("Share my next step") input');
   await page.click('button:has-text("Throw it down")');
   await page.waitForSelector('text=Declared. We’ll check in');
+  await page.waitForLoadState('networkidle');
   ok('declared: a calendar for the 7/14/30 check-ins', (await page.locator('button:has-text("Add the check-ins")').count()) === 1);
   await page.evaluate(() => { const k = 'gp.lordship.plan10'; const v = JSON.parse(localStorage.getItem(k)); v.declared = Date.now() - 8 * 86400000; localStorage.setItem(k, JSON.stringify(v)); });
   await page.goto(U + '/#/class'); await page.waitForSelector('text=7-day check-in');

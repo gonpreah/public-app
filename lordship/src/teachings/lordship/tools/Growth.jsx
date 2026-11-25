@@ -3,7 +3,7 @@
    default; "share with my staff" sends only the next step and sphere. Then the throw-down and the 7/14/30-day check-ins. */
 import { useState } from 'react';
 import { PLAN10, LOCK_IN, SPHERE7 } from '../content.js';
-import { useLocal, todayStr, addDays } from '../../../core/store.js';
+import { useLocal, todayStr, addDays, read } from '../../../core/store.js';
 import { K } from '../state.js';
 import { api, errText } from '../../../core/api.js';
 import { authArgs, getMe } from '../../../core/account.js';
@@ -49,10 +49,11 @@ export default function Growth({ code }) {
 
   async function save(patch, quiet) {
     const n = Object.assign({}, p, patch);
+    if (patch.declared === true) n.declared = p.declared || Date.now();   // a time, never just true (the check-ins count days from it)
     setP(n);
     if (!code || !me) return n;
     setBusy(true);
-    try { const r = await api('stepSave', Object.assign({ code, step: n.step, sphere: n.sphere, by: n.by || by, share: !!n.share, declared: !!n.declared }, authArgs())); n.declared = r.declared || 0; setP(Object.assign({}, n)); if (!quiet) toast('Saved'); }
+    try { const r = await api('stepSave', Object.assign({ code, step: n.step, sphere: n.sphere, by: n.by || by, share: !!n.share, declared: !!n.declared }, authArgs())); setP(Object.assign({}, read(K.plan10, n), { declared: r.declared || 0 })); if (!quiet) toast('Saved'); }
     catch (e) { toast(errText(e)); }
     setBusy(false);
     return n;

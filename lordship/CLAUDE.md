@@ -133,6 +133,12 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   live count (`throwdownCount`), Admin → Next steps (`adminSteps`: counts for all; name, step, sphere and notes only if shared).
   Optional extras: **"I'm prone to…" + MSP check-in** (`prone` tool, private, on the phone only; a new-creation verse beside each).
   Admin lists every class projector link under "Live games & polls".
+- **Day 4 rebuilt (App Sync, Nov 26):** Thursday follows the new outline — James 4, identity statuses (Marcia), four places a
+  calling is discovered, the 3 C's, then burn the ships / Elisha's plow (1 Kings 19:19–21) / the alabaster jar (Mark 14:3);
+  Moses' excuses and the water jar are gone from the session (Excuse bingo stays as the morning game). New private tools:
+  **Where am I?** (`calling`: `IDENTITY`, `CALLING_FOUND`, `THREE_CS`) and **Burn the ships** (`backup`: write the backup plan,
+  tear it up → the lay down list, "Jesus, you're my only plan"). Friday gains Revelation 7:9 · John 20:21, Vision 2033
+  (`d.nations`) and Numbers 6:24–26; the Sphere sorter's intro calls it a review of Thursday's sphere walk.
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

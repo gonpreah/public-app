@@ -625,3 +625,8 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 /* throw-down projector */
 .tdscreen .screen-main { text-align: center; }
 .td-big { font: 900 clamp(5rem, 22vw, 16rem)/1 var(--display); color: var(--marigold); margin: 2vh 0; animation: pop .6s var(--ease) both; }
+
+/* Burn the ships */
+.backup.tearing { animation: tear 1.1s ease-in forwards; }
+@keyframes tear { 30% { transform: rotate(-3deg) scale(1.02); } 100% { transform: rotate(8deg) translateY(60px) scale(.6); opacity: 0; } }
+.torn .hand { font-size: 2rem; text-align: center; margin: 10px 0; }

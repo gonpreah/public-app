@@ -96,27 +96,27 @@ export const DAYS = [
   {
     id: 'thu', dow: 4, name: 'Thursday', title: 'Here Am I, Send Me', james: 4,
     sticky: 'Make plans with open hands.',
-    bigIdea: 'The week turns outward. We all have excuses — so did Moses. God doesn’t answer them with a pep talk but with himself: “I will be with you.” Leave your jar, and go.',
+    bigIdea: 'Explore, then commit. A calling is discovered through how God made you, your story, your burden and others’ confirmation. Then lay down the backup plan: burn the ships, burn the plow, break the jar.',
     scripture: [
-      { ref: 'Isaiah 6:8', text: 'I heard the Lord’s voice, saying, “Whom shall I send, and who will go for us?” Then I said, “Here I am. Send me!”' },
-      { ref: 'Exodus 3:11–12', text: 'Moses said to God, “Who am I, that I should go to Pharaoh…?” He said, “Certainly I will be with you.”' },
       { ref: 'James 4:13–15', text: 'Come now, you who say, “Today or tomorrow let’s go into this city, and spend a year there, trade, and make a profit.” Whereas you don’t know what your life will be like tomorrow. … For you ought to say, “If the Lord wills, we will both live, and do this or that.”' },
-      { ref: 'John 4:28–29', text: 'So the woman left her water pot, and went away into the city, and said to the people, “Come, see a man who told me everything that I did. Can this be the Christ?”' },
-      { ref: 'John 20:21 · Revelation 7:9', text: '“As the Father has sent me, even so I send you.” … A great multitude, which no man could count, out of every nation and of all tribes, peoples, and languages, standing before the throne and before the Lamb.' }
+      { ref: 'Isaiah 6:8', text: 'I heard the Lord’s voice, saying, “Whom shall I send, and who will go for us?” Then I said, “Here I am. Send me!”' },
+      { ref: '1 Kings 19:19–21', text: 'Elisha left the oxen, and ran after Elijah… He returned from following him, and took the yoke of oxen, and killed them, and boiled their meat with the instruments of the oxen, and gave to the people, and they ate. Then he arose, and went after Elijah, and served him.' },
+      { ref: 'Mark 14:3', text: 'A woman came having an alabaster jar of ointment of pure nard—very costly. She broke the jar, and poured it over his head.' }
     ],
-    study: 'Exodus 3:1–12 · John 4:1–42',
+    study: null,
     questions: [
-      'Which excuse do you reach for most: “Who am I?”, “What will I say?”, “What if they don’t listen?”, “I’m not good with words”, or “Send someone else”?',
-      'What’s your jar — the thing you’d have to leave behind to go and tell people?',
-      'Whose voice gets the final say in your plans: yours, other people’s, or God’s?'
+      'Which identity status sounds most like you right now: drifting, borrowed, exploring or committed?',
+      'Of the four places a calling is discovered — design, story, burden, confirmation — which is clearest for you? Which is still blank?',
+      'Character, chemistry, competency: which do you most need to grow before you join a team?',
+      'What’s your backup plan — the ship you keep ready in case God doesn’t come through?'
     ],
-    listen: 'Holy Spirit, where are you sending me — and what do I leave here?',
-    response: 'Leave your jar. Write down what you’re leaving behind, and pray: “Here I am. Send me.”',
+    listen: 'Holy Spirit, what is my backup plan, and what would it look like to make you my only plan?',
+    response: 'Write your backup plan down. Tear it up. Pray: “Jesus, you’re my only plan.”',
     respond: [
       { tool: 'bingo', why: 'Morning game: tap every excuse you’ve used. Then “My excuse is…”' },
-      { tool: 'rights', why: 'Leave your jar: hand Jesus the thing you’re holding.' },
-      { tool: 'laydown', why: 'Plans with open hands: my plan next to his.' },
-      { tool: 'people', why: 'Every nation, tribe and language: pray for today’s people group.' }
+      { tool: 'calling', why: 'Where am I? Identity status, the four places a calling is found, the 3 C’s.' },
+      { tool: 'backup', why: 'Burn the ships: write your backup plan, tear it up, pray.' },
+      { tool: 'laydown', why: 'Plans with open hands: my plan next to his.' }
     ]
   },
   {
@@ -127,8 +127,11 @@ export const DAYS = [
       { ref: 'Romans 12:1', text: 'Therefore I urge you, brothers, by the mercies of God, to present your bodies a living sacrifice, holy, acceptable to God, which is your spiritual service.' },
       { ref: '2 Timothy 2:3–6', text: 'You therefore must endure hardship, as a good soldier of Christ Jesus. No soldier on duty entangles himself in the affairs of life, that he may please him who enrolled him as a soldier. Also, if anyone competes in athletics, he isn’t crowned unless he has competed by the rules. The farmer who labors must be the first to get a share of the crops.' },
       { ref: 'Luke 4:18 · John 5:19', text: '“The Spirit of the Lord is on me, because he has anointed me to preach good news to the poor.” … “The Son can do nothing of himself, but what he sees the Father doing.”' },
-      { ref: 'James 1:27', text: 'Pure religion and undefiled before our God and Father is this: to visit the fatherless and widows in their affliction, and to keep oneself unstained by the world.' }
+      { ref: 'James 5:17', text: 'Elijah was a man with a nature like ours, and he prayed earnestly that it might not rain, and it didn’t rain on the earth for three years and six months.' },
+      { ref: 'Revelation 7:9 · John 20:21', text: 'A great multitude, which no man could count, out of every nation and of all tribes, peoples, and languages, standing before the throne and before the Lamb… “As the Father has sent me, even so I send you.”' },
+      { ref: 'Numbers 6:24–26', text: 'Yahweh bless you, and keep you. Yahweh make his face to shine on you, and be gracious to you. Yahweh lift up his face toward you, and give you peace.' }
     ],
+    nations: 'Vision 2033: 10% of Cambodia following Jesus by 2033. 65% of Cambodians are under 30 — a sending nation.',
     study: 'Romans 12:1–2 · 2 Timothy 2:3–6',
     questions: [
       'What is God asking you to pick up, not just lay down?',
@@ -257,6 +260,24 @@ export const NEW_CREATION = [
   { ref: 'Romans 6:11', text: 'Consider yourselves also to be dead to sin, but alive to God in Christ Jesus our Lord.' },
   { ref: 'Galatians 2:20', text: 'I have been crucified with Christ, and it is no longer I that live, but Christ lives in me.' },
   { ref: 'Galatians 5:24', text: 'Those who belong to Christ have crucified the flesh with its passions and lusts.' }
+];
+/* Thursday: where am I? (Marcia's identity statuses, the four places a calling is discovered, the 3 C's) — private. */
+export const IDENTITY = [
+  ['diffusion', '🌫️', 'Drifting', 'Not exploring, not committed. “Whatever happens.”'],
+  ['foreclosure', '📦', 'Borrowed', 'Committed, but to someone else’s plan — I never really explored.'],
+  ['moratorium', '🧭', 'Exploring', 'Actively searching and trying things. Not committed yet.'],
+  ['achievement', '⚓', 'Committed', 'I explored, then chose. I know what I’m giving my life to.']
+];
+export const CALLING_FOUND = [
+  ['design', 'Design', 'How God made me: gifts, personality, what I’m good at.'],
+  ['story', 'Story', 'What I’ve lived through — the hard and the good.'],
+  ['burden', 'Burden', 'What breaks my heart, and won’t leave me alone.'],
+  ['confirmation', 'Confirmation', 'What wise people who know me see and say.']
+];
+export const THREE_CS = [
+  ['character', 'Character', 'A crack at home becomes a Grand Canyon on the field.'],
+  ['chemistry', 'Chemistry', 'Find the right fit — the team and leader you flourish with.'],
+  ['competency', 'Competency', 'Bring something to the table.']
 ];
 export const MENTOR_ROLES = [['paul', 'Paul', 'ahead of me, speaks into my life'], ['barnabas', 'Barnabas', 'beside me, knows my real stuff'], ['timothy', 'Timothy', 'I’m pouring into them']];
 export const RIGHTS = [
@@ -429,7 +450,7 @@ export const LIVE_POLLS = {
     title: 'Sphere sorter',
     kind: 'sort',
     verse: { ref: 'Romans 12:1–2', text: 'Present your bodies a living sacrifice… Don’t be conformed to this world, but be transformed by the renewing of your mind.' },
-    intro: 'Ten real jobs. Which sphere of society is each one in? There’s often more than one good answer — go with your gut.',
+    intro: 'A review of yesterday’s sphere walk: ten real jobs. Which sphere is each one in? Often more than one answer is good — go with your gut.',
     qs: [
       { q: 'A Khmer worship songwriter', opts: SPHERE7 }, { q: 'A village teacher', opts: SPHERE7 },
       { q: 'A TikTok creator sharing the gospel', opts: SPHERE7 }, { q: 'An NGO accountant', opts: SPHERE7 },

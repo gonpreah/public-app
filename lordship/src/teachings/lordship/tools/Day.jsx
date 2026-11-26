@@ -36,7 +36,7 @@ export function DayTabs({ cur, today }) {
 
 const TOOL_NAMES = { wheel: ['🎯', 'The wheel'], habits: ['✅', 'Daily habits'], commit: ['🚩', 'My commitment'], godthing: ['🧪', 'God thing or good thing?'],
   laydown: ['⚖️', 'My plan vs God’s plan'], notso: ['✋', '“Not so, Lord”'], hot: ['🔥', 'Stay HOT'], questions: ['❓', 'Question box'], scroll: ['📜', 'My Scroll'], quiz: ['😂', 'Lordship profile quiz'],
-  prone: ['🪞', '“I’m prone to…” + MSP check-in'], fire: ['🔥', 'Fire or fountain?'], bingo: ['🎱', 'Excuse bingo'], spheres: ['🧭', 'Sphere sorter'], recap: ['🧠', 'Week recap'], hotpoll: ['🌡️', 'Which is hardest?'],
+  calling: ['🧭', 'Where am I?'], backup: ['🔥', 'Burn the ships'], prone: ['🪞', '“I’m prone to…” + MSP check-in'], fire: ['🔥', 'Fire or fountain?'], bingo: ['🎱', 'Excuse bingo'], spheres: ['🧭', 'Sphere sorter'], recap: ['🧠', 'Week recap'], hotpoll: ['🌡️', 'Which is hardest?'],
   rights: ['🤲', 'Lay down a right'], growth: ['🌱', 'My 2 · 5 · 10 + next step'], people: ['🌏', 'People group of the day'] };
 
 function Respond({ d }) {
@@ -140,6 +140,7 @@ export default function Day({ code, id, weekStart }) {
       <ol className="qs">{d.questions.map((q, i) => <li key={i}>{q}</li>)}</ol>
       {d.listen && <div className="listen"><p className="eyebrow">Listen</p><p>“{d.listen}”</p><p className="tiny muted">Be still for two minutes. Write down what comes.</p></div>}
       {d.response && <p className="lead">{d.response}</p>}
+      {d.nations && <p className="note">🌏 {d.nations}</p>}
       <h4>Slides</h4>
       <Slides code={code} day={d.id} />
       <h4>My notes</h4>

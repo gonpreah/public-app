@@ -26,6 +26,8 @@ import Rights from './tools/Rights.jsx';
 import Growth from './tools/Growth.jsx';
 import LivePoll from './tools/LivePoll.jsx';
 import Prone from './tools/Prone.jsx';
+import Calling from './tools/Calling.jsx';
+import Backup from './tools/Backup.jsx';
 
 const NeverPoll = ({ code }) => <LivePoll id="never" code={code} />;
 const StaffPoll = ({ code }) => <LivePoll id="staff" code={code} />;
@@ -56,6 +58,8 @@ export const TOOLS = [
   { id: 'never', emoji: '🙅', title: '“Never, Lord”', sub: 'Live class poll · no names', C: NeverPoll, cls: true, poll: true },
   { id: 'staff', emoji: '🪄', title: 'Pick it back up', sub: 'Live class poll · Moses’ staff', C: StaffPoll, cls: true, poll: true },
   { id: 'prone', emoji: '🪞', title: '“I’m prone to…” + MSP', sub: 'Private: know yourself', C: Prone, cls: true, more: true },
+  { id: 'calling', emoji: '🧭', title: 'Where am I?', sub: 'Identity, calling, the 3 C’s', C: Calling, cls: true, more: true },
+  { id: 'backup', emoji: '🔥', title: 'Burn the ships', sub: 'Tear up my backup plan', C: Backup, cls: true, more: true },
   { id: 'commit', emoji: '🚩', title: 'Throw-down commitment', sub: 'Friday', C: Commit, cls: true },
   { id: 'questions', emoji: '❓', title: 'Anonymous question box', sub: 'Ask anything', C: Questions, cls: true },
   { id: 'list', emoji: '📝', title: 'My list', sub: 'Lay down / take up', C: List, church: true, cls: true, hidden: true },

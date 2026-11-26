@@ -595,6 +595,18 @@ try {
   await gb.waitForFunction(() => document.querySelector('.td-big').textContent === '1');
   ok('throw-down projector: an anonymous live count', true);
 
+  /* Thursday: where am I? + burn the ships */
+  await page.goto(U + '/#/day/thu'); await page.waitForSelector('.scripture');
+  ok('Thursday follows the new outline (Elisha, the alabaster jar, the backup plan)', (await text()).includes('1 Kings 19:19–21') && (await text()).includes('alabaster jar') && (await text()).includes('you’re my only plan') && !(await text()).includes('Exodus 3:11'));
+  await page.goto(U + '/#/t/calling'); await page.click('.opt-btn:has-text("Exploring")');
+  await page.click('button[aria-label="Character: 2"]'); await page.click('button[aria-label="Chemistry: 4"]');
+  ok('where am I: status and the weakest C', (await text()).includes('Grow first in Character'));
+  await page.goto(U + '/#/t/backup'); await page.fill('#backup', 'Go home and work at my uncle’s shop');
+  await page.click('button:has-text("Tear it up")'); await page.waitForSelector('.torn');
+  ok('burn the ships: torn up, on my lay down list', (await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.list') || '[]').some(x => x.area === 'My backup plan'))));
+  await page.goto(U + '/#/day/fri'); await page.waitForSelector('.scripture');
+  ok('Friday: the nations and the commissioning', (await text()).includes('Vision 2033') && (await text()).includes('Numbers 6:24–26'));
+
   /* Wednesday, private: I'm prone to… + MSP */
   await page.goto(U + '/#/t/prone'); await page.click('.chip:has-text("doom-scrolling")');
   ok('“I’m prone to…” with a new-creation verse beside it', (await page.locator('.prone-row').innerText()).includes('2 Corinthians 5:17'));

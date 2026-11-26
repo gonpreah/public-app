@@ -630,3 +630,12 @@ details.more summary::before { content: '＋ '; } details.more[open] summary::be
 .backup.tearing { animation: tear 1.1s ease-in forwards; }
 @keyframes tear { 30% { transform: rotate(-3deg) scale(1.02); } 100% { transform: rotate(8deg) translateY(60px) scale(.6); opacity: 0; } }
 .torn .hand { font-size: 2rem; text-align: center; margin: 10px 0; }
+
+/* Burn the ships projector */
+.burnscreen { background: radial-gradient(60% 50% at 50% 100%, rgba(224,80,61,.35), transparent 70%), var(--ink-0); }
+.burnscreen .screen-main { text-align: center; position: relative; }
+.burn-n { color: #ff8a3d; margin-bottom: 0; }
+.burn-pray { font-family: var(--hand); font-size: clamp(1.6rem, 3.4vw, 3rem); color: var(--marigold); margin: 2vh 0 1vh; }
+.burn-fire { position: absolute; inset: auto 0 -5vh 0; height: 30vh; pointer-events: none; overflow: hidden; }
+.burn-fire span { position: absolute; bottom: -2em; font-size: clamp(1.4rem, 3vw, 2.6rem); animation: burnrise 2.6s ease-in infinite; opacity: .85; }
+@keyframes burnrise { 0% { transform: translateY(0) scale(.8); opacity: 0; } 20% { opacity: .9; } 100% { transform: translateY(-28vh) scale(1.3); opacity: 0; } }

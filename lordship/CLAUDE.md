@@ -139,6 +139,8 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   **Where am I?** (`calling`: `IDENTITY`, `CALLING_FOUND`, `THREE_CS`) and **Burn the ships** (`backup`: write the backup plan,
   tear it up → the lay down list, "Jesus, you're my only plan"). Friday gains Revelation 7:9 · John 20:21, Vision 2033
   (`d.nations`) and Numbers 6:24–26; the Sphere sorter's intro calls it a review of Thursday's sphere walk.
+  **Burn the ships projector** (`#/burn/<class>`): tearing up a backup plan in class adds one to an anonymous count
+  (`burnAdd`, `bs:<class>:<phone id>`, never the words); the screen counts up with rising flames; Reset behind the admin.
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

@@ -460,6 +460,24 @@ export const HANDLERS = {
     await db.set(k, cur);
     return { ok: true };
   },
+  /* Thursday's "Burn the ships": an anonymous count per class (bs:<class>:<phone id>) — never the plan itself. */
+  async burnAdd(a) {
+    const c = await classOk(a);
+    const rid = String(a.rid || '');
+    if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    await db.set('bs:' + c.code + ':' + rid, 1);
+    return { ok: true };
+  },
+  async burnCount(a) {
+    const c = await classOk(a);
+    return { burned: (await db.keys('bs:' + c.code + ':')).length, students: (await db.keys('st:' + c.code + ':')).length };
+  },
+  async burnReset(a) {
+    await admin(a);
+    const c = await adminClass(a);
+    for (const k of await db.keys('bs:' + c.code + ':')) await db.del(k);
+    return { ok: true };
+  },
   async throwdownCount(a) {
     const c = await classOk(a);
     let declared = 0;

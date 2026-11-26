@@ -309,6 +309,14 @@ ok('the throw-down count is anonymous', (await call('throwdownCount', { code: 'D
 const ad = await call('adminSteps', { pw: 'pw' });
 ok('staff see counts for all, words only of those who shared', ad.declared === 2 && ad.checks.d7.yes === 1 && ad.checks.d7.partly === 1 && ad.shared.length === 1 && ad.shared[0].name === 'Step One' && ad.shared[0].checks.d7.note === 'Wrote it, not sent' && !JSON.stringify(ad).includes('secret') && !JSON.stringify(ad).includes('private note'));
 
+/* --- Thursday: burn the ships, a count only --- */
+ok('burning a ship needs the class code', (await call('burnAdd', { code: 'nope', rid: 'aaaabbbbccccdddg' })).error === 'NO_CLASS');
+await call('burnAdd', { code: 'DTS26', rid: 'aaaabbbbccccdddg' }); await call('burnAdd', { code: 'DTS26', rid: 'aaaabbbbccccdddg' }); await call('burnAdd', { code: 'DTS26', rid: 'aaaabbbbccccdddh' });
+ok('one ship per phone, counted per class', (await call('burnCount', { code: 'DTS26' })).burned === 2 && (await call('burnCount', { code: 'DTSW' })).burned === 0);
+ok('resetting the count needs the admin', (await call('burnReset', { pw: 'x' })).error === 'BAD_PASSWORD');
+await call('burnReset', { pw: 'pw' });
+ok('reset clears the count', (await call('burnCount', { code: 'DTS26' })).burned === 0);
+
 /* --- the base-wide profile quiz: no class, no account --- */
 const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';
 ok('public quiz needs a phone id', (await call('pubQuiz', { rid: 'x', name: 'Sokha', group: 'dts', profile: 'netflix' })).error === 'BAD_ID');

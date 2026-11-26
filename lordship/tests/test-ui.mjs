@@ -604,6 +604,10 @@ try {
   await page.goto(U + '/#/t/backup'); await page.fill('#backup', 'Go home and work at my uncle’s shop');
   await page.click('button:has-text("Tear it up")'); await page.waitForSelector('.torn');
   ok('burn the ships: torn up, on my lay down list', (await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.list') || '[]').some(x => x.area === 'My backup plan'))));
+  const bs = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  const myCls = await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.class')).code);
+  await bs.goto(U + '/#/burn/' + myCls); await bs.waitForFunction(() => document.querySelector('.burn-n') && document.querySelector('.burn-n').textContent === '1');
+  ok('burn the ships projector: an anonymous count, no words', !(await bs.locator('main, .screen').first().innerText()).includes('uncle'));
   await page.goto(U + '/#/day/fri'); await page.waitForSelector('.scripture');
   ok('Friday: the nations and the commissioning', (await text()).includes('Vision 2033') && (await text()).includes('Numbers 6:24–26'));
 

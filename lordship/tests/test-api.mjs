@@ -317,6 +317,18 @@ ok('resetting the count needs the admin', (await call('burnReset', { pw: 'x' }))
 await call('burnReset', { pw: 'pw' });
 ok('reset clears the count', (await call('burnCount', { code: 'DTS26' })).burned === 0);
 
+/* --- the whole-group throw-down: no class, no account; words only if they choose --- */
+ok('throw-down needs a group', (await call('pubThrow', { rid: 'aaaabbbbccccdddk', name: 'Mia', group: 'x' })).error === 'BAD_GROUP');
+await call('pubThrow', { rid: 'aaaabbbbccccdddk', name: 'Mia Lee', group: 'dbs', text: 'I’m throwing down fear.', show: true });
+await call('pubThrow', { rid: 'aaaabbbbccccdddm', name: 'Tom', group: 'dts', text: 'secret words', show: false });
+await call('pubThrow', { rid: 'aaaabbbbccccdddk', name: 'Mia', group: 'dbs', text: 'I’m throwing down fear. Again.', show: true });
+const ptr = await call('pubThrowResults', {});
+ok('throw-down: one per phone, counted by group', ptr.totals.all === 2 && ptr.totals.dbs === 1 && ptr.totals.dts === 1);
+ok('throw-down: words only when they chose, first names only', ptr.recent.some(r => r.n === 'Mia' && r.w.includes('Again')) && !JSON.stringify(ptr).includes('secret') && !JSON.stringify(ptr).includes('Lee'));
+ok('throw-down reset needs the admin', (await call('pubThrowReset', { pw: 'x' })).error === 'BAD_PASSWORD');
+await call('pubThrowReset', { pw: 'pw' });
+ok('throw-down reset clears it', (await call('pubThrowResults', {})).totals.all === 0);
+
 /* --- the base-wide profile quiz: no class, no account --- */
 const R1 = 'abcdefghijkmnpq2', R2 = 'abcdefghijkmnpq3';
 ok('public quiz needs a phone id', (await call('pubQuiz', { rid: 'x', name: 'Sokha', group: 'dts', profile: 'netflix' })).error === 'BAD_ID');

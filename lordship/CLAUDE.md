@@ -141,6 +141,13 @@ Western, English only. GonPreah's "no YWAM on screen" rule does **not** apply he
   (`d.nations`) and Numbers 6:24–26; the Sphere sorter's intro calls it a review of Thursday's sphere walk.
   **Burn the ships projector** (`#/burn/<class>`): tearing up a backup plan in class adds one to an anonymous count
   (`burnAdd`, `bs:<class>:<phone id>`, never the words); the screen counts up with rising flames; Reset behind the admin.
+- **The throw-down (Fri, Nov 27):** "What a throw-down looks like" (`ThrowExamples` in Commit.jsx, `THROWDOWN_EXAMPLES`: I'm
+  throwing down… / I'm picking up… / my first step in 30 days) on the class commitment, the Friday plan and the whole-group page.
+  **Whole-group throw-down** like Monday's quiz: `/?throwdown` → `#/td` (tools/PubThrow.jsx), no class code or account, the
+  first name and group from the quiz (`lordship.pubquiz`), three lines, "put my words on the big screen" (off by default),
+  .ics reminders at 7/14/30 days. Projector `#/throwdown-all`: the count, All/DTS/DBS/Staff, a wall of first names (and words
+  only when chosen), QR, Hide names, Reset behind the admin (`pubThrow`/`pubThrowResults`/`pubThrowReset`,
+  `pt:<phone id>:<time>:<group>:<name>[:<words>]`).
 - Scripture was checked against the WEB text from bible-api.com (Nov 2026).
 - Tests: `node tests/test-api.mjs`, `npm run build && node tests/test-ui.mjs`.
 - Deploy only when Uriah says so (same rule as GonPreah).

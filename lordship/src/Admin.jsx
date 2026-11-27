@@ -55,6 +55,7 @@ export default function Admin() {
           <a className="btn soft small" href={'#/throwdown/' + cls}>🚩 Throw-down count</a></div>
       </details>}
       <p className="tiny muted" style={{ marginTop: 0 }}>Class results are just the class picked above (students open them from Home → Live class polls). Zoom / no-class versions: <a href="#/poll-results/never">Never, Lord</a> · <a href="#/poll-results/staff">Pick it back up</a></p>
+      <a className="btn primary big" href="#/throwdown-all" style={{ marginBottom: 8 }}>🚩 Whole-group throw-down (projector · no sign-in)</a>
       <a className="btn soft big" href="#/quiz-results" style={{ marginBottom: 8 }}>😂 Base-wide profile quiz: live results (projector)</a>
       <div className="chips">{[['questions', 'Questions'], ['roster', 'Class list'], ['steps', 'Next steps'], ['totals', 'Class totals'], ['slides', 'Slides'], ['class', 'Class & links']].map(([k, l]) =>
         <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>)}</div>

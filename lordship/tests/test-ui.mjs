@@ -665,6 +665,17 @@ try {
   ok('home: today’s response, one tap', (await page.locator('.today .chips a.chip').count()) >= 1);
   ok('projector screens have a full screen button', (await cr.locator('.fsbtn').count()) === 1);
 
+  /* the whole-group throw-down: ?throwdown, no sign-in, remembers the quiz's name */
+  await pq.goto(U + '/?throwdown'); await pq.waitForSelector('.tdex');
+  ok('?throwdown: no sign-in, the name from Monday’s quiz, an example', (await pq.locator('.pinbox').count()) === 0 && (await pq.locator('main').textContent()).includes('Bopha') && (await pq.locator('.tdex').innerText()).includes('I’m throwing down'));
+  await pq.click('text=Start from this one');
+  await pq.click('.lockin:has-text("Put my words") input');
+  await pq.click('button:has-text("Throw it down")'); await pq.waitForSelector('.declare');
+  ok('declared: say it out loud, reminders', (await pq.locator('.declare').innerText()).includes('I’m throwing down') && (await pq.locator('button:has-text("Remind me")').count()) === 1);
+  const tda = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await tda.goto(U + '/#/throwdown-all'); await tda.waitForSelector('.td-card');
+  ok('throw-down projector: the count, name and words they chose to show', (await tda.locator('.td-big').innerText()) === '1' && (await tda.locator('.td-card').innerText()).includes('Bopha'));
+
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {
   ok('ran without throwing: ' + e.message, false);

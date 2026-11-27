@@ -10,6 +10,7 @@ import { authArgs, getMe } from '../../../core/account.js';
 import { burst, shareText, toast } from '../../../core/ui.jsx';
 import { downloadIcs } from '../../../core/ics.js';
 import { MentorMap } from './Hot.jsx';
+import { ThrowExamples } from './Commit.jsx';
 
 export const val = (v) => typeof v === 'string' ? v : v && typeof v === 'object' ? Object.values(v).filter(x => typeof x === 'string').filter(Boolean).join('\n') : '';
 const daysSince = (d) => d ? Math.floor((Date.now() - d) / 86400000) : -1;
@@ -121,6 +122,7 @@ export default function Growth({ code }) {
       <h2>My mentor map</h2>
       <MentorMap />
 
+      {!p.declared && <ThrowExamples onPick={(x) => set({ step: x.step })} />}
       <div className="card nextstep">
         <p className="eyebrow">Required</p>
         <h3>One next step in the next 30 days</h3>

@@ -279,6 +279,14 @@ export const THREE_CS = [
   ['chemistry', 'Chemistry', 'Find the right fit — the team and leader you flourish with.'],
   ['competency', 'Competency', 'Bring something to the table.']
 ];
+/* What a throw-down commitment looks like: lay something down, pick something up, one step in 30 days. */
+export const THROWDOWN_EXAMPLES = [
+  { down: 'my backup plan of going home after DTS', up: 'two years of staffing in Siem Reap', step: 'Tell my leader yes and start my support letter by December 15' },
+  { down: 'doing this alone', up: 'a mentor who knows my real stuff', step: 'Ask Naomi to meet with me every two weeks — this Sunday' },
+  { down: 'my phone first thing in the morning', up: 'one chapter of the Bible before any screen', step: 'Phone charges outside my room for the next 30 days' },
+  { down: 'people-pleasing my family', up: 'honouring them and following my calling', step: 'Have the honest talk with my parents before Christmas' },
+  { down: '“I’m not ready”', up: 'the LPU pathway and a degree', step: 'Email the LPU office this week' }
+];
 export const MENTOR_ROLES = [['paul', 'Paul', 'ahead of me, speaks into my life'], ['barnabas', 'Barnabas', 'beside me, knows my real stuff'], ['timothy', 'Timothy', 'I’m pouring into them']];
 export const RIGHTS = [
   { id: 'future', name: 'Future & plans', ref: 'Mark 1:16–20' }, { id: 'reputation', name: 'Reputation', ref: 'Mark 1:40–42' },

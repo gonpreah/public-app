@@ -194,3 +194,39 @@ export function ThrowdownScreen({ code }) {
     </div>
   );
 }
+
+/* Burn the ships on the projector: #/burn/<class> — how many backup plans are torn up, no names, no words. */
+export function BurnScreen({ code }) {
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    let live = true, t = null;
+    const tick = () => api('burnCount', { code }).then(x => { if (live) { setD(x); setErr(''); } }).catch(e => live && setErr(errText(e)))
+      .finally(() => { if (live) t = setTimeout(tick, document.hidden ? 10000 : 3000); });
+    tick();
+    return () => { live = false; clearTimeout(t); };
+  }, [code]);
+  async function reset() {
+    let pw = ''; try { pw = sessionStorage.getItem('ls-admin') || ''; } catch (e) { /* */ }
+    if (!pw) pw = prompt('Admin password') || '';
+    if (!pw || !confirm('Start the count again from zero?')) return;
+    try { await api('burnReset', { pw, cls: code }); try { sessionStorage.setItem('ls-admin', pw); } catch (e) { /* */ } setD(await api('burnCount', { code })); }
+    catch (e) { toast(errText(e)); }
+  }
+  const n = d ? d.burned : 0;
+  return (
+    <div className="screen burnscreen">
+      <div className="screen-main">
+        <p className="eyebrow">Burn the ships · no names</p>
+        <div className="burn-fire" aria-hidden="true">{Array.from({ length: Math.min(n, 40) }, (_, i) => <span key={i} style={{ animationDelay: (i % 10) * 0.13 + 's', left: ((i * 37) % 100) + '%' }}>🔥</span>)}</div>
+        <p className="td-big burn-n" key={n}>{d ? n : '…'}</p>
+        <h1 className="screen-q">{n === 1 ? 'ship burned' : 'ships burned'}</h1>
+        {d && <p className="screen-ref">of {d.students} in the class</p>}
+        <p className="burn-pray">“Jesus, you’re my only plan.”</p>
+        <p className="screen-ref">Elisha burned the plow · the woman broke the jar · 1 Kings 19:21 · Mark 14:3</p>
+        {err && <p className="err">{err}</p>}
+        <div className="qr-tools" style={{ justifyContent: 'center' }}><button className="linkish" onClick={reset}>Reset</button></div>
+      </div>
+    </div>
+  );
+}

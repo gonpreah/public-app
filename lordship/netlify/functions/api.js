@@ -460,6 +460,24 @@ export const HANDLERS = {
     await db.set(k, cur);
     return { ok: true };
   },
+  /* Thursday's "Burn the ships": an anonymous count per class (bs:<class>:<phone id>) — never the plan itself. */
+  async burnAdd(a) {
+    const c = await classOk(a);
+    const rid = String(a.rid || '');
+    if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    await db.set('bs:' + c.code + ':' + rid, 1);
+    return { ok: true };
+  },
+  async burnCount(a) {
+    const c = await classOk(a);
+    return { burned: (await db.keys('bs:' + c.code + ':')).length, students: (await db.keys('st:' + c.code + ':')).length };
+  },
+  async burnReset(a) {
+    await admin(a);
+    const c = await adminClass(a);
+    for (const k of await db.keys('bs:' + c.code + ':')) await db.del(k);
+    return { ok: true };
+  },
   async throwdownCount(a) {
     const c = await classOk(a);
     let declared = 0;
@@ -480,6 +498,46 @@ export const HANDLERS = {
     }
     out.shared.sort((x, y) => x.name.localeCompare(y.name));
     return out;
+  },
+
+  /* --- the whole-group throw-down (?throwdown), like the base-wide quiz: no class code or account. A first name, a
+     group, and — only if they tick "put my words on the screen" — their throw-down. Everything is in the key:
+     pt:<phone id>:<time>:<group>:<first name b64>[:<words b64>]. A re-declare replaces. --- */
+  async pubThrow(a) {
+    const rid = String(a.rid || '');
+    if (!/^[a-z0-9]{16}$/.test(rid)) throw new Fail('BAD_ID');
+    if (!PUB_GROUPS.includes(a.group)) throw new Fail('BAD_GROUP');
+    const strip = (x, n) => clip(x, n).replace(/[\u200B-\u200F\u2028-\u202E\u2066-\u2069]/g, '').replace(/\s+/g, ' ').trim();
+    const name = strip(a.name, 40).split(' ')[0].slice(0, 20);
+    if (!name) throw new Fail('NO_NAME');
+    const words = a.show ? strip(a.text, 140) : '';
+    const k = 'ptn:' + today();
+    const n = (await db.get(k)) || 0;
+    if (n > 3000) throw new Fail('BUSY', 429);
+    await db.set(k, n + 1);
+    for (const old of await db.keys('pt:' + rid + ':')) await db.del(old);
+    const parts = ['pt', rid, Date.now().toString(36), a.group, Buffer.from(name).toString('base64url')];
+    if (words) parts.push(Buffer.from(words).toString('base64url'));
+    await db.set(parts.join(':'), 1);
+    return { ok: true };
+  },
+  async pubThrowResults() {
+    const rows = [];
+    for (const k of await db.keys('pt:')) {
+      const [, , t, g, n, w] = k.split(':');
+      if (!PUB_GROUPS.includes(g)) continue;
+      const dec = (x) => { try { return Buffer.from(x || '', 'base64url').toString('utf8'); } catch { return ''; } };
+      rows.push({ t: parseInt(t, 36) || 0, g, n: dec(n).slice(0, 20), w: dec(w).slice(0, 140) });
+    }
+    rows.sort((x, y) => x.t - y.t);
+    const totals = { all: rows.length };
+    for (const g of PUB_GROUPS) totals[g] = rows.filter(r => r.g === g).length;
+    return { totals, recent: rows.slice(-40).reverse().map(({ g, n, w }) => ({ g, n, w })) };
+  },
+  async pubThrowReset(a) {
+    await admin(a);
+    for (const k of await db.keys('pt:')) await db.del(k);
+    return { ok: true };
   },
 
   /* --- the anonymous question box: only the words and a topic are kept --- */

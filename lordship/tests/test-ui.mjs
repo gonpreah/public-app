@@ -604,6 +604,10 @@ try {
   await page.goto(U + '/#/t/backup'); await page.fill('#backup', 'Go home and work at my uncle’s shop');
   await page.click('button:has-text("Tear it up")'); await page.waitForSelector('.torn');
   ok('burn the ships: torn up, on my lay down list', (await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.list') || '[]').some(x => x.area === 'My backup plan'))));
+  const bs = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  const myCls = await page.evaluate(() => JSON.parse(localStorage.getItem('gp.lordship.class')).code);
+  await bs.goto(U + '/#/burn/' + myCls); await bs.waitForFunction(() => document.querySelector('.burn-n') && document.querySelector('.burn-n').textContent === '1');
+  ok('burn the ships projector: an anonymous count, no words', !(await bs.locator('main, .screen').first().innerText()).includes('uncle'));
   await page.goto(U + '/#/day/fri'); await page.waitForSelector('.scripture');
   ok('Friday: the nations and the commissioning', (await text()).includes('Vision 2033') && (await text()).includes('Numbers 6:24–26'));
 
@@ -660,6 +664,17 @@ try {
   await page.goto(U + '/#/class'); await page.waitForSelector('.today');
   ok('home: today’s response, one tap', (await page.locator('.today .chips a.chip').count()) >= 1);
   ok('projector screens have a full screen button', (await cr.locator('.fsbtn').count()) === 1);
+
+  /* the whole-group throw-down: ?throwdown, no sign-in, remembers the quiz's name */
+  await pq.goto(U + '/?throwdown'); await pq.waitForSelector('.tdex');
+  ok('?throwdown: no sign-in, the name from Monday’s quiz, an example', (await pq.locator('.pinbox').count()) === 0 && (await pq.locator('main').textContent()).includes('Bopha') && (await pq.locator('.tdex').innerText()).includes('I’m throwing down'));
+  await pq.click('text=Start from this one');
+  await pq.click('.lockin:has-text("Put my words") input');
+  await pq.click('button:has-text("Throw it down")'); await pq.waitForSelector('.declare');
+  ok('declared: say it out loud, reminders', (await pq.locator('.declare').innerText()).includes('I’m throwing down') && (await pq.locator('button:has-text("Remind me")').count()) === 1);
+  const tda = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await tda.goto(U + '/#/throwdown-all'); await tda.waitForSelector('.td-card');
+  ok('throw-down projector: the count, name and words they chose to show', (await tda.locator('.td-big').innerText()) === '1' && (await tda.locator('.td-card').innerText()).includes('Bopha'));
 
   ok('no page errors', errors.length === 0, errors);
 } catch (e) {

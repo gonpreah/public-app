@@ -1,6 +1,7 @@
 /* 9. Throw-down commitment: on Friday, one specific commitment — write it, declare it, save it,
    share it with a mentor. Check-ins come up in the app at 30 and 90 days. */
 import { useState } from 'react';
+import { THROWDOWN_EXAMPLES } from '../content.js';
 import { useLocal, todayStr, addDays, daysBetween } from '../../../core/store.js';
 import { K, syncTotals } from '../state.js';
 import { shareText, burst } from '../../../core/ui.jsx';
@@ -13,6 +14,25 @@ export function dueCheckin(c, today) {
   if (n >= 90 && !ck.d90) return 'd90';
   if (n >= 30 && !ck.d30) return 'd30';
   return null;
+}
+
+/* "What does a throw-down look like?" — worked examples, tap one to start from it. */
+export function ThrowExamples({ onPick }) {
+  const [i, setI] = useState(0);
+  const x = THROWDOWN_EXAMPLES[i];
+  return (
+    <div className="card tdex">
+      <p className="eyebrow">What a throw-down looks like</p>
+      <p className="tdex-line">🚩 I’m throwing down <b>{x.down}</b>.</p>
+      <p className="tdex-line">🙌 I’m picking up <b>{x.up}</b>.</p>
+      <p className="tdex-line">👣 My first step in 30 days: <b>{x.step}</b>.</p>
+      <div className="row wrap">
+        <button className="btn ghost small" onClick={() => setI((i + 1) % THROWDOWN_EXAMPLES.length)}>Another example ›</button>
+        {onPick && <button className="btn soft small" onClick={() => onPick(x)}>Start from this one</button>}
+      </div>
+      <p className="tiny muted">Specific. Doable. Something a friend could ask you about in 30 days.</p>
+    </div>
+  );
 }
 
 export default function Commit({ code }) {
@@ -60,6 +80,7 @@ export default function Commit({ code }) {
           <p className="muted small">No shame here. Grace is the soil we grow in — start again today.</p>
         </div>
       )}
+      {!c.declaredAt && <ThrowExamples onPick={(x) => setText(`I’m throwing down ${x.down}. I’m picking up ${x.up}. My first step: ${x.step}.`)} />}
       <div className="card">
         <label className="lab" htmlFor="commit">My commitment</label>
         <textarea id="commit" rows={3} value={text} maxLength={280} onChange={e => setText(e.target.value)}

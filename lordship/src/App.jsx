@@ -16,8 +16,9 @@ import { getMe, setMe } from './core/account.js';
 import { ThemeToggle } from './core/theme.jsx';
 import Install from './core/Install.jsx';
 import PubQuiz, { QuizResults } from './teachings/lordship/tools/PubQuiz.jsx';
+import PubThrow, { PubThrowResults } from './teachings/lordship/tools/PubThrow.jsx';
 import LivePoll, { LivePollResults } from './teachings/lordship/tools/LivePoll.jsx';
-import { CloudScreen, ThrowdownScreen } from './teachings/lordship/tools/Games.jsx';
+import { CloudScreen, ThrowdownScreen, BurnScreen } from './teachings/lordship/tools/Games.jsx';
 
 const CLS = 'lordship.class';
 
@@ -35,6 +36,7 @@ const PENDING = (() => {
   const c = p.get('class');
   if (p.get('poll')) history.replaceState(null, '', location.pathname + '#/poll/' + encodeURIComponent(p.get('poll').toLowerCase()) + (p.get('room') ? '/' + encodeURIComponent(p.get('room').toUpperCase()) : ''));
   else if (p.has('quiz')) history.replaceState(null, '', location.pathname + '#/quiz');
+  else if (p.has('throwdown')) history.replaceState(null, '', location.pathname + '#/td');
   else if (p.has('church') || c) history.replaceState(null, '', location.pathname + (p.has('church') ? '#/church' : '#/'));
   return c || '';
 })();
@@ -101,7 +103,9 @@ export default function App() {
   const FS = <FullScreen />;
   if (r[0] === 'panel') return <><Panel />{FS}<Toast /></>;
   if (r[0] === 'game') return <><GameScreen />{FS}<Toast /></>;
+  if (r[0] === 'throwdown-all') return <><PubThrowResults />{FS}<Toast /></>;
   if (r[0] === 'quiz-results') return <><QuizResults />{FS}<Toast /></>;
+  if (r[0] === 'burn') return <><BurnScreen code={r[1] || (cls && cls.code) || ''} />{FS}<Toast /></>;
   if (r[0] === 'throwdown') return <><ThrowdownScreen code={r[1] || (cls && cls.code) || ''} />{FS}<Toast /></>;
   if (r[0] === 'cloud') return <><CloudScreen id={r[1]} room={r[2] || ''} key={r.join('/')} />{FS}<Toast /></>;
   if (r[0] === 'poll-results') return <><LivePollResults id={r[1]} room={r[2] || ''} key={r.join('/')} />{FS}<Toast /></>;
@@ -113,6 +117,7 @@ export default function App() {
   let page;
   if (admin) page = <Admin />;
   else if (r[0] === 'quiz') page = <PubQuiz />;
+  else if (r[0] === 'td') page = <PubThrow />;
   else if (r[0] === 'poll') page = <LivePoll id={r[1]} room={r[2] || ''} key={r.join('/')} />;
   else if (church) {
     const t = r[1] && L.TOOLS.find(x => x.id === r[1] && x.church);
@@ -141,7 +146,7 @@ export default function App() {
       <header className="top">
         <a className="brandmark" href={church ? '#/church' : '#/class'}><Spark size={20} color="var(--accent)" /> Lordship</a>
         <span className="top-r">{!admin && !church && cls && me ? <a className="mechip" href="#/t/me" aria-label={'Me: ' + me.name}><span>{me.name.slice(0, 1).toUpperCase()}</span>{me.name.split(' ')[0]}</a>
-          : <span className="mode">{admin ? 'Admin' : r[0] === 'quiz' ? 'Just for fun' : r[0] === 'poll' ? 'No names' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
+          : <span className="mode">{admin ? 'Admin' : r[0] === 'quiz' ? 'Just for fun' : r[0] === 'td' ? 'The throw-down' : r[0] === 'poll' ? 'No names' : church ? 'Public' : cls ? cls.name : ''}</span>}<ThemeToggle /></span>
       </header>
       <main>{page}</main>
       {nav && <nav className="bottom">{nav.map(([p, e, l]) => <a key={p} href={'#/' + p} className={on(p) ? 'on' : ''}><span aria-hidden="true">{e}</span>{l}</a>)}</nav>}
